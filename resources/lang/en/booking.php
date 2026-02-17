@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'Book Appointment' => 'Book Appointment',
+    'Book your appointment online' => 'Book your appointment online',
+    'Full Name' => 'Full Name',
+    'Enter your full name' => 'Enter your full name',
+    'Email' => 'Email',
+    'Enter your email' => 'Enter your email',
+    'Phone Number' => 'Phone Number',
+    'Enter your phone number' => 'Enter your phone number',
+    'Appointment Date' => 'Appointment Date',
+    'Appointment Time' => 'Appointment Time',
+    'Select time' => 'Select time',
+    'Preferred Staff' => 'Preferred Staff',
+    'Any available staff' => 'Any available staff',
+    'Additional Notes' => 'Additional Notes',
+    'Any special requests or notes...' => 'Any special requests or notes...',
+    'Booking...' => 'Booking...',
+    'Appointment Booked Successfully!' => 'Appointment Booked Successfully!',
+    'You will receive a confirmation email shortly.' => 'You will receive a confirmation email shortly.',
+    'Booking Failed' => 'Booking Failed',
+    'An error occurred. Please try again.' => 'An error occurred. Please try again.',
+    'Check Queue Status' => 'Check Queue Status',
+];

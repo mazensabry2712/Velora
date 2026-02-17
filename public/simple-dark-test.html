@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار Dark Mode - بسيط</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        }
+    </script>
+</head>
+<body class="bg-white dark:bg-slate-900 min-h-screen p-8 transition-colors duration-300">
+    <div class="max-w-2xl mx-auto">
+        <!-- Header -->
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-8 border-2 border-slate-200 dark:border-slate-700 mb-8">
+            <h1 class="text-4xl font-bold text-slate-900 dark:text-white mb-4">
+                🌙 اختبار Dark Mode
+            </h1>
+            <p class="text-slate-600 dark:text-slate-300 mb-6">
+                اضغط الزر أدناه للتبديل بين الوضع النهاري والليلي
+            </p>
+
+            <!-- Toggle Button -->
+            <button onclick="toggleDarkMode()"
+                class="w-full py-4 px-6 bg-indigo-600 dark:bg-indigo-500 text-white rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 text-xl font-bold">
+                <span id="dark-mode-icon" class="text-3xl">🌙</span>
+                <span class="mr-3">تبديل الوضع</span>
+            </button>
+        </div>
+
+        <!-- Test Cards -->
+        <div class="grid grid-cols-2 gap-4 mb-8">
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 border border-slate-200 dark:border-slate-700">
+                <div class="text-6xl mb-2">🎨</div>
+                <h3 class="font-bold text-slate-900 dark:text-white mb-2">الألوان</h3>
+                <p class="text-sm text-slate-600 dark:text-slate-300">تتغير تلقائياً</p>
+            </div>
+
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 border border-slate-200 dark:border-slate-700">
+                <div class="text-6xl mb-2">💾</div>
+                <h3 class="font-bold text-slate-900 dark:text-white mb-2">التخزين</h3>
+                <p class="text-sm text-slate-600 dark:text-slate-300">محفوظ في localStorage</p>
+            </div>
+        </div>
+
+        <!-- Status Display -->
+        <div class="bg-indigo-50 dark:bg-indigo-900/30 border-2 border-indigo-200 dark:border-indigo-700 rounded-xl p-6">
+            <h3 class="font-bold text-indigo-900 dark:text-indigo-100 mb-3 text-xl">📊 الحالة الحالية:</h3>
+            <div class="space-y-2 text-lg">
+                <div class="flex items-center gap-3">
+                    <span class="text-indigo-600 dark:text-indigo-400 font-bold">الوضع:</span>
+                    <span id="current-mode" class="text-slate-900 dark:text-white font-bold">...</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-indigo-600 dark:text-indigo-400 font-bold">localStorage:</span>
+                    <span id="storage-value" class="text-slate-900 dark:text-white font-bold">...</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-indigo-600 dark:text-indigo-400 font-bold">تفضيلات النظام:</span>
+                    <span id="system-pref" class="text-slate-900 dark:text-white font-bold">...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="mt-8 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700 rounded-xl p-6">
+            <h3 class="font-bold text-emerald-900 dark:text-emerald-100 mb-2 text-lg">✅ التعليمات:</h3>
+            <ol class="list-decimal list-inside space-y-1 text-emerald-800 dark:text-emerald-200">
+                <li>اضغط على زر "تبديل الوضع" أعلاه</li>
+                <li>انتظر لحظة وشاهد التغيير</li>
+                <li>إذا تغيرت الألوان = ✅ يعمل!</li>
+                <li>إذا لم تتغير = ❌ يوجد مشكلة</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- Dark Mode Script -->
+    <script>
+        // تحميل الإعداد المحفوظ عند تحميل الصفحة
+        function loadDarkMode() {
+            const darkMode = localStorage.getItem('darkMode');
+            console.log('📦 localStorage value:', darkMode);
+
+            if (darkMode === 'true' || (!darkMode && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+            updateStatus();
+        }
+
+        // تبديل وضع الدارك مود
+        function toggleDarkMode() {
+            console.log('🔄 Toggle clicked!');
+            const isDark = document.documentElement.classList.toggle('dark');
+            console.log('🌓 New state:', isDark ? 'DARK' : 'LIGHT');
+            localStorage.setItem('darkMode', isDark);
+
+            // تحديث أيقونة الزر
+            const icon = document.getElementById('dark-mode-icon');
+            if (icon) {
+                icon.textContent = isDark ? '☀️' : '🌙';
+            }
+
+            updateStatus();
+        }
+
+        // تحديث عرض الحالة
+        function updateStatus() {
+            const isDark = document.documentElement.classList.contains('dark');
+            document.getElementById('current-mode').textContent = isDark ? '🌙 ليلي (DARK)' : '☀️ نهاري (LIGHT)';
+            document.getElementById('storage-value').textContent = localStorage.getItem('darkMode') || 'null';
+            document.getElementById('system-pref').textContent = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'داكن' : 'فاتح';
+
+            // تحديث الأيقونة
+            const icon = document.getElementById('dark-mode-icon');
+            if (icon) {
+                icon.textContent = isDark ? '☀️' : '🌙';
+            }
+        }
+
+        // تهيئة عند تحميل الصفحة
+        loadDarkMode();
+
+        // Log للتأكد
+        console.log('✅ Dark mode script loaded!');
+        console.log('📱 HTML classes:', document.documentElement.classList.toString());
+    </script>
+</body>
+</html>

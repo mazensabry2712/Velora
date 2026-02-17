@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'Book Appointment' => 'حجز موعد',
+    'Book your appointment online' => 'احجز موعدك عبر الإنترنت',
+    'Full Name' => 'الاسم الكامل',
+    'Enter your full name' => 'أدخل اسمك الكامل',
+    'Email' => 'البريد الإلكتروني',
+    'Enter your email' => 'أدخل بريدك الإلكتروني',
+    'Phone Number' => 'رقم الهاتف',
+    'Enter your phone number' => 'أدخل رقم هاتفك',
+    'Appointment Date' => 'تاريخ الموعد',
+    'Appointment Time' => 'وقت الموعد',
+    'Select time' => 'اختر الوقت',
+    'Preferred Staff' => 'الموظف المفضل',
+    'Any available staff' => 'أي موظف متاح',
+    'Additional Notes' => 'ملاحظات إضافية',
+    'Any special requests or notes...' => 'أي طلبات أو ملاحظات خاصة...',
+    'Booking...' => 'جاري الحجز...',
+    'Appointment Booked Successfully!' => 'تم حجز الموعد بنجاح!',
+    'You will receive a confirmation email shortly.' => 'سوف تستلم رسالة تأكيد عبر البريد الإلكتروني قريباً.',
+    'Booking Failed' => 'فشل الحجز',
+    'An error occurred. Please try again.' => 'حدث خطأ. يرجى المحاولة مرة أخرى.',
+    'Check Queue Status' => 'تحقق من حالة الطابور',
+];
