@@ -50,4 +50,44 @@ class QueueController extends Controller
             ]
         ]);
     }
+
+    /**
+     * Get specific queue status by queue number
+     * Public endpoint for customers to check their queue status
+     */
+    public function getQueueStatus($queueNumber)
+    {
+        try {
+            $queue = Queue::where('queue_number', $queueNumber)
+                ->with(['appointment.customer', 'appointment.service', 'appointment.staff'])
+                ->first();
+
+            if (!$queue) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('Queue number not found')
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'queue_number' => $queue->queue_number,
+                    'customer_name' => $queue->appointment?->customer?->name ?? 'N/A',
+                    'service' => $queue->appointment?->service?->name ?? 'N/A',
+                    'staff_name' => $queue->appointment?->staff?->name ?? 'N/A',
+                    'status' => $queue->status,
+                    'is_vip' => $queue->is_vip,
+                    'notes' => $queue->notes,
+                    'queue_date' => $queue->queue_date?->format('Y-m-d') ?? null,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in getQueueStatus: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => __('Error loading queue status')
+            ], 500);
+        }
+    }
 }

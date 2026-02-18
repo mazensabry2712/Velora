@@ -86,6 +86,7 @@ Route::middleware([
 
     // Public Queue API (no auth required)
     Route::get('/api/queue', [QueueController::class, 'publicQueue'])->name('api.queue.public');
+    Route::get('/api/queue/status/{queueNumber}', [QueueController::class, 'getQueueStatus'])->name('api.queue.status');
 
     // Logout route (for forms)
     Route::post('/logout', function () {
@@ -124,6 +125,8 @@ Route::middleware([
         // Queue Management
         Route::get('/queue', [AdminController::class, 'queueDays'])->name('queue');
         Route::get('/queue/{date}', [AdminController::class, 'queue'])->name('queue.day');
+        Route::get('/queue/{date}/print', [AdminController::class, 'printQueue'])->name('queue.print');
+        Route::get('/queue/export-excel', [AdminController::class, 'exportQueueToExcel'])->name('queue.export.excel');
 
         // Reports
         Route::get('/reports', [AdminController::class, 'reports'])->name('reports');
@@ -140,9 +143,40 @@ Route::middleware([
             Route::get('/appointments/{id}', [AdminController::class, 'showAppointment'])->name('api.appointments.show');
             Route::put('/appointments/{id}', [AdminController::class, 'updateAppointment'])->name('api.appointments.update');
             Route::delete('/appointments/{id}', [AdminController::class, 'destroyAppointment'])->name('api.appointments.destroy');
+            Route::patch('/appointments/{id}/status', [AdminController::class, 'updateAppointment'])->name('api.appointments.status');
+            Route::post('/appointments/{id}/add-to-queue', [AdminController::class, 'addAppointmentToQueue'])->name('api.appointments.addToQueue');
+            Route::post('/appointments/{id}/remove-from-queue', [AdminController::class, 'removeFromQueue'])->name('api.appointments.removeFromQueue');
+            Route::post('/appointments/{id}/send-reminder', [AdminController::class, 'sendReminder'])->name('api.appointments.sendReminder');
+            Route::post('/appointments/bulk-day-action', [AdminController::class, 'bulkDayAction'])->name('api.appointments.bulkDayAction');
+            Route::get('/appointments/{id}/qrcode', [AdminController::class, 'generateQRCode'])->name('api.appointments.qrcode');
 
             // Settings
             Route::post('/settings', [AdminController::class, 'saveSettings'])->name('api.settings.save');
+
+            // Services API
+            Route::get('/settings/services/{id}', [AdminController::class, 'showService'])->name('api.services.show');
+            Route::post('/settings/services', [AdminController::class, 'storeService'])->name('api.services.store');
+            Route::put('/settings/services/{id}', [AdminController::class, 'updateService'])->name('api.services.update');
+            Route::delete('/settings/services/{id}', [AdminController::class, 'destroyService'])->name('api.services.destroy');
+
+            // Staff API
+            Route::get('/staff/{id}', [AdminController::class, 'showStaff'])->name('api.staff.show');
+            Route::post('/staff', [AdminController::class, 'storeStaff'])->name('api.staff.store');
+            Route::put('/staff/{id}', [AdminController::class, 'updateStaff'])->name('api.staff.update');
+            Route::delete('/staff/{id}', [AdminController::class, 'destroyStaff'])->name('api.staff.destroy');
+            Route::get('/staff/by-specialization/{specialization}', [AdminController::class, 'getStaffBySpecialization'])->name('api.staff.by-specialization');
+            Route::get('/staff/{id}/services', [AdminController::class, 'getStaffServicesJson'])->name('api.staff.services');
+
+            // Queue API
+            Route::post('/queue/add', [AdminController::class, 'addToQueue'])->name('api.queue.add');
+            Route::post('/queue/call-next', [AdminController::class, 'callNext'])->name('api.queue.call-next');
+            Route::get('/queue/{id}', [AdminController::class, 'getQueue'])->name('api.queue.get');
+            Route::put('/queue/{id}', [AdminController::class, 'updateQueue'])->name('api.queue.update');
+            Route::delete('/queue/{id}', [AdminController::class, 'removeQueue'])->name('api.queue.delete');
+            Route::post('/queue/{id}/serve', [AdminController::class, 'serveQueue'])->name('api.queue.serve');
+            Route::post('/queue/{id}/complete', [AdminController::class, 'completeQueue'])->name('api.queue.complete');
+            Route::post('/queue/{id}/return-waiting', [AdminController::class, 'returnToWaiting'])->name('api.queue.return-waiting');
+            Route::post('/queue/{id}/priority', [AdminController::class, 'setQueuePriority'])->name('api.queue.set-priority');
         });
     });
 

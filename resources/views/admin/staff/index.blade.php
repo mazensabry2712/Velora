@@ -64,8 +64,8 @@
                                         </div>
                                         <div>
                                             <h4 class="font-semibold text-slate-900 dark:text-slate-100">{{ $staff->name }}</h4>
-                                            @if($staff->specialization || $staff->specialization_ar)
-                                                <p class="text-sm text-indigo-600 dark:text-indigo-400 font-medium">{{ app()->getLocale() === 'ar' && $staff->specialization_ar ? $staff->specialization_ar : $staff->specialization }}</p>
+                                            @if($staff->specialization)
+                                                <p class="text-sm text-indigo-600 dark:text-indigo-400 font-medium">{{ $staff->specialization }}</p>
                                             @endif
                                             <p class="text-sm text-slate-500 dark:text-slate-400">{{ $staff->email }}</p>
                                         </div>
@@ -77,7 +77,7 @@
                                         <div class="flex flex-wrap gap-2 mt-1">
                                             @forelse($staff->services as $service)
                                                 <span class="px-2 py-1 bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 text-xs rounded-full">
-                                                    {{ app()->getLocale() === 'ar' && $service->name_ar ? $service->name_ar : $service->name }}
+                                                    {{ $service->name }}
                                                 </span>
                                             @empty
                                                 <span class="text-slate-400 dark:text-slate-500 text-sm">{{ __('No services assigned') }}</span>
@@ -145,9 +145,6 @@
                                 <div class="flex justify-between items-start">
                                     <div class="flex-1">
                                         <h4 class="font-medium text-slate-900 dark:text-slate-100">{{ $service->name }}</h4>
-                                        @if($service->name_ar)
-                                            <p class="text-sm text-slate-500 dark:text-slate-400">{{ $service->name_ar }}</p>
-                                        @endif
                                         <div class="flex items-center gap-3 mt-2">
                                             <span class="inline-flex items-center px-2 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-xs rounded-full">
                                                 <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -218,15 +215,12 @@
                 </div>
 
                 <!-- Specialization -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{{ __('Specialization') }} (English) <span class="text-red-500">*</span></label>
-                        <input type="text" id="staff_specialization" name="specialization" required placeholder="e.g. Dentist, Ophthalmologist" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-600">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{{ __('Specialization') }} (Arabic)</label>
-                        <input type="text" id="staff_specialization_ar" name="specialization_ar" placeholder="مثال: طبيب أسنان، طبيب عيون" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-600">
-                    </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{{ __('Specialization') }} <span class="text-red-500">*</span></label>
+                    <input type="text" id="staff_specialization" name="specialization" required
+                        placeholder="{{ app()->getLocale() === 'ar' ? 'مثال: طبيب أسنان، طبيب عيون' : 'e.g. Dentist, Ophthalmologist' }}"
+                        dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}"
+                        class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-600">
                 </div>
 
                 <!-- Services Selection -->
@@ -236,7 +230,7 @@
                         @forelse($services as $service)
                             <label class="flex items-center gap-2 py-1 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 px-2 rounded">
                                 <input type="checkbox" name="services[]" value="{{ $service->id }}" class="service-checkbox rounded text-indigo-600 dark:bg-slate-700 dark:border-slate-600">
-                                <span>{{ app()->getLocale() === 'ar' && $service->name_ar ? $service->name_ar : $service->name }}</span>
+                                <span>{{ $service->name }}</span>
                             </label>
                         @empty
                             <p class="text-slate-400 dark:text-slate-500 text-sm">{{ __('No services available. Please add services first.') }}</p>
@@ -321,16 +315,12 @@
                 @csrf
                 <input type="hidden" id="service_id" name="service_id">
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{{ __('Service Name (English)') }} <span class="text-red-500">*</span></label>
-                        <input type="text" id="service_name" name="name" required placeholder="e.g. Consultation, Examination" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-600">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{{ __('Service Name (Arabic)') }}</label>
-                        <input type="text" id="service_name_ar" name="name_ar" placeholder="مثال: استشارة، كشف" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-600" dir="rtl">
-                    </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{{ __('Service Name') }} <span class="text-red-500">*</span></label>
+                    <input type="text" id="service_name" name="name" required
+                           placeholder="{{ app()->getLocale() === 'ar' ? 'مثال: استشارة، كشف' : 'e.g. Consultation, Examination' }}"
+                           class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-600"
+                           dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -432,7 +422,6 @@
                     document.getElementById('staff_email').value = staff.email;
                     document.getElementById('staff_phone').value = staff.phone || '';
                     document.getElementById('staff_specialization').value = staff.specialization || '';
-                    document.getElementById('staff_specialization_ar').value = staff.specialization_ar || '';
                     document.getElementById('staff_specialization').required = false;
 
                     // Set services
@@ -487,7 +476,6 @@
                 email: document.getElementById('staff_email').value,
                 phone: document.getElementById('staff_phone').value,
                 specialization: document.getElementById('staff_specialization').value,
-                specialization_ar: document.getElementById('staff_specialization_ar').value,
                 services: [],
                 schedule: []
             };
@@ -587,7 +575,6 @@
                     document.getElementById('serviceModalTitle').textContent = '{{ __('Edit Service') }}';
                     document.getElementById('service_id').value = result.data.id;
                     document.getElementById('service_name').value = result.data.name;
-                    document.getElementById('service_name_ar').value = result.data.name_ar || '';
                     document.getElementById('service_duration').value = result.data.duration || 30;
                     document.getElementById('service_price').value = result.data.price || '';
                     document.getElementById('serviceModal').classList.remove('hidden');
@@ -608,7 +595,6 @@
 
             const formData = {
                 name: document.getElementById('service_name').value,
-                name_ar: document.getElementById('service_name_ar').value,
                 duration: parseInt(document.getElementById('service_duration').value) || 30,
                 price: parseFloat(document.getElementById('service_price').value) || null,
                 is_active: true

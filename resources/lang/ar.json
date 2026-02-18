@@ -46,10 +46,8 @@
     "Working Days": "أيام العمل",
     "Staff Services": "خدمات الموظفين",
     "Add New Service": "إضافة خدمة جديدة",
-    "Service Name (English)": "اسم الخدمة (إنجليزي)",
+    "Service Name": "اسم الخدمة",
     "Enter service name": "أدخل اسم الخدمة",
-    "Service Name (Arabic)": "اسم الخدمة (عربي)",
-    "Enter Arabic name": "أدخل الاسم بالعربي",
     "Description": "الوصف",
     "Service description": "وصف الخدمة",
     "Duration (minutes)": "المدة (دقيقة)",
@@ -240,5 +238,8 @@
     "Instagram": "إنستغرام",
     "TikTok": "تيك توك",
     "Snapchat": "سناب شات",
-    "Snapchat username": "اسم مستخدم سناب شات"
+    "Snapchat username": "اسم مستخدم سناب شات",
+    "Your Queue Number": "رقم دورك في الطابور",
+    "Save this number to check your queue status": "احفظ هذا الرقم للتحقق من حالة دورك",
+    "here": "هنا"
 }

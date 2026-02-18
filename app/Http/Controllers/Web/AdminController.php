@@ -18,6 +18,10 @@ use App\Models\StaffSchedule;
 use App\Models\Notification;
 use App\Models\Queue;
 use App\Models\UsageLog;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Writer;
 
 class AdminController extends Controller
 {
@@ -755,8 +759,12 @@ class AdminController extends Controller
             ]);
 
             // Add to queue if requested
+            $queueData = null;
             if ($request->add_to_queue) {
-                $queueDate = $validated['queue_date'] ?? $validated['appointment_date'];
+                // Use appointment_date as fallback for queue_date
+                $queueDate = !empty($validated['queue_date'])
+                    ? $validated['queue_date']
+                    : $validated['appointment_date'];
 
                 $isVip = $customer->is_vip ?? false;
 
@@ -768,21 +776,36 @@ class AdminController extends Controller
                     'is_vip' => $isVip,
                 ]);
 
+                $queueData = $queue->fresh();
+
                 Log::info('Queue created', [
                     'queue_id' => $queue->id,
                     'appointment_id' => $appointment->id,
-                    'queue_number' => $queue->queue_number
+                    'queue_number' => $queue->queue_number,
+                    'queue_date' => $queue->queue_date
                 ]);
             }
 
             Log::info('=== STORE APPOINTMENT SUCCESS ===', [
-                'appointment_id' => $appointment->id
+                'appointment_id' => $appointment->id,
+                'has_queue' => $request->add_to_queue,
+                'queue_id' => $queueData?->id ?? null,
+                'queue_number' => $queueData?->queue_number ?? null
+            ]);
+
+            // Reload appointment with all relationships
+            $appointment->refresh();
+            $appointment->load(['customer', 'staff', 'service', 'queue']);
+
+            Log::info('Response data being sent', [
+                'has_queue_in_response' => isset($appointment->queue),
+                'queue_number_in_response' => $appointment->queue?->queue_number ?? 'null'
             ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'تم إضافة الحجز بنجاح' . ($request->add_to_queue ? ' والإضافة للطابور' : ''),
-                'data' => $appointment->fresh(['queue', 'customer', 'staff', 'service'])
+                'data' => $appointment
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -1229,22 +1252,43 @@ class AdminController extends Controller
      */
     public function generateQRCode($id)
     {
-        $appointment = Appointment::with(['customer', 'staff', 'service'])->findOrFail($id);
+        try {
+            $appointment = Appointment::with(['customer', 'staff', 'service'])->findOrFail($id);
 
-        $qrData = "Appointment #" . $appointment->id . "\n";
-        $qrData .= "Customer: " . ($appointment->customer?->name ?? 'N/A') . "\n";
-        $qrData .= "Phone: " . ($appointment->customer?->phone ?? 'N/A') . "\n";
-        $qrData .= "Service: " . ($appointment->service?->name ?? $appointment->service_type) . "\n";
-        $qrData .= "Staff: " . ($appointment->staff?->name ?? 'N/A') . "\n";
-        $qrData .= "Date: " . $appointment->date->format('Y-m-d') . "\n";
-        $qrData .= "Time: " . $appointment->time_slot . "\n";
-        $qrData .= "Status: " . $appointment->status;
+            // Create detailed QR data
+            $qrData = "APPOINTMENT DETAILS\n";
+            $qrData .= "==================\n";
+            $qrData .= "ID: #" . $appointment->id . "\n";
+            $qrData .= "Customer: " . ($appointment->customer?->name ?? 'N/A') . "\n";
+            $qrData .= "Phone: " . ($appointment->customer?->phone ?? 'N/A') . "\n";
+            $qrData .= "Email: " . ($appointment->customer?->email ?? 'N/A') . "\n";
+            $qrData .= "Service: " . ($appointment->service?->name ?? $appointment->service_type ?? 'N/A') . "\n";
+            $qrData .= "Staff: " . ($appointment->staff?->name ?? 'N/A') . "\n";
+            $qrData .= "Date: " . $appointment->date->format('Y-m-d') . "\n";
+            $qrData .= "Time: " . $appointment->time_slot . "\n";
+            $qrData .= "Status: " . ucfirst($appointment->status) . "\n";
+            $qrData .= "==================\n";
+            $qrData .= "Tenant: " . tenant()->name;
 
-        $qrCode = \SimpleSoftwareIO\SimpleQrCode\Facades\QrCode::size(300)
-            ->format('png')
-            ->generate($qrData);
+            // Generate QR Code using SimpleSoftwareIO
+            $renderer = new \BaconQrCode\Renderer\ImageRenderer(
+                new \BaconQrCode\Renderer\RendererStyle\RendererStyle(400),
+                new \BaconQrCode\Renderer\Image\SvgImageBackEnd()
+            );
 
-        return response($qrCode)->header('Content-Type', 'image/png');
+            $writer = new \BaconQrCode\Writer($renderer);
+            $qrCodeSvg = $writer->writeString($qrData);
+
+            return response($qrCodeSvg)
+                ->header('Content-Type', 'image/svg+xml')
+                ->header('Cache-Control', 'no-cache, no-store, must-revalidate');
+
+        } catch (\Exception $e) {
+            Log::error('Error generating QR code: ' . $e->getMessage());
+
+            // Return a simple text response if QR generation fails
+            return response('QR Code generation failed', 500);
+        }
     }
 
     /**
@@ -2062,7 +2106,6 @@ class AdminController extends Controller
                 'email' => 'required|email|unique:users,email',
                 'phone' => 'nullable|string|max:20',
                 'specialization' => 'required|string|max:255',
-                'specialization_ar' => 'nullable|string|max:255',
                 'services' => 'array',
                 'schedule' => 'array',
             ]);
@@ -2085,7 +2128,6 @@ class AdminController extends Controller
                 'phone' => $validated['phone'] ?? null,
                 'password' => Hash::make($defaultPassword),
                 'specialization' => $validated['specialization'],
-                'specialization_ar' => $validated['specialization_ar'] ?? null,
             ]);
 
             // Attach services
@@ -2147,7 +2189,6 @@ class AdminController extends Controller
                 'email' => 'required|email|unique:users,email,' . $id,
                 'phone' => 'nullable|string|max:20',
                 'specialization' => 'nullable|string|max:255',
-                'specialization_ar' => 'nullable|string|max:255',
                 'services' => 'array',
                 'schedule' => 'array',
             ]);
@@ -2160,7 +2201,6 @@ class AdminController extends Controller
                 'email' => $validated['email'],
                 'phone' => $validated['phone'] ?? null,
                 'specialization' => $validated['specialization'] ?? $staff->specialization,
-                'specialization_ar' => $validated['specialization_ar'] ?? $staff->specialization_ar,
             ]);
 
             // Sync services
@@ -2239,7 +2279,7 @@ class AdminController extends Controller
                 ->whereHas('role', function($q) {
                     $q->where('name', 'Staff');
                 })
-                ->get(['id', 'name', 'specialization', 'specialization_ar']);
+                ->get(['id', 'name', 'specialization']);
 
             return response()->json(['success' => true, 'data' => $staff]);
         } catch (\Exception $e) {

@@ -1249,7 +1249,7 @@
                                             </button>
 
                                             <!-- Edit Button -->
-                                            <button onclick="openEditModal({{ $appointment->id }})"
+                                            <button onclick="editAppointment({{ $appointment->id }})"
                                                     class="p-2 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-all duration-200"
                                                     title="{{ $isArabic ? 'تعديل' : 'Edit' }}">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1962,11 +1962,11 @@
         async function loadStaffByService(serviceId, formType = 'add') {
             console.log('🔵 loadStaffByService called:', { serviceId, formType });
 
-            const staffSelect = document.getElementById(`${formType}_staff`);
-            const timeSelect = document.getElementById(`${formType}_time`);
-            const serviceInfo = document.getElementById(`${formType}_service_info`);
-            const servicePrice = document.getElementById(`${formType}_service_price`);
-            const serviceDuration = document.getElementById(`${formType}_service_duration`);
+            const staffSelect = document.getElementById(formType + '_staff');
+            const timeSelect = document.getElementById(formType + '_time');
+            const serviceInfo = document.getElementById(formType + '_service_info');
+            const servicePrice = document.getElementById(formType + '_service_price');
+            const serviceDuration = document.getElementById(formType + '_service_duration');
 
             // Check if elements exist
             if (!staffSelect || !timeSelect) {
@@ -1975,12 +1975,12 @@
             }
 
             // Reset time slots when service changes
-            timeSelect.innerHTML = `<option value="">${isArabic ? 'اختر الموظف والتاريخ أولاً' : 'Select staff and date first'}</option>`;
+            timeSelect.innerHTML = '<option value="">' + (isArabic ? 'اختر الموظف والتاريخ أولاً' : 'Select staff and date first') + '</option>';
             timeSelect.disabled = true;
 
             if (!serviceId) {
                 staffSelect.disabled = true;
-                staffSelect.innerHTML = `<option value="">${isArabic ? 'اختر الخدمة أولاً' : 'Select service first'}</option>`;
+                staffSelect.innerHTML = '<option value="">' + (isArabic ? 'اختر الخدمة أولاً' : 'Select service first') + '</option>';
                 if (serviceInfo) serviceInfo.classList.add('hidden');
                 return;
             }
@@ -1988,36 +1988,36 @@
             // Show service price and duration
             const selectedService = allServicesData.find(s => s.id == serviceId);
             if (selectedService && serviceInfo) {
-                servicePrice.textContent = `${selectedService.price} ${isArabic ? 'ريال' : 'SAR'}`;
-                serviceDuration.textContent = `${selectedService.duration} ${isArabic ? 'دقيقة' : 'min'}`;
+                servicePrice.textContent = selectedService.price + ' ' + (isArabic ? 'ريال' : 'SAR');
+                serviceDuration.textContent = selectedService.duration + ' ' + (isArabic ? 'دقيقة' : 'min');
                 serviceInfo.classList.remove('hidden');
             }
 
             // Load staff for this service
             try {
                 staffSelect.disabled = true;
-                staffSelect.innerHTML = `<option value="">${isArabic ? 'جاري التحميل...' : 'Loading...'}</option>`;
+                staffSelect.innerHTML = '<option value="">' + (isArabic ? 'جاري التحميل...' : 'Loading...') + '</option>';
 
                 console.log('📡 Fetching staff for service:', serviceId);
-                const response = await fetch(`/api/booking/staff/by-service/${serviceId}`);
+                const response = await fetch('/api/booking/staff/by-service/' + serviceId);
                 const result = await response.json();
                 console.log('✅ Staff response:', result);
 
                 if (result.success && result.data.length > 0) {
-                    staffSelect.innerHTML = `<option value="">${isArabic ? 'اختر الموظف' : 'Select Staff'}</option>`;
+                    staffSelect.innerHTML = '<option value="">' + (isArabic ? 'اختر الموظف' : 'Select Staff') + '</option>';
                     result.data.forEach(staff => {
-                        staffSelect.innerHTML += `<option value="${staff.id}">${staff.name}</option>`;
+                        staffSelect.innerHTML += '<option value="' + staff.id + '">' + staff.name + '</option>';
                     });
                     staffSelect.disabled = false;
-                    console.log(`✅ Loaded ${result.data.length} staff members`);
+                    console.log('✅ Loaded ' + result.data.length + ' staff members');
                 } else {
                     console.warn('⚠️ No staff found for this service');
-                    staffSelect.innerHTML = `<option value="">${isArabic ? 'لا يوجد موظفين لهذه الخدمة' : 'No staff available for this service'}</option>`;
+                    staffSelect.innerHTML = '<option value="">' + (isArabic ? 'لا يوجد موظفين لهذه الخدمة' : 'No staff available for this service') + '</option>';
                     staffSelect.disabled = true;
                 }
             } catch (error) {
                 console.error('❌ Error loading staff:', error);
-                staffSelect.innerHTML = `<option value="">${isArabic ? 'خطأ في التحميل - حاول مرة أخرى' : 'Error loading - try again'}</option>`;
+                staffSelect.innerHTML = '<option value="">' + (isArabic ? 'خطأ في التحميل - حاول مرة أخرى' : 'Error loading - try again') + '</option>';
                 staffSelect.disabled = true;
 
                 // Show user-friendly error message
@@ -2031,23 +2031,23 @@
 
             if (!staffId) {
                 // Reset to all services
-                serviceFilter.innerHTML = `<option value="">${texts.all}</option>`;
+                serviceFilter.innerHTML = '<option value="">' + texts.all + '</option>';
                 allServices.forEach(service => {
                     const name = isArabic && service.name_ar ? service.name_ar : service.name;
-                    serviceFilter.innerHTML += `<option value="${service.name}">${name}</option>`;
+                    serviceFilter.innerHTML += '<option value="' + service.name + '">' + name + '</option>';
                 });
                 return;
             }
 
             try {
-                const response = await fetch(`/api/booking/staff/${staffId}/services`);
+                const response = await fetch('/api/booking/staff/' + staffId + '/services');
                 const result = await response.json();
 
                 if (result.success) {
-                    serviceFilter.innerHTML = `<option value="">${texts.all}</option>`;
+                    serviceFilter.innerHTML = '<option value="">' + texts.all + '</option>';
                     result.data.forEach(service => {
                         const name = isArabic && service.name_ar ? service.name_ar : service.name;
-                        serviceFilter.innerHTML += `<option value="${service.name}">${name}</option>`;
+                        serviceFilter.innerHTML += '<option value="' + service.name + '">' + name + '</option>';
                     });
                 }
             } catch (error) {
@@ -2069,7 +2069,7 @@
         let activeDropdown = null;
 
         function toggleStatusDropdown(id) {
-            const dropdown = document.getElementById(`status-dropdown-${id}`);
+            const dropdown = document.getElementById('status-dropdown-' + id);
 
             // Close any open dropdown
             if (activeDropdown && activeDropdown !== dropdown) {
@@ -2091,7 +2091,7 @@
         // Quick status update
         async function updateStatus(id, status) {
             try {
-                const response = await fetch(`/admin/api/appointments/${id}/status`, {
+                const response = await fetch('/admin/api/appointments/' + id + '/status', {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2105,7 +2105,7 @@
 
                 if (response.ok && result.success) {
                     // Update button visually with new design
-                    const btn = document.getElementById(`status-btn-${id}`);
+                    const btn = document.getElementById('status-btn-' + id);
 
                     // Define status configurations
                     const statusConfig = {
@@ -2133,11 +2133,11 @@
 
                     const config = statusConfig[status] || statusConfig.pending;
 
-                    btn.className = `px-3 py-1.5 inline-flex items-center gap-1.5 text-xs leading-5 font-semibold rounded-full transition-all duration-200 cursor-pointer shadow-sm ${config.classes}`;
-                    btn.innerHTML = `${config.icon} ${config.text} <svg class="w-3 h-3 opacity-60" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>`;
+                    btn.className = 'px-3 py-1.5 inline-flex items-center gap-1.5 text-xs leading-5 font-semibold rounded-full transition-all duration-200 cursor-pointer shadow-sm ' + config.classes;
+                    btn.innerHTML = config.icon + ' ' + config.text + ' <svg class="w-3 h-3 opacity-60" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>';
 
                     // Update row background color based on status
-                    const row = document.getElementById(`row-${id}`);
+                    const row = document.getElementById('row-' + id);
                     if (row) {
                         // Remove all status-specific backgrounds
                         row.classList.remove('bg-red-50', 'bg-emerald-50', 'bg-orange-50', 'bg-amber-50');
@@ -2160,7 +2160,7 @@
                     }
 
                     // Close dropdown
-                    document.getElementById(`status-dropdown-${id}`).classList.add('hidden');
+                    document.getElementById('status-dropdown-' + id).classList.add('hidden');
                     activeDropdown = null;
 
                     // Show toast
@@ -2179,11 +2179,11 @@
             const modal = document.getElementById('viewModal');
             const details = document.getElementById('appointmentDetails');
 
-            details.innerHTML = `<div class="text-center py-8 text-slate-500 dark:text-slate-400">${texts.loading}</div>`;
+            details.innerHTML = '<div class="text-center py-8 text-slate-500 dark:text-slate-400">' + texts.loading + '</div>';
             modal.style.display = 'block';
 
             try {
-                const response = await fetch(`/admin/api/appointments/${id}`);
+                const response = await fetch('/admin/api/appointments/' + id);
                 const result = await response.json();
 
                 if (response.ok && result.success) {
@@ -2234,7 +2234,7 @@
                     `;
                 }
             } catch (error) {
-                details.innerHTML = `<div class="text-center py-8 text-red-500">${texts.error}</div>`;
+                details.innerHTML = '<div class="text-center py-8 text-red-500">' + texts.error + '</div>';
             }
         }
 
@@ -2246,7 +2246,7 @@
         window.editAppointment = async function(id) {
             console.log('editAppointment called with id:', id);
             try {
-                const response = await fetch(`/admin/api/appointments/${id}`);
+                const response = await fetch('/admin/api/appointments/' + id);
                 const result = await response.json();
 
                 if (response.ok && result.success) {
@@ -2302,7 +2302,7 @@
                         document.getElementById('edit_staff').value = a.staff_id || '';
                         const timeSelect = document.getElementById('edit_time');
                         if (timeSelect) {
-                            timeSelect.innerHTML = `<option value="${a.time_slot}">${a.time_slot}</option>`;
+                        timeSelect.innerHTML = '<option value="' + a.time_slot + '">' + a.time_slot + '</option>';
                             timeSelect.value = a.time_slot;
                         }
                     }
@@ -2360,7 +2360,7 @@
             `;
 
             try {
-                const response = await fetch(`/admin/api/appointments/${id}`, {
+                const response = await fetch('/admin/api/appointments/' + id, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2399,7 +2399,7 @@
                         errorsList = '<ul class="list-disc list-inside mt-2 space-y-1 text-xs">';
                         fieldErrors.forEach(([field, messages]) => {
                             messages.forEach(msg => {
-                                errorsList += `<li>${msg}</li>`;
+                                errorsList += '<li>' + msg + '</li>';
                             });
                         });
                         errorsList += '</ul>';
@@ -2464,12 +2464,12 @@
             const timeSelect = document.getElementById('add_time');
             const staffSelect = document.getElementById('add_staff');
             if (timeSelect) {
-                timeSelect.innerHTML = `<option value="">${isArabic ? 'اختر الخدمة والموظف والتاريخ أولاً' : 'Select service, staff and date first'}</option>`;
+                timeSelect.innerHTML = '<option value="">' + (isArabic ? 'اختر الخدمة والموظف والتاريخ أولاً' : 'Select service, staff and date first') + '</option>';
                 timeSelect.disabled = true;
             }
             if (staffSelect) {
                 staffSelect.disabled = true;
-                staffSelect.innerHTML = `<option value="">${isArabic ? 'اختر الخدمة أولاً' : 'Select service first'}</option>`;
+                staffSelect.innerHTML = '<option value="">' + (isArabic ? 'اختر الخدمة أولاً' : 'Select service first') + '</option>';
             }
         }
 
@@ -2539,11 +2539,11 @@
                 const timeSelect = document.getElementById('add_time');
                 if (staffSelect) {
                     staffSelect.disabled = true;
-                    staffSelect.innerHTML = `<option value="">${isArabic ? 'اختر الخدمة أولاً' : 'Select service first'}</option>`;
+                    staffSelect.innerHTML = '<option value="">' + (isArabic ? 'اختر الخدمة أولاً' : 'Select service first') + '</option>';
                 }
                 if (timeSelect) {
                     timeSelect.disabled = true;
-                    timeSelect.innerHTML = `<option value="">${isArabic ? 'اختر الموظف والتاريخ أولاً' : 'Select staff and date first'}</option>`;
+                    timeSelect.innerHTML = '<option value="">' + (isArabic ? 'اختر الموظف والتاريخ أولاً' : 'Select staff and date first') + '</option>';
                 }
             }, 300);
         }
@@ -2572,12 +2572,12 @@
 
                 if (result.success) {
                     const select = document.getElementById('add_time');
-                    select.innerHTML = `<option value="">${isArabic ? 'اختر الوقت' : 'Select Time'}</option>`;
+                    select.innerHTML = '<option value="">' + (isArabic ? 'اختر الوقت' : 'Select Time') + '</option>';
 
                     result.data.forEach(slot => {
                         const option = document.createElement('option');
                         option.value = slot.start_time;
-                        option.textContent = `${slot.formatted_start_time} - ${slot.formatted_end_time}`;
+                        option.textContent = slot.formatted_start_time + ' - ' + slot.formatted_end_time;
                         select.appendChild(option);
                     });
                 }
@@ -2594,13 +2594,13 @@
             const select = document.getElementById(selectId);
 
             if (!select) {
-                console.error(`❌ Time select element not found: ${selectId}`);
+                console.error('❌ Time select element not found: ' + selectId);
                 return;
             }
 
             if (!date || !staffId) {
                 console.warn('⚠️ Date or staff not provided');
-                select.innerHTML = `<option value="">${isArabic ? 'اختر التاريخ والموظف أولاً' : 'Select date and staff first'}</option>`;
+                select.innerHTML = '<option value="">' + (isArabic ? 'اختر التاريخ والموظف أولاً' : 'Select date and staff first') + '</option>';
                 select.disabled = true;
                 return;
             }
@@ -2613,7 +2613,7 @@
 
             if (selectedDate < today) {
                 console.error('❌ Selected date is in the past:', date);
-                select.innerHTML = `<option value="">${isArabic ? 'لا يمكن الحجز في تاريخ سابق' : 'Cannot book past dates'}</option>`;
+                select.innerHTML = '<option value="">' + (isArabic ? 'لا يمكن الحجز في تاريخ سابق' : 'Cannot book past dates') + '</option>';
                 select.disabled = true;
                 showToast(isArabic ? 'الرجاء اختيار تاريخ اليوم أو تاريخ مستقبلي' : 'Please select today or a future date', 'error');
                 return;
@@ -2621,11 +2621,11 @@
 
             try {
                 select.disabled = true;
-                select.innerHTML = `<option value="">${isArabic ? 'جاري تحميل الأوقات...' : 'Loading times...'}</option>`;
+                select.innerHTML = '<option value="">' + (isArabic ? 'جاري تحميل الأوقات...' : 'Loading times...') + '</option>';
 
-                let url = `/api/booking/available-timeslots?date=${date}&staff_id=${staffId}`;
+                let url = '/api/booking/available-timeslots?date=' + date + '&staff_id=' + staffId;
                 if (excludeAppointmentId) {
-                    url += `&exclude_appointment_id=${excludeAppointmentId}`;
+                    url += '&exclude_appointment_id=' + excludeAppointmentId;
                 }
 
                 console.log('📡 Fetching available times from:', url);
@@ -2634,7 +2634,7 @@
                 console.log('📥 Response status:', response.status, response.statusText);
 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    throw new Error('HTTP error! status: ' + response.status);
                 }
 
                 const result = await response.json();
@@ -2658,29 +2658,29 @@
                             toastMessage = isArabic ? 'جميع الأوقات محجوزة في هذا التاريخ' : 'All times are booked for this date';
                         }
 
-                        select.innerHTML = `<option value="">${message}</option>`;
+                        select.innerHTML = '<option value="">' + message + '</option>';
                         select.disabled = true;
                         showToast(toastMessage, 'error');
                         return;
                     }
 
-                    select.innerHTML = `<option value="">${isArabic ? 'اختر الوقت' : 'Select Time'}</option>`;
+                    select.innerHTML = '<option value="">' + (isArabic ? 'اختر الوقت' : 'Select Time') + '</option>';
                     result.data.forEach(slot => {
                         const option = document.createElement('option');
                         option.value = slot.start_time;
-                        option.textContent = `${slot.formatted_start_time} - ${slot.formatted_end_time}`;
+                        option.textContent = slot.formatted_start_time + ' - ' + slot.formatted_end_time;
                         select.appendChild(option);
                     });
                     select.disabled = false;
-                    console.log(`✅ Loaded ${result.data.length} available time slots`);
+                    console.log('✅ Loaded ' + result.data.length + ' available time slots');
                 } else {
                     console.error('❌ API returned error:', result);
-                    select.innerHTML = `<option value="">${isArabic ? 'خطأ في تحميل الأوقات' : 'Error loading times'}</option>`;
+                    select.innerHTML = '<option value="">' + (isArabic ? 'خطأ في تحميل الأوقات' : 'Error loading times') + '</option>';
                     select.disabled = true;
                 }
             } catch (error) {
                 console.error('❌ Error loading available time slots:', error);
-                select.innerHTML = `<option value="">${isArabic ? 'حدث خطأ في تحميل الأوقات' : 'Error loading times'}</option>`;
+                select.innerHTML = '<option value="">' + (isArabic ? 'حدث خطأ في تحميل الأوقات' : 'Error loading times') + '</option>';
                 select.disabled = true;
                 showToast(isArabic ? 'فشل تحميل الأوقات المتاحة' : 'Failed to load available times', 'error');
             }
@@ -2813,7 +2813,7 @@
                         errorsList = '<ul class="list-disc list-inside mt-2 space-y-1 text-xs">';
                         fieldErrors.forEach(([field, messages]) => {
                             messages.forEach(msg => {
-                                errorsList += `<li>${msg}</li>`;
+                                errorsList += '<li>' + msg + '</li>';
                             });
                         });
                         errorsList += '</ul>';
@@ -2873,7 +2873,7 @@
             if (!confirm(texts.confirmDelete)) return;
 
             try {
-                const response = await fetch(`/admin/api/appointments/${id}`, {
+                const response = await fetch('/admin/api/appointments/' + id, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2885,7 +2885,7 @@
                 const result = await response.json();
 
                 if (response.ok && result.success) {
-                    document.getElementById(`row-${id}`).remove();
+                    document.getElementById('row-' + id).remove();
                     showToast(texts.deleted, 'success');
                 } else {
                     showToast(result.message || texts.error, 'error');
@@ -2949,13 +2949,13 @@
             if (dateFilter) {
                 params.set('period', dateFilter);
             }
-            window.location.href = `/admin/api/appointments/export-excel?${params}`;
+            window.location.href = '/admin/api/appointments/export-excel?' + params;
         }
 
         // Toast notification
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
-            toast.className = `fixed bottom-4 ${isArabic ? 'left-4' : 'right-4'} px-4 py-3 rounded-lg shadow-lg text-white text-sm z-50 ${type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`;
+            toast.className = 'fixed bottom-4 ' + (isArabic ? 'left-4' : 'right-4') + ' px-4 py-3 rounded-lg shadow-lg text-white text-sm z-50 ' + (type === 'success' ? 'bg-emerald-600' : 'bg-red-600');
             toast.textContent = message;
             document.body.appendChild(toast);
 
@@ -2966,7 +2966,7 @@
         async function addToQueue(appointmentId) {
             console.log('🟢 addToQueue called with ID:', appointmentId);
             try {
-                const response = await fetch(`/admin/api/appointments/${appointmentId}/add-to-queue`, {
+                const response = await fetch('/admin/api/appointments/' + appointmentId + '/add-to-queue', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2998,7 +2998,7 @@
             }
 
             try {
-                const response = await fetch(`/admin/api/appointments/${appointmentId}/remove-from-queue`, {
+                const response = await fetch('/admin/api/appointments/' + appointmentId + '/remove-from-queue', {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
@@ -3031,7 +3031,7 @@
             }
 
             try {
-                const response = await fetch(`/admin/api/appointments/${appointmentId}/send-reminder`, {
+                const response = await fetch('/admin/api/appointments/' + appointmentId + '/send-reminder', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -3089,7 +3089,7 @@
             const selectAllCheckbox = document.getElementById('selectAll');
 
             if (count > 0) {
-                countSpan.textContent = `${count} ${isArabic ? 'محدد' : 'selected'}`;
+                countSpan.textContent = count + ' ' + (isArabic ? 'محدد' : 'selected');
                 countSpan.classList.remove('hidden');
                 actionsBar.classList.remove('hidden');
             } else {
@@ -3127,7 +3127,7 @@
                 'delete': isArabic ? 'حذف' : 'delete'
             }[action];
 
-            if (!confirm(`${isArabic ? 'هل تريد' : 'Do you want to'} ${actionText} ${ids.length} ${isArabic ? 'موعد؟' : 'appointments?'}`)) {
+            if (!confirm((isArabic ? 'هل تريد' : 'Do you want to') + ' ' + actionText + ' ' + ids.length + ' ' + (isArabic ? 'موعد؟' : 'appointments?'))) {
                 return;
             }
 
@@ -3136,7 +3136,7 @@
 
                 for (const id of ids) {
                     if (action === 'delete') {
-                        await fetch(`/admin/api/appointments/${id}`, {
+                        await fetch('/admin/api/appointments/' + id, {
                             method: 'DELETE',
                             headers: {
                                 'X-CSRF-TOKEN': csrfToken,
@@ -3149,7 +3149,7 @@
                             'complete': 'completed',
                             'cancel': 'cancelled'
                         };
-                        await fetch(`/admin/api/appointments/${id}/status`, {
+                        await fetch('/admin/api/appointments/' + id + '/status', {
                             method: 'PATCH',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -3173,35 +3173,71 @@
         function showQRCode(id) {
             const modal = document.createElement('div');
             modal.id = 'qrModal';
-            modal.className = 'fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center';
-            modal.innerHTML = `
-                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md mx-4 p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-xl font-bold text-slate-100 dark:text-slate-100">${isArabic ? 'رمز الاستجابة السريعة' : 'QR Code'}</h3>
-                        <button onclick="closeQRModal()" class="text-slate-400 dark:text-slate-400 hover:text-slate-300 dark:hover:text-slate-300">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="flex justify-center items-center bg-white dark:bg-slate-700 rounded-lg p-4">
-                        <img src="/admin/api/appointments/${id}/qrcode" alt="QR Code" class="w-64 h-64">
-                    </div>
-                    <div class="mt-4 flex gap-2">
-                        <a href="/admin/api/appointments/${id}/qrcode" download="appointment-${id}-qr.png"
-                           class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                            </svg>
-                            ${isArabic ? 'تحميل' : 'Download'}
-                        </a>
-                        <button onclick="closeQRModal()" class="flex-1 px-4 py-2 bg-white dark:bg-slate-700 text-slate-300 dark:text-slate-300 rounded-lg hover:bg-slate-600 dark:hover:bg-slate-600 text-sm font-medium">
-                            ${isArabic ? 'إغلاق' : 'Close'}
-                        </button>
-                    </div>
-                </div>
-            `;
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 dark:bg-black dark:bg-opacity-70 overflow-y-auto h-full w-full z-50 flex items-center justify-center';
+
+            const qrTitle = isArabic ? 'رمز الاستجابة السريعة (QR Code)' : 'QR Code';
+            const printText = isArabic ? 'طباعة' : 'Print';
+            const downloadText = isArabic ? 'تحميل' : 'Download';
+            const closeText = isArabic ? 'إغلاق' : 'Close';
+            const timestamp = Date.now();
+
+            modal.innerHTML = '<div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-lg mx-4 p-8">' +
+                '<div class="flex justify-between items-center mb-6">' +
+                '<h3 class="text-2xl font-bold text-slate-900 dark:text-slate-100">' + qrTitle + '</h3>' +
+                '<button onclick="closeQRModal()" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">' +
+                '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>' +
+                '</svg></button></div>' +
+                '<div id="qrCodeContainer" class="flex justify-center items-center bg-white dark:bg-slate-900 rounded-lg p-8 border-2 border-slate-200 dark:border-slate-700">' +
+                '<img src="/admin/api/appointments/' + id + '/qrcode?t=' + timestamp + '" alt="QR Code" class="w-80 h-80" onerror="this.parentElement.innerHTML=\'<p class=\\\'text-red-500 dark:text-red-400\\\'>Failed to load QR Code</p>\'">' +
+                '</div>' +
+                '<div class="mt-6 grid grid-cols-3 gap-3">' +
+                '<button onclick="printQRCode(' + id + ')" class="inline-flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium">' +
+                '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>' +
+                '</svg>' + printText + '</button>' +
+                '<a href="/admin/api/appointments/' + id + '/qrcode?t=' + timestamp + '" download="appointment-' + id + '-qr.svg" class="inline-flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium">' +
+                '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>' +
+                '</svg>' + downloadText + '</a>' +
+                '<button onclick="closeQRModal()" class="px-4 py-3 bg-slate-600 dark:bg-slate-700 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors text-sm font-medium">' +
+                closeText + '</button>' +
+                '</div></div>';
+
             document.body.appendChild(modal);
+
+            // Add click outside to close
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeQRModal();
+                }
+            });
+        }
+
+        function printQRCode(id) {
+            const printWindow = window.open('', '_blank');
+            const qrTitle = isArabic ? 'طباعة رمز QR' : 'Print QR Code';
+            const pageTitle = isArabic ? 'رمز الاستجابة السريعة للموعد' : 'Appointment QR Code';
+            const scanText = isArabic ? 'امسح الرمز للحصول على تفاصيل الموعد' : 'Scan to view appointment details';
+
+            printWindow.document.write('<html><head><title>' + qrTitle + '</title>');
+            printWindow.document.write('<style>');
+            printWindow.document.write('@media print {');
+            printWindow.document.write('body { margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; }');
+            printWindow.document.write('.qr-container { text-align: center; page-break-after: avoid; }');
+            printWindow.document.write('img { max-width: 400px; height: auto; }');
+            printWindow.document.write('h2 { margin-bottom: 20px; font-family: Arial, sans-serif; }');
+            printWindow.document.write('@page { margin: 1cm; }');
+            printWindow.document.write('}');
+            printWindow.document.write('</style></head><body>');
+            printWindow.document.write('<div class="qr-container">');
+            printWindow.document.write('<h2>' + pageTitle + ' #' + id + '</h2>');
+            printWindow.document.write('<img src="/admin/api/appointments/' + id + '/qrcode?t=' + Date.now() + '" alt="QR Code" />');
+            printWindow.document.write('<p style="margin-top: 20px; font-family: Arial, sans-serif;">' + scanText + '</p>');
+            printWindow.document.write('</div>');
+            printWindow.document.write('<script>window.onload = function() { setTimeout(function() { window.print(); setTimeout(function() { window.close(); }, 100); }, 500); };</scr' + 'ipt>');
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
         }
 
         function closeQRModal() {

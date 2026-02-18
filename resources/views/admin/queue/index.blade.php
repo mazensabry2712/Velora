@@ -116,8 +116,8 @@
                                     </td>
                                     <td class="px-4 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-100">
                                         {{ $queue->appointment?->staff?->name ?? '-' }}
-                                        @if($queue->appointment?->staff?->specialization_ar || $queue->appointment?->staff?->specialization)
-                                            <span class="block text-xs text-slate-500 dark:text-slate-400">{{ $queue->appointment?->staff?->specialization_ar ?? $queue->appointment?->staff?->specialization }}</span>
+                                        @if($queue->appointment?->staff?->specialization)
+                                            <span class="block text-xs text-slate-500 dark:text-slate-400">{{ $queue->appointment?->staff?->specialization }}</span>
                                         @endif
                                     </td>
                                     <td class="px-4 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
@@ -242,12 +242,12 @@
                                     $specializations = \App\Models\User::whereHas('role', fn($q) => $q->where('name', 'Staff'))
                                         ->whereNotNull('specialization')
                                         ->where('specialization', '!=', '')
-                                        ->select('specialization', 'specialization_ar')
+                                        ->select('specialization')
                                         ->distinct()
                                         ->get();
                                 @endphp
                                 @foreach($specializations as $spec)
-                                    <option value="{{ $spec->specialization }}">{{ $spec->specialization_ar ?: $spec->specialization }}</option>
+                                    <option value="{{ $spec->specialization }}">{{ $spec->specialization }}</option>
                                 @endforeach
                             </select>
                             @if($specializations->isEmpty())

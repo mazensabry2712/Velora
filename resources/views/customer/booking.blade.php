@@ -181,6 +181,9 @@
                         placeholder="{{ __('Any special requests or notes...') }}"></textarea>
                 </div>
 
+                <!-- Hidden field to add to queue automatically -->
+                <input type="hidden" name="add_to_queue" value="1">
+
                 <!-- Submit Button -->
                 <button type="submit" id="submitBtn"
                     class="hidden w-full bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white font-semibold py-3 sm:py-4 px-4 sm:px-6 text-sm sm:text-base rounded-lg transition duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:ring-offset-2">
@@ -190,13 +193,23 @@
 
             <!-- Success Message -->
             <div id="successMessage" class="hidden mt-4 sm:mt-6 p-3 sm:p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
-                <div class="flex items-center">
+                <div class="flex items-start">
                     <svg class="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500 dark:text-emerald-400 flex-shrink-0 {{ app()->getLocale() === 'ar' ? 'ml-2 sm:ml-3' : 'mr-2 sm:mr-3' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                     </svg>
-                    <div>
+                    <div class="flex-1">
                         <p class="font-semibold text-emerald-800 dark:text-emerald-300 text-sm sm:text-base">{{ __('Appointment Booked Successfully!') }}</p>
-                        <p class="text-xs sm:text-sm text-emerald-700 dark:text-emerald-400">{{ __('You will receive a confirmation email shortly.') }}</p>
+                        <p class="text-xs sm:text-sm text-emerald-700 dark:text-emerald-400 mt-1">{{ __('You will receive a confirmation email shortly.') }}</p>
+
+                        <!-- Queue Number Display -->
+                        <div id="queueNumberDisplay" class="hidden mt-3 p-3 bg-white dark:bg-slate-800 rounded-lg border border-emerald-200 dark:border-emerald-700">
+                            <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mb-1">{{ __('Your Queue Number') }}:</p>
+                            <p class="text-2xl sm:text-3xl font-bold text-indigo-600 dark:text-indigo-400" id="queueNumberText"></p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                                {{ __('Save this number to check your queue status') }}
+                                <a href="/queue/status" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">{{ __('here') }}</a>
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -408,7 +421,6 @@
 
             try {
                 const formData = new FormData(e.target);
-                const appointmentDateTime = `${formData.get('appointment_date')} ${formData.get('appointment_time')}`;
 
                 const response = await fetch('/api/appointments', {
                     method: 'POST',
@@ -421,17 +433,33 @@
                         customer_name: formData.get('name'),
                         customer_email: formData.get('email'),
                         customer_phone: formData.get('phone'),
-                        appointment_date: appointmentDateTime,
+                        appointment_date: formData.get('appointment_date'),
+                        appointment_time: formData.get('appointment_time'),
                         staff_id: formData.get('staff_id'),
                         service_id: formData.get('service_id'),
-                        notes: formData.get('notes')
+                        notes: formData.get('notes'),
+                        add_to_queue: true,
+                        queue_date: formData.get('appointment_date')
                     })
                 });
 
                 const data = await response.json();
 
+                console.log('Response data:', data);
+
                 if (response.ok && data.success) {
                     successMsg.classList.remove('hidden');
+
+                    // Display queue number if available
+                    console.log('Queue data:', data.data?.queue);
+                    if (data.data && data.data.queue && data.data.queue.queue_number) {
+                        console.log('Queue number:', data.data.queue.queue_number);
+                        document.getElementById('queueNumberDisplay').classList.remove('hidden');
+                        document.getElementById('queueNumberText').textContent = data.data.queue.queue_number;
+                    } else {
+                        console.log('No queue number found in response');
+                    }
+
                     e.target.reset();
 
                     // Hide all sections

@@ -55,12 +55,16 @@ class Queue extends Model
     {
         // Get the last queue number for today
         $lastQueue = self::whereDate('created_at', now()->toDateString())
-            ->orderByRaw('CAST(queue_number AS UNSIGNED) DESC')
+            ->orderByRaw("CAST(SUBSTRING(queue_number, 2) AS UNSIGNED) DESC")
             ->first();
 
-        $nextNumber = $lastQueue ? ((int) $lastQueue->queue_number + 1) : 1;
+        if ($lastQueue && preg_match('/^[A-Z](\d+)$/', $lastQueue->queue_number, $matches)) {
+            $nextNumber = ((int) $matches[1]) + 1;
+        } else {
+            $nextNumber = 1;
+        }
 
-        return (string) $nextNumber;
+        return 'A' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
     }
 
     // Relationships
