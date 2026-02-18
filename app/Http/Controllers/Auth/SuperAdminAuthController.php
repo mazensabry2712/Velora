@@ -20,10 +20,8 @@ class SuperAdminAuthController extends Controller
             'password' => 'required',
         ]);
 
-        // Find Super Admin (tenant_id must be null)
-        $user = User::where('email', $request->email)
-            ->whereNull('tenant_id')
-            ->first();
+        // Find Super Admin
+        $user = User::where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
@@ -32,7 +30,7 @@ class SuperAdminAuthController extends Controller
         }
 
         // Check if user has Super Admin role
-        if (!$user->hasRole('Super Admin')) {
+        if (!$user->isSuperAdmin()) {
             throw ValidationException::withMessages([
                 'email' => ['You do not have Super Admin access.'],
             ]);
@@ -71,7 +69,7 @@ class SuperAdminAuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => 'Super Admin',
-                'permissions' => $user->getAllPermissions()->pluck('name'),
+                'permissions' => $user->permissions ?? [],
             ]
         ]);
     }
@@ -87,5 +85,52 @@ class SuperAdminAuthController extends Controller
             'success' => true,
             'message' => 'Logged out successfully'
         ]);
+    }
+
+    /**
+     * Super Admin Web Login (for Blade forms)
+     */
+    public function webLogin(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
+
+        // Find Super Admin
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return back()->withErrors([
+                'email' => 'البيانات المدخلة غير صحيحة.',
+            ])->withInput();
+        }
+
+        // Check if user has Super Admin role
+        if (!$user->isSuperAdmin()) {
+            return back()->withErrors([
+                'email' => 'ليس لديك صلاحية Super Admin.',
+            ])->withInput();
+        }
+
+        // Login user
+        auth()->guard('web')->login($user, $request->filled('remember'));
+
+        $request->session()->regenerate();
+
+        return redirect()->route('super-admin.dashboard');
+    }
+
+    /**
+     * Super Admin Web Logout
+     */
+    public function webLogout(Request $request)
+    {
+        auth()->guard('web')->logout();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('super-admin.login');
     }
 }

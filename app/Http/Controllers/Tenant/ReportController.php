@@ -216,9 +216,9 @@ class ReportController extends Controller
                 break;
         }
 
-        $total = (clone $query)->sum('total_amount');
-        $paid = (clone $query)->where('status', 'Paid')->sum('total_amount');
-        $pending = (clone $query)->where('status', 'Pending')->sum('total_amount');
+        $total = (clone $query)->sum('amount');
+        $paid = (clone $query)->where('status', 'Paid')->sum('amount');
+        $pending = (clone $query)->where('status', 'Pending')->sum('amount');
         $count = $query->count();
 
         return [

@@ -12,7 +12,18 @@ class CustomerController extends Controller
      */
     public function booking()
     {
-        return view('customer.booking');
+        // Get available languages from settings
+        $settingsModel = \App\Models\Setting::where('tenant_id', tenant()->id)->first();
+        $availableLanguages = $settingsModel && $settingsModel->available_languages
+            ? $settingsModel->available_languages
+            : ['en', 'ar'];
+
+        // Ensure it's an array
+        if (!is_array($availableLanguages)) {
+            $availableLanguages = ['en', 'ar'];
+        }
+
+        return view('customer.booking', compact('availableLanguages'));
     }
 
     /**

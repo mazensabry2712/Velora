@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use App\Models\Appointment;
 use App\Models\User;
 use App\Models\Role;
@@ -16,6 +17,7 @@ use App\Models\WorkingDay;
 use App\Models\StaffSchedule;
 use App\Models\Notification;
 use App\Models\Queue;
+use App\Models\UsageLog;
 
 class AdminController extends Controller
 {
@@ -51,7 +53,7 @@ class AdminController extends Controller
         }
 
         // Confirmed appointments for today
-        $confirmedToday = Appointment::where('status', 'confirmed')->whereDate('date', today())->count();
+        $confirmedToday = Appointment::where('status', 'confirmed')->where('date', today()->format('Y-m-d'))->count();
 
         // Queue count
         $queueCount = \App\Models\Queue::whereIn('status', ['waiting', 'serving'])->count();
@@ -66,6 +68,36 @@ class AdminController extends Controller
             $q->where('name', 'Customer');
         })->whereBetween('created_at', [$thisWeekStart, $thisWeekEnd])->count();
 
+        // ========== NEW: Additional Stats ==========
+
+        // Attendance Rate
+        $completedToday = Appointment::where('status', 'completed')->where('date', today()->format('Y-m-d'))->count();
+        $totalToday = Appointment::where('date', today()->format('Y-m-d'))->count();
+        $attendanceRate = $totalToday > 0 ? round(($completedToday / $totalToday) * 100) : 0;
+
+        // Cancellation Rate
+        $cancelledThisWeek = Appointment::where('status', 'cancelled')->whereBetween('created_at', [$thisWeekStart, $thisWeekEnd])->count();
+        $cancellationRate = $thisWeekAppointments > 0 ? round(($cancelledThisWeek / $thisWeekAppointments) * 100) : 0;
+
+        // Total Staff
+        $totalStaff = User::whereHas('role', function ($q) {
+            $q->where('name', 'Staff');
+        })->count();
+
+        // Revenue (this month) - if invoices exist
+        $thisMonthRevenue = 0;
+        $lastMonthRevenue = 0;
+        $revenueChange = 0;
+        if (class_exists(\App\Models\Invoice::class)) {
+            $thisMonthRevenue = \App\Models\Invoice::where('status', 'paid')
+                ->whereMonth('created_at', now()->month)
+                ->sum('amount');
+            $lastMonthRevenue = \App\Models\Invoice::where('status', 'paid')
+                ->whereMonth('created_at', now()->subMonth()->month)
+                ->sum('amount');
+            $revenueChange = $lastMonthRevenue > 0 ? round((($thisMonthRevenue - $lastMonthRevenue) / $lastMonthRevenue) * 100) : 0;
+        }
+
         // Statistics
         $stats = [
             'total_appointments' => $totalAppointments,
@@ -74,6 +106,11 @@ class AdminController extends Controller
             'queue' => $queueCount,
             'customers' => $totalCustomers,
             'new_customers_this_week' => $newCustomersThisWeek,
+            'attendance_rate' => $attendanceRate,
+            'cancellation_rate' => $cancellationRate,
+            'total_staff' => $totalStaff,
+            'revenue_this_month' => $thisMonthRevenue,
+            'revenue_change' => $revenueChange,
         ];
 
         // Today's appointments
@@ -89,7 +126,186 @@ class AdminController extends Controller
             ->orderBy('id', 'asc')
             ->get();
 
-        return view('admin.dashboard.index', compact('stats', 'todayAppointments', 'currentQueue'));
+        // ========== NEW: Chart Data (Last 7 Days) ==========
+        $chartData = [
+            'labels' => [],
+            'appointments' => [],
+        ];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i);
+            $chartData['labels'][] = $date->format('D');
+            $chartData['appointments'][] = Appointment::whereDate('created_at', $date->format('Y-m-d'))->count();
+        }
+
+        // ========== NEW: Top Services ==========
+        $topServices = Appointment::selectRaw('service_id, COUNT(*) as total')
+            ->whereNotNull('service_id')
+            ->groupBy('service_id')
+            ->orderBy('total', 'desc')
+            ->limit(5)
+            ->with('service')
+            ->get()
+            ->map(function($item) {
+                return [
+                    'name' => $item->service->name ?? 'N/A',
+                    'total' => $item->total,
+                ];
+            });
+
+        // ========== NEW: Staff Performance ==========
+        $staffPerformance = User::whereHas('role', function ($q) {
+            $q->where('name', 'Staff');
+        })
+        ->withCount(['staffAppointments as total_appointments' => function ($q) {
+            $q->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()]);
+        }])
+        ->withCount(['staffAppointments as completed_appointments' => function ($q) {
+            $q->where('status', 'completed')
+              ->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()]);
+        }])
+        ->orderBy('total_appointments', 'desc')
+        ->limit(5)
+        ->get()
+        ->map(function($staff) {
+            return [
+                'name' => $staff->name,
+                'avatar' => $staff->avatar_url ?? null,
+                'total' => $staff->total_appointments ?? 0,
+                'completed' => $staff->completed_appointments ?? 0,
+                'rate' => $staff->total_appointments > 0 ? round(($staff->completed_appointments / $staff->total_appointments) * 100) : 0,
+            ];
+        });
+
+        // ========== NEW: Recent Customers ==========
+        $recentCustomers = User::whereHas('role', function ($q) {
+            $q->where('name', 'Customer');
+        })
+        ->withCount('appointments')
+        ->orderBy('created_at', 'desc')
+        ->limit(5)
+        ->get()
+        ->map(function($customer) {
+            return [
+                'name' => $customer->name,
+                'email' => $customer->email,
+                'avatar' => $customer->avatar_url ?? null,
+                'appointments_count' => $customer->appointments_count,
+                'joined' => $customer->created_at->diffForHumans(),
+            ];
+        });
+
+        // ========== NEW: Recent Activities ==========
+        $recentActivities = Appointment::with(['customer', 'staff'])
+            ->orderBy('updated_at', 'desc')
+            ->limit(10)
+            ->get()
+            ->map(function($appointment) {
+                return [
+                    'type' => $appointment->status,
+                    'customer' => $appointment->customer?->name ?? 'Unknown',
+                    'staff' => $appointment->staff?->name ?? 'N/A',
+                    'time' => $appointment->updated_at->diffForHumans(),
+                    'description' => $this->getActivityDescription($appointment),
+                ];
+            });
+
+        // ========== NEW: Subscription Info ==========
+        $subscriptionInfo = $this->getSubscriptionInfo();
+
+        // ========== NEW: Appointment Status Distribution ==========
+        $statusDistribution = [
+            'pending' => Appointment::where('status', 'pending')->count(),
+            'confirmed' => Appointment::where('status', 'confirmed')->count(),
+            'completed' => Appointment::where('status', 'completed')->count(),
+            'cancelled' => Appointment::where('status', 'cancelled')->count(),
+        ];
+
+        return view('admin.dashboard.index', compact(
+            'stats',
+            'todayAppointments',
+            'currentQueue',
+            'chartData',
+            'topServices',
+            'staffPerformance',
+            'recentCustomers',
+            'recentActivities',
+            'subscriptionInfo',
+            'statusDistribution'
+        ));
+    }
+
+    /**
+     * Get activity description based on appointment status
+     */
+    private function getActivityDescription($appointment)
+    {
+        $descriptions = [
+            'pending' => 'New appointment created',
+            'confirmed' => 'Appointment confirmed',
+            'completed' => 'Appointment completed',
+            'cancelled' => 'Appointment cancelled',
+        ];
+
+        return $descriptions[$appointment->status] ?? 'Status updated';
+    }
+
+    /**
+     * Get subscription information from central database
+     */
+    private function getSubscriptionInfo()
+    {
+        try {
+            // Check if tenant has subscription
+            $tenant = tenant();
+            if (!$tenant) {
+                return null;
+            }
+
+            // Get active subscription from central DB
+            $subscription = DB::connection('mysql')->table('tenant_subscriptions')
+                ->join('subscription_plans', 'tenant_subscriptions.subscription_plan_id', '=', 'subscription_plans.id')
+                ->where('tenant_subscriptions.tenant_id', $tenant->id)
+                ->where('tenant_subscriptions.status', 'active')
+                ->select(
+                    'subscription_plans.name as plan_name',
+                    'subscription_plans.max_users',
+                    'subscription_plans.max_appointments',
+                    'subscription_plans.storage_limit',
+                    'tenant_subscriptions.ends_at',
+                    'tenant_subscriptions.status'
+                )
+                ->first();
+
+            if (!$subscription) {
+                return null;
+            }
+
+            // Calculate usage
+            $currentUsers = User::count();
+            $currentAppointments = Appointment::whereMonth('created_at', now()->month)->count();
+
+            return [
+                'plan_name' => $subscription->plan_name,
+                'status' => $subscription->status,
+                'ends_at' => $subscription->ends_at,
+                'days_remaining' => max(0, (int) now()->diffInDays($subscription->ends_at)),
+                'limits' => [
+                    'users' => [
+                        'max' => $subscription->max_users == -1 ? 'Unlimited' : $subscription->max_users,
+                        'current' => $currentUsers,
+                        'percentage' => $subscription->max_users > 0 ? round(($currentUsers / $subscription->max_users) * 100) : 0,
+                    ],
+                    'appointments' => [
+                        'max' => $subscription->max_appointments == -1 ? 'Unlimited' : $subscription->max_appointments,
+                        'current' => $currentAppointments,
+                        'percentage' => $subscription->max_appointments > 0 ? round(($currentAppointments / $subscription->max_appointments) * 100) : 0,
+                    ],
+                ],
+            ];
+        } catch (\Exception $e) {
+            Log::error('Error getting subscription info: ' . $e->getMessage());
+            return null;
+        }
     }
 
     /**
@@ -269,13 +485,13 @@ class AdminController extends Controller
         $appointments = $query->paginate($perPage)->withQueryString();
 
         // Enhanced Statistics
-        $todayAppointments = Appointment::whereDate('date', today());
-        $thisWeekAppointments = Appointment::whereBetween('date', [now()->startOfWeek(), now()->endOfWeek()]);
+        $todayAppointments = Appointment::where('date', today()->format('Y-m-d'));
+        $thisWeekAppointments = Appointment::whereBetween('date', [now()->startOfWeek()->format('Y-m-d'), now()->endOfWeek()->format('Y-m-d')]);
         $thisMonthAppointments = Appointment::whereMonth('date', now()->month)->whereYear('date', now()->year);
 
         // No-show rate (completed + cancelled vs total past appointments)
-        $pastAppointments = Appointment::where('date', '<', today())->count();
-        $completedPast = Appointment::where('date', '<', today())->where('status', 'completed')->count();
+        $pastAppointments = Appointment::where('date', '<', today()->format('Y-m-d'))->count();
+        $completedPast = Appointment::where('date', '<', today()->format('Y-m-d'))->where('status', 'completed')->count();
         $noShowRate = $pastAppointments > 0 ? round((($pastAppointments - $completedPast) / $pastAppointments) * 100, 1) : 0;
 
         // Average daily appointments (this month)
@@ -530,6 +746,14 @@ class AdminController extends Controller
                 'status' => $appointment->status
             ]);
 
+            // Log usage for subscription tracking
+            UsageLog::log('appointment_created', [
+                'appointment_id' => $appointment->id,
+                'customer_id' => $customer->id,
+                'service_id' => $appointment->service_id,
+                'date' => $appointment->date,
+            ]);
+
             // Add to queue if requested
             if ($request->add_to_queue) {
                 $queueDate = $validated['queue_date'] ?? $validated['appointment_date'];
@@ -616,7 +840,7 @@ class AdminController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Error fetching appointment: ' . $e->getMessage());
+            Log::error('Error fetching appointment: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'حدث خطأ أثناء تحميل البيانات'
@@ -690,7 +914,7 @@ class AdminController extends Controller
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            \Log::error('Error updating appointment: ' . $e->getMessage());
+            Log::error('Error updating appointment: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'حدث خطأ أثناء التعديل'
@@ -742,7 +966,7 @@ class AdminController extends Controller
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            \Log::error('Error updating appointment status: ' . $e->getMessage());
+            Log::error('Error updating appointment status: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => app()->getLocale() === 'ar' ? 'حدث خطأ أثناء التحديث' : 'Error updating status'
@@ -757,7 +981,19 @@ class AdminController extends Controller
     {
         try {
             $appointment = Appointment::findOrFail($id);
+
+            // Store appointment info before deletion for logging
+            $appointmentInfo = [
+                'appointment_id' => $appointment->id,
+                'customer_id' => $appointment->customer_id,
+                'date' => $appointment->date,
+                'status' => $appointment->status,
+            ];
+
             $appointment->delete();
+
+            // Log usage for subscription tracking
+            UsageLog::log('appointment_cancelled', $appointmentInfo);
 
             return response()->json([
                 'success' => true,
@@ -765,7 +1001,7 @@ class AdminController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Error deleting appointment: ' . $e->getMessage());
+            Log::error('Error deleting appointment: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'حدث خطأ أثناء الحذف'
@@ -839,7 +1075,7 @@ class AdminController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Error adding to queue: ' . $e->getMessage());
+            Log::error('Error adding to queue: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => app()->getLocale() === 'ar' ? 'حدث خطأ أثناء الإضافة للطابور' : 'Error adding to queue'
@@ -885,7 +1121,7 @@ class AdminController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Error removing from queue: ' . $e->getMessage());
+            Log::error('Error removing from queue: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => app()->getLocale() === 'ar' ? 'حدث خطأ أثناء الإزالة من الطابور' : 'Error removing from queue'
@@ -921,7 +1157,7 @@ class AdminController extends Controller
             }
 
             // Send email reminder
-            \Mail::to($appointment->customer->email)->send(
+            Mail::to($appointment->customer->email)->send(
                 new \App\Mail\AppointmentReminderMail(
                     $appointment,
                     $appointment->customer,
@@ -940,7 +1176,7 @@ class AdminController extends Controller
                 'is_read' => false,
             ]);
 
-            \Log::info('Appointment reminder sent', [
+            Log::info('Appointment reminder sent', [
                 'appointment_id' => $appointment->id,
                 'user_id' => $appointment->customer_id,
                 'sent_by' => auth()->id()
@@ -960,7 +1196,7 @@ class AdminController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Error sending appointment reminder: ' . $e->getMessage());
+            Log::error('Error sending appointment reminder: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => app()->getLocale() === 'ar'
@@ -1121,7 +1357,7 @@ class AdminController extends Controller
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            \Log::error('Error adding to queue: ' . $e->getMessage());
+            Log::error('Error adding to queue: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'حدث خطأ'
@@ -1158,7 +1394,7 @@ class AdminController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Error calling next in queue: ' . $e->getMessage());
+            Log::error('Error calling next in queue: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'حدث خطأ'
@@ -1183,7 +1419,7 @@ class AdminController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Error serving queue: ' . $e->getMessage());
+            Log::error('Error serving queue: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'حدث خطأ'
@@ -1214,7 +1450,7 @@ class AdminController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Error completing queue: ' . $e->getMessage());
+            Log::error('Error completing queue: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'حدث خطأ'
@@ -1238,7 +1474,7 @@ class AdminController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Error returning to waiting: ' . $e->getMessage());
+            Log::error('Error returning to waiting: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'حدث خطأ'
@@ -1266,7 +1502,7 @@ class AdminController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Error setting queue priority: ' . $e->getMessage());
+            Log::error('Error setting queue priority: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'حدث خطأ'
@@ -1325,7 +1561,7 @@ class AdminController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Error updating queue: ' . $e->getMessage());
+            Log::error('Error updating queue: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'حدث خطأ'
@@ -1348,7 +1584,7 @@ class AdminController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Error removing from queue: ' . $e->getMessage());
+            Log::error('Error removing from queue: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'حدث خطأ'
@@ -1408,7 +1644,7 @@ class AdminController extends Controller
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            \Log::error('Error moving queue to next day: ' . $e->getMessage());
+            Log::error('Error moving queue to next day: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'حدث خطأ'
@@ -1451,6 +1687,8 @@ class AdminController extends Controller
                 'twitter' => 'nullable|url|max:255',
                 'tiktok' => 'nullable|url|max:255',
                 'snapchat' => 'nullable|string|max:100',
+                'available_languages' => 'nullable|array',
+                'available_languages.*' => 'string|in:en,ar,fr,es,de,it,pt,ru,zh,ja',
             ]);
 
             // Handle logo upload
@@ -1471,7 +1709,7 @@ class AdminController extends Controller
                 'data' => $settings
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error saving settings: ' . $e->getMessage());
+            Log::error('Error saving settings: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
@@ -1499,7 +1737,7 @@ class AdminController extends Controller
                 'data' => $service
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error creating service: ' . $e->getMessage());
+            Log::error('Error creating service: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'حدث خطأ'], 500);
         }
     }
@@ -1538,7 +1776,7 @@ class AdminController extends Controller
                 'data' => $service
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error updating service: ' . $e->getMessage());
+            Log::error('Error updating service: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'حدث خطأ'], 500);
         }
     }
@@ -1554,7 +1792,7 @@ class AdminController extends Controller
 
             return response()->json(['success' => true, 'message' => 'تم حذف الخدمة بنجاح']);
         } catch (\Exception $e) {
-            \Log::error('Error deleting service: ' . $e->getMessage());
+            Log::error('Error deleting service: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'حدث خطأ'], 500);
         }
     }
@@ -1578,7 +1816,7 @@ class AdminController extends Controller
                 'data' => $timeSlot
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error creating time slot: ' . $e->getMessage());
+            Log::error('Error creating time slot: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'حدث خطأ'], 500);
         }
     }
@@ -1642,7 +1880,7 @@ class AdminController extends Controller
 
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
-            \Log::error('Error toggling staff service: ' . $e->getMessage());
+            Log::error('Error toggling staff service: ' . $e->getMessage());
             return response()->json(['success' => false], 500);
         }
     }
@@ -1870,6 +2108,14 @@ class AdminController extends Controller
 
             DB::commit();
 
+            // Log usage for subscription tracking
+            UsageLog::log('user_created', [
+                'user_id' => $user->id,
+                'user_type' => 'staff',
+                'name' => $user->name,
+                'email' => $user->email,
+            ]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'تم إضافة الموظف بنجاح. الباسورد الافتراضي: ' . $defaultPassword,
@@ -1883,7 +2129,7 @@ class AdminController extends Controller
             ], 422);
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Error creating staff: ' . $e->getMessage());
+            Log::error('Error creating staff: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'حدث خطأ'], 500);
         }
     }
@@ -1944,7 +2190,7 @@ class AdminController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Error updating staff: ' . $e->getMessage());
+            Log::error('Error updating staff: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'حدث خطأ'], 500);
         }
     }
@@ -1957,6 +2203,13 @@ class AdminController extends Controller
         try {
             $staff = User::findOrFail($id);
 
+            // Store staff info before deletion for logging
+            $staffInfo = [
+                'user_id' => $staff->id,
+                'name' => $staff->name,
+                'email' => $staff->email,
+            ];
+
             // Delete schedules
             StaffSchedule::where('user_id', $staff->id)->delete();
 
@@ -1966,9 +2219,12 @@ class AdminController extends Controller
             // Delete user
             $staff->delete();
 
+            // Log usage for subscription tracking
+            UsageLog::log('user_deleted', $staffInfo);
+
             return response()->json(['success' => true, 'message' => 'تم حذف الموظف بنجاح']);
         } catch (\Exception $e) {
-            \Log::error('Error deleting staff: ' . $e->getMessage());
+            Log::error('Error deleting staff: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'حدث خطأ'], 500);
         }
     }
@@ -1987,7 +2243,7 @@ class AdminController extends Controller
 
             return response()->json(['success' => true, 'data' => $staff]);
         } catch (\Exception $e) {
-            \Log::error('Error getting staff by specialization: ' . $e->getMessage());
+            Log::error('Error getting staff by specialization: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Error'], 500);
         }
     }
@@ -2003,7 +2259,7 @@ class AdminController extends Controller
 
             return response()->json(['success' => true, 'data' => $services]);
         } catch (\Exception $e) {
-            \Log::error('Error getting staff services: ' . $e->getMessage());
+            Log::error('Error getting staff services: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Error'], 500);
         }
     }

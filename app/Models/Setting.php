@@ -23,11 +23,13 @@ class Setting extends Model
         'working_hours',
         'notification_settings',
         'language',
+        'available_languages',
     ];
 
     protected $casts = [
         'working_hours' => 'array',
         'notification_settings' => 'array',
+        'available_languages' => 'array',
     ];
 
     // Relationships

@@ -2,11 +2,11 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\User;
-use Spatie\Permission\Models\Role;
+use App\Models\Role;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class SuperAdminSeeder extends Seeder
 {
@@ -15,28 +15,31 @@ class SuperAdminSeeder extends Seeder
      */
     public function run(): void
     {
-        // Make sure roles exist
+        // Create Super Admin role if not exists
         $superAdminRole = Role::firstOrCreate(
             ['name' => 'Super Admin'],
-            ['guard_name' => 'web']
+            ['permissions' => []]
         );
 
-        // Create Super Admin user (no tenant_id = central user)
-        $superAdmin = User::firstOrCreate(
-            ['email' => 'superadmin@booking-saas.test'],
-            [
+        // Create Super Admin user (Central - No tenant)
+        // Note: We use DB directly to avoid model fillable issues
+        $existingUser = User::where('email', 'superadmin@bookingsaas.com')->first();
+
+        if (!$existingUser) {
+            DB::table('users')->insert([
                 'name' => 'Super Admin',
-                'tenant_id' => null, // Central user, not tied to any tenant
+                'email' => 'superadmin@bookingsaas.com',
+                'password' => Hash::make('SuperAdmin@123'),
                 'role_id' => $superAdminRole->id,
-                'password' => Hash::make('password'),
-            ]
-        );
+                'email_verified_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
 
-        // Assign Super Admin role
-        $superAdmin->assignRole('Super Admin');
-
-        $this->command->info('Super Admin created successfully!');
-        $this->command->info('Email: superadmin@booking-saas.test');
-        $this->command->info('Password: password');
+        $this->command->info('✅ Super Admin created successfully!');
+        $this->command->info('📧 Email: superadmin@bookingsaas.com');
+        $this->command->info('🔑 Password: SuperAdmin@123');
+        $this->command->info('🔗 URL: http://booking-saas.test/super-admin/login');
     }
 }

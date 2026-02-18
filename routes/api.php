@@ -3,6 +3,10 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SuperAdmin\DashboardController;
 use App\Http\Controllers\SuperAdmin\TenantController;
+use App\Http\Controllers\SuperAdmin\SubscriptionPlanController;
+use App\Http\Controllers\SuperAdmin\ActivityLogController;
+use App\Http\Controllers\SuperAdmin\SystemSettingController;
+use App\Http\Controllers\SuperAdmin\SystemNotificationController;
 use App\Http\Controllers\Auth\SuperAdminAuthController;
 use App\Http\Controllers\Auth\TenantAuthController;
 
@@ -13,7 +17,7 @@ use App\Http\Controllers\Auth\TenantAuthController;
 */
 
 // Super Admin Authentication (Central)
-Route::prefix('api/super-admin/auth')->group(function () {
+Route::prefix('super-admin/auth')->group(function () {
     Route::post('/login', [SuperAdminAuthController::class, 'login']);
 
     Route::middleware('auth:sanctum')->group(function () {
@@ -34,7 +38,7 @@ Route::middleware(['tenant', 'tenant.locale'])->prefix('auth')->group(function (
 });
 
 // Tenant Authentication (By Token)
-Route::prefix('api/v1/auth')->middleware(['tenant.token', 'tenant.locale'])->group(function () {
+Route::prefix('v1/auth')->middleware(['tenant.token', 'tenant.locale'])->group(function () {
     Route::post('/login', [TenantAuthController::class, 'login']);
     Route::post('/register', [TenantAuthController::class, 'register']);
 
@@ -51,17 +55,44 @@ Route::prefix('api/v1/auth')->middleware(['tenant.token', 'tenant.locale'])->gro
 | Routes for Super Admin to manage all tenants
 */
 
-Route::prefix('api/super-admin')->middleware(['auth:sanctum', 'super.admin'])->group(function () {
+Route::prefix('super-admin')->middleware(['auth:web', 'super.admin'])->group(function () {
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index']);
     Route::get('/dashboard/tenants-overview', [DashboardController::class, 'tenantsOverview']);
     Route::get('/dashboard/system-stats', [DashboardController::class, 'systemStats']);
+    Route::get('/dashboard/subscription-stats', [DashboardController::class, 'subscriptionStats']);
+    Route::get('/dashboard/activity-summary', [DashboardController::class, 'activitySummary']);
+    Route::get('/dashboard/growth-metrics', [DashboardController::class, 'growthMetrics']);
 
     // Tenants Management
     Route::apiResource('tenants', TenantController::class);
     Route::post('/tenants/{id}/toggle-status', [TenantController::class, 'toggleStatus']);
     Route::get('/tenants/{id}/statistics', [TenantController::class, 'statistics']);
+    Route::post('/tenants/{id}/assign-subscription', [TenantController::class, 'assignSubscription']);
+    Route::get('/tenants/{id}/users', [TenantController::class, 'users']);
+    Route::post('/tenants/{id}/reset-admin-password', [TenantController::class, 'resetAdminPassword']);
+    Route::get('/tenants/{id}/subscription', [TenantController::class, 'subscription']);
+
+    // Subscription Plans
+    Route::apiResource('subscription-plans', SubscriptionPlanController::class);
+    Route::post('/subscription-plans/{id}/toggle-status', [SubscriptionPlanController::class, 'toggleStatus']);
+
+    // Activity Logs
+    Route::get('/activity-logs', [ActivityLogController::class, 'index']);
+    Route::get('/activity-logs/statistics', [ActivityLogController::class, 'statistics']);
+    Route::post('/activity-logs/clear-old', [ActivityLogController::class, 'clearOld']);
+
+    // System Settings
+    Route::get('/settings', [SystemSettingController::class, 'index']);
+    Route::get('/settings/{key}', [SystemSettingController::class, 'show']);
+    Route::post('/settings', [SystemSettingController::class, 'store']);
+    Route::put('/settings', [SystemSettingController::class, 'update']);
+    Route::delete('/settings/{key}', [SystemSettingController::class, 'destroy']);
+
+    // System Notifications
+    Route::apiResource('notifications', SystemNotificationController::class)->except(['update']);
+    Route::post('/notifications/{id}/send', [SystemNotificationController::class, 'send']);
 });
 
 /*
@@ -72,22 +103,31 @@ Route::prefix('api/super-admin')->middleware(['auth:sanctum', 'super.admin'])->g
 */
 
 // Public API Routes (No auth required) - For booking form
-Route::prefix('api')->middleware(['tenant', 'tenant.locale'])->group(function () {
+Route::middleware(['tenant', 'tenant.locale'])->group(function () {
     // Get staff list for booking form
     Route::get('staff', function () {
-        return \App\Models\User::role('Staff')->select('id', 'name')->get();
+        return \App\Models\User::whereHas('role', function($query) {
+            $query->where('name', 'Staff');
+        })->select('id', 'name')->get();
     });
 
     // Create appointment (public)
     Route::post('appointments', [\App\Http\Controllers\Tenant\AppointmentController::class, 'store']);
 });
 
-Route::prefix('api')->middleware(['tenant', 'tenant.locale', 'auth:sanctum'])->group(function () {
+Route::middleware(['tenant', 'tenant.locale', 'auth:sanctum'])->group(function () {
 
     // Appointments
     // Admin Tenant & Staff can manage all appointments
     Route::middleware(['role:Admin Tenant|Staff'])->group(function () {
-        Route::apiResource('appointments', \App\Http\Controllers\Tenant\AppointmentController::class)->except(['store']);
+        Route::apiResource('appointments', \App\Http\Controllers\Tenant\AppointmentController::class)
+            ->except(['store'])
+            ->names([
+                'index' => 'api.appointments.index',
+                'show' => 'api.appointments.show',
+                'update' => 'api.appointments.update',
+                'destroy' => 'api.appointments.destroy',
+            ]);
     });
 
     // Customers can manage their own appointments
@@ -158,17 +198,27 @@ Route::prefix('api')->middleware(['tenant', 'tenant.locale', 'auth:sanctum'])->g
 | Routes for API access using tenant token in header
 */
 
-Route::prefix('api/v1')->middleware(['tenant.token', 'tenant.locale', 'auth:sanctum'])->group(function () {
+Route::prefix('v1')->middleware(['tenant.token', 'tenant.locale', 'auth:sanctum'])->group(function () {
 
     // Appointments
-    Route::apiResource('appointments', \App\Http\Controllers\Tenant\AppointmentController::class);
+    Route::apiResource('appointments', \App\Http\Controllers\Tenant\AppointmentController::class)
+        ->names([
+            'index' => 'api.v1.appointments.index',
+            'store' => 'api.v1.appointments.store',
+            'show' => 'api.v1.appointments.show',
+            'update' => 'api.v1.appointments.update',
+            'destroy' => 'api.v1.appointments.destroy',
+        ]);
 
     // Queues
-    Route::apiResource('queues', \App\Http\Controllers\Tenant\QueueController::class);
+    Route::apiResource('queues', \App\Http\Controllers\Tenant\QueueController::class)
+        ->names('api.v1.queues');
 
     // Notifications
-    Route::apiResource('notifications', \App\Http\Controllers\Tenant\NotificationController::class);
+    Route::apiResource('notifications', \App\Http\Controllers\Tenant\NotificationController::class)
+        ->names('api.v1.notifications');
 
     // Invoices
-    Route::apiResource('invoices', \App\Http\Controllers\Tenant\InvoiceController::class);
+    Route::apiResource('invoices', \App\Http\Controllers\Tenant\InvoiceController::class)
+        ->names('api.v1.invoices');
 });

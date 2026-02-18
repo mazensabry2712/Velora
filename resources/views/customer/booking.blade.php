@@ -30,6 +30,12 @@
     </script>
 </head>
 <body class="bg-gradient-to-br from-slate-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800 min-h-screen">
+    <!-- DEBUG INFO (temporary) -->
+    @php
+        echo "<!-- DEBUG: availableLanguages = " . json_encode($availableLanguages ?? 'NOT SET') . " -->";
+        echo "<!-- DEBUG: count = " . (isset($availableLanguages) ? count($availableLanguages) : 'N/A') . " -->";
+    @endphp
+
     <div class="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
         <!-- Header with Language Switcher -->
         <div class="mb-6 sm:mb-8">
@@ -43,16 +49,35 @@
                 </button>
 
                 <!-- Language Switcher -->
-                <div class="inline-flex rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 p-1 shadow-sm">
-                    <button onclick="changeLanguage('en')"
-                        class="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 {{ app()->getLocale() === 'en' ? 'bg-indigo-600 dark:bg-indigo-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white' }}">
-                        EN
-                    </button>
-                    <button onclick="changeLanguage('ar')"
-                        class="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 {{ app()->getLocale() === 'ar' ? 'bg-indigo-600 dark:bg-indigo-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white' }}">
-                        عربي
-                    </button>
+                @if(isset($availableLanguages) && is_array($availableLanguages) && count($availableLanguages) > 1)
+                @php
+                    $languageLabels = [
+                        'en' => 'EN',
+                        'ar' => 'عربي',
+                        'fr' => 'FR',
+                        'es' => 'ES',
+                        'de' => 'DE',
+                        'it' => 'IT',
+                        'pt' => 'PT',
+                        'ru' => 'RU',
+                        'zh' => '中文',
+                        'ja' => '日本語',
+                    ];
+                @endphp
+                <div class="inline-flex rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 p-1 shadow-sm {{ count($availableLanguages) > 4 ? 'flex-wrap' : '' }}">
+                    @foreach($availableLanguages as $langCode)
+                        @if(isset($languageLabels[$langCode]))
+                        <button onclick="changeLanguage('{{ $langCode }}')"
+                            class="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 {{ app()->getLocale() === $langCode ? 'bg-indigo-600 dark:bg-indigo-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white' }}">
+                            {{ $languageLabels[$langCode] }}
+                        </button>
+                        @endif
+                    @endforeach
                 </div>
+                @else
+                <!-- DEBUG: Language switcher NOT displayed -->
+                <!-- Reason: {{ !isset($availableLanguages) ? 'Variable not set' : (!is_array($availableLanguages) ? 'Not an array' : (count($availableLanguages) <= 1 ? 'Only ' . count($availableLanguages) . ' language' : 'Unknown')) }} -->
+                @endif
             </div>
 
             <div class="text-center">

@@ -35,8 +35,18 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\CheckRole::class,
             'ability' => \App\Http\Middleware\CheckTokenAbility::class,
 
+            // Subscription limits middleware
+            'subscription.limits' => \App\Http\Middleware\CheckSubscriptionLimits::class,
+
             // Rate limiting
             'throttle.api' => \App\Http\Middleware\ThrottleRequests::class,
+        ]);
+
+        // Enable session and cookies for API routes (needed for Super Admin web-based auth)
+        $middleware->api(prepend: [
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
         ]);
 
         // Exclude API routes from CSRF verification

@@ -61,6 +61,9 @@
                             {{ __('Settings') }}
                         </a>
                         @if(auth()->user()->isAdminTenant())
+                        <a href="{{ route('admin.subscription.index') }}" class="px-3 py-2 text-sm font-medium rounded-lg transition-colors {{ request()->is('admin/subscription*') ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700/50' }}">
+                            {{ __('Subscription') }}
+                        </a>
                         <a href="/admin/assistants" class="px-3 py-2 text-sm font-medium rounded-lg transition-colors {{ request()->is('admin/assistants*') ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700/50' }}">
                             {{ __('Assistants') }}
                         </a>
@@ -131,6 +134,9 @@
                     {{ __('Settings') }}
                 </a>
                 @if(auth()->user()->isAdminTenant())
+                <a href="{{ route('admin.subscription.index') }}" class="px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap {{ request()->is('admin/subscription*') ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30' : 'text-slate-600 dark:text-slate-300' }}">
+                    {{ __('Subscription') }}
+                </a>
                 <a href="/admin/assistants" class="px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap {{ request()->is('admin/assistants*') ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30' : 'text-slate-600 dark:text-slate-300' }}">
                     {{ __('Assistants') }}
                 </a>

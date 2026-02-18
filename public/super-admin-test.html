@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin System - Quick Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-slate-100 p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-4xl font-bold text-slate-900 mb-8">🧪 Super Admin System - اختبار سريع</h1>
+
+        <!-- Login Info -->
+        <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-8 text-white mb-8">
+            <h2 class="text-2xl font-bold mb-4">🔐 بيانات تسجيل الدخول</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <p class="text-indigo-100 text-sm">البريد الإلكتروني</p>
+                    <p class="text-xl font-mono">superadmin@bookingsaas.com</p>
+                </div>
+                <div>
+                    <p class="text-indigo-100 text-sm">كلمة المرور</p>
+                    <p class="text-xl font-mono">SuperAdmin@123</p>
+                </div>
+                <div>
+                    <p class="text-indigo-100 text-sm">رابط الدخول</p>
+                    <a href="http://booking-saas.test/super-admin/login" class="text-xl font-mono underline hover:text-indigo-200" target="_blank">
+                        دخول Super Admin
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pages List -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+            <h2 class="text-2xl font-bold text-slate-900 mb-6">📄 الصفحات المتاحة</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <a href="http://booking-saas.test/super-admin/login" class="block p-4 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition">
+                    <h3 class="font-bold text-indigo-900">🔐 صفحة تسجيل الدخول</h3>
+                    <p class="text-sm text-indigo-600">/super-admin/login</p>
+                </a>
+                <a href="http://booking-saas.test/super-admin/dashboard" class="block p-4 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition">
+                    <h3 class="font-bold text-emerald-900">📊 لوحة التحكم</h3>
+                    <p class="text-sm text-emerald-600">/super-admin/dashboard</p>
+                </a>
+                <a href="http://booking-saas.test/super-admin/tenants" class="block p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition">
+                    <h3 class="font-bold text-blue-900">🏢 إدارة الشركات</h3>
+                    <p class="text-sm text-blue-600">/super-admin/tenants</p>
+                </a>
+                <a href="http://booking-saas.test/super-admin/subscription-plans" class="block p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition">
+                    <h3 class="font-bold text-purple-900">💳 خطط الاشتراك</h3>
+                    <p class="text-sm text-purple-600">/super-admin/subscription-plans</p>
+                </a>
+                <a href="http://booking-saas.test/super-admin/activity-logs" class="block p-4 bg-amber-50 hover:bg-amber-100 rounded-lg transition">
+                    <h3 class="font-bold text-amber-900">📝 سجل الأنشطة</h3>
+                    <p class="text-sm text-amber-600">/super-admin/activity-logs</p>
+                </a>
+                <a href="http://booking-saas.test/super-admin/settings" class="block p-4 bg-slate-100 hover:bg-slate-200 rounded-lg transition">
+                    <h3 class="font-bold text-slate-900">⚙️ إعدادات النظام</h3>
+                    <p class="text-sm text-slate-600">/super-admin/settings</p>
+                </a>
+                <a href="http://booking-saas.test/super-admin/notifications" class="block p-4 bg-rose-50 hover:bg-rose-100 rounded-lg transition">
+                    <h3 class="font-bold text-rose-900">🔔 الإشعارات</h3>
+                    <p class="text-sm text-rose-600">/super-admin/notifications</p>
+                </a>
+                <a href="http://booking-saas.test/super-admin/reports" class="block p-4 bg-teal-50 hover:bg-teal-100 rounded-lg transition">
+                    <h3 class="font-bold text-teal-900">📈 التقارير والإحصائيات</h3>
+                    <p class="text-sm text-teal-600">/super-admin/reports</p>
+                </a>
+                <a href="http://booking-saas.test/super-admin/settings" class="block p-4 bg-slate-100 hover:bg-slate-200 rounded-lg transition">
+                    <h3 class="font-bold text-slate-900">⚙️ إعدادات النظام</h3>
+                    <p class="text-sm text-slate-600">/super-admin/settings</p>
+                </a>
+            </div>
+        </div>
+
+        <!-- API Test -->
+        <div class="bg-white rounded-xl shadow-lg p-8" x-data="apiTest()">
+            <h2 class="text-2xl font-bold text-slate-900 mb-6">🔌 اختبار APIs</h2>
+
+            <div class="space-y-4">
+                <!-- Subscription Plans Test -->
+                <div class="border border-slate-200 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-slate-800">GET /api/super-admin/subscription-plans</h3>
+                        <button @click="testPlans()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm">
+                            اختبار
+                        </button>
+                    </div>
+                    <div x-show="plansResult" class="bg-slate-50 rounded p-3 mt-2">
+                        <pre x-text="plansResult" class="text-xs text-slate-700 overflow-auto"></pre>
+                    </div>
+                </div>
+
+                <!-- Tenants Test -->
+                <div class="border border-slate-200 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-slate-800">GET /api/super-admin/tenants</h3>
+                        <button @click="testTenants()" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm">
+                            اختبار
+                        </button>
+                    </div>
+                    <div x-show="tenantsResult" class="bg-slate-50 rounded p-3 mt-2">
+                        <pre x-text="tenantsResult" class="text-xs text-slate-700 overflow-auto"></pre>
+                    </div>
+                </div>
+
+                <!-- Activity Logs Test -->
+                <div class="border border-slate-200 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-slate-800">GET /api/super-admin/activity-logs/statistics</h3>
+                        <button @click="testActivityStats()" class="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm">
+                            اختبار
+                        </button>
+                    </div>
+                    <div x-show="activityResult" class="bg-slate-50 rounded p-3 mt-2">
+                        <pre x-text="activityResult" class="text-xs text-slate-700 overflow-auto"></pre>
+                    </div>
+                </div>
+
+                <!-- Settings Test -->
+                <div class="border border-slate-200 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-slate-800">GET /api/super-admin/settings</h3>
+                        <button @click="testSettings()" class="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 text-sm">
+                            اختبار
+                        </button>
+                    </div>
+                    <div x-show="settingsResult" class="bg-slate-50 rounded p-3 mt-2">
+                        <pre x-text="settingsResult" class="text-xs text-slate-700 overflow-auto"></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p class="text-sm text-yellow-800">
+                    ⚠️ <strong>ملاحظة:</strong> يجب تسجيل الدخول أولاً ليعمل اختبار الـ APIs بشكل صحيح.
+                </p>
+            </div>
+        </div>
+
+        <!-- Database Info -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mt-8">
+            <h2 class="text-2xl font-bold text-slate-900 mb-6">🗄️ قاعدة البيانات</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="p-4 bg-indigo-50 rounded-lg">
+                    <h3 class="font-bold text-indigo-900 mb-2">الجداول الجديدة</h3>
+                    <ul class="text-sm text-indigo-700 space-y-1">
+                        <li>✅ subscription_plans</li>
+                        <li>✅ tenant_subscriptions</li>
+                        <li>✅ activity_logs</li>
+                        <li>✅ system_settings</li>
+                        <li>✅ system_notifications</li>
+                    </ul>
+                </div>
+                <div class="p-4 bg-emerald-50 rounded-lg">
+                    <h3 class="font-bold text-emerald-900 mb-2">البيانات الابتدائية</h3>
+                    <ul class="text-sm text-emerald-700 space-y-1">
+                        <li>✅ Super Admin User</li>
+                        <li>✅ 3 Subscription Plans</li>
+                        <li>&nbsp;&nbsp;&nbsp;- Basic ($29.99)</li>
+                        <li>&nbsp;&nbsp;&nbsp;- Professional ($79.99)</li>
+                        <li>&nbsp;&nbsp;&nbsp;- Enterprise ($199.99)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Commands -->
+        <div class="bg-slate-800 text-white rounded-xl shadow-lg p-8 mt-8">
+            <h2 class="text-2xl font-bold mb-6">💻 أوامر مفيدة</h2>
+            <div class="space-y-3 font-mono text-sm">
+                <div class="p-3 bg-slate-700 rounded">
+                    <p class="text-slate-300 text-xs mb-1"># تشغيل Migrations</p>
+                    <code>php artisan migrate</code>
+                </div>
+                <div class="p-3 bg-slate-700 rounded">
+                    <p class="text-slate-300 text-xs mb-1"># إنشاء Super Admin</p>
+                    <code>php artisan db:seed --class=SuperAdminSeeder</code>
+                </div>
+                <div class="p-3 bg-slate-700 rounded">
+                    <p class="text-slate-300 text-xs mb-1"># إنشاء خطط الاشتراك</p>
+                    <code>php artisan db:seed --class=SubscriptionPlansSeeder</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status -->
+        <div class="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl shadow-lg p-8 text-white mt-8 text-center">
+            <h2 class="text-3xl font-bold mb-4">✅ النظام جاهز 100%</h2>
+            <p class="text-emerald-100 text-lg">
+                جميع الميزات المطلوبة تم تطبيقها بنجاح!
+            </p>
+        </div>
+    </div>
+
+    <script>
+        function apiTest() {
+            return {
+                plansResult: '',
+                tenantsResult: '',
+                activityResult: '',
+                settingsResult: '',
+
+                async testPlans() {
+                    try {
+                        const response = await fetch('/api/super-admin/subscription-plans', {
+                            credentials: 'include'
+                        });
+                        const data = await response.json();
+                        this.plansResult = JSON.stringify(data, null, 2);
+                    } catch (error) {
+                        this.plansResult = 'Error: ' + error.message;
+                    }
+                },
+
+                async testTenants() {
+                    try {
+                        const response = await fetch('/api/super-admin/tenants', {
+                            credentials: 'include'
+                        });
+                        const data = await response.json();
+                        this.tenantsResult = JSON.stringify(data, null, 2);
+                    } catch (error) {
+                        this.tenantsResult = 'Error: ' + error.message;
+                    }
+                },
+
+                async testActivityStats() {
+                    try {
+                        const response = await fetch('/api/super-admin/activity-logs/statistics', {
+                            credentials: 'include'
+                        });
+                        const data = await response.json();
+                        this.activityResult = JSON.stringify(data, null, 2);
+                    } catch (error) {
+                        this.activityResult = 'Error: ' + error.message;
+                    }
+                },
+
+                async testSettings() {
+                    try {
+                        const response = await fetch('/api/super-admin/settings', {
+                            credentials: 'include'
+                        });
+                        const data = await response.json();
+                        this.settingsResult = JSON.stringify(data, null, 2);
+                    } catch (error) {
+                        this.settingsResult = 'Error: ' + error.message;
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

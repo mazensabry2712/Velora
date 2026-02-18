@@ -19,6 +19,22 @@ class Invoice extends Model
         'amount' => 'decimal:2',
     ];
 
+    // Accessors
+    public function getTotalAmountAttribute()
+    {
+        return $this->amount;
+    }
+
+    public function getTaxAmountAttribute()
+    {
+        return 0; // Default to 0, can be customized later
+    }
+
+    public function getDiscountAttribute()
+    {
+        return 0; // Default to 0, can be customized later
+    }
+
     // Relationships
     public function tenant()
     {
