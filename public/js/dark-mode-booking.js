@@ -1,7 +1,7 @@
 /**
  * Dark Mode Toggle Handler - Booking Page Only
  * نظام التبديل بين الوضع النهاري والليلي - مخصص لصفحة الحجز العامة
- * 
+ *
  * يستخدم localStorage key: 'bookingDarkMode'
  * منفصل تماماً عن Dark Mode الخاص بالداشبورد
  */

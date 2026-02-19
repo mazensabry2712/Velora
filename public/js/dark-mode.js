@@ -18,10 +18,19 @@
  * تبديل وضع الدارك مود - الداشبورد
  */
 function toggleDarkMode() {
+    const wasDark = document.documentElement.classList.contains('dark');
     const isDark = document.documentElement.classList.toggle('dark');
     const value = String(isDark);
+
     localStorage.setItem('adminDarkMode', value);
-    console.log('🔄 Toggle Dark Mode:', isDark, '→ localStorage:', value);
+
+    console.log('='.repeat(50));
+    console.log('🔄 TOGGLE DARK MODE:');
+    console.log('   Was Dark:', wasDark);
+    console.log('   Now Dark:', isDark);
+    console.log('   Saved to localStorage:', value);
+    console.log('   Verify:', localStorage.getItem('adminDarkMode'));
+    console.log('='.repeat(50));
 
     // تحديث أيقونة الزر إذا كانت موجودة
     const icon = document.getElementById('dark-mode-icon');
@@ -39,7 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const isDark = document.documentElement.classList.contains('dark');
     console.log('   localStorage adminDarkMode:', savedMode);
     console.log('   Current dark class:', isDark);
-    
+
     const icon = document.getElementById('dark-mode-icon');
     if (icon) {
         icon.textContent = isDark ? '☀️' : '🌙';

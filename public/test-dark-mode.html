@@ -19,26 +19,26 @@
 <body class="bg-white dark:bg-slate-900 text-slate-900 dark:text-white p-8 transition-colors">
     <div class="max-w-4xl mx-auto">
         <h1 class="text-3xl font-bold mb-6">🔍 اختبار Dark Mode - Debug Panel</h1>
-        
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div class="bg-indigo-50 dark:bg-indigo-900 p-6 rounded-lg">
                 <h2 class="text-xl font-bold mb-4">⚙️ التحكم</h2>
-                <button onclick="toggleTest()" 
+                <button onclick="toggleTest()"
                         class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg mb-2">
                     تبديل Dark Mode
                 </button>
-                <button onclick="clearAll()" 
+                <button onclick="clearAll()"
                         class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg">
                     مسح كل الإعدادات
                 </button>
             </div>
-            
+
             <div class="bg-green-50 dark:bg-green-900 p-6 rounded-lg">
                 <h2 class="text-xl font-bold mb-4">📊 الحالة الحالية</h2>
                 <div id="status" class="space-y-2"></div>
             </div>
         </div>
-        
+
         <div class="bg-slate-100 dark:bg-slate-800 p-6 rounded-lg">
             <h2 class="text-xl font-bold mb-4">📝 Console Logs</h2>
             <div id="logs" class="space-y-1 max-h-96 overflow-y-auto"></div>
@@ -61,7 +61,7 @@
             const bookingDark = localStorage.getItem('bookingDarkMode');
             const queueDark = localStorage.getItem('queueDarkMode');
             const oldDark = localStorage.getItem('darkMode');
-            
+
             document.getElementById('status').innerHTML = `
                 <div class="font-bold ${isDark ? 'text-yellow-600' : 'text-blue-600'}">
                     🌓 الوضع الحالي: ${isDark ? 'Dark 🌙' : 'Light ☀️'}
@@ -79,12 +79,12 @@
             const wasDark = document.documentElement.classList.contains('dark');
             const nowDark = document.documentElement.classList.toggle('dark');
             const value = String(nowDark);
-            
+
             localStorage.setItem('adminDarkMode', value);
-            
+
             addLog(`🔄 Toggle: ${wasDark ? 'Dark' : 'Light'} → ${nowDark ? 'Dark' : 'Light'}`, 'info');
             addLog(`💾 Saved to localStorage: "${value}"`, 'success');
-            
+
             updateStatus();
         }
 
@@ -93,7 +93,7 @@
             localStorage.removeItem('bookingDarkMode');
             localStorage.removeItem('queueDarkMode');
             localStorage.removeItem('darkMode');
-            
+
             addLog('🗑️ مسح كل إعدادات Dark Mode', 'warning');
             updateStatus();
         }
@@ -101,11 +101,11 @@
         // Initialize
         addLog('🚀 تحميل الصفحة...', 'info');
         updateStatus();
-        
+
         // Check what would happen on page load
         const savedMode = localStorage.getItem('adminDarkMode');
         addLog(`📖 localStorage.getItem('adminDarkMode'): "${savedMode}"`, 'info');
-        
+
         if (savedMode === 'true') {
             addLog('✅ Would enable dark mode (savedMode === "true")', 'success');
         } else if (savedMode === 'false') {

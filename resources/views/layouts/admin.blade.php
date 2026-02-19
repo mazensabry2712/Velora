@@ -32,7 +32,7 @@
 
             const savedMode = localStorage.getItem('adminDarkMode');
             console.log('🌓 Admin Dark Mode - savedMode:', savedMode, '(type:', typeof savedMode, ')');
-            
+
             if (savedMode === 'true') {
                 document.documentElement.classList.add('dark');
                 console.log('✅ Dark mode enabled');

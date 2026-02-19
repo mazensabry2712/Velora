@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إعادة ضبط الدارك مود - Reset Dark Mode</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .log-box {
+            background: #1a1a1a;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            direction: ltr;
+            text-align: left;
+        }
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            font-size: 16px;
+        }
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #059669;
+        }
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+        .btn-warning:hover {
+            background: #d97706;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-xl shadow-lg p-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">🔧 أداة إعادة ضبط الدارك مود</h1>
+            <p class="text-gray-600 mb-6">استخدم هذه الأداة لحل مشاكل الدارك مود وإعادة ضبط الإعدادات</p>
+
+            <!-- Current Status -->
+            <div class="bg-blue-50 border-r-4 border-blue-500 p-4 mb-6 rounded">
+                <h3 class="font-bold text-blue-800 mb-2">📊 الحالة الحالية:</h3>
+                <div id="currentStatus" class="space-y-1 text-sm"></div>
+            </div>
+
+            <!-- Actions -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <button onclick="setLightMode()" class="btn btn-warning">
+                    ☀️ فرض الوضع الفاتح (Light Mode)
+                </button>
+                <button onclick="setDarkMode()" class="btn btn-primary">
+                    🌙 فرض الوضع الداكن (Dark Mode)
+                </button>
+                <button onclick="clearAllDarkModeSettings()" class="btn btn-danger">
+                    🧹 مسح كل إعدادات الدارك مود
+                </button>
+                <button onclick="resetToSystemPreference()" class="btn btn-success">
+                    🔄 إعادة لإعدادات النظام
+                </button>
+            </div>
+
+            <!-- Logs -->
+            <div class="mb-4">
+                <h3 class="font-bold text-gray-800 mb-2">📝 سجل العمليات:</h3>
+                <div id="logs" class="log-box"></div>
+            </div>
+
+            <!-- Instructions -->
+            <div class="bg-yellow-50 border-r-4 border-yellow-500 p-4 rounded">
+                <h3 class="font-bold text-yellow-800 mb-2">📋 التعليمات:</h3>
+                <ol class="list-decimal list-inside space-y-2 text-sm text-yellow-900">
+                    <li>اضغط "مسح كل إعدادات الدارك مود" لحذف كل القيم القديمة</li>
+                    <li>اضغط "فرض الوضع الفاتح" لضبط Light Mode بشكل دائم</li>
+                    <li>افتح صفحة الإدمن واضغط <strong>Ctrl + Shift + R</strong> (Hard Refresh)</li>
+                    <li>جرّب زر التبديل في الداشبورد وشوف لو اشتغل صح</li>
+                </ol>
+            </div>
+
+            <div class="mt-6 text-center">
+                <a href="/admin/dashboard" class="text-blue-600 hover:text-blue-800 font-bold">
+                    ← العودة للداشبورد
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const logBox = document.getElementById('logs');
+        const statusBox = document.getElementById('currentStatus');
+
+        function log(message, color = '#0f0') {
+            const timestamp = new Date().toLocaleTimeString('ar-EG');
+            const line = document.createElement('div');
+            line.style.color = color;
+            line.textContent = '[' + timestamp + '] ' + message;
+            logBox.appendChild(line);
+            logBox.scrollTop = logBox.scrollHeight;
+            console.log(message);
+        }
+
+        function updateStatus() {
+            const allKeys = ['adminDarkMode', 'bookingDarkMode', 'queueDarkMode', 'darkMode', 'dark-mode', 'dark_mode'];
+            let html = '';
+
+            allKeys.forEach(key => {
+                const value = localStorage.getItem(key);
+                if (value !== null) {
+                    html += '<div class="text-blue-700"><strong>' + key + ':</strong> ' + value + '</div>';
+                } else {
+                    html += '<div class="text-gray-400"><strong>' + key + ':</strong> (غير موجود)</div>';
+                }
+            });
+
+            const systemPref = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'داكن' : 'فاتح';
+            html += '<div class="text-purple-700 mt-2"><strong>تفضيل النظام:</strong> ' + systemPref + '</div>';
+
+            statusBox.innerHTML = html;
+        }
+
+        function setLightMode() {
+            log('⚙️ Setting Light Mode...', '#f59e0b');
+            localStorage.setItem('adminDarkMode', 'false');
+            log('✅ adminDarkMode = "false"', '#10b981');
+            updateStatus();
+            log('✨ تم! افتح /admin/dashboard واضغط Ctrl+Shift+R', '#10b981');
+        }
+
+        function setDarkMode() {
+            log('⚙️ Setting Dark Mode...', '#3b82f6');
+            localStorage.setItem('adminDarkMode', 'true');
+            log('✅ adminDarkMode = "true"', '#10b981');
+            updateStatus();
+            log('✨ تم! افتح /admin/dashboard واضغط Ctrl+Shift+R', '#10b981');
+        }
+
+        function clearAllDarkModeSettings() {
+            log('🧹 Clearing ALL dark mode settings...', '#ef4444');
+            const allKeys = ['adminDarkMode', 'bookingDarkMode', 'queueDarkMode', 'darkMode', 'dark-mode', 'dark_mode'];
+            let removed = 0;
+
+            allKeys.forEach(key => {
+                const value = localStorage.getItem(key);
+                if (value !== null) {
+                    localStorage.removeItem(key);
+                    log('🗑️ Removed: ' + key + ' = ' + value, '#ef4444');
+                    removed++;
+                }
+            });
+
+            if (removed === 0) {
+                log('ℹ️ No settings found to remove', '#9ca3af');
+            } else {
+                log('✅ Removed ' + removed + ' settings', '#10b981');
+            }
+
+            updateStatus();
+            log('✨ تم التنظيف! الآن ستستخدم الصفحة تفضيلات النظام', '#10b981');
+        }
+
+        function resetToSystemPreference() {
+            log('🔄 Resetting to system preference...', '#10b981');
+            clearAllDarkModeSettings();
+            log('ℹ️ System preference will be used on next page load', '#9ca3af');
+        }
+
+        // Initialize
+        log('🚀 Dark Mode Reset Tool Loaded', '#0ff');
+        log('📍 Current URL: ' + window.location.href, '#0ff');
+        updateStatus();
+    </script>
+</body>
+</html>

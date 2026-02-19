@@ -1,7 +1,7 @@
 /**
  * Dark Mode Toggle Handler - Queue Display Page Only
  * نظام التبديل بين الوضع النهاري والليلي - مخصص لصفحة عرض الطابور
- * 
+ *
  * يستخدم localStorage key: 'queueDarkMode'
  * منفصل عن Dark Mode الخاص بالحجز والداشبورد
  * مثالي لشاشات العرض الكبيرة في المحلات
