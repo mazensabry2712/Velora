@@ -51,7 +51,13 @@ class TenancyServiceProvider extends ServiceProvider
 
             // Domain events
             Events\CreatingDomain::class => [],
-            Events\DomainCreated::class => [],
+            Events\DomainCreated::class => [
+                JobPipeline::make([
+                    \App\Jobs\LinkTenantDomain::class, // Auto-link domain to Herd
+                ])->send(function (Events\DomainCreated $event) {
+                    return $event->domain;
+                })->shouldBeQueued(false),
+            ],
             Events\SavingDomain::class => [],
             Events\DomainSaved::class => [],
             Events\UpdatingDomain::class => [],

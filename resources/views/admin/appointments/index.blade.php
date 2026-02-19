@@ -1047,6 +1047,9 @@
                                     <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)"
                                            class="w-4 h-4 text-indigo-600 bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600 rounded focus:ring-indigo-500">
                                 </th>
+                                <th class="px-3 py-3 {{ $isArabic ? 'text-right' : 'text-left' }} text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider w-16">
+                                    {{ $isArabic ? '#' : '#' }}
+                                </th>
                                 <th class="px-3 py-3 {{ $isArabic ? 'text-right' : 'text-left' }} text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                                     <a href="{{ request()->fullUrlWithQuery(['sort' => 'customer', 'dir' => request('dir') === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                                         {{ $isArabic ? 'العميل' : 'Customer' }}
@@ -1095,6 +1098,11 @@
                                                value="{{ $appointment->id }}" onchange="updateBulkSelection()">
                                     </td>
 
+                                    <!-- ID Number -->
+                                    <td class="px-3 py-3">
+                                        <div class="text-sm font-bold text-slate-700 dark:text-slate-300">{{ $loop->iteration }}</div>
+                                    </td>
+
                                     <!-- Customer -->
                                     <td class="px-3 py-3">
                                         <div class="flex items-center gap-2">
@@ -1140,7 +1148,9 @@
 
                                     <!-- Service (hide on mobile) -->
                                     <td class="px-3 py-3 hide-mobile">
-                                        <div class="text-sm text-slate-700 dark:text-slate-300">{{ $appointment->service_type ?? '-' }}</div>
+                                        <div class="text-sm text-slate-700 dark:text-slate-300">
+                                            {{ $appointment->service?->name ?? $appointment->service_type ?? ($isArabic ? 'غير محدد' : 'N/A') }}
+                                        </div>
                                         @if($appointment->queue)
                                             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold mt-1 {{ $appointment->queue->status === 'waiting' ? 'bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-300' : ($appointment->queue->status === 'serving' ? 'bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300' : 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-300') }}">
                                                 #{{ $appointment->queue->queue_number }}
