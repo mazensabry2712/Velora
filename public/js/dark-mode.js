@@ -1,6 +1,9 @@
 /**
- * Dark Mode Toggle Handler
- * نظام التبديل بين الوضع النهاري والليلي
+ * Dark Mode Toggle Handler - Admin Dashboard Only
+ * نظام التبديل بين الوضع النهاري والليلي - مخصص للداشبورد الإداري
+ *
+ * يستخدم localStorage key: 'adminDarkMode'
+ * منفصل تماماً عن Dark Mode الخاص بصفحة الحجز العامة
  *
  * ملاحظة مهمة:
  * - يجب أن يكون هناك سكريبت inline في <head> لمنع وميض الوضع الفاتح
@@ -12,11 +15,13 @@
  */
 
 /**
- * تبديل وضع الدارك مود
+ * تبديل وضع الدارك مود - الداشبورد
  */
 function toggleDarkMode() {
     const isDark = document.documentElement.classList.toggle('dark');
-    localStorage.setItem('darkMode', isDark);
+    const value = String(isDark);
+    localStorage.setItem('adminDarkMode', value);
+    console.log('🔄 Toggle Dark Mode:', isDark, '→ localStorage:', value);
 
     // تحديث أيقونة الزر إذا كانت موجودة
     const icon = document.getElementById('dark-mode-icon');
@@ -29,10 +34,16 @@ function toggleDarkMode() {
  * تحديث أيقونة الزر عند تحميل الصفحة
  */
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('📱 DOMContentLoaded - checking current state...');
+    const savedMode = localStorage.getItem('adminDarkMode');
+    const isDark = document.documentElement.classList.contains('dark');
+    console.log('   localStorage adminDarkMode:', savedMode);
+    console.log('   Current dark class:', isDark);
+    
     const icon = document.getElementById('dark-mode-icon');
     if (icon) {
-        const isDark = document.documentElement.classList.contains('dark');
         icon.textContent = isDark ? '☀️' : '🌙';
+        console.log('   Icon updated:', icon.textContent);
     }
 });
 
@@ -40,7 +51,8 @@ document.addEventListener('DOMContentLoaded', function() {
  * الاستماع لتغيير تفضيلات النظام
  */
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-    if (!localStorage.getItem('darkMode')) {
+    const savedMode = localStorage.getItem('adminDarkMode');
+    if (savedMode === null) {
         if (e.matches) {
             document.documentElement.classList.add('dark');
             const icon = document.getElementById('dark-mode-icon');

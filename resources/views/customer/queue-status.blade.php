@@ -20,9 +20,11 @@
     </script>
     <script>
         (function() {
-            if (localStorage.getItem('darkMode') === 'true' ||
-                (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            const savedMode = localStorage.getItem('queueDarkMode');
+            if (savedMode === 'true' || (savedMode === null && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.classList.add('dark');
+            } else if (savedMode === 'false') {
+                document.documentElement.classList.remove('dark');
             }
         })();
     </script>
@@ -97,11 +99,11 @@
     </div>
 
     <script>
-        // Dark Mode Toggle
+        // Dark Mode Toggle - Queue Status Page
         function toggleDarkMode() {
             const html = document.documentElement;
             const isDark = html.classList.toggle('dark');
-            localStorage.setItem('darkMode', isDark);
+            localStorage.setItem('queueDarkMode', String(isDark));
             updateDarkModeIcon();
         }
 

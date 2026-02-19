@@ -17,13 +17,37 @@
         }
     </script>
 
-    <!-- Dark Mode Prevention Script - يمنع وميض الوضع الفاتح -->
+    <!-- Dark Mode Prevention Script - Admin Dashboard Only -->
     <script>
         // يتم تنفيذ هذا الكود فوراً قبل عرض الصفحة
         (function() {
-            if (localStorage.getItem('darkMode') === 'true' ||
-                (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            // Clear ALL old dark mode keys completely
+            const oldKeys = ['darkMode', 'dark-mode', 'dark_mode'];
+            oldKeys.forEach(key => {
+                if (localStorage.getItem(key) !== null) {
+                    console.log('🧹 Removed old key:', key, '=', localStorage.getItem(key));
+                    localStorage.removeItem(key);
+                }
+            });
+
+            const savedMode = localStorage.getItem('adminDarkMode');
+            console.log('🌓 Admin Dark Mode - savedMode:', savedMode, '(type:', typeof savedMode, ')');
+            
+            if (savedMode === 'true') {
                 document.documentElement.classList.add('dark');
+                console.log('✅ Dark mode enabled');
+            } else if (savedMode === 'false') {
+                document.documentElement.classList.remove('dark');
+                console.log('☀️ Light mode enabled (explicitly set)');
+            } else if (savedMode === null) {
+                // No preference saved, check system preference
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.documentElement.classList.add('dark');
+                    console.log('🌙 System preference: dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    console.log('☀️ System preference: light');
+                }
             }
         })();
     </script>
@@ -188,7 +212,7 @@
             window.location.href = '/change-language/' + lang;
         }
     </script>
-    <script src="/js/dark-mode.js"></script>
+    <script src="/js/dark-mode.js?v={{ time() }}"></script>
     @stack('scripts')
 </body>
 </html>

@@ -19,13 +19,15 @@
         }
     </script>
 
-    <!-- Dark Mode Prevention Script - يمنع وميض الوضع الفاتح -->
+    <!-- Dark Mode Prevention Script - Queue Display Page Only -->
     <script>
-        // يتم تنفيذ هذا الكود فوراً قبل عرض الصفحة
+        // يتم تنفيذ هذا الكود فوراً قبل عرض الصفحة - خاص بصفحة عرض الطابور
         (function() {
-            if (localStorage.getItem('darkMode') === 'true' ||
-                (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            const savedMode = localStorage.getItem('queueDarkMode');
+            if (savedMode === 'true' || (savedMode === null && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.classList.add('dark');
+            } else if (savedMode === 'false') {
+                document.documentElement.classList.remove('dark');
             }
         })();
     </script>
@@ -211,6 +213,6 @@
             window.location.href = '/change-language/' + lang;
         }
     </script>
-    <script src="/js/dark-mode.js"></script>
+    <script src="/js/dark-mode-queue.js"></script>
 </body>
 </html>
