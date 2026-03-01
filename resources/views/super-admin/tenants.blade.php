@@ -1,166 +1,220 @@
 @extends('super-admin.layout')
 
 @section('title', 'إدارة الشركات')
+@section('breadcrumb')<span class="text-slate-700 dark:text-slate-200 font-medium">إدارة الشركات</span>@endsection
 
 @section('content')
 <div x-data="tenantsManager()" x-init="loadTenants()">
 
     <!-- Header -->
-    <div class="flex justify-between items-center mb-8">
+    <div class="mb-8 flex flex-wrap gap-4 justify-between items-center">
         <div>
-            <h1 class="text-3xl font-bold text-slate-900 dark:text-white">إدارة الشركات</h1>
-            <p class="text-slate-600 dark:text-slate-400 mt-2">إضافة وإدارة الشركات المسجلة</p>
+            <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                إدارة الشركات
+            </h1>
+            <p class="text-slate-500 dark:text-slate-400 mt-1 text-sm">إضافة وإدارة الشركات المسجلة في النظام</p>
         </div>
-        <button @click="openAddModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-lg shadow-lg transition duration-200 transform hover:scale-105">
-            <span class="flex items-center space-x-2 space-x-reverse">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                <span>إضافة شركة جديدة</span>
-            </span>
+        <button @click="openAddModal()"
+                class="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-semibold px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-200 dark:shadow-indigo-900 transition-all duration-200 hover:-translate-y-0.5">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            إضافة شركة جديدة
         </button>
     </div>
 
-    <!-- Loading State -->
-    <div x-show="loading" class="flex items-center justify-center py-12">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+    <!-- Skeleton Loading State -->
+    <div x-show="loading" class="space-y-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div class="p-4 border-b border-slate-200 dark:border-slate-700">
+                <div class="h-5 bg-slate-200 dark:bg-slate-700 rounded-lg w-32 skeleton"></div>
+            </div>
+            <div class="divide-y divide-slate-200 dark:divide-slate-700">
+                <template x-for="i in 6" :key="i">
+                    <div class="px-6 py-4 flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 skeleton flex-shrink-0"></div>
+                        <div class="flex-1 space-y-2">
+                            <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/3 skeleton"></div>
+                            <div class="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/2 skeleton"></div>
+                        </div>
+                        <div class="h-6 w-16 bg-slate-200 dark:bg-slate-700 rounded-full skeleton"></div>
+                        <div class="h-4 w-24 bg-slate-200 dark:bg-slate-700 rounded skeleton"></div>
+                        <div class="flex gap-2">
+                            <div class="h-8 w-8 bg-slate-200 dark:bg-slate-700 rounded-lg skeleton"></div>
+                            <div class="h-8 w-8 bg-slate-200 dark:bg-slate-700 rounded-lg skeleton"></div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
     </div>
 
     <!-- Tenants List -->
-    <div x-show="!loading" x-cloak class="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700">
+    <div x-show="!loading" x-cloak class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+        <!-- Table header with search -->
+        <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex flex-wrap gap-3 items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/40 rounded-lg flex items-center justify-center">
+                    <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                </div>
+                <h2 class="font-bold text-slate-900 dark:text-white">قائمة الشركات</h2>
+                <span class="text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-full font-medium" x-text="tenants.length + ' شركة'"></span>
+            </div>
+            <div class="relative">
+                <input type="text" x-model="searchQuery" @input="filterTenants()"
+                       placeholder="بحث عن شركة..."
+                       class="w-56 pr-9 pl-4 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+                <svg class="w-4 h-4 text-slate-400 absolute right-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
+                </svg>
+            </div>
+        </div>
         <div class="overflow-x-auto">
             <table class="w-full">
-                <thead class="bg-slate-50 dark:bg-slate-900">
+                <thead class="bg-slate-50 dark:bg-slate-900/50">
                     <tr>
-                        <th class="px-6 py-4 text-right text-xs font-medium text-slate-700 dark:text-slate-300 uppercase">اسم الشركة</th>
-                        <th class="px-6 py-4 text-right text-xs font-medium text-slate-700 dark:text-slate-300 uppercase">الدومين</th>
-                        <th class="px-6 py-4 text-right text-xs font-medium text-slate-700 dark:text-slate-300 uppercase">البريد الإلكتروني</th>
-                        <th class="px-6 py-4 text-right text-xs font-medium text-slate-700 dark:text-slate-300 uppercase">الحالة</th>
-                        <th class="px-6 py-4 text-right text-xs font-medium text-slate-700 dark:text-slate-300 uppercase">تاريخ الإنشاء</th>
-                        <th class="px-6 py-4 text-right text-xs font-medium text-slate-700 dark:text-slate-300 uppercase">الإجراءات</th>
+                        <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">الشركة</th>
+                        <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">الدومين</th>
+                        <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">البريد الإلكتروني</th>
+                        <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">الحالة</th>
+                        <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">تاريخ الإنشاء</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">الإجراءات</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
-                    <template x-for="tenant in tenants" :key="tenant.id">
-                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
+                    <template x-for="tenant in filteredTenants" :key="tenant.id">
+                        <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-700/30 transition-colors duration-150 group">
                             <td class="px-6 py-4">
-                                <div class="flex items-center space-x-3 space-x-reverse">
-                                    <div class="w-10 h-10 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center">
-                                        <span class="text-indigo-600 dark:text-indigo-400 font-semibold" x-text="tenant.name.charAt(0)"></span>
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white text-sm flex-shrink-0 shadow-sm"
+                                         :style="`background: hsl(${(tenant.name.charCodeAt(0) * 37) % 360}, 65%, 50%)`"
+                                         x-text="tenant.name.charAt(0).toUpperCase()"></div>
+                                    <div>
+                                        <p class="text-sm font-semibold text-slate-900 dark:text-white" x-text="tenant.name"></p>
+                                        <p class="text-xs text-slate-400" x-text="'#' + tenant.id"></p>
                                     </div>
-                                    <span class="text-sm font-medium text-slate-900 dark:text-white" x-text="tenant.name"></span>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400" x-text="tenant.domain"></td>
-                            <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400" x-text="tenant.email || '-'"></td>
+                            <td class="px-6 py-4">
+                                <code class="text-xs bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-2 py-1 rounded-md font-mono" x-text="tenant.domain"></code>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-500 dark:text-slate-400" x-text="tenant.email || '-'"></td>
                             <td class="px-6 py-4">
                                 <button @click="toggleStatus(tenant.id, tenant.active)"
-                                        :class="tenant.active ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300'"
-                                        class="px-3 py-1 text-xs font-semibold rounded-full hover:opacity-80 transition">
+                                        :class="tenant.active
+                                            ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-200 dark:ring-emerald-800'
+                                            : 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800'"
+                                        class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full hover:opacity-80 transition">
+                                    <span :class="tenant.active ? 'bg-emerald-500' : 'bg-amber-500'" class="w-1.5 h-1.5 rounded-full"></span>
                                     <span x-text="tenant.active ? 'نشط' : 'غير نشط'"></span>
                                 </button>
                             </td>
-                            <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400" x-text="formatDate(tenant.created_at)"></td>
+                            <td class="px-6 py-4 text-sm text-slate-500 dark:text-slate-400" x-text="formatDate(tenant.created_at)"></td>
                             <td class="px-6 py-4">
-                                <div class="flex items-center space-x-2 space-x-reverse">
-                                    <button @click="viewTenant(tenant)" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 p-2 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition" title="عرض">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                <div class="flex items-center justify-center gap-1.5">
+                                    <button @click="viewTenant(tenant)"
+                                            class="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition tooltip" data-tip="عرض التفاصيل">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                         </svg>
                                     </button>
-                                    <button @click="deleteTenant(tenant.id)" class="text-red-600 dark:text-red-400 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition" title="حذف">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    <button @click="confirmDelete(tenant.id, tenant.name)"
+                                            class="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition tooltip" data-tip="حذف الشركة">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                         </svg>
                                     </button>
                                 </div>
                             </td>
                         </tr>
                     </template>
+                    <!-- Empty state -->
+                    <tr x-show="filteredTenants.length === 0 && !loading">
+                        <td colspan="6" class="px-6 py-16 text-center">
+                            <svg class="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/>
+                            </svg>
+                            <p class="text-slate-500 dark:text-slate-400 font-medium">لا توجد شركات للعرض</p>
+                            <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">جرّب تعديل بحثك أو أضف شركة جديدة</p>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
     </div>
 
     <!-- Add Tenant Modal -->
-    <div x-show="showAddModal"
-         x-cloak
-         class="fixed inset-0 z-50 overflow-y-auto"
-         @keydown.escape.window="showAddModal = false">
-        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <!-- Overlay -->
-            <div x-show="showAddModal"
-                 @click="showAddModal = false"
-                 x-transition:enter="ease-out duration-300"
-                 x-transition:enter-start="opacity-0"
-                 x-transition:enter-end="opacity-100"
-                 x-transition:leave="ease-in duration-200"
-                 x-transition:leave-start="opacity-100"
-                 x-transition:leave-end="opacity-0"
-                 class="fixed inset-0 transition-opacity bg-slate-900 bg-opacity-75"></div>
+    <div x-show="showAddModal" x-cloak
+         @keydown.escape.window="showAddModal = false"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showAddModal = false"></div>
+        <div x-show="showAddModal"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95"
+             class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg">
 
-            <!-- Modal -->
-            <div x-show="showAddModal"
-                 x-transition:enter="ease-out duration-300"
-                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
-                 x-transition:leave="ease-in duration-200"
-                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
-                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                 class="inline-block align-bottom bg-white dark:bg-slate-800 rounded-lg text-right overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-
-                <form @submit.prevent="addTenant()">
-                    <div class="px-6 py-5">
-                        <h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-6">إضافة شركة جديدة</h3>
-
-                        <!-- Tenant Name -->
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">اسم الشركة *</label>
-                            <input type="text"
-                                   x-model="newTenant.name"
-                                   required
-                                   class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                                   placeholder="شركة المواعيد">
-                        </div>
-
-                        <!-- Domain -->
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">الدومين *</label>
-                            <input type="text"
-                                   x-model="newTenant.domain"
-                                   required
-                                   class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                                   placeholder="company.localhost">
-                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">مثال: company.localhost أو subdomain.yourdomain.com</p>
-                        </div>
-
-                        <!-- Email (Optional) -->
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">البريد الإلكتروني (اختياري)</label>
-                            <input type="email"
-                                   x-model="newTenant.email"
-                                   class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                                   placeholder="admin@company.com">
-                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">إذا لم يتم إدخاله، سيتم توليده تلقائياً</p>
-                        </div>
+            <!-- Header -->
+            <div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/40 rounded-xl flex items-center justify-center">
+                        <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
                     </div>
-
-                    <div class="bg-slate-50 dark:bg-slate-900 px-6 py-4 flex justify-end space-x-3 space-x-reverse">
-                        <button type="button"
-                                @click="showAddModal = false"
-                                class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">
-                            إلغاء
-                        </button>
-                        <button type="submit"
-                                :disabled="submitting"
-                                class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 rounded-lg transition disabled:opacity-50">
-                            <span x-show="!submitting">إضافة</span>
-                            <span x-show="submitting">جاري الإضافة...</span>
-                        </button>
-                    </div>
-                </form>
+                    <h3 class="text-xl font-bold text-slate-900 dark:text-white">إضافة شركة جديدة</h3>
+                </div>
+                <button @click="showAddModal = false" class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
             </div>
+
+            <form @submit.prevent="addTenant()">
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">اسم الشركة <span class="text-red-500">*</span></label>
+                        <input type="text" x-model="newTenant.name" required
+                               class="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white transition"
+                               placeholder="شركة المواعيد">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">الدومين <span class="text-red-500">*</span></label>
+                        <input type="text" x-model="newTenant.domain" required
+                               class="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white transition font-mono text-sm"
+                               placeholder="company.localhost">
+                        <p class="text-xs text-slate-400 mt-1">مثال: company.localhost أو subdomain.yourdomain.com</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">البريد الإلكتروني <span class="text-slate-400 font-normal">(اختياري)</span></label>
+                        <input type="email" x-model="newTenant.email"
+                               class="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white transition"
+                               placeholder="admin@company.com">
+                        <p class="text-xs text-slate-400 mt-1">سيتم توليده تلقائياً إذا تُرك فارغاً</p>
+                    </div>
+                </div>
+                <div class="flex gap-3 justify-end p-6 pt-0">
+                    <button type="button" @click="showAddModal = false"
+                            class="px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl transition">
+                        إلغاء
+                    </button>
+                    <button type="submit" :disabled="submitting"
+                            class="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg x-show="submitting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                        <span x-text="submitting ? 'جاري الإضافة...' : 'إضافة الشركة'"></span>
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -222,6 +276,88 @@
         </div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
+    <div x-show="showDeleteModal" x-cloak
+         @keydown.escape.window="showDeleteModal = false"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showDeleteModal = false"></div>
+        <div x-show="showDeleteModal"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95"
+             class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+            <div class="w-14 h-14 bg-red-100 dark:bg-red-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <svg class="w-7 h-7 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">حذف الشركة</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mb-1">هل أنت متأكد من حذف:</p>
+            <p class="font-bold text-slate-900 dark:text-white mb-2" x-text="deleteTargetName"></p>
+            <p class="text-xs text-red-500 mb-6">سيتم حذف جميع البيانات نهائياً ولا يمكن التراجع</p>
+            <div class="flex gap-3">
+                <button @click="showDeleteModal = false"
+                        class="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl transition">
+                    إلغاء
+                </button>
+                <button @click="deleteTenant(deleteTargetId)"
+                        class="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-xl transition">
+                    حذف نهائياً
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Tenant Modal -->
+    <div x-show="showViewModal" x-cloak
+         @keydown.escape.window="showViewModal = false"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showViewModal = false"></div>
+        <div x-show="showViewModal"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+                <h3 class="text-xl font-bold text-slate-900 dark:text-white">تفاصيل الشركة</h3>
+                <button @click="showViewModal = false" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-6" x-show="selectedTenant">
+                <div class="flex items-center gap-4 mb-6 pb-6 border-b border-slate-100 dark:border-slate-700">
+                    <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-lg"
+                         :style="selectedTenant ? `background: hsl(${(selectedTenant.name.charCodeAt(0) * 37) % 360}, 65%, 50%)` : ''"
+                         x-text="selectedTenant ? selectedTenant.name.charAt(0).toUpperCase() : ''"></div>
+                    <div>
+                        <h4 class="text-lg font-bold text-slate-900 dark:text-white" x-text="selectedTenant?.name"></h4>
+                        <span :class="selectedTenant?.active ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'"
+                              class="text-xs font-semibold px-2.5 py-1 rounded-full" x-text="selectedTenant?.active ? 'نشط' : 'غير نشط'"></span>
+                    </div>
+                </div>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between py-2.5 border-b border-slate-100 dark:border-slate-700">
+                        <span class="text-sm text-slate-500">الدومين</span>
+                        <code class="text-sm bg-slate-100 dark:bg-slate-700 px-2.5 py-1 rounded-lg font-mono" x-text="selectedTenant?.domain"></code>
+                    </div>
+                    <div class="flex items-center justify-between py-2.5 border-b border-slate-100 dark:border-slate-700">
+                        <span class="text-sm text-slate-500">البريد الإلكتروني</span>
+                        <span class="text-sm text-slate-900 dark:text-white" x-text="selectedTenant?.email || '-'"></span>
+                    </div>
+                    <div class="flex items-center justify-between py-2.5">
+                        <span class="text-sm text-slate-500">تاريخ الإنشاء</span>
+                        <span class="text-sm text-slate-900 dark:text-white" x-text="selectedTenant ? formatDate(selectedTenant.created_at) : '-'"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 @endsection
 
@@ -232,8 +368,15 @@ function tenantsManager() {
         loading: true,
         submitting: false,
         tenants: [],
+        filteredTenants: [],
+        searchQuery: '',
         showAddModal: false,
         showCredentialsModal: false,
+        showDeleteModal: false,
+        showViewModal: false,
+        deleteTargetId: null,
+        deleteTargetName: '',
+        selectedTenant: null,
         credentials: {},
         newTenant: {
             name: '',
@@ -260,6 +403,7 @@ function tenantsManager() {
 
                 if (data.success) {
                     this.tenants = data.data.data;
+                    this.filteredTenants = this.tenants;
                 }
             } catch (error) {
                 console.error('Error loading tenants:', error);
@@ -295,6 +439,7 @@ function tenantsManager() {
                     this.showAddModal = false;
                     this.showCredentialsModal = true;
                     await this.loadTenants();
+                    this.filteredTenants = this.tenants;
                     showToast('تم إضافة الشركة بنجاح!', 'success');
                 } else {
                     showToast(data.message || 'حدث خطأ', 'error');
@@ -329,11 +474,14 @@ function tenantsManager() {
             }
         },
 
-        async deleteTenant(id) {
-            if (!confirm('هل أنت متأكد من حذف هذه الشركة؟ سيتم حذف جميع البيانات!')) {
-                return;
-            }
+        confirmDelete(id, name) {
+            this.deleteTargetId = id;
+            this.deleteTargetName = name;
+            this.showDeleteModal = true;
+        },
 
+        async deleteTenant(id) {
+            this.showDeleteModal = false;
             try {
                 const response = await fetch(`/api/super-admin/tenants/${id}`, {
                     method: 'DELETE',
@@ -352,11 +500,26 @@ function tenantsManager() {
                 }
             } catch (error) {
                 console.error('Error deleting tenant:', error);
+                showToast('حدث خطأ أثناء الحذف', 'error');
             }
         },
 
         viewTenant(tenant) {
-            alert(`معلومات: ${tenant.name}\nالدومين: ${tenant.domain}`);
+            this.selectedTenant = tenant;
+            this.showViewModal = true;
+        },
+
+        filterTenants() {
+            if (!this.searchQuery) {
+                this.filteredTenants = this.tenants;
+                return;
+            }
+            const q = this.searchQuery.toLowerCase();
+            this.filteredTenants = this.tenants.filter(t =>
+                t.name.toLowerCase().includes(q) ||
+                t.domain.toLowerCase().includes(q) ||
+                (t.email || '').toLowerCase().includes(q)
+            );
         },
 
         formatDate(date) {

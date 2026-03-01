@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Components Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .test-pass { background-color: #d4edda; border-color: #c3e6cb; color: #155724; }
+        .test-fail { background-color: #f8d7da; border-color: #f5c6cb; color: #721c24; }
+        .test-pending { background-color: #fff3cd; border-color: #ffeaa7; color: #856404; }
+    </style>
+</head>
+<body class="bg-slate-100 p-6">
+    <div class="max-w-6xl mx-auto">
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-6">
+            <h1 class="text-3xl font-bold text-slate-900 mb-2">اختبار مكونات Dashboard</h1>
+            <p class="text-slate-600">اختبار شامل لجميع APIs والمكونات الجديدة</p>
+        </div>
+
+        <!-- Test Results Container -->
+        <div id="testResults" class="space-y-4"></div>
+
+        <!-- Summary -->
+        <div id="summary" class="bg-white rounded-xl shadow-lg p-6 mt-6 hidden">
+            <h2 class="text-2xl font-bold text-slate-900 mb-4">النتيجة النهائية</h2>
+            <div class="grid grid-cols-3 gap-4">
+                <div class="text-center p-4 bg-green-50 rounded-lg">
+                    <div class="text-3xl font-bold text-green-600" id="passedCount">0</div>
+                    <div class="text-sm text-green-700">نجح</div>
+                </div>
+                <div class="text-center p-4 bg-red-50 rounded-lg">
+                    <div class="text-3xl font-bold text-red-600" id="failedCount">0</div>
+                    <div class="text-sm text-red-700">فشل</div>
+                </div>
+                <div class="text-center p-4 bg-blue-50 rounded-lg">
+                    <div class="text-3xl font-bold text-blue-600" id="totalCount">0</div>
+                    <div class="text-sm text-blue-700">إجمالي</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Start Test Button -->
+        <div class="text-center mt-6">
+            <button onclick="runAllTests()"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition">
+                بدء الاختبارات
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const baseURL = 'https://booking-saas.test';
+        let testsPassed = 0;
+        let testsFailed = 0;
+        let testsTotal = 0;
+
+        const tests = [
+            {
+                name: 'اختبار API - Dashboard الرئيسي',
+                endpoint: '/api/super-admin/dashboard',
+                expectedFields: ['total_tenants', 'active_tenants', 'inactive_tenants', 'tenants_this_month', 'recent_tenants']
+            },
+            {
+                name: 'اختبار API - إحصائيات الاشتراكات',
+                endpoint: '/api/super-admin/dashboard/subscription-stats',
+                expectedFields: ['total_revenue', 'monthly_revenue', 'active_subscriptions']
+            },
+            {
+                name: 'اختبار API - ملخص النشاطات',
+                endpoint: '/api/super-admin/dashboard/activity-summary',
+                expectedFields: ['recent', 'today_count', 'week_count']
+            },
+            {
+                name: 'اختبار API - إحصائيات النظام',
+                endpoint: '/api/super-admin/dashboard/system-stats',
+                expectedFields: ['stats', 'chart']
+            },
+            {
+                name: 'اختبار API - مقاييس النمو',
+                endpoint: '/api/super-admin/dashboard/growth-metrics',
+                expectedFields: []
+            }
+        ];
+
+        async function runAllTests() {
+            document.getElementById('testResults').innerHTML = '';
+            document.getElementById('summary').classList.add('hidden');
+            testsPassed = 0;
+            testsFailed = 0;
+            testsTotal = tests.length;
+
+            for (const test of tests) {
+                await runTest(test);
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            showSummary();
+        }
+
+        async function runTest(test) {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'bg-white rounded-lg shadow-lg p-6 border-r-4';
+            resultDiv.classList.add('test-pending');
+            resultDiv.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="font-bold text-lg">${test.name}</h3>
+                        <p class="text-sm text-slate-600 mt-1">${test.endpoint}</p>
+                    </div>
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                </div>
+            `;
+            document.getElementById('testResults').appendChild(resultDiv);
+
+            try {
+                const response = await fetch(baseURL + test.endpoint, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                    },
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // Check if all expected fields exist
+                    let allFieldsExist = true;
+                    const missingFields = [];
+
+                    if (test.expectedFields.length > 0) {
+                        for (const field of test.expectedFields) {
+                            if (!(field in data.data)) {
+                                allFieldsExist = false;
+                                missingFields.push(field);
+                            }
+                        }
+                    }
+
+                    if (allFieldsExist) {
+                        resultDiv.classList.remove('test-pending');
+                        resultDiv.classList.add('test-pass');
+                        resultDiv.innerHTML = `
+                            <div class="flex items-center justify-between">
+                                <div class="flex-1">
+                                    <h3 class="font-bold text-lg flex items-center gap-2">
+                                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        ${test.name}
+                                    </h3>
+                                    <p class="text-sm text-slate-600 mt-1">${test.endpoint}</p>
+                                    <div class="mt-3 bg-green-50 p-3 rounded">
+                                        <p class="text-sm font-semibold text-green-800">✓ الاختبار نجح</p>
+                                        <p class="text-xs text-green-700 mt-1">Status: ${response.status} | Fields: ${Object.keys(data.data).length}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        testsPassed++;
+                    } else {
+                        throw new Error(`Missing fields: ${missingFields.join(', ')}`);
+                    }
+                } else {
+                    throw new Error(`API returned error: ${data.message || 'Unknown error'}`);
+                }
+
+            } catch (error) {
+                resultDiv.classList.remove('test-pending');
+                resultDiv.classList.add('test-fail');
+                resultDiv.innerHTML = `
+                    <div>
+                        <h3 class="font-bold text-lg flex items-center gap-2">
+                            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            ${test.name}
+                        </h3>
+                        <p class="text-sm text-slate-600 mt-1">${test.endpoint}</p>
+                        <div class="mt-3 bg-red-50 p-3 rounded">
+                            <p class="text-sm font-semibold text-red-800">✗ الاختبار فشل</p>
+                            <p class="text-xs text-red-700 mt-1">${error.message}</p>
+                        </div>
+                    </div>
+                `;
+                testsFailed++;
+            }
+        }
+
+        function showSummary() {
+            document.getElementById('summary').classList.remove('hidden');
+            document.getElementById('passedCount').textContent = testsPassed;
+            document.getElementById('failedCount').textContent = testsFailed;
+            document.getElementById('totalCount').textContent = testsTotal;
+
+            const successRate = ((testsPassed / testsTotal) * 100).toFixed(1);
+
+            if (testsPassed === testsTotal) {
+                document.getElementById('summary').classList.add('border-4', 'border-green-500');
+            } else if (testsFailed === testsTotal) {
+                document.getElementById('summary').classList.add('border-4', 'border-red-500');
+            } else {
+                document.getElementById('summary').classList.add('border-4', 'border-yellow-500');
+            }
+        }
+
+        // Auto-run tests on load
+        window.addEventListener('load', () => {
+            setTimeout(() => runAllTests(), 1000);
+        });
+    </script>
+</body>
+</html>

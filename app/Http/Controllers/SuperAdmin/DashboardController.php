@@ -20,12 +20,13 @@ class DashboardController extends Controller
             'active_tenants' => $allTenants->filter(fn($t) => $t->active)->count(),
             'inactive_tenants' => $allTenants->filter(fn($t) => !$t->active)->count(),
             'tenants_this_month' => Tenant::whereMonth('created_at', now()->month)->count(),
-            'recent_tenants' => Tenant::with('domains')->latest()->take(5)->get()->map(function ($tenant) {
+            'recent_tenants' => Tenant::with('domains')->latest()->take(10)->get()->map(function ($tenant) {
+                $domain = $tenant->domains->first();
                 return [
                     'id' => $tenant->id,
-                    'name' => $tenant->name,
-                    'domain' => $tenant->domains->first()?->domain ?? 'N/A',
-                    'active' => $tenant->active,
+                    'name' => $tenant->name ?? 'N/A',
+                    'subdomain' => $domain ? str_replace('.'.config('app.domain', 'booking-saas.test'), '', $domain->domain) : $tenant->id,
+                    'is_active' => $tenant->active ?? true,
                     'created_at' => $tenant->created_at->toISOString(),
                 ];
             }),

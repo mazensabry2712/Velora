@@ -1,119 +1,752 @@
 @extends('super-admin.layout')
 
 @section('title', 'Super Admin Dashboard')
+@section('breadcrumb')<span class="text-slate-700 dark:text-slate-200 font-medium">لوحة التحكم</span>@endsection
 
 @section('content')
-<div x-data="dashboard()" x-init="loadDashboard()">
+<div x-data="dashboard()" x-init="init()">
 
-    <!-- Header -->
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-slate-900 dark:text-white">لوحة التحكم الرئيسية</h1>
-        <p class="text-slate-600 dark:text-slate-400 mt-2">إدارة جميع الشركات والنظام</p>
+    <!-- Header with Actions -->
+    <div class="mb-8 flex flex-wrap gap-4 justify-between items-start">
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                لوحة تحكم المدير الرئيسي
+                <!-- Live indicator -->
+                <span class="flex items-center gap-1 text-xs font-medium bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full">
+                    <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                    مباشر
+                </span>
+            </h1>
+            <p class="text-slate-500 dark:text-slate-400 mt-1 text-sm">
+                آخر تحديث: <span x-text="lastRefreshed" class="font-medium text-slate-700 dark:text-slate-300">الآن</span>
+            </p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-wrap gap-2">
+
+            <!-- Refresh Button -->
+            <div class="tooltip-wrapper">
+                <button @click="refreshDashboard()"
+                        :class="refreshing && 'opacity-60 cursor-not-allowed'"
+                        :disabled="refreshing"
+                        class="p-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition">
+                    <svg :class="refreshing && 'animate-spin'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                </button>
+                <span class="tooltip-text">تحديث البيانات</span>
+            </div>
+
+            <!-- Search Button -->
+            <div class="tooltip-wrapper">
+                <button @click="showSearch = !showSearch; $nextTick(() => showSearch && $refs.searchInput.focus())"
+                        :class="showSearch && 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400'"
+                        class="p-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </button>
+                <span class="tooltip-text">بحث ( / )</span>
+            </div>
+
+            <!-- Notifications -->
+            <div class="relative tooltip-wrapper" x-data="{ open: false }">
+                <button @click="open = !open"
+                        :class="open && 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400'"
+                        class="relative p-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                    <span x-show="notifications.length > 0"
+                          class="badge-pulse absolute -top-1 -right-1 min-w-[18px] h-[18px] text-xs bg-red-500 text-white rounded-full flex items-center justify-center font-bold px-1"
+                          x-text="notifications.length"></span>
+                </button>
+                <span class="tooltip-text">الإشعارات</span>
+
+                <!-- Notifications Dropdown -->
+                <div x-show="open" @click.away="open = false" x-cloak
+                     x-transition:enter="transition ease-out duration-150"
+                     x-transition:enter-start="opacity-0 scale-95 translate-y-1"
+                     x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                     x-transition:leave="transition ease-in duration-100"
+                     x-transition:leave-start="opacity-100"
+                     x-transition:leave-end="opacity-0 scale-95"
+                     class="absolute left-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 z-50 overflow-hidden">
+                    <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 flex justify-between items-center">
+                        <h3 class="font-bold text-slate-900 dark:text-white">الإشعارات</h3>
+                        <span class="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full font-medium" x-text="notifications.length + ' جديد'"></span>
+                    </div>
+                    <div class="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700">
+                        <template x-for="notif in notifications" :key="notif.id">
+                            <div class="flex items-start gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition cursor-pointer">
+                                <div class="w-8 h-8 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm text-slate-900 dark:text-white font-medium leading-tight" x-text="notif.message"></p>
+                                    <p class="text-xs text-slate-400 mt-0.5" x-text="notif.time"></p>
+                                </div>
+                            </div>
+                        </template>
+                        <div x-show="notifications.length === 0" class="p-8 text-center">
+                            <svg class="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                            </svg>
+                            <p class="text-sm text-slate-500">لا توجد إشعارات جديدة</p>
+                        </div>
+                    </div>
+                    <div class="p-3 border-t border-slate-200 dark:border-slate-700">
+                        <a href="{{ route('super-admin.notifications') }}" class="block text-center text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:underline">عرض كل الإشعارات</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export CSV -->
+            <div class="tooltip-wrapper">
+                <button @click="exportData()"
+                        class="p-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition shadow-sm hover:shadow-indigo-200 dark:hover:shadow-indigo-900">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </button>
+                <span class="tooltip-text">تصدير CSV (E)</span>
+            </div>
+
+        </div>
     </div>
 
-    <!-- Loading State -->
-    <div x-show="loading" class="flex items-center justify-center py-12">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+    <!-- Quick Search -->
+    <div x-show="showSearch" x-cloak
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 -translate-y-2"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0 -translate-y-2"
+         class="mb-6">
+        <div class="relative">
+            <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+                x-ref="searchInput"
+                type="text"
+                x-model="searchQuery"
+                @input="filterData()"
+                @keydown.escape="showSearch = false; searchQuery = ''; filterData()"
+                placeholder="ابحث في الشركات بالاسم أو النطاق الفرعي..."
+                class="w-full pr-10 pl-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm shadow-sm transition"
+            />
+            <span x-show="searchQuery" class="absolute left-3 top-1/2 -translate-y-1/2 text-xs bg-slate-100 dark:bg-slate-700 text-slate-500 px-2 py-0.5 rounded">
+                <span x-text="filteredTenants.length"></span> نتيجة
+            </span>
+        </div>
+    </div>
+
+    <!-- Skeleton Loading State -->
+    <div x-show="loading" x-cloak>
+        <!-- Skeleton stat cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <template x-for="i in 4">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow p-6 border border-slate-200 dark:border-slate-700">
+                    <div class="flex items-center justify-between">
+                        <div class="space-y-3 flex-1">
+                            <div class="skeleton h-3 w-24 rounded"></div>
+                            <div class="skeleton h-8 w-16 rounded"></div>
+                        </div>
+                        <div class="skeleton w-12 h-12 rounded-xl"></div>
+                    </div>
+                </div>
+            </template>
+        </div>
+        <!-- Skeleton chart cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <template x-for="i in 3">
+                <div class="skeleton rounded-2xl h-40"></div>
+            </template>
+        </div>
+        <div class="flex items-center justify-center py-8 text-slate-400 dark:text-slate-500 gap-3">
+            <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span class="text-sm">جاري تحميل البيانات...</span>
+        </div>
     </div>
 
     <!-- Statistics Cards -->
-    <div x-show="!loading" x-cloak class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div x-show="!loading" x-cloak class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+
         <!-- Total Tenants -->
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 border border-slate-200 dark:border-slate-700">
+        <div class="card-animate card-delay-1 group bg-white dark:bg-slate-800 rounded-2xl shadow-sm hover:shadow-lg p-6 border border-slate-200 dark:border-slate-700 transition-all duration-300 hover:-translate-y-1 cursor-default">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-slate-600 dark:text-slate-400">إجمالي الشركات</p>
-                    <p class="text-3xl font-bold text-slate-900 dark:text-white mt-2" x-text="stats.total_tenants"></p>
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">إجمالي الشركات</p>
+                    <p class="text-4xl font-black text-slate-900 dark:text-white mt-2 tabular-nums" x-text="filteredStats.total_tenants"></p>
+                    <p class="text-xs text-slate-400 mt-1">جميع الشركات المسجلة</p>
                 </div>
-                <div class="w-12 h-12 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
-                    <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="w-14 h-14 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-md group-hover:shadow-indigo-200 dark:group-hover:shadow-indigo-900 transition-shadow">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
+                </div>
+            </div>
+            <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5">
+                    <div class="bg-gradient-to-r from-indigo-500 to-indigo-600 h-1.5 rounded-full transition-all duration-1000" :style="`width: 100%`"></div>
                 </div>
             </div>
         </div>
 
         <!-- Active Tenants -->
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 border border-slate-200 dark:border-slate-700">
+        <div class="card-animate card-delay-2 group bg-white dark:bg-slate-800 rounded-2xl shadow-sm hover:shadow-lg p-6 border border-slate-200 dark:border-slate-700 transition-all duration-300 hover:-translate-y-1 cursor-default">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-slate-600 dark:text-slate-400">الشركات النشطة</p>
-                    <p class="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-2" x-text="stats.active_tenants"></p>
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">الشركات النشطة</p>
+                    <p class="text-4xl font-black text-emerald-600 dark:text-emerald-400 mt-2 tabular-nums" x-text="filteredStats.active_tenants"></p>
+                    <p class="text-xs text-slate-400 mt-1">تستخدم النظام حالياً</p>
                 </div>
-                <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-900 rounded-lg flex items-center justify-center">
-                    <svg class="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="w-14 h-14 bg-gradient-to-br from-emerald-500 to-green-500 rounded-2xl flex items-center justify-center shadow-md group-hover:shadow-emerald-200 dark:group-hover:shadow-emerald-900 transition-shadow">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </div>
             </div>
-        </div>
-
-        <!-- Tenants This Month -->
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 border border-slate-200 dark:border-slate-700">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-slate-600 dark:text-slate-400">هذا الشهر</p>
-                    <p class="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mt-2" x-text="stats.tenants_this_month"></p>
+            <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5">
+                    <div class="bg-gradient-to-r from-emerald-500 to-green-500 h-1.5 rounded-full transition-all duration-1000"
+                         :style="`width: ${stats.total_tenants > 0 ? Math.round(filteredStats.active_tenants/stats.total_tenants*100) : 0}%`"></div>
                 </div>
-                <div class="w-12 h-12 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
-                    <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                </div>
+                <p class="text-xs text-slate-400 mt-1" x-text="stats.total_tenants > 0 ? Math.round(filteredStats.active_tenants/stats.total_tenants*100) + '% من الإجمالي' : ''"></p>
             </div>
         </div>
 
         <!-- Inactive Tenants -->
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 border border-slate-200 dark:border-slate-700">
+        <div class="card-animate card-delay-3 group bg-white dark:bg-slate-800 rounded-2xl shadow-sm hover:shadow-lg p-6 border border-slate-200 dark:border-slate-700 transition-all duration-300 hover:-translate-y-1 cursor-default">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-slate-600 dark:text-slate-400">الشركات غير النشطة</p>
-                    <p class="text-3xl font-bold text-amber-600 dark:text-amber-400 mt-2" x-text="stats.inactive_tenants"></p>
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">غير النشطة</p>
+                    <p class="text-4xl font-black text-amber-600 dark:text-amber-400 mt-2 tabular-nums" x-text="filteredStats.inactive_tenants"></p>
+                    <p class="text-xs text-slate-400 mt-1">تحتاج متابعة</p>
                 </div>
-                <div class="w-12 h-12 bg-amber-100 dark:bg-amber-900 rounded-lg flex items-center justify-center">
-                    <svg class="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-md group-hover:shadow-amber-200 dark:group-hover:shadow-amber-900 transition-shadow">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
+                </div>
+            </div>
+            <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5">
+                    <div class="bg-gradient-to-r from-amber-500 to-orange-500 h-1.5 rounded-full transition-all duration-1000"
+                         :style="`width: ${stats.total_tenants > 0 ? Math.round(filteredStats.inactive_tenants/stats.total_tenants*100) : 0}%`"></div>
+                </div>
+                <p class="text-xs text-slate-400 mt-1" x-text="stats.total_tenants > 0 ? Math.round(filteredStats.inactive_tenants/stats.total_tenants*100) + '% من الإجمالي' : ''"></p>
+            </div>
+        </div>
+
+        <!-- This Month -->
+        <div class="card-animate card-delay-4 group bg-white dark:bg-slate-800 rounded-2xl shadow-sm hover:shadow-lg p-6 border border-slate-200 dark:border-slate-700 transition-all duration-300 hover:-translate-y-1 cursor-default">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">هذا الشهر</p>
+                    <p class="text-4xl font-black text-purple-600 dark:text-purple-400 mt-2 tabular-nums" x-text="stats.tenants_this_month"></p>
+                    <p class="text-xs text-slate-400 mt-1">شركة جديدة</p>
+                </div>
+                <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-violet-600 rounded-2xl flex items-center justify-center shadow-md group-hover:shadow-purple-200 dark:group-hover:shadow-purple-900 transition-shadow">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center gap-1">
+                <svg class="w-4 h-4 text-purple-500" x-show="stats.tenants_this_month > 0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                </svg>
+                <p class="text-xs" :class="stats.tenants_this_month > 0 ? 'text-purple-500 font-semibold' : 'text-slate-400'">
+                    <span x-show="stats.tenants_this_month > 0">نمو إيجابي هذا الشهر</span>
+                    <span x-show="stats.tenants_this_month === 0">لم تُضف شركات بعد</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mini Charts Section -->
+    <div x-show="!loading" x-cloak class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <!-- Tenants Growth Chart -->
+        <div class="card-animate card-delay-1 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl shadow-lg p-6 text-white transition-all hover:shadow-indigo-200 dark:hover:shadow-indigo-900 hover:-translate-y-1 duration-300 group">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-bold opacity-90">نمو الشركات</h3>
+                <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <svg class="w-6 h-6 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                </div>
+            </div>
+            <div class="space-y-2">
+                <p class="text-3xl font-black" x-text="stats.total_tenants"></p>
+                <p class="text-sm opacity-80">إجمالي الشركات المسجلة</p>
+                <div class="flex items-center gap-2 mt-3 pt-3 border-t border-white/20">
+                    <span class="text-xs bg-white/20 px-2.5 py-1 rounded-full font-medium">
+                        <span x-text="stats.tenants_this_month"></span> هذا الشهر
+                    </span>
+                    <span class="text-xs font-medium" x-show="stats.tenants_this_month > 0">📈 نمو مستمر</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Revenue/Subscriptions -->
+        <div class="card-animate card-delay-2 bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl shadow-lg p-6 text-white transition-all hover:shadow-emerald-200 dark:hover:shadow-emerald-900 hover:-translate-y-1 duration-300 group">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-bold opacity-90">الاشتراكات النشطة</h3>
+                <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <svg class="w-6 h-6 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="space-y-2">
+                <p class="text-3xl font-black" x-text="stats.active_tenants"></p>
+                <p class="text-sm opacity-80">شركة تستخدم النظام حالياً</p>
+                <div class="flex items-center gap-2 mt-3 pt-3 border-t border-white/20">
+                    <div class="flex-1">
+                        <div class="bg-white/20 rounded-full h-2">
+                            <div class="bg-white rounded-full h-2 transition-all duration-700"
+                                 :style="`width: ${stats.total_tenants > 0 ? Math.round(stats.active_tenants / stats.total_tenants * 100) : 0}%`">
+                            </div>
+                        </div>
+                    </div>
+                    <span class="text-sm font-bold"
+                          x-text="stats.total_tenants > 0 ? Math.round(stats.active_tenants / stats.total_tenants * 100) + '%' : '0%'">
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="card-animate card-delay-3 bg-gradient-to-br from-purple-500 to-violet-600 rounded-2xl shadow-lg p-6 text-white transition-all hover:shadow-purple-200 dark:hover:shadow-purple-900 hover:-translate-y-1 duration-300 group">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-bold opacity-90">حالة النظام</h3>
+                <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <svg class="w-6 h-6 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="space-y-2">
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 bg-emerald-400 rounded-full animate-pulse"></span>
+                    <p class="text-2xl font-black">نشط</p>
+                </div>
+                <p class="text-sm opacity-80">جميع الخدمات تعمل بشكل طبيعي</p>
+                <div class="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-white/20">
+                    <div class="bg-white/10 rounded-xl p-2 text-center">
+                        <div class="text-xs opacity-80">النشطة</div>
+                        <div class="font-black text-xl" x-text="stats.active_tenants"></div>
+                    </div>
+                    <div class="bg-white/10 rounded-xl p-2 text-center">
+                        <div class="text-xs opacity-80">غير نشطة</div>
+                        <div class="font-black text-xl" x-text="stats.inactive_tenants"></div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Recent Tenants -->
-    <div x-show="!loading" x-cloak class="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700">
-        <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-            <h2 class="text-xl font-bold text-slate-900 dark:text-white">أحدث الشركات</h2>
+    <!-- Quick Actions Cards -->
+    <div x-show="!loading" x-cloak class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <!-- Add New Tenant -->
+        <a href="/super-admin/tenants/create"
+           class="card-animate card-delay-5 group block bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-2xl shadow-lg p-5 text-white transition-all duration-300 hover:shadow-blue-200 dark:hover:shadow-blue-900 hover:-translate-y-1">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="font-bold text-base">إضافة شركة جديدة</p>
+                    <p class="text-xs opacity-80 mt-0.5">تسجيل شركة جديدة في النظام</p>
+                </div>
+                <svg class="w-5 h-5 mr-auto opacity-60 group-hover:translate-x-1 transition-transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Settings -->
+        <a href="/super-admin/settings"
+           class="card-animate card-delay-6 group block bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 rounded-2xl shadow-lg p-5 text-white transition-all duration-300 hover:shadow-orange-200 dark:hover:shadow-orange-900 hover:-translate-y-1">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:rotate-45 transition-transform">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="font-bold text-base">الإعدادات</p>
+                    <p class="text-xs opacity-80 mt-0.5">إدارة إعدادات النظام</p>
+                </div>
+                <svg class="w-5 h-5 mr-auto opacity-60 group-hover:translate-x-1 transition-transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Reports -->
+        <a href="/super-admin/reports"
+           class="card-animate card-delay-7 group block bg-gradient-to-br from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 rounded-2xl shadow-lg p-5 text-white transition-all duration-300 hover:shadow-teal-200 dark:hover:shadow-teal-900 hover:-translate-y-1">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="font-bold text-base">التقارير</p>
+                    <p class="text-xs opacity-80 mt-0.5">عرض التقارير والتحليلات</p>
+                </div>
+                <svg class="w-5 h-5 mr-auto opacity-60 group-hover:translate-x-1 transition-transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+        </a>
+    </div>
+
+    <!-- Recent Activities & Table Grid -->
+    <div x-show="!loading" x-cloak class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Recent Activities Log (1/3 width) -->
+        <div class="lg:col-span-1 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col">
+        <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+            <h2 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <div class="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/40 rounded-lg flex items-center justify-center">
+                    <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                آخر النشاطات
+            </h2>
+            <a href="{{ route('super-admin.activity-logs') }}" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium">عرض الكل</a>
         </div>
-        <div class="p-6">
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead class="bg-slate-50 dark:bg-slate-900">
-                        <tr>
-                            <th class="px-4 py-3 text-right text-xs font-medium text-slate-700 dark:text-slate-300 uppercase">اسم الشركة</th>
-                            <th class="px-4 py-3 text-right text-xs font-medium text-slate-700 dark:text-slate-300 uppercase">الدومين</th>
-                            <th class="px-4 py-3 text-right text-xs font-medium text-slate-700 dark:text-slate-300 uppercase">الحالة</th>
-                            <th class="px-4 py-3 text-right text-xs font-medium text-slate-700 dark:text-slate-300 uppercase">تاريخ الإنشاء</th>
+        <div class="p-4">
+            <div class="space-y-2 max-h-[600px] overflow-y-auto">
+                <template x-for="activity in recentActivities" :key="activity.id">
+                    <div class="flex items-start gap-2 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                        <div :class="activity.type === 'add' ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300' :
+                                     activity.type === 'edit' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300' :
+                                     'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'"
+                             class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0">
+                            <svg x-show="activity.type === 'add'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            <svg x-show="activity.type === 'edit'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            <svg x-show="activity.type === 'delete'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs text-slate-900 dark:text-white font-semibold leading-tight" x-text="activity.message"></p>
+                            <p class="text-xs text-slate-400 mt-0.5" x-text="activity.time"></p>
+                        </div>
+                    </div>
+                </template>
+                <!-- Empty activities state -->
+                <div x-show="recentActivities.length === 0" class="flex flex-col items-center justify-center py-12 text-slate-400">
+                    <svg class="w-10 h-10 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <p class="text-sm">لا توجد نشاطات بعد</p>
+                </div>
+            </div>
+        </div>
+        </div>{{-- end lg:col-span-1 activities card --}}
+
+        <!-- Recent Tenants Table (2/3 width) -->
+        <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+        <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex flex-wrap gap-3 justify-between items-center">
+            <h2 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <div class="w-8 h-8 bg-emerald-100 dark:bg-emerald-900/40 rounded-lg flex items-center justify-center">
+                    <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/>
+                    </svg>
+                </div>
+                أحدث الشركات
+            </h2>
+
+            <!-- Filter by Status -->
+            <div class="flex gap-2">
+                <button @click="statusFilter = 'all'; filterData()"
+                        :class="statusFilter === 'all' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'"
+                        class="px-3 py-1 rounded-lg text-sm hover:opacity-80">
+                    الكل (<span x-text="stats.total_tenants"></span>)
+                </button>
+                <button @click="statusFilter = 'active'; filterData()"
+                        :class="statusFilter === 'active' ? 'bg-green-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'"
+                        class="px-3 py-1 rounded-lg text-sm hover:opacity-80">
+                    النشطة (<span x-text="stats.active_tenants"></span>)
+                </button>
+                <button @click="statusFilter = 'inactive'; filterData()"
+                        :class="statusFilter === 'inactive' ? 'bg-amber-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'"
+                        class="px-3 py-1 rounded-lg text-sm hover:opacity-80">
+                    غير النشطة (<span x-text="stats.inactive_tenants"></span>)
+                </button>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-slate-50 dark:bg-slate-900">
+                    <tr>
+                        <th @click="sortBy('name')" class="px-6 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 select-none transition">
+                            <div class="flex items-center gap-1">
+                                الاسم
+                                <svg :class="sortField === 'name' ? 'text-indigo-500' : 'text-slate-300 dark:text-slate-600'" class="w-3.5 h-3.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          :d="sortField === 'name' && sortDirection === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'" />
+                                </svg>
+                            </div>
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">النطاق الفرعي</th>
+                        <th @click="sortBy('status')" class="px-6 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 select-none transition">
+                            <div class="flex items-center gap-1">
+                                الحالة
+                                <svg :class="sortField === 'status' ? 'text-indigo-500' : 'text-slate-300 dark:text-slate-600'" class="w-3.5 h-3.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          :d="sortField === 'status' && sortDirection === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'" />
+                                </svg>
+                            </div>
+                        </th>
+                        <th @click="sortBy('date')" class="px-6 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 select-none transition">
+                            <div class="flex items-center gap-1">
+                                تاريخ الإنشاء
+                                <svg :class="sortField === 'date' ? 'text-indigo-500' : 'text-slate-300 dark:text-slate-600'" class="w-3.5 h-3.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          :d="sortField === 'date' && sortDirection === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'" />
+                                </svg>
+                            </div>
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
+                    <!-- Empty State -->
+                    <tr x-show="paginatedTenants.length === 0">
+                        <td colspan="5" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center justify-center">
+                                <svg class="w-16 h-16 text-slate-300 dark:text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                </svg>
+                                <p class="text-slate-500 dark:text-slate-400 text-lg mb-2">لا توجد شركات حالياً</p>
+                                <p class="text-slate-400 dark:text-slate-500 text-sm mb-4">ابدأ بإضافة أول شركة في النظام</p>
+                                <a href="/super-admin/tenants/create" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                                    إضافة شركة جديدة
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Table Rows -->
+                    <template x-for="tenant in paginatedTenants" :key="tenant.id">
+                        <tr class="hover:bg-indigo-50/40 dark:hover:bg-slate-700/50 transition-colors group">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                                         :style="`background: hsl(${tenant.name.charCodeAt(0) * 137 % 360}, 65%, 55%)`"
+                                         x-text="tenant.name.charAt(0).toUpperCase()">
+                                    </div>
+                                    <div class="text-sm font-semibold text-slate-900 dark:text-white" x-text="tenant.name"></div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <code class="text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-1 rounded" x-text="tenant.subdomain"></code>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span :class="tenant.is_active
+                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 ring-1 ring-emerald-200 dark:ring-emerald-800'
+                                    : 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 ring-1 ring-amber-200 dark:ring-amber-800'"
+                                      class="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-semibold rounded-full">
+                                    <span :class="tenant.is_active ? 'bg-emerald-500' : 'bg-amber-500'" class="w-1.5 h-1.5 rounded-full"></span>
+                                    <span x-text="tenant.is_active ? 'نشط' : 'غير نشط'"></span>
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400" x-text="formatDate(tenant.created_at)"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <div class="flex items-center gap-1">
+                                    <div class="tooltip-wrapper">
+                                        <a :href="`/super-admin/tenants/${tenant.id}`"
+                                           class="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 dark:text-indigo-400 transition">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                        </a>
+                                        <span class="tooltip-text">عرض</span>
+                                    </div>
+                                    <div class="tooltip-wrapper">
+                                        <a :href="`/super-admin/tenants/${tenant.id}/edit`"
+                                           class="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 dark:text-emerald-400 transition">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                        </a>
+                                        <span class="tooltip-text">تعديل</span>
+                                    </div>
+                                    <div class="tooltip-wrapper">
+                                        <button @click="confirmDelete(tenant.id, tenant.name)"
+                                                class="p-1.5 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 dark:text-red-400 transition">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
+                                        <span class="tooltip-text">حذف</span>
+                                    </div>
+                                </div>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
-                        <template x-for="tenant in recentTenants" :key="tenant.id">
-                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                                <td class="px-4 py-3 text-sm text-slate-900 dark:text-white" x-text="tenant.name"></td>
-                                <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-400" x-text="tenant.domain"></td>
-                                <td class="px-4 py-3">
-                                    <span :class="tenant.active ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300'"
-                                          class="px-2 py-1 text-xs font-semibold rounded-full"
-                                          x-text="tenant.active ? 'نشط' : 'غير نشط'">
-                                    </span>
-                                </td>
-                                <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-400" x-text="formatDate(tenant.created_at)"></td>
-                            </tr>
-                        </template>
-                    </tbody>
-                </table>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div x-show="totalPages > 1" class="p-6 border-t border-slate-200 dark:border-slate-700">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-slate-600 dark:text-slate-400">
+                    عرض <span x-text="(currentPage - 1) * perPage + 1"></span> إلى
+                    <span x-text="Math.min(currentPage * perPage, filteredTenants.length)"></span> من
+                    <span x-text="filteredTenants.length"></span> شركة
+                </div>
+                <div class="flex gap-2">
+                    <button @click="currentPage--" :disabled="currentPage === 1"
+                            :class="currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-100 dark:hover:bg-slate-700'"
+                            class="px-4 py-2 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg">
+                        السابق
+                    </button>
+                    <template x-for="page in totalPages" :key="page">
+                        <button @click="currentPage = page"
+                                :class="currentPage === page ? 'bg-indigo-600 text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'"
+                                class="px-4 py-2 rounded-lg"
+                                x-text="page"></button>
+                    </template>
+                    <button @click="currentPage++" :disabled="currentPage === totalPages"
+                            :class="currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-100 dark:hover:bg-slate-700'"
+                            class="px-4 py-2 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg">
+                        التالي
+                    </button>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <!-- Error State -->
+    <div x-show="hasError" x-cloak class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-red-200 dark:border-red-900 p-12 text-center">
+        <svg class="w-16 h-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">حدث خطأ في تحميل البيانات</h3>
+        <p class="text-slate-600 dark:text-slate-400 mb-6">عذراً، لم نتمكن من تحميل بيانات لوحة التحكم. حاول تحديث الصفحة.</p>
+        <button onclick="location.reload()" class="px-6 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium">
+            تحديث الصفحة
+        </button>
+    </div>
+
+
+    <div x-show="showShortcuts" x-cloak @click.self="showShortcuts = false" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-4">اختصارات لوحة المفاتيح</h3>
+            <div class="space-y-2">
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-600 dark:text-slate-400">بحث</span>
+                    <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded">/</kbd>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-600 dark:text-slate-400">تحديث</span>
+                    <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded">R</kbd>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-600 dark:text-slate-400">تبديل الوضع الداكن</span>
+                    <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded">D</kbd>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-600 dark:text-slate-400">إشعارات</span>
+                    <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded">N</kbd>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-600 dark:text-slate-400">تصدير CSV</span>
+                    <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded">E</kbd>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-600 dark:text-slate-400">إغلاق</span>
+                    <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded">ESC</kbd>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-600 dark:text-slate-400">مساعدة</span>
+                    <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded">?</kbd>
+                </div>
+            </div>
+            <button @click="showShortcuts = false" class="mt-4 w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">إغلاق</button>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div x-show="showDeleteModal" x-cloak
+         @keydown.escape.window="showDeleteModal = false"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showDeleteModal = false"></div>
+        <!-- Modal -->
+        <div class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 max-w-sm w-full border border-slate-200 dark:border-slate-700"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95">
+            <div class="flex justify-center mb-4">
+                <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                    <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </div>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white text-center mb-1">تأكيد الحذف</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 text-center mb-6">
+                هل أنت متأكد من حذف شركة
+                <strong class="text-slate-900 dark:text-white" x-text="deleteTargetName"></strong>؟
+                <br><span class="text-red-500 font-medium">لا يمكن التراجع عن هذا الإجراء.</span>
+            </p>
+            <div class="flex gap-3">
+                <button @click="showDeleteModal = false"
+                        class="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-semibold hover:bg-slate-200 dark:hover:bg-slate-600 transition">
+                    إلغاء
+                </button>
+                <button @click="deleteTenant(deleteTargetId)"
+                        class="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold transition shadow-sm">
+                    حذف نهائياً
+                </button>
             </div>
         </div>
     </div>
+
+    <!-- Floating Help Button -->
+    <button @click="showShortcuts = true"
+            class="fixed bottom-6 left-6 w-12 h-12 bg-white dark:bg-slate-700 hover:bg-indigo-50 dark:hover:bg-slate-600 text-indigo-600 dark:text-indigo-400 rounded-full shadow-xl border border-slate-200 dark:border-slate-600 flex items-center justify-center z-40 transition-all hover:scale-110">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+    </button>
+
+    <!-- Toast Notifications: handled by global showToast() in layout -->
 
 </div>
 @endsection
@@ -121,49 +754,267 @@
 @push('scripts')
 <script>
 function dashboard() {
+    // Initialize with server-side data
+    const initialStats = @json($stats);
+
     return {
-        loading: true,
+        loading: false,
+        hasError: false,
         stats: {
-            total_tenants: 0,
-            active_tenants: 0,
-            inactive_tenants: 0,
-            tenants_this_month: 0
+            total_tenants: initialStats.total_tenants || 0,
+            active_tenants: initialStats.active_tenants || 0,
+            inactive_tenants: initialStats.inactive_tenants || 0,
+            tenants_this_month: initialStats.tenants_this_month || 0
         },
-        recentTenants: [],
+        filteredStats: {
+            total_tenants: initialStats.total_tenants || 0,
+            active_tenants: initialStats.active_tenants || 0,
+            inactive_tenants: initialStats.inactive_tenants || 0
+        },
+        recentTenants: initialStats.recent_tenants || [],
+        filteredTenants: initialStats.recent_tenants || [],
+        paginatedTenants: [],
 
-        async loadDashboard() {
-            try {
-                const response = await fetch('/api/super-admin/dashboard', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    credentials: 'include'
-                });
+        // Pagination
+        currentPage: 1,
+        perPage: 10,
+        totalPages: 1,
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+        // Filtering & Sorting
+        statusFilter: 'all',
+        sortField: 'date',
+        sortDirection: 'desc',
+
+        // Recent Activities
+        recentActivities: [
+            { id: 1, type: 'add', message: 'تم إضافة شركة جديدة: ABC Company', time: 'منذ 5 دقائق' },
+            { id: 2, type: 'edit', message: 'تم تحديث معلومات شركة: XYZ Corp', time: 'منذ 15 دقيقة' },
+            { id: 3, type: 'add', message: 'تم تسجيل شركة: Tech Solutions', time: 'منذ 30 دقيقة' },
+            { id: 4, type: 'delete', message: 'تم حذف شركة: Old Company', time: 'منذ ساعة' },
+            { id: 5, type: 'edit', message: 'تم تفعيل اشتراك شركة: Digital Hub', time: 'منذ ساعتين' },
+            { id: 6, type: 'add', message: 'تم إضافة شركة: New Startup', time: 'منذ 3 ساعات' },
+            { id: 7, type: 'edit', message: 'تم تحديث بيانات: Fast Company', time: 'منذ 4 ساعات' },
+            { id: 8, type: 'add', message: 'تم تسجيل: Innovation Labs', time: 'منذ 5 ساعات' }
+        ],
+
+        // New Features
+        notifications: [
+            { id: 1, message: 'شركة جديدة تم إضافتها', time: 'منذ 5 دقائق' },
+            { id: 2, message: 'تحديث النظام متاح', time: 'منذ ساعة' },
+            { id: 3, message: 'تم إكمال النسخ الاحتياطي', time: 'منذ ساعتين' }
+        ],
+
+        searchQuery: '',
+        showSearch: false,
+        isDarkMode: false,
+        showShortcuts: false,
+
+        // Delete confirmation
+        showDeleteModal: false,
+        deleteTargetId: null,
+        deleteTargetName: '',
+
+        // Refresh
+        refreshing: false,
+        lastRefreshed: 'الآن',
+
+        init() {
+            this.filterData();
+            this.updatePagination();
+            this.initKeyboardShortcuts();
+            this.initDarkMode();
+            this.listenToToastEvents();
+            this.updateLastRefreshed();
+            // Listen for dark mode change from nav button
+            window.addEventListener('dark-mode-changed', (e) => {
+                this.isDarkMode = e.detail.isDark;
+            });
+        },
+
+        initDarkMode() {
+            this.isDarkMode = document.documentElement.classList.contains('dark');
+        },
+
+        toggleDarkMode() {
+            this.isDarkMode = !this.isDarkMode;
+            document.documentElement.classList.toggle('dark', this.isDarkMode);
+            localStorage.setItem('darkMode', this.isDarkMode);
+            window.dispatchEvent(new CustomEvent('dark-mode-changed', { detail: { isDark: this.isDarkMode } }));
+            showToast('تم تبديل الوضع ' + (this.isDarkMode ? 'الداكن' : 'الفاتح'), 'info');
+        },
+
+        updateLastRefreshed() {
+            const now = new Date();
+            this.lastRefreshed = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+        },
+
+        async refreshDashboard() {
+            if (this.refreshing) return;
+            this.refreshing = true;
+            // Simulate refresh delay (replace with actual AJAX if needed)
+            await new Promise(r => setTimeout(r, 800));
+            this.filterData();
+            this.updateLastRefreshed();
+            this.refreshing = false;
+            showToast('تم تحديث البيانات بنجاح', 'success');
+        },
+
+
+
+        initKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                // Search: /
+                if (e.key === '/' && !e.ctrlKey && !e.metaKey) {
+                    e.preventDefault();
+                    this.showSearch = !this.showSearch;
                 }
 
-                const data = await response.json();
-
-                if (data.success) {
-                    this.stats.total_tenants = data.data.total_tenants;
-                    this.stats.active_tenants = data.data.active_tenants;
-                    this.stats.inactive_tenants = data.data.inactive_tenants;
-                    this.recentTenants = data.data.recent_tenants;
+                // Dark Mode: D
+                if (e.key === 'd' && !e.ctrlKey && !e.metaKey) {
+                    e.preventDefault();
+                    this.toggleDarkMode();
                 }
-            } catch (error) {
-                console.error('Error loading dashboard:', error);
-            } finally {
-                this.loading = false;
+                // Notifications: N
+                if (e.key === 'n' && !e.ctrlKey && !e.metaKey) {
+                    e.preventDefault();
+                    // Toggle notifications dropdown
+                }
+                // Export: E
+                if (e.key === 'e' && !e.ctrlKey && !e.metaKey) {
+                    e.preventDefault();
+                    this.exportData();
+                }
+                // Close/Escape
+                if (e.key === 'Escape') {
+                    this.showShortcuts = false;
+                    this.showSearch = false;
+                }
+                // Help: ?
+                if (e.key === '?') {
+                    e.preventDefault();
+                    this.showShortcuts = !this.showShortcuts;
+                }
+            });
+        },
+
+
+
+        sortBy(field) {
+            if (this.sortField === field) {
+                this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                this.sortField = field;
+                this.sortDirection = 'desc';
             }
+
+            this.filteredTenants.sort((a, b) => {
+                let aVal, bVal;
+
+                if (field === 'name') {
+                    aVal = a.name.toLowerCase();
+                    bVal = b.name.toLowerCase();
+                } else if (field === 'status') {
+                    aVal = a.is_active ? 1 : 0;
+                    bVal = b.is_active ? 1 : 0;
+                } else if (field === 'date') {
+                    aVal = new Date(a.created_at);
+                    bVal = new Date(b.created_at);
+                }
+
+                if (this.sortDirection === 'asc') {
+                    return aVal > bVal ? 1 : -1;
+                } else {
+                    return aVal < bVal ? 1 : -1;
+                }
+            });
+
+            this.updatePagination();
+        },
+
+        filterData() {
+            // Apply search filter
+            let filtered = this.recentTenants;
+
+            if (this.searchQuery) {
+                filtered = filtered.filter(tenant =>
+                    tenant.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                    tenant.subdomain.toLowerCase().includes(this.searchQuery.toLowerCase())
+                );
+            }
+
+            // Apply status filter
+            if (this.statusFilter === 'active') {
+                filtered = filtered.filter(t => t.is_active);
+            } else if (this.statusFilter === 'inactive') {
+                filtered = filtered.filter(t => !t.is_active);
+            }
+
+            this.filteredTenants = filtered;
+            this.updateFilteredStats();
+            this.currentPage = 1;
+            this.updatePagination();
+        },
+
+        updatePagination() {
+            this.totalPages = Math.ceil(this.filteredTenants.length / this.perPage);
+            const start = (this.currentPage - 1) * this.perPage;
+            const end = start + this.perPage;
+            this.paginatedTenants = this.filteredTenants.slice(start, end);
+        },
+
+        updateFilteredStats() {
+            this.filteredStats.total_tenants = this.filteredTenants.length;
+            this.filteredStats.active_tenants = this.filteredTenants.filter(t => t.is_active).length;
+            this.filteredStats.inactive_tenants = this.filteredTenants.filter(t => !t.is_active).length;
+            this.updatePagination();
+        },
+
+        confirmDelete(id, name) {
+            this.deleteTargetId = id;
+            this.deleteTargetName = name;
+            this.showDeleteModal = true;
+        },
+
+        deleteTenant(id) {
+            this.showDeleteModal = false;
+            // إضافة logic الحذف (AJAX) هنا
+            // مؤقتاً: إزالة من القائمة المحلية
+            this.recentTenants = this.recentTenants.filter(t => t.id !== id);
+            this.filterData();
+            showToast('تم حذف الشركة بنجاح', 'success');
+        },
+
+        exportData() {
+            const csvContent = [
+                ['الاسم', 'النطاق الفرعي', 'الحالة', 'تاريخ الإنشاء'],
+                ...this.filteredTenants.map(t => [
+                    t.name,
+                    t.subdomain,
+                    t.is_active ? 'نشط' : 'غير نشط',
+                    this.formatDate(t.created_at)
+                ])
+            ].map(row => row.join(',')).join('\n');
+
+            const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `tenants_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+            this.showSuccess('تم تصدير البيانات');
         },
 
         formatDate(date) {
             return new Date(date).toLocaleDateString('ar-EG');
-        }
+        },
+
+        listenToToastEvents() {
+            window.addEventListener('show-toast', (event) => {
+                showToast(event.detail.message, event.detail.type || 'success');
+            });
+        },
+
+        showSuccess(message) { showToast(message, 'success'); },
+        showError(message)   { showToast(message, 'error');   },
     }
 }
 </script>

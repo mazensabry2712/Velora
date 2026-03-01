@@ -20,7 +20,7 @@ Route::middleware('web')->group(function () {
     Route::get('/', function () {
         return redirect()->route('super-admin.login');
     });
-    
+
     Route::get('/login', function () {
         return redirect()->route('super-admin.login');
     });
@@ -86,6 +86,8 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
 // with proper tenancy middleware. Do NOT add tenant routes here.
 // ==========================================================================
 
+// Language Switching Route
+Route::get('/change-language/{lang}', function ($lang) {
     // Get available languages from settings
     $settingsModel = \App\Models\Setting::where('tenant_id', tenant()->id)->first();
     $availableLanguages = $settingsModel && $settingsModel->available_languages

@@ -1,45 +1,62 @@
 @extends('super-admin.layout')
 
-@section('title', 'Reports & Analytics')
+@section('title', 'التقارير والإحصائيات')
+@section('breadcrumb')<span class="text-slate-700 dark:text-slate-200 font-medium">التقارير</span>@endsection
 
 @section('content')
 <div x-data="reports()" x-init="loadReports()">
 
     <!-- Header -->
     <div class="mb-8">
-        <h1 class="text-3xl font-bold text-slate-900 dark:text-white">التقارير والإحصائيات</h1>
-        <p class="text-slate-600 dark:text-slate-400 mt-2">تحليلات شاملة للنظام والأداء</p>
+        <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">التقارير والإحصائيات</h1>
+        <p class="text-slate-500 dark:text-slate-400 mt-1 text-sm">تحليلات شاملة للنظام والأداء</p>
     </div>
 
     <!-- Loading State -->
-    <div x-show="loading" class="flex justify-center items-center py-12">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+    <div x-show="loading" class="space-y-6">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+            <div class="flex flex-wrap gap-4">
+                <div class="h-10 w-36 bg-slate-200 dark:bg-slate-700 rounded-xl skeleton"></div>
+                <div class="h-10 w-36 bg-slate-200 dark:bg-slate-700 rounded-xl skeleton"></div>
+                <div class="h-10 w-24 bg-slate-200 dark:bg-slate-700 rounded-xl skeleton"></div>
+                <div class="h-10 w-28 bg-slate-200 dark:bg-slate-700 rounded-xl skeleton"></div>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <template x-for="i in 4" :key="i">
+                <div class="h-32 bg-slate-200 dark:bg-slate-700 rounded-2xl skeleton"></div>
+            </template>
+        </div>
     </div>
 
     <!-- Reports Content -->
     <div x-show="!loading" x-cloak>
 
         <!-- Date Filter -->
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 mb-8 border border-slate-200 dark:border-slate-700">
-            <div class="flex flex-wrap gap-4 items-end">
-                <div class="flex-1 min-w-[200px]">
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">من تاريخ</label>
-                    <input type="date"
-                           x-model="filters.date_from"
-                           class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-white">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5 mb-8 border border-slate-200 dark:border-slate-700">
+            <div class="flex flex-wrap gap-3 items-end">
+                <div class="flex-1 min-w-[180px]">
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">من تاريخ</label>
+                    <input type="date" x-model="filters.date_from"
+                           class="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-slate-700/50 dark:text-white transition">
                 </div>
-                <div class="flex-1 min-w-[200px]">
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">إلى تاريخ</label>
-                    <input type="date"
-                           x-model="filters.date_to"
-                           class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-white">
+                <div class="flex-1 min-w-[180px]">
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">إلى تاريخ</label>
+                    <input type="date" x-model="filters.date_to"
+                           class="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-slate-700/50 dark:text-white transition">
                 </div>
                 <button @click="loadReports()"
-                        class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                        class="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white rounded-xl transition hover:-translate-y-0.5 shadow-md shadow-indigo-200 dark:shadow-indigo-900">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/>
+                    </svg>
                     تطبيق
                 </button>
                 <button @click="exportReport('excel')"
-                        class="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition">
+                        class="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white rounded-xl transition hover:-translate-y-0.5 shadow-md shadow-emerald-200 dark:shadow-emerald-900">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
                     تصدير Excel
                 </button>
             </div>
@@ -48,50 +65,58 @@
         <!-- Overview Cards -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <!-- Total Revenue -->
-            <div class="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg shadow-lg p-6 text-white">
+            <div class="card-animate card-delay-1 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl shadow-lg p-6 text-white hover:-translate-y-1 hover:shadow-emerald-200 dark:hover:shadow-emerald-900 transition-all duration-300">
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-medium opacity-90">إجمالي الإيرادات</h3>
-                    <svg class="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+                    <h3 class="text-sm font-semibold opacity-90">إجمالي الإيرادات</h3>
+                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                        <svg class="w-5 h-5 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
                 </div>
-                <p class="text-3xl font-bold" x-text="'$' + formatNumber(stats.total_revenue)"></p>
+                <p class="text-3xl font-black" x-text="'$' + formatNumber(stats.total_revenue)"></p>
                 <p class="text-sm opacity-80 mt-1" x-text="getGrowthText(stats.revenue_growth)"></p>
             </div>
 
             <!-- Active Tenants -->
-            <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg shadow-lg p-6 text-white">
+            <div class="card-animate card-delay-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg p-6 text-white hover:-translate-y-1 hover:shadow-indigo-200 dark:hover:shadow-indigo-900 transition-all duration-300">
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-medium opacity-90">الشركات النشطة</h3>
-                    <svg class="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
+                    <h3 class="text-sm font-semibold opacity-90">الشركات النشطة</h3>
+                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                        <svg class="w-5 h-5 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                    </div>
                 </div>
-                <p class="text-3xl font-bold" x-text="stats.active_tenants"></p>
+                <p class="text-3xl font-black" x-text="stats.active_tenants"></p>
                 <p class="text-sm opacity-80 mt-1" x-text="'من ' + stats.total_tenants + ' إجمالي'"></p>
             </div>
 
             <!-- Total Subscriptions -->
-            <div class="bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg shadow-lg p-6 text-white">
+            <div class="card-animate card-delay-3 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl shadow-lg p-6 text-white hover:-translate-y-1 hover:shadow-blue-200 dark:hover:shadow-blue-900 transition-all duration-300">
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-medium opacity-90">الاشتراكات النشطة</h3>
-                    <svg class="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                    </svg>
+                    <h3 class="text-sm font-semibold opacity-90">الاشتراكات النشطة</h3>
+                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                        <svg class="w-5 h-5 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                        </svg>
+                    </div>
                 </div>
-                <p class="text-3xl font-bold" x-text="stats.active_subscriptions"></p>
+                <p class="text-3xl font-black" x-text="stats.active_subscriptions"></p>
                 <p class="text-sm opacity-80 mt-1" x-text="stats.trial_subscriptions + ' في الفترة التجريبية'"></p>
             </div>
 
             <!-- Average Revenue -->
-            <div class="bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg shadow-lg p-6 text-white">
+            <div class="card-animate card-delay-4 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl shadow-lg p-6 text-white hover:-translate-y-1 hover:shadow-amber-200 dark:hover:shadow-amber-900 transition-all duration-300">
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-medium opacity-90">متوسط الإيراد</h3>
-                    <svg class="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                    </svg>
+                    <h3 class="text-sm font-semibold opacity-90">متوسط الإيراد</h3>
+                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                        <svg class="w-5 h-5 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                    </div>
                 </div>
-                <p class="text-3xl font-bold" x-text="'$' + formatNumber(stats.average_revenue)"></p>
+                <p class="text-3xl font-black" x-text="'$' + formatNumber(stats.average_revenue)"></p>
                 <p class="text-sm opacity-80 mt-1">لكل شركة شهرياً</p>
             </div>
         </div>
@@ -100,16 +125,16 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
 
             <!-- Revenue Chart -->
-            <div class="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 border border-slate-200 dark:border-slate-700">
-                <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6">الإيرادات الشهرية</h2>
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6 border border-slate-200 dark:border-slate-700">
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-6">الإيرادات الشهرية</h2>
                 <div class="h-64">
                     <canvas id="revenueChart"></canvas>
                 </div>
             </div>
 
             <!-- Tenants Growth Chart -->
-            <div class="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 border border-slate-200 dark:border-slate-700">
-                <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6">نمو الشركات</h2>
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6 border border-slate-200 dark:border-slate-700">
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-6">نمو الشركات</h2>
                 <div class="h-64">
                     <canvas id="tenantsChart"></canvas>
                 </div>
@@ -118,8 +143,8 @@
         </div>
 
         <!-- Subscription Plans Performance -->
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 mb-8 border border-slate-200 dark:border-slate-700">
-            <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6">أداء خطط الاشتراك</h2>
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6 mb-8 border border-slate-200 dark:border-slate-700">
+            <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-6">أداء خطط الاشتراك</h2>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
                     <thead>
@@ -170,11 +195,11 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
             <!-- Top Tenants -->
-            <div class="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 border border-slate-200 dark:border-slate-700">
-                <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6">أعلى الشركات نشاطاً</h2>
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6 border border-slate-200 dark:border-slate-700">
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-6">أعلى الشركات نشاطاً</h2>
                 <div class="space-y-4">
                     <template x-for="(tenant, index) in topTenants" :key="tenant.id">
-                        <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                        <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition">
                             <div class="flex items-center space-x-3 space-x-reverse">
                                 <div class="w-10 h-10 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center">
                                     <span class="text-indigo-600 dark:text-indigo-400 font-bold" x-text="index + 1"></span>
@@ -194,8 +219,8 @@
             </div>
 
             <!-- Activity Distribution -->
-            <div class="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 border border-slate-200 dark:border-slate-700">
-                <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6">توزيع الأنشطة</h2>
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6 border border-slate-200 dark:border-slate-700">
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-6">توزيع الأنشطة</h2>
                 <div class="space-y-4">
                     <template x-for="activity in activityDistribution" :key="activity.type">
                         <div>

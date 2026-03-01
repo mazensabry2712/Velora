@@ -1,28 +1,18 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upgrade Request Details - Super Admin</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-50">
-    <div class="min-h-screen">
-        <!-- Header -->
-        <header class="bg-white shadow-sm border-b border-slate-200">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                <div class="flex items-center justify-between">
-                    <h1 class="text-2xl font-bold text-slate-900">Upgrade Request #{{ $request->id }}</h1>
-                    <a href="{{ route('super-admin.upgrade-requests') }}" class="text-indigo-600 hover:text-indigo-700 font-medium">
-                        ← Back to Requests
-                    </a>
-                </div>
-            </div>
-        </header>
+@extends('super-admin.layout')
 
-        <!-- Main Content -->
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+@section('title', 'Upgrade Request #' . $request->id)
+
+@section('content')
+<div class="mb-8">
+    <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Upgrade Request #{{ $request->id }}</h1>
+        <a href="{{ route('super-admin.upgrade-requests') }}" class="text-indigo-600 hover:text-indigo-700 font-medium dark:text-indigo-400">
+            ← Back to Requests
+        </a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <!-- Left Column: Request Details -->
                 <div class="lg:col-span-2 space-y-6">
                     <!-- Status Banner -->
@@ -99,19 +89,19 @@
                     </div>
 
                     <!-- Plan Comparison -->
-                    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-                        <h2 class="text-lg font-semibold text-slate-900 mb-4">Plan Comparison</h2>
+                <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Plan Comparison</h2>
                         <div class="grid grid-cols-2 gap-6">
                             <!-- Current Plan -->
                             <div>
-                                <h3 class="text-sm font-medium text-slate-600 mb-3">Current Plan</h3>
-                                <div class="border border-slate-200 rounded-lg p-4">
-                                    <div class="text-lg font-semibold text-slate-900 mb-2">{{ $request->currentPlan->name ?? 'N/A' }}</div>
-                                    <div class="text-2xl font-bold text-slate-900 mb-4">${{ $request->currentPlan->price ?? '0' }}<span class="text-sm font-normal text-slate-500">/month</span></div>
+                                <h3 class="text-sm font-medium text-slate-600 dark:text-slate-400 mb-3">Current Plan</h3>
+                                <div class="border border-slate-200 dark:border-slate-700 rounded-lg p-4 dark:bg-slate-900">
+                                    <div class="text-lg font-semibold text-slate-900 dark:text-white mb-2">{{ $request->currentPlan->name ?? 'N/A' }}</div>
+                                    <div class="text-2xl font-bold text-slate-900 dark:text-white mb-4">${{ $request->currentPlan->price ?? '0' }}<span class="text-sm font-normal text-slate-500 dark:text-slate-400">/month</span></div>
                                     @if($request->currentPlan)
-                                        <ul class="space-y-2 text-sm text-slate-600">
+                                        <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-400">
                                             <li class="flex items-center">
-                                                <svg class="h-4 w-4 mr-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg class="h-4 w-4 mr-2 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                                 </svg>
                                                 {{ $request->currentPlan->max_users }} Users
@@ -256,7 +246,7 @@
                     @endif
                 </div>
             </div>
-        </main>
+        </div>
     </div>
-</body>
-</html>
+</div>
+@endsection

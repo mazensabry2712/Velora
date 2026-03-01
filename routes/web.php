@@ -40,10 +40,8 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
     Route::post('/logout', [SuperAdminAuthController::class, 'webLogout'])->name('logout');
 
     // Protected Super Admin routes
-    Route::middleware(['auth:web', 'super.admin'])->group(function () {
-        Route::get('/dashboard', function () {
-            return view('super-admin.dashboard');
-        })->name('dashboard');
+    Route::middleware(['super.admin.auth'])->group(function () {
+        Route::get('/dashboard', [SuperAdminController::class, 'dashboard'])->name('dashboard');
 
         Route::get('/tenants', function () {
             return view('super-admin.tenants');

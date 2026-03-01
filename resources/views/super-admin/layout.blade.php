@@ -1,134 +1,443 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Super Admin Dashboard')</title>
+    <!-- Prevent dark mode flash -->
+    <script>
+        (function() {
+            var dm = localStorage.getItem('darkMode');
+            if (dm === 'true' || (dm === null && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <style>
         [x-cloak] { display: none !important; }
+
+        /* Arabic Font */
+        *, body { font-family: 'Tajawal', sans-serif; }
+
+        /* Scroll progress bar */
+        #scroll-progress {
+            position: fixed; top: 0; right: 0; left: 0; height: 3px; z-index: 9999;
+            background: linear-gradient(to left, #6366f1, #8b5cf6, #06b6d4);
+            transform-origin: right;
+            transition: transform 0.1s linear;
+        }
+
+        /* Page fade-in */
+        @keyframes pageIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .page-enter { animation: pageIn 0.4s ease-out both; }
+
+        /* Staggered card animations */
+        @keyframes cardIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .card-animate { animation: cardIn 0.5s ease-out both; }
+        .card-delay-1 { animation-delay: 0.05s; }
+        .card-delay-2 { animation-delay: 0.1s; }
+        .card-delay-3 { animation-delay: 0.15s; }
+        .card-delay-4 { animation-delay: 0.2s; }
+        .card-delay-5 { animation-delay: 0.25s; }
+        .card-delay-6 { animation-delay: 0.3s; }
+        .card-delay-7 { animation-delay: 0.35s; }
+
+        /* Stat number counter */
+        @keyframes countUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .count-animate { animation: countUp 0.6s ease-out both; }
+
+        /* Pulsing badge */
+        @keyframes badgePulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239,68,68,.4); }
+            50%       { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+        }
+        .badge-pulse { animation: badgePulse 1.8s infinite; }
+
+        /* Slide-down search */
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); max-height: 0; }
+            to   { opacity: 1; transform: translateY(0); max-height: 100px; }
+        }
+        .slide-search { animation: slideDown 0.25s ease-out both; }
+
+        /* Nav active underline */
+        .nav-link-active::after {
+            content: ''; display: block; height: 3px;
+            background: linear-gradient(to left, #6366f1, #8b5cf6);
+            border-radius: 9999px; margin-top: 2px;
+        }
+
+        /* Tooltip */
+        .tooltip-wrapper { position: relative; }
+        .tooltip-wrapper .tooltip-text {
+            visibility: hidden; opacity: 0;
+            background: #1e293b; color: #f1f5f9;
+            text-align: center; border-radius: 6px;
+            padding: 4px 10px; font-size: 12px;
+            position: absolute; z-index: 100;
+            bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+            white-space: nowrap; transition: opacity 0.2s;
+            pointer-events: none;
+        }
+        .tooltip-wrapper:hover .tooltip-text { visibility: visible; opacity: 1; }
+
+        /* Back-to-top pulse ring */
+        @keyframes ripple {
+            0%  { transform: scale(1); opacity: 0.6; }
+            100%{ transform: scale(1.7); opacity: 0; }
+        }
+        .back-top-ring::before {
+            content: ''; position: absolute; inset: 0;
+            border-radius: 9999px; border: 2px solid #6366f1;
+            animation: ripple 1.5s infinite;
+        }
+
+        /* Skeleton shimmer */
+        @keyframes shimmer {
+            0%   { background-position: -600px 0; }
+            100% { background-position: 600px 0; }
+        }
+        .skeleton {
+            background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+            background-size: 600px 100%;
+            animation: shimmer 1.4s infinite linear;
+            border-radius: 8px;
+        }
+        .dark .skeleton {
+            background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+            background-size: 600px 100%;
+        }
+
+        /* Smooth table row hover */
+        tbody tr { transition: background 0.15s ease; }
+
+        /* Focus rings */
+        *:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; border-radius: 6px; }
+
+        /* Toast improved */
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes toastOut {
+            from { opacity: 1; transform: translateY(0) scale(1); }
+            to   { opacity: 0; transform: translateY(10px) scale(0.95); }
+        }
+        .toast-enter { animation: toastIn 0.3s ease-out both; }
+        .toast-exit  { animation: toastOut 0.25s ease-in both; }
+
+        /* Mobile menu slide */
+        @keyframes menuSlide {
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .mobile-menu-open { animation: menuSlide 0.2s ease-out both; }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 99px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6366f1; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
     </style>
 </head>
-<body class="bg-slate-50 dark:bg-slate-900">
+<body class="bg-slate-50 dark:bg-slate-900 min-h-screen antialiased">
+
+    <!-- Scroll Progress Bar -->
+    <div id="scroll-progress"></div>
 
     <!-- Navigation -->
-    <nav class="bg-white dark:bg-slate-800 shadow-lg border-b border-slate-200 dark:border-slate-700">
+    <nav class="bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm shadow-sm border-b border-slate-200 dark:border-slate-700 sticky top-0 z-40" x-data="{ mobileOpen: false }">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <!-- Logo -->
-                <div class="flex items-center">
-                    <div class="flex-shrink-0 flex items-center">
-                        <div class="flex items-center space-x-3 space-x-reverse">
-                            <div class="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
-                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                </svg>
-                            </div>
-                            <span class="text-xl font-bold text-slate-900 dark:text-white">Super Admin</span>
+                <div class="flex items-center gap-4">
+                    <a href="{{ route('super-admin.dashboard') }}" class="flex items-center gap-3 group">
+                        <div class="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-indigo-300 dark:group-hover:shadow-indigo-900 transition-shadow">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Navigation Links -->
-                <div class="hidden sm:flex sm:items-center sm:mr-6 space-x-8 space-x-reverse">
-                    <a href="{{ route('super-admin.dashboard') }}"
-                       class="text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('super-admin.dashboard') ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' : '' }}">
-                        لوحة التحكم
-                    </a>
-                    <a href="{{ route('super-admin.tenants') }}"
-                       class="text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('super-admin.tenants') ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' : '' }}">
-                        الشركات
-                    </a>
-                    <a href="{{ route('super-admin.subscription-plans') }}"
-                       class="text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('super-admin.subscription-plans') ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' : '' }}">
-                        الاشتراكات
-                    </a>
-                    <a href="{{ route('super-admin.activity-logs') }}"
-                       class="text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('super-admin.activity-logs') ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' : '' }}">
-                        السجلات
-                    </a>
-                    <a href="{{ route('super-admin.notifications') }}"
-                       class="text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('super-admin.notifications') ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' : '' }}">
-                        الإشعارات
-                    </a>
-                    <a href="{{ route('super-admin.reports') }}"
-                       class="text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('super-admin.reports') ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' : '' }}">
-                        التقارير
-                    </a>
-                    <a href="{{ route('super-admin.settings') }}"
-                       class="text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('super-admin.settings') ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' : '' }}">
-                        الإعدادات
+                        <span class="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent hidden sm:block">Super Admin</span>
                     </a>
                 </div>
 
-                <!-- User Menu -->
-                <div class="flex items-center" x-data="{ open: false }">
-                    <div class="relative">
-                        <button @click="open = !open" class="flex items-center space-x-3 space-x-reverse text-sm focus:outline-none">
-                            <div class="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center">
-                                <span class="text-white font-semibold">{{ substr(auth()->user()->name, 0, 1) }}</span>
+                <!-- Desktop Navigation Links -->
+                <div class="hidden lg:flex lg:items-center lg:gap-1">
+                    @php
+                        $navLinks = [
+                            ['route' => 'super-admin.dashboard',          'label' => 'لوحة التحكم', 'icon' => 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'],
+                            ['route' => 'super-admin.tenants',             'label' => 'الشركات',    'icon' => 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5'],
+                            ['route' => 'super-admin.subscription-plans',  'label' => 'الاشتراكات', 'icon' => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2'],
+                            ['route' => 'super-admin.activity-logs',       'label' => 'السجلات',    'icon' => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2'],
+                            ['route' => 'super-admin.notifications',       'label' => 'الإشعارات', 'icon' => 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9'],
+                            ['route' => 'super-admin.reports',             'label' => 'التقارير',   'icon' => 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'],
+                            ['route' => 'super-admin.settings',            'label' => 'الإعدادات', 'icon' => 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z'],
+                        ];
+                    @endphp
+                    @foreach($navLinks as $link)
+                        @php $isActive = request()->routeIs($link['route']); @endphp
+                        <a href="{{ route($link['route']) }}"
+                           class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150
+                                  {{ $isActive
+                                    ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white' }}">
+                            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $link['icon'] }}" />
+                            </svg>
+                            {{ $link['label'] }}
+                        </a>
+                    @endforeach
+                </div>
+
+                <!-- Right: User menu + mobile toggle -->
+                <div class="flex items-center gap-2">
+                    <!-- Dark mode quick toggle (nav) -->
+                    <button onclick="toggleNavDark()" class="p-2 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 dark:text-slate-400 dark:hover:text-indigo-400 transition" title="تبديل الوضع">
+                        <svg id="nav-sun" class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        <svg id="nav-moon" class="w-5 h-5 dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                    </button>
+
+                    <!-- User Menu -->
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open"
+                                class="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition group">
+                            <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-sm">
+                                <span class="text-white font-bold text-sm">{{ substr(auth()->user()->name, 0, 1) }}</span>
                             </div>
-                            <span class="text-slate-900 dark:text-white font-medium hidden md:block">{{ auth()->user()->name }}</span>
-                            <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <span class="text-slate-700 dark:text-slate-200 font-medium hidden md:block">{{ auth()->user()->name }}</span>
+                            <svg class="w-4 h-4 text-slate-400 transition-transform" :class="open && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                             </svg>
                         </button>
 
-                        <!-- Dropdown -->
-                        <div x-show="open"
-                             @click.away="open = false"
-                             x-transition
-                             class="absolute left-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 py-2 z-50">
-                            <div class="px-4 py-2 border-b border-slate-200 dark:border-slate-700">
-                                <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ auth()->user()->name }}</p>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">{{ auth()->user()->email }}</p>
+                        <!-- User Dropdown -->
+                        <div x-show="open" @click.away="open = false"
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0 scale-95 translate-y-1"
+                             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-100"
+                             x-transition:leave-start="opacity-100"
+                             x-transition:leave-end="opacity-0 scale-95"
+                             class="absolute left-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden z-50">
+                            <div class="px-4 py-3 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 border-b border-slate-200 dark:border-slate-700">
+                                <p class="text-sm font-bold text-slate-900 dark:text-white">{{ auth()->user()->name }}</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ auth()->user()->email }}</p>
+                                <span class="inline-block mt-1.5 text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full font-medium">Super Admin</span>
                             </div>
+                            <a href="{{ route('super-admin.settings') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+                                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                الإعدادات
+                            </a>
+                            <div class="border-t border-slate-200 dark:border-slate-700"></div>
                             <form method="POST" action="{{ route('super-admin.logout') }}">
                                 @csrf
-                                <button type="submit" class="w-full text-right px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+                                <button type="submit" class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition text-right">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                    </svg>
                                     تسجيل الخروج
                                 </button>
                             </form>
                         </div>
                     </div>
+
+                    <!-- Mobile Hamburger -->
+                    <button @click="mobileOpen = !mobileOpen"
+                            class="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 dark:text-slate-400 transition">
+                        <svg x-show="!mobileOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                        <svg x-show="mobileOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation Menu -->
+        <div x-show="mobileOpen" @click.away="mobileOpen = false" x-cloak
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 -translate-y-2"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0 -translate-y-2"
+             class="lg:hidden border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 pb-4">
+            <div class="px-4 pt-3 space-y-1">
+                @foreach($navLinks as $link)
+                    @php $isActive = request()->routeIs($link['route']); @endphp
+                    <a href="{{ route($link['route']) }}"
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition
+                              {{ $isActive
+                                ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700' }}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $link['icon'] }}" />
+                        </svg>
+                        {{ $link['label'] }}
+                    </a>
+                @endforeach
             </div>
         </div>
     </nav>
 
+    <!-- Breadcrumb -->
+    @hasSection('breadcrumb')
+    <div class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5">
+            <nav class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                <a href="{{ route('super-admin.dashboard') }}" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    الرئيسية
+                </a>
+                <svg class="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+                @yield('breadcrumb')
+            </nav>
+        </div>
+    </div>
+    @endif
+
     <!-- Page Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 page-enter">
         @yield('content')
     </main>
 
-    <!-- Toast Notifications -->
-    <div id="toast-container" class="fixed top-4 left-4 z-50 space-y-2"></div>
+    <!-- Back to Top Button -->
+    <button id="back-to-top"
+            onclick="window.scrollTo({top:0,behavior:'smooth'})"
+            class="back-top-ring fixed bottom-6 right-6 w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-full shadow-xl flex items-center justify-center z-40 transition-all duration-300 opacity-0 translate-y-4 pointer-events-none"
+            style="transition: opacity .3s, transform .3s;">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+        </svg>
+    </button>
+
+    <!-- Global Toast Container -->
+    <div id="toast-container" class="fixed bottom-4 left-4 z-50 space-y-2 pointer-events-none"></div>
 
     <!-- Scripts -->
     @stack('scripts')
 
     <script>
-        // Toast notification function
-        function showToast(message, type = 'success') {
-            const toast = document.createElement('div');
-            toast.className = `flex items-center p-4 rounded-lg shadow-lg transform transition-all duration-300 ${
-                type === 'success' ? 'bg-emerald-500' :
-                type === 'error' ? 'bg-red-500' : 'bg-blue-500'
-            } text-white`;
-            toast.innerHTML = `
-                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                <span>${message}</span>
-            `;
-            document.getElementById('toast-container').appendChild(toast);
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+        // ── Scroll Progress Bar ──────────────────────────────
+        window.addEventListener('scroll', () => {
+            const el = document.getElementById('scroll-progress');
+            if (!el) return;
+            const scrolled = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
+            el.style.transform = `scaleX(${Math.min(scrolled / 100, 1)})`;
+        }, { passive: true });
+
+        // ── Back to Top ──────────────────────────────────────
+        window.addEventListener('scroll', () => {
+            const btn = document.getElementById('back-to-top');
+            if (!btn) return;
+            if (window.scrollY > 300) {
+                btn.style.opacity = '1';
+                btn.style.transform = 'translateY(0)';
+                btn.style.pointerEvents = 'auto';
+            } else {
+                btn.style.opacity = '0';
+                btn.style.transform = 'translateY(16px)';
+                btn.style.pointerEvents = 'none';
+            }
+        }, { passive: true });
+
+        // ── Dark mode toggle (nav button) ────────────────────
+        function toggleNavDark() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('darkMode', isDark);
+            // Sync Alpine components
+            window.dispatchEvent(new CustomEvent('dark-mode-changed', { detail: { isDark } }));
         }
+
+        // ── Global Toast ──────────────────────────────────────
+        function showToast(message, type = 'success', duration = 3500) {
+            const icons = {
+                success: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>',
+                error:   '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>',
+                info:    '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>',
+                warning: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>',
+            };
+            const colors = {
+                success: 'bg-emerald-500',
+                error:   'bg-red-500',
+                info:    'bg-blue-500',
+                warning: 'bg-amber-500',
+            };
+            const toast = document.createElement('div');
+            toast.className = `toast-enter pointer-events-auto flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-2xl text-white font-medium text-sm ${colors[type] || colors.success}`;
+            toast.style.fontFamily = "'Tajawal', sans-serif";
+            toast.innerHTML = `
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">${icons[type] || icons.success}</svg>
+                <span>${message}</span>
+                <button onclick="this.parentElement.remove()" class="mr-auto opacity-70 hover:opacity-100 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>`;
+            const container = document.getElementById('toast-container');
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('toast-enter');
+                toast.classList.add('toast-exit');
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
+
+        // ── Counter Animation ──────────────────────────────────
+        function animateCounter(el, target, duration = 800) {
+            const start = 0;
+            const startTime = performance.now();
+            function update(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const ease = 1 - Math.pow(1 - progress, 3);
+                el.textContent = Math.round(start + (target - start) * ease);
+                if (progress < 1) requestAnimationFrame(update);
+            }
+            requestAnimationFrame(update);
+        }
+
+        // Init counters on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('[data-counter]').forEach(el => {
+                const val = parseInt(el.dataset.counter, 10) || 0;
+                animateCounter(el, val);
+            });
+        });
     </script>
 </body>
 </html>

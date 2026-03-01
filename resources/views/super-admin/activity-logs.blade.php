@@ -1,25 +1,26 @@
 @extends('super-admin.layout')
 
-@section('title', 'Activity Logs')
+@section('title', 'سجل الأنشطة')
+@section('breadcrumb')<span class="text-slate-700 dark:text-slate-200 font-medium">سجل الأنشطة</span>@endsection
 
 @section('content')
 <div x-data="activityLogs()" x-init="loadLogs()">
 
     <!-- Header -->
     <div class="mb-8">
-        <h1 class="text-3xl font-bold text-slate-900 dark:text-white">سجل الأنشطة</h1>
-        <p class="text-slate-600 dark:text-slate-400 mt-2">تتبع جميع الأنشطة والتغييرات في النظام</p>
+        <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">سجل الأنشطة</h1>
+        <p class="text-slate-500 dark:text-slate-400 mt-1 text-sm">تتبع جميع الأنشطة والتغييرات في النظام</p>
     </div>
 
     <!-- Statistics Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 border border-slate-200 dark:border-slate-700">
+        <div class="card-animate card-delay-1 bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6 border border-slate-200 dark:border-slate-700 hover:-translate-y-1 hover:shadow-md transition-all duration-300">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-slate-600 dark:text-slate-400">اليوم</p>
-                    <p class="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mt-2" x-text="stats.today"></p>
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">اليوم</p>
+                    <p class="text-3xl font-black text-indigo-600 dark:text-indigo-400 mt-2" x-text="stats.today"></p>
                 </div>
-                <div class="w-12 h-12 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
+                <div class="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/40 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -27,13 +28,13 @@
             </div>
         </div>
 
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 border border-slate-200 dark:border-slate-700">
+        <div class="card-animate card-delay-2 bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6 border border-slate-200 dark:border-slate-700 hover:-translate-y-1 hover:shadow-md transition-all duration-300">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-slate-600 dark:text-slate-400">هذا الأسبوع</p>
-                    <p class="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-2" x-text="stats.this_week"></p>
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">هذا الأسبوع</p>
+                    <p class="text-3xl font-black text-emerald-600 dark:text-emerald-400 mt-2" x-text="stats.this_week"></p>
                 </div>
-                <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-900 rounded-lg flex items-center justify-center">
+                <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/40 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
@@ -41,13 +42,13 @@
             </div>
         </div>
 
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 border border-slate-200 dark:border-slate-700">
+        <div class="card-animate card-delay-3 bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6 border border-slate-200 dark:border-slate-700 hover:-translate-y-1 hover:shadow-md transition-all duration-300">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-slate-600 dark:text-slate-400">هذا الشهر</p>
-                    <p class="text-3xl font-bold text-amber-600 dark:text-amber-400 mt-2" x-text="stats.this_month"></p>
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">هذا الشهر</p>
+                    <p class="text-3xl font-black text-amber-600 dark:text-amber-400 mt-2" x-text="stats.this_month"></p>
                 </div>
-                <div class="w-12 h-12 bg-amber-100 dark:bg-amber-900 rounded-lg flex items-center justify-center">
+                <div class="w-12 h-12 bg-amber-100 dark:bg-amber-900/40 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
@@ -55,13 +56,13 @@
             </div>
         </div>
 
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 border border-slate-200 dark:border-slate-700">
+        <div class="card-animate card-delay-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6 border border-slate-200 dark:border-slate-700 hover:-translate-y-1 hover:shadow-md transition-all duration-300">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-slate-600 dark:text-slate-400">الإجمالي</p>
-                    <p class="text-3xl font-bold text-slate-900 dark:text-white mt-2" x-text="pagination.total || 0"></p>
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">الإجمالي</p>
+                    <p class="text-3xl font-black text-slate-900 dark:text-white mt-2" x-text="pagination.total || 0"></p>
                 </div>
-                <div class="w-12 h-12 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
+                <div class="w-12 h-12 bg-slate-100 dark:bg-slate-700 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
@@ -71,19 +72,19 @@
     </div>
 
     <!-- Filters -->
-    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 p-6 mb-6">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-6">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">البحث</label>
+                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">البحث</label>
                 <input type="text" x-model="filters.search" @input.debounce.500ms="loadLogs()"
                        placeholder="ابحث في الوصف..."
-                       class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white">
+                       class="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700/50 text-slate-900 dark:text-white transition">
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">نوع الإجراء</label>
+                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">نوع الإجراء</label>
                 <select x-model="filters.action" @change="loadLogs()"
-                        class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white">
+                        class="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700/50 text-slate-900 dark:text-white transition">
                     <option value="">الكل</option>
                     <option value="created">إنشاء</option>
                     <option value="updated">تحديث</option>
@@ -94,35 +95,49 @@
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">من تاريخ</label>
+                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">من تاريخ</label>
                 <input type="date" x-model="filters.date_from" @change="loadLogs()"
-                       class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white">
+                       class="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700/50 text-slate-900 dark:text-white transition">
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">إلى تاريخ</label>
+                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">إلى تاريخ</label>
                 <input type="date" x-model="filters.date_to" @change="loadLogs()"
-                       class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white">
+                       class="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700/50 text-slate-900 dark:text-white transition">
             </div>
         </div>
 
-        <div class="mt-4 flex justify-between items-center">
-            <button @click="clearFilters()" class="text-sm text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400">
+        <div class="mt-4 flex flex-wrap justify-between items-center gap-3">
+            <button @click="clearFilters()" class="flex items-center gap-1.5 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 إعادة تعيين الفلاتر
             </button>
-            <button @click="clearOldLogs()" class="bg-red-100 dark:bg-red-900 hover:bg-red-200 dark:hover:bg-red-800 text-red-600 dark:text-red-400 px-4 py-2 rounded-lg text-sm font-medium transition">
+            <button @click="clearOldLogs()" class="flex items-center gap-1.5 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 px-4 py-2 rounded-xl text-sm font-semibold transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                 حذف السجلات القديمة (أكثر من 90 يوم)
             </button>
         </div>
     </div>
 
     <!-- Loading State -->
-    <div x-show="loading" class="flex items-center justify-center py-12">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+    <div x-show="loading" class="space-y-3">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700">
+                <div class="h-5 w-48 skeleton bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+            </div>
+            <template x-for="i in 8" :key="i">
+                <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 last:border-0 flex gap-4">
+                    <div class="h-4 w-32 skeleton bg-slate-200 dark:bg-slate-700 rounded"></div>
+                    <div class="h-4 w-20 skeleton bg-slate-200 dark:bg-slate-700 rounded-full"></div>
+                    <div class="h-4 flex-1 skeleton bg-slate-200 dark:bg-slate-700 rounded"></div>
+                    <div class="h-4 w-24 skeleton bg-slate-200 dark:bg-slate-700 rounded"></div>
+                </div>
+            </template>
+        </div>
     </div>
 
     <!-- Logs Table -->
-    <div x-show="!loading" x-cloak class="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700">
+    <div x-show="!loading" x-cloak class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead class="bg-slate-50 dark:bg-slate-900">
@@ -164,21 +179,21 @@
         </div>
 
         <!-- Pagination -->
-        <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
-            <div class="text-sm text-slate-600 dark:text-slate-400">
-                عرض <span x-text="pagination.from"></span> إلى <span x-text="pagination.to"></span> من <span x-text="pagination.total"></span>
+        <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-700 flex flex-wrap gap-3 items-center justify-between">
+            <div class="text-sm text-slate-500 dark:text-slate-400">
+                عرض <span class="font-semibold text-slate-700 dark:text-slate-200" x-text="pagination.from"></span> إلى <span class="font-semibold text-slate-700 dark:text-slate-200" x-text="pagination.to"></span> من <span class="font-semibold text-slate-700 dark:text-slate-200" x-text="pagination.total"></span>
             </div>
-            <div class="flex items-center space-x-2 space-x-reverse">
+            <div class="flex items-center gap-2">
                 <button @click="loadPage(pagination.current_page - 1)" :disabled="!pagination.prev_page_url"
-                        class="px-3 py-1 border border-slate-300 dark:border-slate-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700">
-                    السابق
+                        class="px-4 py-2 text-sm font-semibold border border-slate-200 dark:border-slate-600 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition">
+                    ← السابق
                 </button>
-                <span class="text-sm text-slate-600 dark:text-slate-400">
-                    صفحة <span x-text="pagination.current_page"></span> من <span x-text="pagination.last_page"></span>
+                <span class="text-sm text-slate-500 dark:text-slate-400 px-2">
+                    <span x-text="pagination.current_page"></span> / <span x-text="pagination.last_page"></span>
                 </span>
                 <button @click="loadPage(pagination.current_page + 1)" :disabled="!pagination.next_page_url"
-                        class="px-3 py-1 border border-slate-300 dark:border-slate-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700">
-                    التالي
+                        class="px-4 py-2 text-sm font-semibold border border-slate-200 dark:border-slate-600 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition">
+                    التالي →
                 </button>
             </div>
         </div>

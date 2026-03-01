@@ -1,71 +1,98 @@
 @extends('super-admin.layout')
 
-@section('title', 'System Settings')
+@section('title', 'إعدادات النظام')
+@section('breadcrumb')<span class="text-slate-700 dark:text-slate-200 font-medium">إعدادات النظام</span>@endsection
 
 @section('content')
 <div x-data="systemSettings()" x-init="loadSettings()">
 
     <!-- Header -->
     <div class="mb-8">
-        <h1 class="text-3xl font-bold text-slate-900 dark:text-white">إعدادات النظام</h1>
-        <p class="text-slate-600 dark:text-slate-400 mt-2">إدارة إعدادات وتكوينات النظام العامة</p>
+        <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">إعدادات النظام</h1>
+        <p class="text-slate-500 dark:text-slate-400 mt-1 text-sm">إدارة إعدادات وتكوينات النظام العامة</p>
     </div>
 
     <!-- Loading State -->
-    <div x-show="loading" class="flex items-center justify-center py-12">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+    <div x-show="loading" class="space-y-4">
+        <template x-for="i in 3" :key="i">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <div class="p-5 border-b border-slate-200 dark:border-slate-700">
+                    <div class="h-5 w-40 bg-slate-200 dark:bg-slate-700 rounded skeleton"></div>
+                </div>
+                <div class="p-5 space-y-3">
+                    <div class="h-16 bg-slate-100 dark:bg-slate-700/50 rounded-xl skeleton"></div>
+                    <div class="h-16 bg-slate-100 dark:bg-slate-700/50 rounded-xl skeleton"></div>
+                </div>
+            </div>
+        </template>
     </div>
 
     <!-- Settings Groups -->
     <div x-show="!loading" x-cloak class="space-y-6">
 
         <template x-for="(groupSettings, groupName) in settings" :key="groupName">
-            <div class="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700">
+            <div class="card-animate bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
                 <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                    <h2 class="text-xl font-bold text-slate-900 dark:text-white capitalize" x-text="getGroupLabel(groupName)"></h2>
-                    <button @click="addSettingToGroup(groupName)" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 text-sm font-medium">
-                        + إضافة إعداد
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/40 rounded-lg flex items-center justify-center">
+                            <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                        </div>
+                        <h2 class="font-bold text-slate-900 dark:text-white capitalize" x-text="getGroupLabel(groupName)"></h2>
+                    </div>
+                    <button @click="addSettingToGroup(groupName)"
+                            class="flex items-center gap-1.5 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 px-3 py-1.5 rounded-lg transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        إضافة
                     </button>
                 </div>
 
-                <div class="p-6 space-y-4">
+                <div class="p-6 space-y-3">
                     <template x-for="setting in groupSettings" :key="setting.id">
-                        <div class="flex items-center space-x-4 space-x-reverse p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
-                            <div class="flex-1">
-                                <div class="flex items-center space-x-2 space-x-reverse mb-2">
-                                    <label class="text-sm font-medium text-slate-900 dark:text-white" x-text="setting.key"></label>
-                                    <span class="text-xs px-2 py-1 bg-slate-200 dark:bg-slate-700 rounded text-slate-600 dark:text-slate-400" x-text="setting.type"></span>
+                        <div class="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-700/50 hover:border-indigo-200 dark:hover:border-indigo-800 transition">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 mb-1.5">
+                                    <label class="text-sm font-semibold text-slate-900 dark:text-white" x-text="setting.key"></label>
+                                    <span class="text-xs px-2 py-0.5 bg-slate-200 dark:bg-slate-700 rounded-full text-slate-500 dark:text-slate-400" x-text="setting.type"></span>
                                 </div>
-                                <p class="text-xs text-slate-600 dark:text-slate-400 mb-2" x-text="setting.description"></p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mb-2.5" x-text="setting.description"></p>
 
                                 <!-- String Input -->
                                 <input x-show="setting.type === 'string'" type="text" :value="setting.value"
                                        @change="updateSetting(setting.key, $event.target.value, setting.type, groupName)"
-                                       class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white">
+                                       class="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700/50 text-slate-900 dark:text-white transition">
 
                                 <!-- Number Input -->
                                 <input x-show="setting.type === 'number'" type="number" :value="setting.value"
                                        @change="updateSetting(setting.key, $event.target.value, setting.type, groupName)"
-                                       class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white">
+                                       class="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700/50 text-slate-900 dark:text-white transition">
 
                                 <!-- Boolean Input -->
-                                <label x-show="setting.type === 'boolean'" class="flex items-center space-x-2 space-x-reverse cursor-pointer">
-                                    <input type="checkbox" :checked="setting.value == '1' || setting.value === true"
-                                           @change="updateSetting(setting.key, $event.target.checked ? '1' : '0', setting.type, groupName)"
-                                           class="w-4 h-4 text-indigo-600 border-slate-300 rounded">
+                                <label x-show="setting.type === 'boolean'" class="inline-flex items-center gap-3 cursor-pointer">
+                                    <div class="relative">
+                                        <input type="checkbox" class="sr-only peer"
+                                               :checked="setting.value == '1' || setting.value === true"
+                                               @change="updateSetting(setting.key, $event.target.checked ? '1' : '0', setting.type, groupName)">
+                                        <div class="w-10 h-6 bg-slate-200 dark:bg-slate-600 peer-checked:bg-indigo-600 rounded-full transition-colors"></div>
+                                        <div class="absolute top-1 right-1 w-4 h-4 bg-white rounded-full shadow peer-checked:translate-x-[-16px] ltr:peer-checked:translate-x-[16px] transition-transform"></div>
+                                    </div>
                                     <span class="text-sm text-slate-700 dark:text-slate-300">مفعّل</span>
                                 </label>
                             </div>
 
-                            <button @click="deleteSetting(setting.key)" class="text-red-600 dark:text-red-400 hover:text-red-700 p-2">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            <button @click="deleteSetting(setting.key)"
+                                    class="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition flex-shrink-0">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                 </svg>
                             </button>
                         </div>
                     </template>
 
-                    <div x-show="!groupSettings || groupSettings.length === 0" class="text-center py-8 text-slate-500 dark:text-slate-400">
+                    <div x-show="!groupSettings || groupSettings.length === 0" class="text-center py-8 text-slate-400">
                         لا توجد إعدادات في هذه المجموعة
                     </div>
                 </div>

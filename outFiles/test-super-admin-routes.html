@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin Routes Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+
+        .test-section {
+            margin-bottom: 30px;
+            padding: 25px;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            background: #f9f9f9;
+        }
+
+        .test-section h2 {
+            color: #764ba2;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .icon {
+            font-size: 1.2em;
+        }
+
+        .route-test {
+            background: white;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+        }
+
+        .route-url {
+            font-family: 'Courier New', monospace;
+            background: #f0f0f0;
+            padding: 8px 12px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            word-break: break-all;
+        }
+
+        .test-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .test-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .test-btn:active {
+            transform: translateY(0);
+        }
+
+        .result {
+            margin-top: 10px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .result.warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+
+        .result.info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+
+        .status-code {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 5px;
+        }
+
+        .redirect-info {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 5px;
+        }
+
+        .clear-all {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            display: block;
+            margin: 30px auto 0;
+            transition: all 0.3s ease;
+        }
+
+        .clear-all:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .expected {
+            background: #e7f3ff;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+
+        .expected strong {
+            color: #0066cc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 اختبار Super Admin Routes</h1>
+        <p class="subtitle">اختبار شامل لجميع مسارات Super Admin للتأكد من عملها بشكل صحيح</p>
+
+        <!-- Public Routes Test -->
+        <div class="test-section">
+            <h2><span class="icon">🌐</span> اختبار المسارات العامة (بدون تسجيل دخول)</h2>
+
+            <div class="route-test">
+                <div class="route-url">GET /super-admin/login</div>
+                <div class="expected">
+                    <strong>النتيجة المتوقعة:</strong> صفحة تسجيل الدخول (200 OK)
+                </div>
+                <button class="test-btn" onclick="testRoute('https://booking-saas.test/super-admin/login', 'login-public')">
+                    اختبار صفحة تسجيل الدخول
+                </button>
+                <div id="result-login-public" class="result"></div>
+            </div>
+
+            <div class="route-test">
+                <div class="route-url">GET /</div>
+                <div class="expected">
+                    <strong>النتيجة المتوقعة:</strong> إعادة توجيه إلى /super-admin/login
+                </div>
+                <button class="test-btn" onclick="testRoute('https://booking-saas.test/', 'root')">
+                    اختبار الصفحة الرئيسية
+                </button>
+                <div id="result-root" class="result"></div>
+            </div>
+        </div>
+
+        <!-- Protected Routes Test (Without Login) -->
+        <div class="test-section">
+            <h2><span class="icon">🔒</span> اختبار المسارات المحمية (بدون تسجيل دخول)</h2>
+            <p style="color: #666; margin-bottom: 15px; font-size: 0.95em;">
+                هذه المسارات يجب أن تعيد التوجيه إلى صفحة تسجيل الدخول
+            </p>
+
+            <div class="route-test">
+                <div class="route-url">GET /super-admin/dashboard</div>
+                <div class="expected">
+                    <strong>النتيجة المتوقعة:</strong> إعادة توجيه إلى /super-admin/login
+                </div>
+                <button class="test-btn" onclick="testRoute('https://booking-saas.test/super-admin/dashboard', 'dashboard')">
+                    اختبار Dashboard
+                </button>
+                <div id="result-dashboard" class="result"></div>
+            </div>
+
+            <div class="route-test">
+                <div class="route-url">GET /super-admin/tenants</div>
+                <div class="expected">
+                    <strong>النتيجة المتوقعة:</strong> إعادة توجيه إلى /super-admin/login
+                </div>
+                <button class="test-btn" onclick="testRoute('https://booking-saas.test/super-admin/tenants', 'tenants')">
+                    اختبار Tenants
+                </button>
+                <div id="result-tenants" class="result"></div>
+            </div>
+
+            <div class="route-test">
+                <div class="route-url">GET /super-admin/settings</div>
+                <div class="expected">
+                    <strong>النتيجة المتوقعة:</strong> إعادة توجيه إلى /super-admin/login
+                </div>
+                <button class="test-btn" onclick="testRoute('https://booking-saas.test/super-admin/settings', 'settings')">
+                    اختبار Settings
+                </button>
+                <div id="result-settings" class="result"></div>
+            </div>
+
+            <div class="route-test">
+                <div class="route-url">GET /super-admin/subscription-plans</div>
+                <div class="expected">
+                    <strong>النتيجة المتوقعة:</strong> إعادة توجيه إلى /super-admin/login
+                </div>
+                <button class="test-btn" onclick="testRoute('https://booking-saas.test/super-admin/subscription-plans', 'plans')">
+                    اختبار Subscription Plans
+                </button>
+                <div id="result-plans" class="result"></div>
+            </div>
+
+            <div class="route-test">
+                <div class="route-url">GET /super-admin/activity-logs</div>
+                <div class="expected">
+                    <strong>النتيجة المتوقعة:</strong> إعادة توجيه إلى /super-admin/login
+                </div>
+                <button class="test-btn" onclick="testRoute('https://booking-saas.test/super-admin/activity-logs', 'logs')">
+                    اختبار Activity Logs
+                </button>
+                <div id="result-logs" class="result"></div>
+            </div>
+
+            <div class="route-test">
+                <div class="route-url">GET /super-admin/notifications</div>
+                <div class="expected">
+                    <strong>النتيجة المتوقعة:</strong> إعادة توجيه إلى /super-admin/login
+                </div>
+                <button class="test-btn" onclick="testRoute('https://booking-saas.test/super-admin/notifications', 'notifications')">
+                    اختبار Notifications
+                </button>
+                <div id="result-notifications" class="result"></div>
+            </div>
+
+            <div class="route-test">
+                <div class="route-url">GET /super-admin/reports</div>
+                <div class="expected">
+                    <strong>النتيجة المتوقعة:</strong> إعادة توجيه إلى /super-admin/login
+                </div>
+                <button class="test-btn" onclick="testRoute('https://booking-saas.test/super-admin/reports', 'reports')">
+                    اختبار Reports
+                </button>
+                <div id="result-reports" class="result"></div>
+            </div>
+        </div>
+
+        <button class="clear-all" onclick="clearAllResults()">
+            مسح جميع النتائج
+        </button>
+    </div>
+
+    <script>
+        async function testRoute(url, resultId) {
+            const resultDiv = document.getElementById(`result-${resultId}`);
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+
+            // Show loading state
+            btn.innerHTML = '<span class="loading"></span> جاري الاختبار...';
+            btn.disabled = true;
+            resultDiv.className = 'result';
+            resultDiv.innerHTML = '';
+
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    redirect: 'manual',
+                    credentials: 'include'
+                });
+
+                const status = response.status;
+                const type = response.type;
+                const redirected = response.redirected;
+                const finalUrl = response.url;
+
+                let resultClass = '';
+                let resultHTML = '';
+
+                // Check for redirect (status 0 means opaque redirect)
+                if (type === 'opaqueredirect' || status === 0) {
+                    resultClass = 'info';
+                    resultHTML = `
+                        <div class="status-code">↗️ إعادة توجيه (Redirect Detected)</div>
+                        <div>تم اكتشاف إعادة توجيه من المتصفح</div>
+                        <div class="redirect-info">
+                            <strong>ملاحظة:</strong> المتصفح منع الوصول للـ redirect location لأسباب أمنية (CORS).
+                            افتح الرابط في تاب جديد للتحقق من وجهة الـ redirect.
+                        </div>
+                    `;
+                } else if (status === 302 || status === 301) {
+                    resultClass = 'success';
+                    const location = response.headers.get('Location') || 'غير محدد';
+                    resultHTML = `
+                        <div class="status-code">✅ ${status} - Redirect</div>
+                        <div>تمت إعادة التوجيه بنجاح</div>
+                        <div class="redirect-info">
+                            <strong>الوجهة:</strong> ${location}
+                        </div>
+                    `;
+                } else if (status === 200) {
+                    resultClass = 'success';
+                    resultHTML = `
+                        <div class="status-code">✅ ${status} - OK</div>
+                        <div>الصفحة تعمل بشكل صحيح</div>
+                        ${redirected ? `<div class="redirect-info"><strong>تم التوجيه إلى:</strong> ${finalUrl}</div>` : ''}
+                    `;
+                } else if (status === 404) {
+                    resultClass = 'error';
+                    resultHTML = `
+                        <div class="status-code">❌ ${status} - Not Found</div>
+                        <div>الصفحة غير موجودة!</div>
+                        <div class="redirect-info">
+                            <strong>المشكلة:</strong> الـ route غير معرف أو هناك خطأ في التكوين
+                        </div>
+                    `;
+                } else if (status === 403) {
+                    resultClass = 'warning';
+                    resultHTML = `
+                        <div class="status-code">⚠️ ${status} - Forbidden</div>
+                        <div>ممنوع الوصول</div>
+                    `;
+                } else if (status === 500) {
+                    resultClass = 'error';
+                    resultHTML = `
+                        <div class="status-code">❌ ${status} - Server Error</div>
+                        <div>خطأ في السيرفر</div>
+                    `;
+                } else {
+                    resultClass = 'info';
+                    resultHTML = `
+                        <div class="status-code">ℹ️ ${status}</div>
+                        <div>Response Type: ${type}</div>
+                    `;
+                }
+
+                resultDiv.className = `result ${resultClass} show`;
+                resultDiv.innerHTML = resultHTML;
+
+            } catch (error) {
+                resultDiv.className = 'result error show';
+                resultDiv.innerHTML = `
+                    <div class="status-code">❌ خطأ في الاتصال</div>
+                    <div>${error.message}</div>
+                    <div class="redirect-info">
+                        قد يكون السبب: CORS policy, network error, أو السيرفر غير متاح
+                    </div>
+                `;
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        function clearAllResults() {
+            const results = document.querySelectorAll('.result');
+            results.forEach(result => {
+                result.className = 'result';
+                result.innerHTML = '';
+            });
+        }
+    </script>
+</body>
+</html>

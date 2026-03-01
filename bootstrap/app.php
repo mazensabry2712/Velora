@@ -30,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant.token' => \App\Http\Middleware\InitializeTenancyByToken::class,
             'tenant.locale' => \App\Http\Middleware\SetTenantLocale::class,
             'super.admin' => \App\Http\Middleware\CheckSuperAdmin::class,
+            'super.admin.auth' => \App\Http\Middleware\SuperAdminAuth::class,
 
             // Role-based middleware
             'role' => \App\Http\Middleware\CheckRole::class,

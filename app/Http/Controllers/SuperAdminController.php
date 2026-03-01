@@ -184,4 +184,71 @@ class SuperAdminController extends Controller
             return null;
         }
     }
+
+    /**
+     * Show dashboard
+     */
+    public function dashboard()
+    {
+        $stats = [
+            'total_tenants' => Tenant::count(),
+            'active_tenants' => TenantSubscription::where('status', 'active')->distinct('tenant_id')->count(),
+            'inactive_tenants' => Tenant::whereDoesntHave('subscriptions', function($q) {
+                $q->where('status', 'active');
+            })->count(),
+            'tenants_this_month' => Tenant::whereYear('created_at', now()->year)
+                ->whereMonth('created_at', now()->month)
+                ->count(),
+            'recent_tenants' => Tenant::with('subscriptions')
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get()
+                ->map(function($tenant) {
+                    return [
+                        'id' => $tenant->id,
+                        'name' => $tenant->name ?? 'N/A',
+                        'subdomain' => $tenant->id,
+                        'is_active' => $tenant->subscriptions->where('status', 'active')->count() > 0,
+                        'created_at' => $tenant->created_at->toISOString(),
+                    ];
+                }),
+        ];
+
+        return view('super-admin.dashboard', compact('stats'));
+    }
+
+    /**
+     * Get dashboard data via API
+     */
+    public function getDashboardData()
+    {
+        $data = [
+            'total_tenants' => Tenant::count(),
+            'active_tenants' => TenantSubscription::where('status', 'active')->distinct('tenant_id')->count(),
+            'inactive_tenants' => Tenant::whereDoesntHave('subscriptions', function($q) {
+                $q->where('status', 'active');
+            })->count(),
+            'tenants_this_month' => Tenant::whereYear('created_at', now()->year)
+                ->whereMonth('created_at', now()->month)
+                ->count(),
+            'recent_tenants' => Tenant::with('subscriptions')
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get()
+                ->map(function($tenant) {
+                    return [
+                        'id' => $tenant->id,
+                        'name' => $tenant->name ?? 'N/A',
+                        'subdomain' => $tenant->id,
+                        'is_active' => $tenant->subscriptions->where('status', 'active')->count() > 0,
+                        'created_at' => $tenant->created_at->toISOString(),
+                    ];
+                }),
+        ];
+
+        return response()->json([
+            'success' => true,
+            'data' => $data
+        ]);
+    }
 }
