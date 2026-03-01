@@ -113,6 +113,9 @@ Route::middleware(['tenant', 'tenant.locale'])->group(function () {
 
     // Create appointment (public)
     Route::post('appointments', [\App\Http\Controllers\Tenant\AppointmentController::class, 'store']);
+
+    // Public Queue Status Check (no auth required) - for customer-facing queue status page
+    Route::get('queue/status/{queueNumber}', [\App\Http\Controllers\Tenant\QueueController::class, 'getQueueStatus']);
 });
 
 Route::middleware(['tenant', 'tenant.locale', 'auth:sanctum'])->group(function () {
@@ -135,9 +138,6 @@ Route::middleware(['tenant', 'tenant.locale', 'auth:sanctum'])->group(function (
         Route::get('my-appointments', [\App\Http\Controllers\Tenant\AppointmentController::class, 'myAppointments']);
     });
 
-    // Public Queue Status Check (no auth required)
-    Route::get('queue/status/{queueNumber}', [\App\Http\Controllers\Tenant\QueueController::class, 'getQueueStatus']);
-
     // Queues - Admin & Staff
     Route::middleware(['role:Admin Tenant|Staff'])->group(function () {
         // Queue Management Routes (المطلوب في المرحلة 6)
@@ -149,7 +149,7 @@ Route::middleware(['tenant', 'tenant.locale', 'auth:sanctum'])->group(function (
         // Additional queue routes
         Route::apiResource('queues', \App\Http\Controllers\Tenant\QueueController::class);
         Route::get('queues/status/{status}', [\App\Http\Controllers\Tenant\QueueController::class, 'byStatus']);
-        Route::post('quequeues/{id}/skip', [\App\Http\Controllers\Tenant\QueueController::class, 'skip']);
+        Route::post('queues/{id}/skip', [\App\Http\Controllers\Tenant\QueueController::class, 'skip']);
     });
 
     // Queues - Customer

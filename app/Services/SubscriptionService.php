@@ -23,7 +23,7 @@ class SubscriptionService
             $subscription = DB::connection('mysql')->table('tenant_subscriptions')
                 ->join('subscription_plans', 'tenant_subscriptions.subscription_plan_id', '=', 'subscription_plans.id')
                 ->where('tenant_subscriptions.tenant_id', $tenantId)
-                ->where('tenant_subscriptions.status', 'active')
+                ->whereIn('tenant_subscriptions.status', ['active', 'trial'])
                 ->select(
                     'subscription_plans.name as plan_name',
                     'subscription_plans.max_users',
@@ -38,6 +38,8 @@ class SubscriptionService
                     'tenant_subscriptions.trial_ends_at',
                     'tenant_subscriptions.subscription_plan_id'
                 )
+                ->orderByRaw("FIELD(tenant_subscriptions.status, 'active', 'trial')")
+                ->orderByDesc('tenant_subscriptions.created_at')
                 ->first();
 
             if (!$subscription) {
@@ -47,9 +49,11 @@ class SubscriptionService
             // Calculate usage
             $usage = $this->calculateUsage();
 
-            // Calculate days remaining
+            // Calculate days remaining (trial uses trial_ends_at, active uses ends_at)
             $daysRemaining = 0;
-            if ($subscription->ends_at) {
+            if ($subscription->status === 'trial' && $subscription->trial_ends_at) {
+                $daysRemaining = max(0, now()->diffInDays($subscription->trial_ends_at, false));
+            } elseif ($subscription->ends_at) {
                 $daysRemaining = max(0, now()->diffInDays($subscription->ends_at, false));
             }
 
@@ -208,16 +212,17 @@ class SubscriptionService
     {
         $currentInfo = $this->getSubscriptionInfo();
 
-        if (!$currentInfo) {
-            return [];
-        }
-
         try {
-            $plans = DB::connection('mysql')->table('subscription_plans')
+            $query = DB::connection('mysql')->table('subscription_plans')
                 ->where('is_active', true)
-                ->where('id', '!=', $currentInfo['plan_id'])
-                ->orderBy('price', 'asc')
-                ->get();
+                ->orderBy('price', 'asc');
+
+            // Exclude current plan only if tenant has an active/trial subscription
+            if ($currentInfo && isset($currentInfo['plan_id'])) {
+                $query->where('id', '!=', $currentInfo['plan_id']);
+            }
+
+            $plans = $query->get();
 
             return $plans->map(function ($plan) {
                 return [

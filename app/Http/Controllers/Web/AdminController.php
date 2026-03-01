@@ -265,19 +265,22 @@ class AdminController extends Controller
                 return null;
             }
 
-            // Get active subscription from central DB
+            // Get active or trial subscription from central DB
             $subscription = DB::connection('mysql')->table('tenant_subscriptions')
                 ->join('subscription_plans', 'tenant_subscriptions.subscription_plan_id', '=', 'subscription_plans.id')
                 ->where('tenant_subscriptions.tenant_id', $tenant->id)
-                ->where('tenant_subscriptions.status', 'active')
+                ->whereIn('tenant_subscriptions.status', ['active', 'trial'])
                 ->select(
                     'subscription_plans.name as plan_name',
                     'subscription_plans.max_users',
                     'subscription_plans.max_appointments',
                     'subscription_plans.storage_limit',
                     'tenant_subscriptions.ends_at',
+                    'tenant_subscriptions.trial_ends_at',
                     'tenant_subscriptions.status'
                 )
+                ->orderByRaw("FIELD(tenant_subscriptions.status, 'active', 'trial')")
+                ->orderByDesc('tenant_subscriptions.created_at')
                 ->first();
 
             if (!$subscription) {
@@ -288,11 +291,19 @@ class AdminController extends Controller
             $currentUsers = User::count();
             $currentAppointments = Appointment::whereMonth('created_at', now()->month)->count();
 
+            // Days remaining depends on status
+            $daysRemaining = 0;
+            if ($subscription->status === 'trial' && $subscription->trial_ends_at) {
+                $daysRemaining = max(0, (int) now()->diffInDays($subscription->trial_ends_at, false));
+            } elseif ($subscription->ends_at) {
+                $daysRemaining = max(0, (int) now()->diffInDays($subscription->ends_at, false));
+            }
+
             return [
                 'plan_name' => $subscription->plan_name,
                 'status' => $subscription->status,
-                'ends_at' => $subscription->ends_at,
-                'days_remaining' => max(0, (int) now()->diffInDays($subscription->ends_at)),
+                'ends_at' => $subscription->status === 'trial' ? $subscription->trial_ends_at : $subscription->ends_at,
+                'days_remaining' => $daysRemaining,
                 'limits' => [
                     'users' => [
                         'max' => $subscription->max_users == -1 ? 'Unlimited' : $subscription->max_users,
@@ -1485,7 +1496,7 @@ class AdminController extends Controller
 
             // Update appointment status
             if ($queue->appointment) {
-                $queue->appointment->update(['status' => 'confirmed']);
+                $queue->appointment->update(['status' => 'completed']);
             }
 
             return response()->json([
@@ -2339,6 +2350,48 @@ class AdminController extends Controller
             return response()->json(['success' => true, 'data' => $schedules]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error'], 500);
+        }
+    }
+
+    /**
+     * Rate an appointment (AJAX)
+     * POST /admin/api/appointments/{id}/rate
+     */
+    public function rateAppointment(Request $request, $id)
+    {
+        $request->validate([
+            'rating'         => 'required|integer|min:1|max:5',
+            'rating_comment' => 'nullable|string|max:1000',
+        ]);
+
+        try {
+            $appointment = \App\Models\Appointment::findOrFail($id);
+
+            if ($appointment->status !== 'completed') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'يمكن تقييم المواعيد المكتملة فقط',
+                ], 422);
+            }
+
+            $appointment->update([
+                'rating'         => $request->rating,
+                'rating_comment' => $request->rating_comment,
+                'rated_at'       => now(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'تم حفظ التقييم بنجاح',
+                'data'    => [
+                    'rating'         => $appointment->rating,
+                    'rating_comment' => $appointment->rating_comment,
+                    'rated_at'       => $appointment->rated_at?->toDateTimeString(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error rating appointment: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'حدث خطأ'], 500);
         }
     }
 }

@@ -52,6 +52,14 @@ class AssistantController extends Controller
     /**
      * Get all assistants
      */
+    /**
+     * Show the assistants management page
+     */
+    public function page()
+    {
+        return view('admin.assistants.index');
+    }
+
     public function index()
     {
         $assistantRole = Role::where('name', 'Assistant')->first();

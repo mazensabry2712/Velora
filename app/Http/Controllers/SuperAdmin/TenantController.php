@@ -20,7 +20,7 @@ class TenantController extends Controller
      */
     public function index()
     {
-        $tenants = Tenant::with('domains')->latest()->paginate(20);
+        $tenants = Tenant::with(['domains', 'currentSubscription.plan'])->latest()->paginate(20);
 
         return response()->json([
             'success' => true,
@@ -41,7 +41,9 @@ class TenantController extends Controller
         ]);
 
         // Generate email and password for tenant admin
-        $generatedEmail = $validated['email'] ?? strtolower(str_replace(' ', '', $validated['name'])) . '@' . $validated['domain'];
+        // Extract subdomain part only for cleaner email: admin@subdomain.test → admin@subdomain
+        $domainPart = explode('.', $validated['domain'])[0];
+        $generatedEmail = $validated['email'] ?? 'admin@' . $domainPart . '.com';
         $generatedPassword = Str::random(12);
 
         // Create tenant with UUID

@@ -7,8 +7,8 @@
 
 ## {{ __('notifications.appointment_reminder.details', [], $locale) }}
 
-**{{ __('notifications.appointment_reminder.date', ['date' => $appointment->appointment_date->format('Y-m-d')], $locale) }}**
-**{{ __('notifications.appointment_reminder.time', ['time' => $appointment->appointment_date->format('H:i')], $locale) }}**
+**{{ __('notifications.appointment_reminder.date', ['date' => $appointment->date->format('Y-m-d')], $locale) }}**
+**{{ __('notifications.appointment_reminder.time', ['time' => $appointment->time_slot], $locale) }}**
 **{{ __('notifications.appointment_reminder.tenant', ['tenant' => tenant()->name], $locale) }}**
 
 @component('mail::button', ['url' => config('app.url')])

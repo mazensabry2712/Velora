@@ -62,19 +62,24 @@ class SubscriptionController extends Controller
             }
 
             // Create upgrade request in central DB
+            $subscriptionInfo = $this->subscriptionService->getSubscriptionInfo();
             DB::connection('mysql')->table('upgrade_requests')->insert([
                 'tenant_id' => $tenantId,
-                'current_plan_id' => $this->subscriptionService->getSubscriptionInfo()['plan_id'],
+                'current_plan_id' => $subscriptionInfo['plan_id'] ?? null,
                 'requested_plan_id' => $planId,
                 'status' => 'pending',
-                'requested_by' => auth()->user()->name,
+                'requested_by_name' => auth()->user()->name,
                 'requested_by_email' => auth()->user()->email,
                 'message' => $request->message,
                 'created_at' => now(),
                 'updated_at' => now()
             ]);
 
-            // Send notification to Super Admin (implement email notification later)
+            // Log activity so super-admin can track it
+            \App\Models\ActivityLog::log(
+                'upgrade_requested',
+                "Tenant requested upgrade from plan [" . ($subscriptionInfo['plan_name'] ?? 'N/A') . "] to [{$plan->name}]. Requested by: " . auth()->user()->email
+            );
 
             return redirect()->route('admin.subscription.index')
                 ->with('success', __('Upgrade request submitted successfully. Our team will contact you shortly.'));

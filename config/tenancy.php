@@ -20,6 +20,11 @@ return [
         '127.0.0.1',
         'localhost',
         'booking-saas.test',
+        'velora.test',
+        'www.velora.test',
+        'velora.com',
+        'www.velora.com',
+        'admin.velora.com',
     ],
 
     /**

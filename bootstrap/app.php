@@ -39,6 +39,9 @@ return Application::configure(basePath: dirname(__DIR__))
             // Subscription limits middleware
             'subscription.limits' => \App\Http\Middleware\CheckSubscriptionLimits::class,
 
+            // Subscription validity (trial/grace/expired)
+            'subscription.valid' => \App\Http\Middleware\EnsureSubscriptionIsValid::class,
+
             // Rate limiting
             'throttle.api' => \App\Http\Middleware\ThrottleRequests::class,
         ]);
@@ -50,9 +53,10 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Session\Middleware\StartSession::class,
         ]);
 
-        // Exclude API routes from CSRF verification
+        // Exclude API routes and Stripe webhook from CSRF verification
         $middleware->validateCsrfTokens(except: [
             'api/*',
+            'webhooks/stripe',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -78,6 +78,9 @@
                         <a href="/admin/staff" class="px-3 py-2 text-sm font-medium rounded-lg transition-colors {{ request()->is('admin/staff*') ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700/50' }}">
                             {{ __('Staff') }}
                         </a>
+                        <a href="/admin/customers" class="px-3 py-2 text-sm font-medium rounded-lg transition-colors {{ request()->is('admin/customers*') ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700/50' }}">
+                            {{ __('Customers') }}
+                        </a>
                         <a href="/admin/reports" class="px-3 py-2 text-sm font-medium rounded-lg transition-colors {{ request()->is('admin/reports*') ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700/50' }}">
                             {{ __('Reports') }}
                         </a>
@@ -151,6 +154,9 @@
                 <a href="/admin/staff" class="px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap {{ request()->is('admin/staff*') ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30' : 'text-slate-600 dark:text-slate-300' }}">
                     {{ __('Staff') }}
                 </a>
+                <a href="/admin/customers" class="px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap {{ request()->is('admin/customers*') ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30' : 'text-slate-600 dark:text-slate-300' }}">
+                    {{ __('Customers') }}
+                </a>
                 <a href="/admin/reports" class="px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap {{ request()->is('admin/reports*') ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30' : 'text-slate-600 dark:text-slate-300' }}">
                     {{ __('Reports') }}
                 </a>
@@ -168,6 +174,55 @@
             </div>
         </div>
     </nav>
+
+    {{-- ── Subscription / Trial Banner ──────────────────────────────────── --}}
+    @if(isset($subscriptionBanner))
+    @php
+        $banner = $subscriptionBanner;
+        $bannerColors = [
+            'info'    => 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700 text-indigo-800 dark:text-indigo-200',
+            'warning' => 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-700 text-amber-800 dark:text-amber-200',
+            'danger'  => 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700 text-red-800 dark:text-red-200',
+        ];
+        $colorClass = $bannerColors[$banner['type']] ?? $bannerColors['info'];
+    @endphp
+    <div class="border-b {{ $colorClass }} px-4 py-2.5">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            <p class="text-sm font-medium">{{ $banner['message'] }}</p>
+            @if(auth()->user()->isAdminTenant())
+            <a href="{{ route('admin.subscription.upgrade') }}"
+               class="flex-shrink-0 text-xs font-semibold underline underline-offset-2 hover:no-underline">
+                {{ __('Upgrade Now') }}
+            </a>
+            @endif
+        </div>
+    </div>
+    @endif
+
+    {{-- ── System Notifications from Super Admin ────────────────────────── --}}
+    @if(!empty($systemNotifications) && $systemNotifications->isNotEmpty())
+    @php
+        $notifColors = [
+            'info'    => 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700 text-blue-800 dark:text-blue-200',
+            'success' => 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200',
+            'warning' => 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-700 text-amber-800 dark:text-amber-200',
+            'danger'  => 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700 text-red-800 dark:text-red-200',
+        ];
+    @endphp
+    @foreach($systemNotifications->take(2) as $sysNotif)
+    <div class="border-b {{ $notifColors[$sysNotif->type] ?? $notifColors['info'] }} px-4 py-2.5"
+         id="sysnotif-{{ $sysNotif->id }}">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            <div>
+                <span class="text-xs font-bold uppercase tracking-wide opacity-75">{{ $sysNotif->title }}</span>
+                <span class="text-sm ml-2">{{ $sysNotif->message }}</span>
+            </div>
+            <button onclick="document.getElementById('sysnotif-{{ $sysNotif->id }}').remove()"
+                    class="flex-shrink-0 text-lg leading-none opacity-60 hover:opacity-100">&times;</button>
+        </div>
+    </div>
+    @endforeach
+    @endif
 
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

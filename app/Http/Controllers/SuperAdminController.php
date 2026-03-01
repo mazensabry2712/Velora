@@ -38,9 +38,10 @@ class SuperAdminController extends Controller
         // Get tenant info
         $tenant = Tenant::find($request->tenant_id);
 
-        // Get current subscription
+        // Get current subscription (active or trial)
         $subscription = TenantSubscription::where('tenant_id', $request->tenant_id)
-            ->where('status', 'active')
+            ->whereIn('status', ['active', 'trial'])
+            ->latest()
             ->first();
 
         // Get usage stats from tenant database
@@ -71,9 +72,10 @@ class SuperAdminController extends Controller
                 'processed_by' => auth()->id(),
             ]);
 
-            // Get current subscription
+            // Get current subscription (active or trial)
             $currentSubscription = TenantSubscription::where('tenant_id', $upgradeRequest->tenant_id)
-                ->where('status', 'active')
+                ->whereIn('status', ['active', 'trial'])
+                ->latest()
                 ->first();
 
             if ($currentSubscription) {
@@ -81,20 +83,29 @@ class SuperAdminController extends Controller
                 $currentSubscription->update([
                     'status' => 'expired',
                     'ends_at' => now(),
+                    'trial_ends_at' => $currentSubscription->status === 'trial' ? now() : $currentSubscription->trial_ends_at,
                 ]);
             }
 
             // Create new subscription with requested plan
-            $startDate = $validated['start_date'] ?? now();
+            $startDate = isset($validated['start_date']) ? \Carbon\Carbon::parse($validated['start_date']) : now();
             $newPlan = SubscriptionPlan::find($upgradeRequest->requested_plan_id);
+
+            // Use billing_cycle to calculate proper end date (NOT trial_days)
+            $endDate = match($newPlan->billing_cycle ?? 'monthly') {
+                'yearly'  => $startDate->copy()->addYear(),
+                'monthly' => $startDate->copy()->addMonth(),
+                'weekly'  => $startDate->copy()->addWeek(),
+                default   => $startDate->copy()->addMonth(),
+            };
 
             $newSubscription = TenantSubscription::create([
                 'tenant_id' => $upgradeRequest->tenant_id,
-                'plan_id' => $upgradeRequest->requested_plan_id,
+                'subscription_plan_id' => $upgradeRequest->requested_plan_id,
                 'status' => 'active',
                 'starts_at' => $startDate,
-                'ends_at' => now()->addDays($newPlan->trial_days ?? 30),
-                'trial_ends_at' => $newPlan->trial_days ? now()->addDays($newPlan->trial_days) : null,
+                'ends_at' => $endDate,
+                'trial_ends_at' => $newPlan->trial_days ? $startDate->copy()->addDays($newPlan->trial_days) : null,
             ]);
 
             DB::commit();
@@ -193,12 +204,14 @@ class SuperAdminController extends Controller
         $stats = [
             'total_tenants' => Tenant::count(),
             'active_tenants' => TenantSubscription::where('status', 'active')->distinct('tenant_id')->count(),
+            'trial_tenants' => TenantSubscription::where('status', 'trial')->distinct('tenant_id')->count(),
             'inactive_tenants' => Tenant::whereDoesntHave('subscriptions', function($q) {
-                $q->where('status', 'active');
+                $q->whereIn('status', ['active', 'trial']);
             })->count(),
             'tenants_this_month' => Tenant::whereYear('created_at', now()->year)
                 ->whereMonth('created_at', now()->month)
                 ->count(),
+            'pending_upgrade_requests' => \App\Models\UpgradeRequest::where('status', 'pending')->count(),
             'recent_tenants' => Tenant::with('subscriptions')
                 ->orderBy('created_at', 'desc')
                 ->limit(10)
@@ -208,7 +221,7 @@ class SuperAdminController extends Controller
                         'id' => $tenant->id,
                         'name' => $tenant->name ?? 'N/A',
                         'subdomain' => $tenant->id,
-                        'is_active' => $tenant->subscriptions->where('status', 'active')->count() > 0,
+                        'is_active' => $tenant->subscriptions->whereIn('status', ['active', 'trial'])->count() > 0,
                         'created_at' => $tenant->created_at->toISOString(),
                     ];
                 }),
@@ -225,12 +238,14 @@ class SuperAdminController extends Controller
         $data = [
             'total_tenants' => Tenant::count(),
             'active_tenants' => TenantSubscription::where('status', 'active')->distinct('tenant_id')->count(),
+            'trial_tenants' => TenantSubscription::where('status', 'trial')->distinct('tenant_id')->count(),
             'inactive_tenants' => Tenant::whereDoesntHave('subscriptions', function($q) {
-                $q->where('status', 'active');
+                $q->whereIn('status', ['active', 'trial']);
             })->count(),
             'tenants_this_month' => Tenant::whereYear('created_at', now()->year)
                 ->whereMonth('created_at', now()->month)
                 ->count(),
+            'pending_upgrade_requests' => \App\Models\UpgradeRequest::where('status', 'pending')->count(),
             'recent_tenants' => Tenant::with('subscriptions')
                 ->orderBy('created_at', 'desc')
                 ->limit(10)
@@ -240,7 +255,7 @@ class SuperAdminController extends Controller
                         'id' => $tenant->id,
                         'name' => $tenant->name ?? 'N/A',
                         'subdomain' => $tenant->id,
-                        'is_active' => $tenant->subscriptions->where('status', 'active')->count() > 0,
+                        'is_active' => $tenant->subscriptions->whereIn('status', ['active', 'trial'])->count() > 0,
                         'created_at' => $tenant->created_at->toISOString(),
                     ];
                 }),

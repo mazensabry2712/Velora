@@ -340,15 +340,22 @@
                     <p class="text-2xl font-black">نشط</p>
                 </div>
                 <p class="text-sm opacity-80">جميع الخدمات تعمل بشكل طبيعي</p>
-                <div class="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-white/20">
+                <div class="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-white/20">
                     <div class="bg-white/10 rounded-xl p-2 text-center">
                         <div class="text-xs opacity-80">النشطة</div>
                         <div class="font-black text-xl" x-text="stats.active_tenants"></div>
                     </div>
                     <div class="bg-white/10 rounded-xl p-2 text-center">
-                        <div class="text-xs opacity-80">غير نشطة</div>
-                        <div class="font-black text-xl" x-text="stats.inactive_tenants"></div>
+                        <div class="text-xs opacity-80">تجريبية</div>
+                        <div class="font-black text-xl" x-text="stats.trial_tenants"></div>
                     </div>
+                    <a href="/super-admin/upgrade-requests" class="bg-white/10 hover:bg-white/20 rounded-xl p-2 text-center transition">
+                        <div class="text-xs opacity-80">طلبات ترقية</div>
+                        <div class="font-black text-xl flex items-center justify-center gap-1">
+                            <span x-text="stats.pending_upgrade_requests"></span>
+                            <span x-show="stats.pending_upgrade_requests > 0" class="w-2 h-2 bg-amber-400 rounded-full animate-pulse inline-block"></span>
+                        </div>
+                    </a>
                 </div>
             </div>
         </div>
@@ -357,7 +364,7 @@
     <!-- Quick Actions Cards -->
     <div x-show="!loading" x-cloak class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <!-- Add New Tenant -->
-        <a href="/super-admin/tenants/create"
+        <a href="/super-admin/tenants"
            class="card-animate card-delay-5 group block bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-2xl shadow-lg p-5 text-white transition-all duration-300 hover:shadow-blue-200 dark:hover:shadow-blue-900 hover:-translate-y-1">
             <div class="flex items-center gap-4">
                 <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
@@ -366,8 +373,8 @@
                     </svg>
                 </div>
                 <div>
-                    <p class="font-bold text-base">إضافة شركة جديدة</p>
-                    <p class="text-xs opacity-80 mt-0.5">تسجيل شركة جديدة في النظام</p>
+                    <p class="font-bold text-base">إدارة الشركات</p>
+                    <p class="text-xs opacity-80 mt-0.5">عرض وإضافة وإدارة الشركات</p>
                 </div>
                 <svg class="w-5 h-5 mr-auto opacity-60 group-hover:translate-x-1 transition-transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -541,8 +548,8 @@
                                 </svg>
                                 <p class="text-slate-500 dark:text-slate-400 text-lg mb-2">لا توجد شركات حالياً</p>
                                 <p class="text-slate-400 dark:text-slate-500 text-sm mb-4">ابدأ بإضافة أول شركة في النظام</p>
-                                <a href="/super-admin/tenants/create" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                                    إضافة شركة جديدة
+                                <a href="/super-admin/tenants" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                                    إدارة الشركات
                                 </a>
                             </div>
                         </td>
@@ -763,12 +770,15 @@ function dashboard() {
         stats: {
             total_tenants: initialStats.total_tenants || 0,
             active_tenants: initialStats.active_tenants || 0,
+            trial_tenants: initialStats.trial_tenants || 0,
             inactive_tenants: initialStats.inactive_tenants || 0,
-            tenants_this_month: initialStats.tenants_this_month || 0
+            tenants_this_month: initialStats.tenants_this_month || 0,
+            pending_upgrade_requests: initialStats.pending_upgrade_requests || 0
         },
         filteredStats: {
             total_tenants: initialStats.total_tenants || 0,
             active_tenants: initialStats.active_tenants || 0,
+            trial_tenants: initialStats.trial_tenants || 0,
             inactive_tenants: initialStats.inactive_tenants || 0
         },
         recentTenants: initialStats.recent_tenants || [],
@@ -785,24 +795,11 @@ function dashboard() {
         sortField: 'date',
         sortDirection: 'desc',
 
-        // Recent Activities
-        recentActivities: [
-            { id: 1, type: 'add', message: 'تم إضافة شركة جديدة: ABC Company', time: 'منذ 5 دقائق' },
-            { id: 2, type: 'edit', message: 'تم تحديث معلومات شركة: XYZ Corp', time: 'منذ 15 دقيقة' },
-            { id: 3, type: 'add', message: 'تم تسجيل شركة: Tech Solutions', time: 'منذ 30 دقيقة' },
-            { id: 4, type: 'delete', message: 'تم حذف شركة: Old Company', time: 'منذ ساعة' },
-            { id: 5, type: 'edit', message: 'تم تفعيل اشتراك شركة: Digital Hub', time: 'منذ ساعتين' },
-            { id: 6, type: 'add', message: 'تم إضافة شركة: New Startup', time: 'منذ 3 ساعات' },
-            { id: 7, type: 'edit', message: 'تم تحديث بيانات: Fast Company', time: 'منذ 4 ساعات' },
-            { id: 8, type: 'add', message: 'تم تسجيل: Innovation Labs', time: 'منذ 5 ساعات' }
-        ],
+        // Recent Activities - loaded from API on init
+        recentActivities: [],
 
-        // New Features
-        notifications: [
-            { id: 1, message: 'شركة جديدة تم إضافتها', time: 'منذ 5 دقائق' },
-            { id: 2, message: 'تحديث النظام متاح', time: 'منذ ساعة' },
-            { id: 3, message: 'تم إكمال النسخ الاحتياطي', time: 'منذ ساعتين' }
-        ],
+        // Notifications - loaded from API on init
+        notifications: [],
 
         searchQuery: '',
         showSearch: false,
@@ -825,10 +822,49 @@ function dashboard() {
             this.initDarkMode();
             this.listenToToastEvents();
             this.updateLastRefreshed();
+            this.loadActivities();
+            this.loadNotifications();
             // Listen for dark mode change from nav button
             window.addEventListener('dark-mode-changed', (e) => {
                 this.isDarkMode = e.detail.isDark;
             });
+        },
+
+        async loadActivities() {
+            try {
+                const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                const res = await fetch('/api/super-admin/dashboard/activity-summary', {
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf }
+                });
+                const data = await res.json();
+                if (data.success && data.data.recent) {
+                    this.recentActivities = data.data.recent.map(a => ({
+                        id: a.id,
+                        type: ['created', 'login', 'register', 'add'].includes(a.action) ? 'add'
+                             : a.action === 'deleted' ? 'delete' : 'edit',
+                        message: a.description,
+                        time: new Date(a.created_at).toLocaleString('ar-EG', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })
+                    }));
+                }
+            } catch (e) { /* silent fail */ }
+        },
+
+        async loadNotifications() {
+            try {
+                const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                const res = await fetch('/api/super-admin/notifications', {
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf }
+                });
+                const data = await res.json();
+                if (data.success && data.data) {
+                    const items = Array.isArray(data.data) ? data.data : (data.data.data || []);
+                    this.notifications = items.slice(0, 5).map(n => ({
+                        id: n.id,
+                        message: n.message || n.title,
+                        time: new Date(n.created_at).toLocaleString('ar-EG', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })
+                    }));
+                }
+            } catch (e) { /* silent fail */ }
         },
 
         initDarkMode() {
@@ -851,12 +887,31 @@ function dashboard() {
         async refreshDashboard() {
             if (this.refreshing) return;
             this.refreshing = true;
-            // Simulate refresh delay (replace with actual AJAX if needed)
-            await new Promise(r => setTimeout(r, 800));
-            this.filterData();
-            this.updateLastRefreshed();
-            this.refreshing = false;
-            showToast('تم تحديث البيانات بنجاح', 'success');
+            try {
+                const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                const res = await fetch('/api/super-admin/dashboard', {
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf }
+                });
+                const data = await res.json();
+                if (data.success && data.data) {
+                    const d = data.data;
+                    this.stats.total_tenants     = d.total_tenants     ?? this.stats.total_tenants;
+                    this.stats.active_tenants    = d.active_tenants    ?? this.stats.active_tenants;
+                    this.stats.trial_tenants     = d.trial_tenants     ?? this.stats.trial_tenants;
+                    this.stats.inactive_tenants  = d.inactive_tenants  ?? this.stats.inactive_tenants;
+                    this.stats.tenants_this_month= d.tenants_this_month?? this.stats.tenants_this_month;
+                    this.stats.pending_upgrade_requests = d.pending_upgrade_requests ?? this.stats.pending_upgrade_requests;
+                    this.recentTenants = d.recent_tenants || this.recentTenants;
+                    this.filterData();
+                }
+                await Promise.all([this.loadActivities(), this.loadNotifications()]);
+                this.updateLastRefreshed();
+                showToast('تم تحديث البيانات بنجاح', 'success');
+            } catch (e) {
+                showToast('فشل تحديث البيانات', 'error');
+            } finally {
+                this.refreshing = false;
+            }
         },
 
 
@@ -869,6 +924,11 @@ function dashboard() {
                     this.showSearch = !this.showSearch;
                 }
 
+                // Refresh: R
+                if (e.key === 'r' && !e.ctrlKey && !e.metaKey && !['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) {
+                    e.preventDefault();
+                    this.refreshDashboard();
+                }
                 // Dark Mode: D
                 if (e.key === 'd' && !e.ctrlKey && !e.metaKey) {
                     e.preventDefault();
@@ -966,6 +1026,7 @@ function dashboard() {
             this.filteredStats.total_tenants = this.filteredTenants.length;
             this.filteredStats.active_tenants = this.filteredTenants.filter(t => t.is_active).length;
             this.filteredStats.inactive_tenants = this.filteredTenants.filter(t => !t.is_active).length;
+            this.filteredStats.trial_tenants = this.stats.trial_tenants; // Global stat — not per-filtered-row
             this.updatePagination();
         },
 
@@ -975,13 +1036,26 @@ function dashboard() {
             this.showDeleteModal = true;
         },
 
-        deleteTenant(id) {
+        async deleteTenant(id) {
             this.showDeleteModal = false;
-            // إضافة logic الحذف (AJAX) هنا
-            // مؤقتاً: إزالة من القائمة المحلية
-            this.recentTenants = this.recentTenants.filter(t => t.id !== id);
-            this.filterData();
-            showToast('تم حذف الشركة بنجاح', 'success');
+            const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            try {
+                const res = await fetch(`/api/super-admin/tenants/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf }
+                });
+                if (res.ok) {
+                    this.recentTenants = this.recentTenants.filter(t => t.id !== id);
+                    this.stats.total_tenants = Math.max(0, this.stats.total_tenants - 1);
+                    this.filterData();
+                    showToast('تم حذف الشركة بنجاح', 'success');
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    showToast(err.message || 'فشل حذف الشركة', 'error');
+                }
+            } catch (e) {
+                showToast('حدث خطأ أثناء الحذف', 'error');
+            }
         },
 
         exportData() {

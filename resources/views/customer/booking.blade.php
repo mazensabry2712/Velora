@@ -32,12 +32,6 @@
     </script>
 </head>
 <body class="bg-gradient-to-br from-slate-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800 min-h-screen">
-    <!-- DEBUG INFO (temporary) -->
-    @php
-        echo "<!-- DEBUG: availableLanguages = " . json_encode($availableLanguages ?? 'NOT SET') . " -->";
-        echo "<!-- DEBUG: count = " . (isset($availableLanguages) ? count($availableLanguages) : 'N/A') . " -->";
-    @endphp
-
     <div class="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
         <!-- Header with Language Switcher -->
         <div class="mb-6 sm:mb-8">
@@ -76,9 +70,6 @@
                         @endif
                     @endforeach
                 </div>
-                @else
-                <!-- DEBUG: Language switcher NOT displayed -->
-                <!-- Reason: {{ !isset($availableLanguages) ? 'Variable not set' : (!is_array($availableLanguages) ? 'Not an array' : (count($availableLanguages) <= 1 ? 'Only ' . count($availableLanguages) . ' language' : 'Unknown')) }} -->
                 @endif
             </div>
 

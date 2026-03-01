@@ -3,25 +3,50 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\SuperAdminAuthController;
 use App\Http\Controllers\SuperAdminController;
+use App\Http\Controllers\LandingController;
+use App\Http\Controllers\Auth\TenantRegistrationController;
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes - Central Domain Only
 |--------------------------------------------------------------------------
-| These routes are for the central/main domain (booking-saas.test)
-| Tenant routes are loaded from routes/tenant.php via bootstrap/app.php
+| velora.com  → Landing Page + Signup
+| admin.velora.com → Super Admin (handled via prefix below)
+| *.velora.com → Tenant routes (routes/tenant.php)
 */
 
-// Central Domain Routes - Redirect to Super Admin
-Route::middleware('web')->group(function () {
-    Route::get('/', function () {
-        return redirect()->route('super-admin.login');
-    });
+// ── Stripe Webhook (no CSRF, no middleware) ──────────────────────────────
+Route::post('/webhooks/stripe', [\App\Http\Controllers\StripeWebhookController::class, 'handle'])
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
+    ->name('webhooks.stripe');
 
-    // Named login route for auth redirects
+// ── Landing + Marketing Routes ───────────────────────────────────────────
+Route::middleware('web')
+    ->domain(env('APP_DOMAIN', 'velora.test'))
+    ->group(function () {
+    // Main landing page
+    Route::get('/', [LandingController::class, 'index'])->name('landing');
+
+    // Pricing page
+    Route::get('/pricing', [LandingController::class, 'pricing'])->name('pricing');
+
+    // Signup page
+    Route::get('/signup', [LandingController::class, 'signup'])->name('signup');
+
+    // Subdomain availability check (AJAX)
+    Route::get('/signup/check-subdomain', [LandingController::class, 'checkSubdomain'])
+         ->name('signup.check-subdomain')
+         ->middleware('throttle:60,1');
+
+    // Signup form submission
+    Route::post('/signup', [TenantRegistrationController::class, 'store'])
+         ->name('signup.store')
+         ->middleware('throttle:10,1');
+
+    // Named login route for auth redirects (redirect to super-admin)
     Route::get('/login', function () {
         return redirect()->route('super-admin.login');
-    })->name('login');
+    })->name('central.login');
 });
 
 // Super Admin Routes (Central - No Tenant)

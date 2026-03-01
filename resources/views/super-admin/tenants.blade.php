@@ -60,7 +60,8 @@
                     </svg>
                 </div>
                 <h2 class="font-bold text-slate-900 dark:text-white">قائمة الشركات</h2>
-                <span class="text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-full font-medium" x-text="tenants.length + ' شركة'"></span>
+                <span class="text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-full font-medium"
+                      x-text="(filteredTenants.length !== tenants.length ? filteredTenants.length + ' من ' : '') + tenants.length + ' شركة'"></span>
             </div>
             <div class="relative">
                 <input type="text" x-model="searchQuery" @input="filterTenants()"
@@ -79,12 +80,13 @@
                         <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">الدومين</th>
                         <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">البريد الإلكتروني</th>
                         <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">الحالة</th>
+                        <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">الخطة</th>
                         <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">تاريخ الإنشاء</th>
                         <th class="px-6 py-3.5 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">الإجراءات</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
-                    <template x-for="tenant in filteredTenants" :key="tenant.id">
+                    <template x-for="tenant in pagedTenants" :key="tenant.id">
                         <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-700/30 transition-colors duration-150 group">
                             <td class="px-6 py-4">
                                 <div class="flex items-center gap-3">
@@ -101,7 +103,7 @@
                                 <code class="text-xs bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-2 py-1 rounded-md font-mono" x-text="tenant.domain"></code>
                             </td>
                             <td class="px-6 py-4 text-sm text-slate-500 dark:text-slate-400" x-text="tenant.email || '-'"></td>
-                            <td class="px-6 py-4">
+                            <td class="px-6 py-4"> {{-- Active status --}}
                                 <button @click="toggleStatus(tenant.id, tenant.active)"
                                         :class="tenant.active
                                             ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-200 dark:ring-emerald-800'
@@ -111,6 +113,20 @@
                                     <span x-text="tenant.active ? 'نشط' : 'غير نشط'"></span>
                                 </button>
                             </td>
+                            <td class="px-6 py-4"> {{-- Plan --}}
+                                <template x-if="tenant.current_subscription && tenant.current_subscription.plan">
+                                    <span :class="tenant.current_subscription.status === 'active'
+                                        ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ring-1 ring-blue-200'
+                                        : 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 ring-1 ring-purple-200'"
+                                          class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full">
+                                        <span x-text="tenant.current_subscription.plan.name"></span>
+                                        <span x-show="tenant.current_subscription.status === 'trial'" class="text-xs opacity-70">(تجريبي)</span>
+                                    </span>
+                                </template>
+                                <template x-if="!tenant.current_subscription || !tenant.current_subscription.plan">
+                                    <span class="text-xs text-slate-400 dark:text-slate-500">لا يوجد اشتراك</span>
+                                </template>
+                            </td>
                             <td class="px-6 py-4 text-sm text-slate-500 dark:text-slate-400" x-text="formatDate(tenant.created_at)"></td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center justify-center gap-1.5">
@@ -119,6 +135,12 @@
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                        </svg>
+                                    </button>
+                                    <button @click="resetPassword(tenant.id, tenant.name)"
+                                            class="p-1.5 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition tooltip" data-tip="إعادة تعيين كلمة المرور">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
                                         </svg>
                                     </button>
                                     <button @click="confirmDelete(tenant.id, tenant.name)"
@@ -133,7 +155,7 @@
                     </template>
                     <!-- Empty state -->
                     <tr x-show="filteredTenants.length === 0 && !loading">
-                        <td colspan="6" class="px-6 py-16 text-center">
+                        <td colspan="7" class="px-6 py-16 text-center">
                             <svg class="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/>
                             </svg>
@@ -143,6 +165,69 @@
                     </tr>
                 </tbody>
             </table>
+        </div>
+
+        <!-- Pagination -->
+        <div x-show="filteredTenants.length > 0" class="px-5 py-4 border-t border-slate-200 dark:border-slate-700 flex flex-wrap gap-3 items-center justify-between">
+
+            <!-- Per-page + info -->
+            <div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                <span>عرض</span>
+                <select x-model.number="perPage" @change="currentPage = 1; paginate()"
+                        class="border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                <span>لكل صفحة</span>
+                <span class="hidden sm:inline text-slate-300 dark:text-slate-600 mx-1">|</span>
+                <span class="hidden sm:inline" x-text="`${((currentPage-1)*perPage)+1}–${Math.min(currentPage*perPage, filteredTenants.length)} من ${filteredTenants.length}`"></span>
+            </div>
+
+            <!-- Page buttons -->
+            <div class="flex items-center gap-1">
+                <!-- First page -->
+                <button @click="goToPage(1)" :disabled="currentPage === 1"
+                        class="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-indigo-900/20 disabled:opacity-30 disabled:cursor-not-allowed transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
+                </button>
+                <!-- Prev -->
+                <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1"
+                        class="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-indigo-900/20 disabled:opacity-30 disabled:cursor-not-allowed transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+
+                <!-- Page numbers -->
+                <template x-for="page in totalPages" :key="page">
+                    <span x-show="page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1">
+                        <!-- Ellipsis before -->
+                        <span x-show="page === currentPage - 1 && currentPage - 2 > 1"
+                              class="px-1 text-slate-400 dark:text-slate-500 text-sm select-none">…</span>
+                        <button @click="goToPage(page)"
+                                :class="currentPage === page
+                                    ? 'bg-indigo-600 text-white shadow-sm'
+                                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'"
+                                class="min-w-[32px] h-8 px-1.5 rounded-lg text-sm font-medium transition"
+                                x-text="page"></button>
+                        <!-- Ellipsis after -->
+                        <span x-show="page === currentPage + 1 && currentPage + 2 < totalPages"
+                              class="px-1 text-slate-400 dark:text-slate-500 text-sm select-none">…</span>
+                    </span>
+                </template>
+
+                <!-- Next -->
+                <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages"
+                        class="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-indigo-900/20 disabled:opacity-30 disabled:cursor-not-allowed transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </button>
+                <!-- Last page -->
+                <button @click="goToPage(totalPages)" :disabled="currentPage === totalPages"
+                        class="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-indigo-900/20 disabled:opacity-30 disabled:cursor-not-allowed transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -189,8 +274,8 @@
                         <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">الدومين <span class="text-red-500">*</span></label>
                         <input type="text" x-model="newTenant.domain" required
                                class="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white transition font-mono text-sm"
-                               placeholder="company.localhost">
-                        <p class="text-xs text-slate-400 mt-1">مثال: company.localhost أو subdomain.yourdomain.com</p>
+                               placeholder="company.booking-saas.test">
+                        <p class="text-xs text-slate-400 mt-1">مثال: company.booking-saas.test أو subdomain.yourdomain.com</p>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">البريد الإلكتروني <span class="text-slate-400 font-normal">(اختياري)</span></label>
@@ -342,6 +427,11 @@
                 </div>
                 <div class="space-y-3">
                     <div class="flex items-center justify-between py-2.5 border-b border-slate-100 dark:border-slate-700">
+                        <span class="text-sm text-slate-500">الخطة</span>
+                        <span :class="selectedTenant?.current_subscription?.status === 'active' ? 'text-blue-600 font-semibold' : 'text-purple-600 font-semibold'"
+                              class="text-sm" x-text="selectedTenant?.current_subscription?.plan?.name || 'لا يوجد اشتراك'"></span>
+                    </div>
+                    <div class="flex items-center justify-between py-2.5 border-b border-slate-100 dark:border-slate-700">
                         <span class="text-sm text-slate-500">الدومين</span>
                         <code class="text-sm bg-slate-100 dark:bg-slate-700 px-2.5 py-1 rounded-lg font-mono" x-text="selectedTenant?.domain"></code>
                     </div>
@@ -369,7 +459,13 @@ function tenantsManager() {
         submitting: false,
         tenants: [],
         filteredTenants: [],
+        pagedTenants: [],
         searchQuery: '',
+        perPage: 5,
+        currentPage: 1,
+        get totalPages() {
+            return Math.max(1, Math.ceil(this.filteredTenants.length / this.perPage));
+        },
         showAddModal: false,
         showCredentialsModal: false,
         showDeleteModal: false,
@@ -403,7 +499,7 @@ function tenantsManager() {
 
                 if (data.success) {
                     this.tenants = data.data.data;
-                    this.filteredTenants = this.tenants;
+                    this.filterTenants();
                 }
             } catch (error) {
                 console.error('Error loading tenants:', error);
@@ -439,10 +535,13 @@ function tenantsManager() {
                     this.showAddModal = false;
                     this.showCredentialsModal = true;
                     await this.loadTenants();
-                    this.filteredTenants = this.tenants;
+                    this.filterTenants();
                     showToast('تم إضافة الشركة بنجاح!', 'success');
                 } else {
-                    showToast(data.message || 'حدث خطأ', 'error');
+                    const errMsg = data.errors
+                        ? Object.values(data.errors).flat().join(' • ')
+                        : (data.message || 'حدث خطأ');
+                    showToast(errMsg, 'error');
                 }
             } catch (error) {
                 console.error('Error adding tenant:', error);
@@ -468,6 +567,8 @@ function tenantsManager() {
                 if (data.success) {
                     await this.loadTenants();
                     showToast('تم تحديث حالة الشركة', 'success');
+                } else {
+                    showToast(data.message || 'فشل تحديث الحالة', 'error');
                 }
             } catch (error) {
                 console.error('Error toggling status:', error);
@@ -496,11 +597,44 @@ function tenantsManager() {
 
                 if (data.success) {
                     await this.loadTenants();
+                    this.filterTenants();
                     showToast('تم حذف الشركة بنجاح', 'success');
+                } else {
+                    showToast(data.message || 'فشل الحذف', 'error');
                 }
             } catch (error) {
                 console.error('Error deleting tenant:', error);
                 showToast('حدث خطأ أثناء الحذف', 'error');
+            }
+        },
+
+        async resetPassword(id, name) {
+            if (!confirm(`إعادة تعيين كلمة مرور مدير شركة: ${name}?`)) return;
+            try {
+                const response = await fetch(`/api/super-admin/tenants/${id}/reset-admin-password`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    this.credentials = {
+                        email: data.data.email,
+                        password: data.data.password,
+                        login_url: 'https://' + (this.tenants.find(t => t.id === id)?.domain || id)
+                    };
+                    this.showCredentialsModal = true;
+                    showToast('تم إعادة تعيين كلمة المرور بنجاح', 'success');
+                } else {
+                    showToast(data.message || 'فشل إعادة تعيين كلمة المرور', 'error');
+                }
+            } catch (error) {
+                showToast('حدث خطأ أثناء إعادة التعيين', 'error');
             }
         },
 
@@ -509,17 +643,30 @@ function tenantsManager() {
             this.showViewModal = true;
         },
 
+        paginate() {
+            const start = (this.currentPage - 1) * this.perPage;
+            this.pagedTenants = this.filteredTenants.slice(start, start + this.perPage);
+        },
+
+        goToPage(page) {
+            if (page < 1 || page > this.totalPages) return;
+            this.currentPage = page;
+            this.paginate();
+        },
+
         filterTenants() {
             if (!this.searchQuery) {
                 this.filteredTenants = this.tenants;
-                return;
+            } else {
+                const q = this.searchQuery.toLowerCase();
+                this.filteredTenants = this.tenants.filter(t =>
+                    t.name.toLowerCase().includes(q) ||
+                    t.domain.toLowerCase().includes(q) ||
+                    (t.email || '').toLowerCase().includes(q)
+                );
             }
-            const q = this.searchQuery.toLowerCase();
-            this.filteredTenants = this.tenants.filter(t =>
-                t.name.toLowerCase().includes(q) ||
-                t.domain.toLowerCase().includes(q) ||
-                (t.email || '').toLowerCase().includes(q)
-            );
+            this.currentPage = 1;
+            this.paginate();
         },
 
         formatDate(date) {

@@ -12,6 +12,8 @@ use App\Http\Controllers\Web\CustomerController;
 use App\Http\Controllers\Web\QueueController;
 use App\Http\Controllers\Web\ProfileController;
 use App\Http\Controllers\Web\AssistantController;
+use App\Http\Controllers\BillingController;
+use App\Http\Middleware\EnsureSubscriptionIsValid;
 
 /*
 |--------------------------------------------------------------------------
@@ -51,7 +53,9 @@ Route::middleware([
     });
 
     Route::get('/book', function () {
-        return view('customer.booking');
+        $settings = \App\Models\Setting::where('tenant_id', tenant()->id)->first();
+        $availableLanguages = $settings->available_languages ?? ['en'];
+        return view('customer.booking', compact('availableLanguages'));
     })->name('customer.booking');
 
     // Queue Status Page
@@ -99,8 +103,18 @@ Route::middleware([
     // Customer routes
     Route::get('/my-queue', [CustomerController::class, 'myQueue'])->name('customer.my-queue');
 
+    // ── Billing Routes (accessible without auth, but tenant-initialized) ────
+    Route::middleware([EnsureSubscriptionIsValid::class])->group(function () {
+        Route::get('/billing/expired', [BillingController::class, 'expired'])->name('billing.expired');
+        Route::get('/billing/success', [BillingController::class, 'success'])->name('billing.success');
+        Route::middleware(['auth'])->group(function () {
+            Route::post('/billing/checkout', [BillingController::class, 'checkout'])->name('billing.checkout');
+            Route::post('/billing/portal', [BillingController::class, 'portal'])->name('billing.portal');
+        });
+    });
+
     // Admin Routes (Protected)
-    Route::middleware(['auth', 'role:Admin Tenant|Staff|Assistant'])->prefix('admin')->name('admin.')->group(function () {
+    Route::middleware(['auth', 'role:Admin Tenant|Staff|Assistant', EnsureSubscriptionIsValid::class])->prefix('admin')->name('admin.')->group(function () {
 
         // Dashboard
         Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
@@ -128,12 +142,22 @@ Route::middleware([
         Route::get('/queue/{date}/print', [AdminController::class, 'printQueue'])->name('queue.print');
         Route::get('/queue/export-excel', [AdminController::class, 'exportQueueToExcel'])->name('queue.export.excel');
 
+        // Customers Management Page
+        Route::get('/customers', [CustomerController::class, 'adminPage'])->name('customers');
+
         // Reports
         Route::get('/reports', [AdminController::class, 'reports'])->name('reports');
+        Route::get('/reports/export-appointments', [AdminController::class, 'exportAppointmentsExcel'])->name('reports.export.appointments');
+
+        // Assistants Management (Admin Only)
+        Route::middleware(['role:Admin Tenant'])->get('/assistants', [AssistantController::class, 'page'])->name('assistants');
 
         // Subscription & Billing (Admin Only)
         Route::middleware(['role:Admin Tenant'])->group(function () {
-            Route::get('/subscription', [\App\Http\Controllers\Web\SubscriptionController::class, 'index'])->name('subscription.index');
+            Route::get('/subscription', [BillingController::class, 'index'])->name('subscription.index');
+            Route::get('/subscription/billing', [\App\Http\Controllers\Web\SubscriptionController::class, 'billing'])->name('subscription.billing');
+            Route::get('/subscription/upgrade', [\App\Http\Controllers\Web\SubscriptionController::class, 'upgrade'])->name('subscription.upgrade');
+            Route::post('/subscription/request-upgrade', [\App\Http\Controllers\Web\SubscriptionController::class, 'requestUpgrade'])->name('subscription.requestUpgrade');
         });
 
         // API endpoints for AJAX
@@ -149,9 +173,22 @@ Route::middleware([
             Route::post('/appointments/{id}/send-reminder', [AdminController::class, 'sendReminder'])->name('api.appointments.sendReminder');
             Route::post('/appointments/bulk-day-action', [AdminController::class, 'bulkDayAction'])->name('api.appointments.bulkDayAction');
             Route::get('/appointments/{id}/qrcode', [AdminController::class, 'generateQRCode'])->name('api.appointments.qrcode');
+            Route::patch('/appointments/{id}/quick-status', [AdminController::class, 'quickStatusUpdate'])->name('api.appointments.quickStatus');
+            Route::post('/appointments/{id}/rate', [AdminController::class, 'rateAppointment'])->name('api.appointments.rate');
 
             // Settings
             Route::post('/settings', [AdminController::class, 'saveSettings'])->name('api.settings.save');
+
+            // Time Slots API
+            Route::post('/settings/timeslots', [AdminController::class, 'storeTimeSlot'])->name('api.timeslots.store');
+            Route::post('/settings/timeslots/{id}/toggle', [AdminController::class, 'toggleTimeSlot'])->name('api.timeslots.toggle');
+            Route::delete('/settings/timeslots/{id}', [AdminController::class, 'destroyTimeSlot'])->name('api.timeslots.destroy');
+
+            // Working Days API
+            Route::post('/settings/working-days/{id}/toggle', [AdminController::class, 'toggleWorkingDay'])->name('api.workingdays.toggle');
+
+            // Staff-Service Assignment
+            Route::post('/settings/staff-services/toggle', [AdminController::class, 'toggleStaffService'])->name('api.staff.services.toggle');
 
             // Services API
             Route::get('/settings/services/{id}', [AdminController::class, 'showService'])->name('api.services.show');
@@ -177,6 +214,23 @@ Route::middleware([
             Route::post('/queue/{id}/complete', [AdminController::class, 'completeQueue'])->name('api.queue.complete');
             Route::post('/queue/{id}/return-waiting', [AdminController::class, 'returnToWaiting'])->name('api.queue.return-waiting');
             Route::post('/queue/{id}/priority', [AdminController::class, 'setQueuePriority'])->name('api.queue.set-priority');
+            Route::post('/queue/move-next-day', [AdminController::class, 'moveQueueToNextDay'])->name('api.queue.move-next-day');
+
+            // Customer Management
+            Route::get('/customers', [CustomerController::class, 'adminIndex'])->name('api.customers.index');
+            Route::get('/customers/{id}', [CustomerController::class, 'adminShow'])->name('api.customers.show');
+            Route::put('/customers/{id}/vip', [CustomerController::class, 'toggleVip'])->name('api.customers.vip');
+            Route::get('/customers/{id}/appointments', [CustomerController::class, 'getAppointments'])->name('api.customers.appointments');
+            Route::delete('/customers/{id}', [CustomerController::class, 'destroy'])->name('api.customers.destroy');
+
+            // Assistants Management (Admin only)
+            Route::middleware(['role:Admin Tenant'])->group(function () {
+                Route::get('/assistants', [AssistantController::class, 'index'])->name('api.assistants.index');
+                Route::get('/assistants/{id}', [AssistantController::class, 'show'])->name('api.assistants.show');
+                Route::post('/assistants', [AssistantController::class, 'store'])->name('api.assistants.store');
+                Route::put('/assistants/{id}', [AssistantController::class, 'update'])->name('api.assistants.update');
+                Route::delete('/assistants/{id}', [AssistantController::class, 'destroy'])->name('api.assistants.destroy');
+            });
         });
     });
 

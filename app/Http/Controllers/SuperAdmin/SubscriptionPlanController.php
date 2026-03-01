@@ -43,7 +43,7 @@ class SubscriptionPlanController extends Controller
             'is_popular' => 'boolean',
         ]);
 
-        $validated['slug'] = Str::slug($validated['name']);
+        $validated['slug'] = $this->uniqueSlug(Str::slug($validated['name']));
         $validated['is_active'] = true;
 
         $plan = SubscriptionPlan::create($validated);
@@ -94,7 +94,7 @@ class SubscriptionPlanController extends Controller
         ]);
 
         if (isset($validated['name'])) {
-            $validated['slug'] = Str::slug($validated['name']);
+            $validated['slug'] = $this->uniqueSlug(Str::slug($validated['name']), $plan->id);
         }
 
         $plan->update($validated);
@@ -121,7 +121,7 @@ class SubscriptionPlanController extends Controller
         if ($activeCount > 0) {
             return response()->json([
                 'success' => false,
-                'message' => "Cannot delete plan with {$activeCount} active subscriptions"
+                'message' => "لا يمكن حذف الخطة لوجود {$activeCount} اشتراك نشط"
             ], 422);
         }
 
@@ -133,6 +133,19 @@ class SubscriptionPlanController extends Controller
             'success' => true,
             'message' => 'Subscription plan deleted successfully'
         ]);
+    }
+
+    /**
+     * Generate a unique slug.
+     */
+    private function uniqueSlug(string $base, ?int $excludeId = null): string
+    {
+        $slug = $base;
+        $i = 1;
+        while (SubscriptionPlan::where('slug', $slug)->when($excludeId, fn($q) => $q->where('id', '!=', $excludeId))->exists()) {
+            $slug = $base . '-' . $i++;
+        }
+        return $slug;
     }
 
     /**

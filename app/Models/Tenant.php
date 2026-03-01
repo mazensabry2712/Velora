@@ -12,6 +12,11 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     use HasDatabase, HasDomains;
 
     /**
+     * Append computed attributes to JSON output
+     */
+    protected $appends = ['name', 'domain', 'email', 'active'];
+
+    /**
      * Custom attributes stored in 'data' JSON column
      */
     public static function getCustomColumns(): array
@@ -34,11 +39,21 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     }
 
     /**
+     * Get tenant email - stored in stancl data column
+     */
+    public function getEmailAttribute()
+    {
+        return data_get($this->getAttributes(), 'email',
+            data_get(json_decode($this->getRawOriginal('data') ?? '{}', true), 'email', null)
+        );
+    }
+
+    /**
      * Get tenant active status
      */
     public function getActiveAttribute()
     {
-        return data_get($this->getAttributes(), 'active',
+        return (bool) data_get($this->getAttributes(), 'active',
             data_get(json_decode($this->getRawOriginal('data') ?? '{}', true), 'active', true)
         );
     }
@@ -71,6 +86,16 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     {
         return $this->hasOne(TenantSubscription::class, 'tenant_id', 'id')
             ->where('status', 'active')
+            ->latest();
+    }
+
+    /**
+     * Get current active or trial subscription
+     */
+    public function currentSubscription()
+    {
+        return $this->hasOne(TenantSubscription::class, 'tenant_id', 'id')
+            ->whereIn('status', ['active', 'trial'])
             ->latest();
     }
 }
