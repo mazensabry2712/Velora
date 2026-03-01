@@ -36,7 +36,8 @@ Route::middleware([
 
     // Change Language - Must be OUTSIDE the locale middleware to avoid redirect loop
     Route::get('/change-language/{lang}', function ($lang) {
-        if (in_array($lang, ['en', 'ar'])) {
+        $supported = ['en', 'ar', 'fr', 'es', 'de', 'it', 'pt', 'ru', 'zh', 'ja'];
+        if (in_array($lang, $supported)) {
             session()->put('locale', $lang);
             session()->save();
         }

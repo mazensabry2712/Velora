@@ -11,14 +11,14 @@
                 <svg class="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                 </svg>
-                Back to home
+                {{ __('landing.back_to_home') }}
             </a>
 
             <h1 class="text-3xl sm:text-4xl font-extrabold text-white mb-2">
-                Create your free account
+                {{ __('landing.signup_title') }}
             </h1>
             <p class="text-gray-400">
-                Start your <span class="text-brand-400 font-semibold">{{ $maxTrialDays }}-day free trial</span> — no credit card required.
+                {{ __('landing.signup_sub', ['days' => $maxTrialDays]) }}
             </p>
         </div>
 
@@ -36,7 +36,7 @@
             {{-- Plan Selection --}}
             @if($plans->count() > 1)
             <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1.5">Choose Your Plan</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1.5">{{ __('landing.choose_plan') }}</label>
                 <div class="grid grid-cols-1 sm:grid-cols-{{ min($plans->count(), 3) }} gap-2.5">
                     @foreach($plans as $plan)
                     @php $isSelected = request('plan', old('plan_id', $plans->first()?->id)) == $plan->id; @endphp
@@ -63,7 +63,7 @@
             {{-- Business Name --}}
             <div>
                 <label class="block text-sm font-medium text-gray-300 mb-1.5">
-                    Business Name <span class="text-red-400">*</span>
+                    {{ __('landing.business_name') }} <span class="text-red-400">*</span>
                 </label>
                 <input
                     type="text"
@@ -81,7 +81,7 @@
             {{-- Subdomain --}}
             <div>
                 <label class="block text-sm font-medium text-gray-300 mb-1.5">
-                    Your Booking URL <span class="text-red-400">*</span>
+                    {{ __('landing.booking_url') }} <span class="text-red-400">*</span>
                 </label>
                 <div class="flex rounded-xl overflow-hidden border border-white/10 focus-within:border-brand-500 focus-within:ring-1 focus-within:ring-brand-500 transition-all">
                     <input
@@ -100,7 +100,7 @@
                     </span>
                 </div>
                 <div id="subdomainStatus" class="mt-1.5 text-xs hidden"></div>
-                <p class="mt-1 text-xs text-gray-600">Lowercase letters, numbers, and hyphens only.</p>
+                <p class="mt-1 text-xs text-gray-600">{{ __('landing.subdomain_hint') }}</p>
                 @error('subdomain')
                 <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
                 @enderror
@@ -109,7 +109,7 @@
             {{-- Email --}}
             <div>
                 <label class="block text-sm font-medium text-gray-300 mb-1.5">
-                    Email Address <span class="text-red-400">*</span>
+                    {{ __('landing.email_address') }} <span class="text-red-400">*</span>
                 </label>
                 <input
                     type="email"
@@ -128,14 +128,14 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-1.5">
-                        Password <span class="text-red-400">*</span>
+                        {{ __('landing.password') }} <span class="text-red-400">*</span>
                     </label>
                     <div class="relative">
                         <input
                             type="password"
                             name="password"
                             id="password"
-                            placeholder="Min 8 characters"
+                            placeholder="{{ __('landing.password_min') }}"
                             required
                             minlength="8"
                             class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 text-white placeholder:text-gray-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all text-sm"
@@ -157,12 +157,12 @@
 
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-1.5">
-                        Confirm Password <span class="text-red-400">*</span>
+                        {{ __('landing.confirm_password') }} <span class="text-red-400">*</span>
                     </label>
                     <input
                         type="password"
                         name="password_confirmation"
-                        placeholder="Repeat password"
+                        placeholder="{{ __('landing.repeat_password') }}"
                         required
                         class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all text-sm"
                     />
@@ -172,10 +172,10 @@
             {{-- Country + Language Row --}}
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1.5">Country</label>
+                    <label class="block text-sm font-medium text-gray-300 mb-1.5">{{ __('landing.country') }}</label>
                     <select name="country"
                             class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 focus:outline-none focus:border-brand-500 transition-all text-sm appearance-none">
-                        <option value="">Select country...</option>
+                        <option value="">{{ __('landing.select_country') }}</option>
                         <option value="SA" {{ old('country') == 'SA' ? 'selected' : '' }}>🇸🇦 Saudi Arabia</option>
                         <option value="AE" {{ old('country') == 'AE' ? 'selected' : '' }}>🇦🇪 UAE</option>
                         <option value="EG" {{ old('country') == 'EG' ? 'selected' : '' }}>🇪🇬 Egypt</option>
@@ -192,7 +192,7 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1.5">Dashboard Language</label>
+                    <label class="block text-sm font-medium text-gray-300 mb-1.5">{{ __('landing.dashboard_language') }}</label>
                     <select name="language"
                             class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 focus:outline-none focus:border-brand-500 transition-all text-sm appearance-none">
                         <option value="en" {{ old('language','en') == 'en' ? 'selected' : '' }}>🇺🇸 English</option>
@@ -220,10 +220,10 @@
                     class="mt-0.5 w-4 h-4 rounded border-white/20 bg-white/5 text-brand-500 focus:ring-brand-500 focus:ring-offset-0 cursor-pointer"
                 />
                 <label for="terms" class="text-sm text-gray-400 leading-relaxed cursor-pointer">
-                    I agree to the
-                    <a href="#" class="text-brand-400 hover:text-brand-300 underline">Terms of Service</a>
-                    and
-                    <a href="#" class="text-brand-400 hover:text-brand-300 underline">Privacy Policy</a>
+                    {{ __('landing.terms_agree') }}
+                    <a href="#" class="text-brand-400 hover:text-brand-300 underline">{{ __('landing.terms_of_service') }}</a>
+                    {{ __('landing.terms_agree_and') }}
+                    <a href="#" class="text-brand-400 hover:text-brand-300 underline">{{ __('landing.privacy_policy') }}</a>
                 </label>
             </div>
             @error('terms')
@@ -236,7 +236,7 @@
                 id="submitBtn"
                 class="btn-primary w-full text-white font-bold text-base px-6 py-4 rounded-xl flex items-center justify-center gap-3 transition-all"
             >
-                <span id="btnText">Create My Free Account</span>
+                <span id="btnText">{{ __('landing.create_account_btn') }}</span>
                 <svg id="btnSpinner" class="w-5 h-5 animate-spin hidden" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
@@ -245,8 +245,8 @@
 
             {{-- Login redirect --}}
             <p class="text-center text-sm text-gray-500">
-                Already have an account?
-                <a href="{{ route('super-admin.login') }}" class="text-brand-400 hover:text-brand-300 font-medium">Sign in</a>
+                {{ __('landing.already_have_account') }}
+                <a href="{{ route('super-admin.login') }}" class="text-brand-400 hover:text-brand-300 font-medium">{{ __('landing.sign_in') }}</a>
             </p>
         </form>
     </div>
@@ -261,30 +261,32 @@
                 <div class="flex items-center gap-3 mb-4">
                     <div class="w-10 h-10 rounded-xl btn-primary flex items-center justify-center text-xl">🎉</div>
                     <div>
-                        <div class="font-bold text-white">{{ $maxTrialDays }}-Day Free Trial</div>
-                        <div class="text-xs text-gray-400">No credit card required</div>
+                        <div class="font-bold text-white">{{ __('landing.signup_trial_title', ['days' => $maxTrialDays]) }}</div>
+                        <div class="text-xs text-gray-400">{{ __('landing.signup_no_card') }}</div>
                     </div>
                 </div>
                 <p class="text-gray-300 text-sm leading-relaxed">
-                    Get full access to all features for {{ $maxTrialDays }} days. If you love it (you will),
-                    choose a plan that fits your business. If not, no hard feelings.
+                    {{ __('landing.signup_trial_desc', ['days' => $maxTrialDays]) }}
                 </p>
             </div>
 
             <div class="space-y-4">
-                @foreach([
-                    ['✅', 'Your own subdomain (yourname.velora.com)', null],
-                    ['✅', 'Full appointment & queue management', null],
-                    ['✅', 'Unlimited bookings during trial', null],
-                    ['✅', 'Staff management & scheduling', null],
-                    ['✅', 'Customer-facing booking page', null],
-                    ['✅', 'Analytics dashboard', null],
-                    ['✅', 'Email reminders', null],
-                    ['✅', 'Multi-language support (10 languages)', null],
-                ] as [$icon, $text, $_])
+                @php
+                    $benefits = [
+                        __('landing.signup_benefit_1'),
+                        __('landing.signup_benefit_2'),
+                        __('landing.signup_benefit_3'),
+                        __('landing.signup_benefit_4'),
+                        __('landing.signup_benefit_5'),
+                        __('landing.signup_benefit_6'),
+                        __('landing.signup_benefit_7'),
+                        __('landing.signup_benefit_8'),
+                    ];
+                @endphp
+                @foreach($benefits as $benefit)
                 <div class="flex items-center gap-3 text-sm text-gray-300">
-                    <span class="text-base flex-shrink-0">{{ $icon }}</span>
-                    {{ $text }}
+                    <span class="text-base flex-shrink-0">✅</span>
+                    {{ $benefit }}
                 </div>
                 @endforeach
             </div>
@@ -295,8 +297,9 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                     </svg>
-                    Your data is <strong class="text-white">100% isolated</strong> in a dedicated database.
-                    Enterprise-grade security from day one.
+                    {{ __('landing.signup_isolation_1') }}
+                    <strong class="text-white">{{ __('landing.signup_isolation_2') }}</strong>
+                    {{ __('landing.signup_isolation_3') }}
                 </div>
             </div>
 
@@ -308,7 +311,7 @@
                     @endforeach
                 </div>
                 <p class="text-xs text-gray-400">
-                    <span class="text-white font-semibold">500+</span> businesses signed up this month
+                    <span class="text-white font-semibold">{{ __('landing.signup_social_count') }}</span> {{ __('landing.signup_social_text') }}
                 </p>
             </div>
         </div>
@@ -378,7 +381,7 @@ document.getElementById('signupForm')?.addEventListener('submit', function (e) {
     const btnText   = document.getElementById('btnText');
     const spinner   = document.getElementById('btnSpinner');
     btn.disabled    = true;
-    btnText.textContent = 'Creating your account...';
+    btnText.textContent = '{{ __('landing.creating_account') }}';
     spinner.classList.remove('hidden');
 });
 </script>

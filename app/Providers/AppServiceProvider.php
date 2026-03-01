@@ -13,7 +13,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Tell Laravel to load translation files from /lang (not /resources/lang)
+        $this->app->useLangPath(base_path('lang'));
     }
 
     /**

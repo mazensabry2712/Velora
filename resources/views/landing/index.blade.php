@@ -59,7 +59,7 @@
 {{-- ══════════════════════════════════════════════════════════════════════
      HERO
 ══════════════════════════════════════════════════════════════════════════ --}}
-<section class="hero-bg min-h-screen flex flex-col items-center justify-center pt-20 pb-16 relative overflow-hidden">
+<section class="hero-bg min-h-screen flex flex-col items-center justify-center pt-20 pb-12 sm:pb-16 relative overflow-hidden">
 
     {{-- Background blobs --}}
     <div class="absolute top-1/4 left-10 w-72 h-72 bg-brand-500/10 rounded-full blur-3xl animate-pulse-slow pointer-events-none"></div>
@@ -68,89 +68,88 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
 
         {{-- Badge --}}
-        <div class="inline-flex items-center gap-2 glass rounded-full px-4 py-1.5 text-sm text-gray-300 mb-8 animate-fade-up">
-            <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-            Now with AI-powered scheduling • 14-day free trial
+        <div class="inline-flex items-center gap-2 glass rounded-full px-3 sm:px-4 py-1.5 text-xs sm:text-sm text-gray-300 mb-6 sm:mb-8 animate-fade-up">
+            <span class="w-2 h-2 flex-shrink-0 rounded-full bg-green-400 animate-pulse"></span>
+            <span class="text-center leading-tight">{{ __('landing.hero_badge', ['days' => $maxTrialDays ?? 14]) }}</span>
         </div>
 
         {{-- Headline --}}
-        <h1 class="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight mb-6 animate-fade-up animate-delay-1 leading-[1.05]">
-            The Smarter Way<br />
-            to <span class="gradient-text">Book & Manage</span>
+        <h1 class="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight mb-5 sm:mb-6 animate-fade-up animate-delay-1 leading-[1.08] sm:leading-[1.05]">
+            {{ __('landing.hero_headline_1') }}<br />
+            {{ __('landing.hero_headline_2') }} <span class="gradient-text">{{ __('landing.hero_headline_hl') }}</span>
         </h1>
 
         {{-- Subheadline --}}
-        <p class="text-xl sm:text-2xl text-gray-400 mb-10 max-w-3xl mx-auto leading-relaxed animate-fade-up animate-delay-2">
-            Velora gives your business a powerful appointment & queue management system.
-            Set it up in minutes. Delight every customer.
+        <p class="text-base sm:text-xl md:text-2xl text-gray-400 mb-8 sm:mb-10 max-w-3xl mx-auto leading-relaxed animate-fade-up animate-delay-2 px-2 sm:px-0">
+            {{ __('landing.hero_sub') }}
         </p>
 
         {{-- CTA Buttons --}}
-        <div class="flex flex-col sm:flex-row gap-4 justify-center mb-16 animate-fade-up animate-delay-3">
+        <div class="flex flex-col xs:flex-row sm:flex-row gap-3 sm:gap-4 justify-center mb-10 sm:mb-16 animate-fade-up animate-delay-3 px-4 sm:px-0">
             <a href="{{ route('signup') }}"
-               class="btn-primary text-white font-bold text-lg px-8 py-4 rounded-2xl inline-flex items-center justify-center gap-3">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+               class="btn-primary text-white font-bold text-base sm:text-lg px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl inline-flex items-center justify-center gap-2 sm:gap-3">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M13 10V3L4 14h7v7l9-11h-7z"/>
                 </svg>
-                Start Free 14-Day Trial
+                {{ __('landing.hero_cta_start', ['days' => $maxTrialDays ?? 14]) }}
             </a>
             <a href="#how-it-works"
-               class="glass text-gray-300 hover:text-white font-semibold text-lg px-8 py-4 rounded-2xl inline-flex items-center justify-center gap-2 transition-all hover:border-brand-500/50">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+               class="glass text-gray-300 hover:text-white font-semibold text-base sm:text-lg px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl inline-flex items-center justify-center gap-2 transition-all hover:border-brand-500/50">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
-                See How It Works
+                {{ __('landing.hero_cta_how') }}
             </a>
         </div>
 
         {{-- Trust signals --}}
-        <div class="flex flex-wrap justify-center gap-6 text-sm text-gray-500 animate-fade-up animate-delay-4 mb-16">
+        <div class="flex flex-wrap justify-center gap-3 sm:gap-6 text-xs sm:text-sm text-gray-500 animate-fade-up animate-delay-4 mb-10 sm:mb-16 px-4 sm:px-0">
             <div class="flex items-center gap-2">
                 <svg class="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
-                No credit card required
+                {{ __('landing.trust_no_card') }}
             </div>
             <div class="flex items-center gap-2">
                 <svg class="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
-                Setup in under 5 minutes
+                {{ __('landing.trust_setup') }}
             </div>
             <div class="flex items-center gap-2">
                 <svg class="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
-                Cancel anytime
+                {{ __('landing.trust_cancel') }}
             </div>
             <div class="flex items-center gap-2">
                 <svg class="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
-                10 languages supported
+                {{ __('landing.trust_languages') }}
             </div>
         </div>
 
         {{-- Dashboard Preview --}}
-        <div class="animate-fade-up animate-delay-5 relative max-w-5xl mx-auto">
+        <div class="animate-fade-up animate-delay-5 relative max-w-5xl mx-auto px-2 sm:px-0">
             <div class="absolute inset-0 bg-brand-500/20 blur-3xl rounded-3xl pointer-events-none"></div>
             <div class="relative glass rounded-2xl overflow-hidden border border-white/10 animate-float shadow-2xl">
                 {{-- Fake Browser Chrome --}}
-                <div class="bg-white/5 px-4 py-3 flex items-center gap-2 border-b border-white/5">
-                    <div class="w-3 h-3 rounded-full bg-red-400/70"></div>
-                    <div class="w-3 h-3 rounded-full bg-yellow-400/70"></div>
-                    <div class="w-3 h-3 rounded-full bg-green-400/70"></div>
-                    <div class="flex-1 mx-4 bg-white/5 rounded-md px-3 py-1 text-xs text-gray-500 text-center font-mono">
+                <div class="bg-white/5 px-3 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2 border-b border-white/5">
+                    <div class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-400/70"></div>
+                    <div class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-yellow-400/70"></div>
+                    <div class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-400/70"></div>
+                    <div class="flex-1 mx-2 sm:mx-4 bg-white/5 rounded-md px-2 sm:px-3 py-1 text-xs text-gray-500 text-center font-mono truncate">
                         mysalon.velora.com/admin/dashboard
                     </div>
                 </div>
                 {{-- Dashboard Preview Grid --}}
-                <div class="p-6 bg-gray-900/60">
-                    <div class="grid grid-cols-4 gap-3 mb-4">
-                        @foreach([['📅','Today\'s Appointments','24', '+12%'],['👥','Active Queue','8','Live'],['⭐','Avg Rating','4.9','★★★★★'],['💰','Revenue','$1,240','+18%']] as [$icon, $label, $val, $sub])
-                        <div class="glass rounded-xl p-3 text-left">
-                            <div class="text-lg mb-1">{{ $icon }}</div>
-                            <div class="text-gray-400 text-xs mb-1">{{ $label }}</div>
-                            <div class="text-white font-bold text-base">{{ $val }}</div>
+                <div class="p-4 sm:p-6 bg-gray-900/60">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-3 sm:mb-4">
+                        @foreach([['📅','Appointments','24', '+12%'],['👥','Queue','8','Live'],['⭐','Rating','4.9','★★★★★'],['💰','Revenue','$1,240','+18%']] as [$icon, $label, $val, $sub])
+                        <div class="glass rounded-xl p-2.5 sm:p-3 text-left">
+                            <div class="text-base sm:text-lg mb-1">{{ $icon }}</div>
+                            <div class="text-gray-400 text-xs mb-1 truncate">{{ $label }}</div>
+                            <div class="text-white font-bold text-sm sm:text-base">{{ $val }}</div>
                             <div class="text-brand-400 text-xs">{{ $sub }}</div>
                         </div>
                         @endforeach
                     </div>
-                    <div class="grid grid-cols-3 gap-3">
+                    <div class="hidden sm:grid grid-cols-3 gap-3">
                         <div class="col-span-2 glass rounded-xl p-3">
                             <div class="text-xs text-gray-400 mb-2">Weekly Appointments</div>
                             <div class="flex items-end gap-1 h-16">
@@ -164,7 +163,7 @@
                             @foreach([['A-01','💇 Sarah K.','Serving'],['A-02','💅 Mike R.','Waiting'],['A-03','✂️ John D.','Waiting']] as [$n,$nm,$st])
                             <div class="flex items-center justify-between py-1 border-b border-white/5 last:border-0">
                                 <span class="text-xs font-mono text-brand-400">{{ $n }}</span>
-                                <span class="text-xs text-gray-300">{{ $nm }}</span>
+                                <span class="text-xs text-gray-300 truncate mx-1">{{ $nm }}</span>
                                 <span class="text-xs {{ $st === 'Serving' ? 'text-green-400' : 'text-gray-500' }}">{{ $st }}</span>
                             </div>
                             @endforeach
@@ -183,7 +182,16 @@
     <div class="ticker-wrap">
         <div class="ticker">
             @php
-                $items = ['500+ Businesses', 'Trusted Globally', '10 Languages', '14-Day Free Trial', 'Real-Time Queue', 'Smart Scheduling', 'Unlimited Customization', 'Instant Setup', '99.9% Uptime', 'Enterprise Security', '500+ Businesses', 'Trusted Globally', '10 Languages', '14-Day Free Trial', 'Real-Time Queue', 'Smart Scheduling'];
+                $items = [
+                    __('landing.ticker_businesses'), __('landing.ticker_globally'),
+                    __('landing.ticker_languages'),  __('landing.ticker_trial'),
+                    __('landing.ticker_queue'),       __('landing.ticker_scheduling'),
+                    __('landing.ticker_custom'),      __('landing.ticker_setup'),
+                    __('landing.ticker_uptime'),      __('landing.ticker_security'),
+                    __('landing.ticker_businesses'), __('landing.ticker_globally'),
+                    __('landing.ticker_languages'),  __('landing.ticker_trial'),
+                    __('landing.ticker_queue'),       __('landing.ticker_scheduling'),
+                ];
             @endphp
             @foreach($items as $item)
                 <span class="inline-flex items-center gap-3 mx-8 text-gray-400 text-sm font-medium">
@@ -199,7 +207,7 @@
      LOGOS / USED BY
 ══════════════════════════════════════════════════════════════════════════ --}}
 <section class="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-    <p class="text-gray-500 text-sm font-medium mb-8 uppercase tracking-widest">Trusted by businesses in 30+ countries</p>
+    <p class="text-gray-500 text-sm font-medium mb-8 uppercase tracking-widest">{{ __('landing.trusted_countries') }}</p>
     <div class="flex flex-wrap justify-center items-center gap-8 opacity-40 grayscale">
         @foreach(['Salon Pro','MediBook','BarberHub','SpaSync','ClinicFlow','NailArt Studio'] as $logo)
         <div class="glass px-6 py-3 rounded-xl text-white font-bold text-sm tracking-tight">{{ $logo }}</div>
@@ -213,27 +221,27 @@
 <section id="features" class="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
     <div class="text-center mb-16">
-        <span class="inline-block glass text-brand-400 text-xs font-semibold uppercase tracking-widest px-4 py-1.5 rounded-full mb-4">Features</span>
+        <span class="inline-block glass text-brand-400 text-xs font-semibold uppercase tracking-widest px-4 py-1.5 rounded-full mb-4">{{ __('landing.features_badge') }}</span>
         <h2 class="text-4xl sm:text-5xl font-extrabold mb-4">
-            Everything your business <span class="gradient-text">needs</span>
+            {{ __('landing.features_title') }} <span class="gradient-text">{{ __('landing.features_title_hl') }}</span>
         </h2>
         <p class="text-xl text-gray-400 max-w-2xl mx-auto">
-            From solo freelancers to enterprise chains — Velora scales with you.
+            {{ __('landing.features_sub') }}
         </p>
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         @php
         $features = [
-            ['📅', 'Smart Scheduling',        'Intelligent appointment booking with automatic conflict detection, buffer times, and working hours management.',   'Always organized'],
-            ['🎯', 'Real-Time Queue',          'Manage walk-ins with a live digital queue. Customers track their position from their phones via their unique QR code.', 'Zero waiting confusion'],
-            ['👥', 'Staff Management',         'Assign services to staff, set individual schedules, track performance, and manage permissions per role.',         'Team in sync'],
-            ['📊', 'Analytics & Reports',      'Detailed insights on appointments, revenue, peak hours, customer ratings, and staff performance.',               'Data-driven decisions'],
-            ['🌍', 'Multi-Language',           'Support 10 languages out of the box: Arabic, English, French, Spanish, German, and more. Per-tenant language control.', 'Global reach'],
-            ['🔔', 'Smart Reminders',          'Automated email & SMS reminders reduce no-shows. Customizable timing and message templates per business.',      'Fewer no-shows'],
-            ['⭐', 'Customer Ratings',         'Collect post-appointment ratings automatically. Build your reputation and identify improvement areas.',          'Quality feedback'],
-            ['🛡️', 'Enterprise Security',     'Isolated database per tenant, SSL everywhere, role-based access, audit logs, and GDPR-compliant data handling.',  'Peace of mind'],
-            ['⚡', 'Lightning Fast Setup',    'Go from signup to fully operational in under 5 minutes. No technical knowledge required.',                       'Live in minutes'],
+            ['📅', __('landing.f1_title'), __('landing.f1_desc'), __('landing.f1_tag')],
+            ['🎯', __('landing.f2_title'), __('landing.f2_desc'), __('landing.f2_tag')],
+            ['👥', __('landing.f3_title'), __('landing.f3_desc'), __('landing.f3_tag')],
+            ['📊', __('landing.f4_title'), __('landing.f4_desc'), __('landing.f4_tag')],
+            ['🌍', __('landing.f5_title'), __('landing.f5_desc'), __('landing.f5_tag')],
+            ['🔔', __('landing.f6_title'), __('landing.f6_desc'), __('landing.f6_tag')],
+            ['⭐', __('landing.f7_title'), __('landing.f7_desc'), __('landing.f7_tag')],
+            ['🛡️', __('landing.f8_title'), __('landing.f8_desc'), __('landing.f8_tag')],
+            ['⚡', __('landing.f9_title'), __('landing.f9_desc'), __('landing.f9_tag')],
         ];
         @endphp
 
@@ -259,19 +267,19 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         <div class="text-center mb-16">
-            <span class="inline-block glass text-brand-400 text-xs font-semibold uppercase tracking-widest px-4 py-1.5 rounded-full mb-4">How It Works</span>
+            <span class="inline-block glass text-brand-400 text-xs font-semibold uppercase tracking-widest px-4 py-1.5 rounded-full mb-4">{{ __('landing.how_badge') }}</span>
             <h2 class="text-4xl sm:text-5xl font-extrabold mb-4">
-                Up and running in <span class="gradient-text">3 simple steps</span>
+                {{ __('landing.how_title') }} <span class="gradient-text">{{ __('landing.how_title_hl') }}</span>
             </h2>
-            <p class="text-xl text-gray-400">No technical knowledge required. Seriously.</p>
+            <p class="text-xl text-gray-400">{{ __('landing.how_sub') }}</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
             @php
             $steps = [
-                ['01', '📝', 'Create Your Account',    'Sign up with your business name and choose your unique subdomain (e.g., mysalon.velora.com). Takes 60 seconds.'],
-                ['02', '⚙️', 'Configure Your Business', 'Add your services, set working hours, invite your staff, and customize your booking page. It\'s all visual.'],
-                ['03', '🚀', 'Go Live & Grow',           'Share your booking link with customers. Start accepting appointments immediately. Watch your business grow.'],
+                ['01', '📝', __('landing.s1_title'), __('landing.s1_desc')],
+                ['02', '⚙️', __('landing.s2_title'), __('landing.s2_desc')],
+                ['03', '🚀', __('landing.s3_title'), __('landing.s3_desc')],
             ];
             @endphp
 
@@ -302,7 +310,7 @@
         <div class="text-center mt-12">
             <a href="{{ route('signup') }}"
                class="btn-primary text-white font-bold text-lg px-10 py-4 rounded-2xl inline-flex items-center gap-3">
-                Start Your Free Trial Now
+                {{ __('landing.how_cta') }}
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
                 </svg>
@@ -317,12 +325,12 @@
 <section id="pricing" class="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
     <div class="text-center mb-16">
-        <span class="inline-block glass text-brand-400 text-xs font-semibold uppercase tracking-widest px-4 py-1.5 rounded-full mb-4">Pricing</span>
+        <span class="inline-block glass text-brand-400 text-xs font-semibold uppercase tracking-widest px-4 py-1.5 rounded-full mb-4">{{ __('landing.pricing_badge') }}</span>
         <h2 class="text-4xl sm:text-5xl font-extrabold mb-4">
-            Simple, <span class="gradient-text">transparent</span> pricing
+            {{ __('landing.pricing_title') }} <span class="gradient-text">{{ __('landing.pricing_title_hl') }}</span> {{ __('landing.pricing_title_sfx') }}
         </h2>
-        <p class="text-xl text-gray-400 mb-2">Start free. Scale when you're ready.</p>
-        <p class="text-brand-400 font-semibold">🎉 All plans include a {{ $maxTrialDays }}-day free trial — no credit card required</p>
+        <p class="text-xl text-gray-400 mb-2">{{ __('landing.pricing_sub') }}</p>
+        <p class="text-brand-400 font-semibold">{{ __('landing.pricing_trial_note', ['days' => $maxTrialDays]) }}</p>
     </div>
 
     @if($plans->isNotEmpty())
@@ -334,7 +342,7 @@
         <div class="glass rounded-2xl p-8 card-hover {{ $plan->is_popular ? 'pricing-popular relative' : '' }}">
             @if($plan->is_popular)
             <div class="absolute -top-3 left-1/2 -translate-x-1/2">
-                <span class="btn-primary text-white text-xs font-bold px-4 py-1.5 rounded-full">Most Popular</span>
+                <span class="btn-primary text-white text-xs font-bold px-4 py-1.5 rounded-full">{{ __('landing.pricing_most_pop') }}</span>
             </div>
             @endif
 
@@ -344,19 +352,19 @@
             <div class="mb-6">
                 <div class="flex items-baseline gap-1">
                     <span class="text-5xl font-black text-white">${{ number_format($plan->price, 0) }}</span>
-                    <span class="text-gray-400 text-sm">/{{ $plan->billing_cycle === 'yearly' ? 'year' : 'month' }}</span>
+                    <span class="text-gray-400 text-sm">/{{ $plan->billing_cycle === 'yearly' ? __('landing.pricing_per_year') : __('landing.pricing_per_month') }}</span>
                 </div>
                 @if($plan->billing_cycle === 'yearly')
-                <p class="text-green-400 text-xs mt-1">Save 20% vs monthly</p>
+                <p class="text-green-400 text-xs mt-1">{{ __('landing.pricing_save_yearly') }}</p>
                 @endif
             </div>
 
             <a href="{{ route('signup') }}?plan={{ $plan->id }}"
                class="{{ $plan->is_popular ? 'btn-primary' : 'glass border border-brand-500/40 hover:border-brand-500' }} text-white font-semibold text-sm px-6 py-3 rounded-xl block text-center mb-6 transition-all">
                 @if($plan->trial_days > 0)
-                    Start {{ $plan->trial_days }}-Day Free Trial
+                    {{ __('landing.pricing_start_trial', ['days' => $plan->trial_days]) }}
                 @else
-                    Get Started
+                    {{ __('landing.pricing_get_started') }}
                 @endif
             </a>
 
@@ -365,13 +373,13 @@
                     <svg class="w-4 h-4 text-green-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
                     </svg>
-                    {{ $plan->max_users == -1 ? 'Unlimited' : $plan->max_users }} staff members
+                    {{ $plan->max_users == -1 ? __('landing.pricing_unlimited') : $plan->max_users }} {{ __('landing.pricing_staff') }}
                 </li>
                 <li class="flex items-center gap-2 text-sm text-gray-300">
                     <svg class="w-4 h-4 text-green-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
                     </svg>
-                    {{ $plan->max_appointments == -1 ? 'Unlimited' : number_format($plan->max_appointments) }} appointments/mo
+                    {{ $plan->max_appointments == -1 ? __('landing.pricing_unlimited') : number_format($plan->max_appointments) }} {{ __('landing.pricing_appt_mo') }}
                 </li>
                 @if(is_array($features))
                     @foreach(array_slice($features, 0, 5) as $feature)
@@ -398,17 +406,17 @@
         <div class="glass rounded-2xl p-8 card-hover {{ $popular ? 'pricing-popular relative' : '' }}">
             @if($popular)
             <div class="absolute -top-3 left-1/2 -translate-x-1/2">
-                <span class="btn-primary text-white text-xs font-bold px-4 py-1.5 rounded-full">Most Popular</span>
+                <span class="btn-primary text-white text-xs font-bold px-4 py-1.5 rounded-full">{{ __('landing.pricing_most_pop') }}</span>
             </div>
             @endif
             <h3 class="text-xl font-bold mb-1">{{ $name }}</h3>
             <div class="flex items-baseline gap-1 my-4">
                 <span class="text-5xl font-black">${{ $price }}</span>
-                <span class="text-gray-400 text-sm">/month</span>
+                <span class="text-gray-400 text-sm">{{ __('landing.pricing_per_month') }}</span>
             </div>
             <a href="{{ route('signup') }}"
                class="{{ $popular ? 'btn-primary' : 'glass border border-brand-500/40 hover:border-brand-500' }} text-white font-semibold text-sm px-6 py-3 rounded-xl block text-center mb-6 transition-all">
-                Start Free Trial
+                {{ __('landing.pricing_get_started') }}
             </a>
             <ul class="space-y-2.5 text-sm text-gray-300">
                 <li class="flex gap-2 items-center">✅ {{ $users }}</li>
@@ -424,7 +432,7 @@
 
     <div class="text-center mt-10">
         <a href="{{ route('pricing') }}" class="text-brand-400 hover:text-brand-300 text-sm font-semibold inline-flex items-center gap-1 transition-colors">
-            View full pricing comparison →
+            {{ __('landing.pricing_view_full') }}
         </a>
     </div>
 </section>
@@ -436,9 +444,9 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         <div class="text-center mb-16">
-            <span class="inline-block glass text-brand-400 text-xs font-semibold uppercase tracking-widest px-4 py-1.5 rounded-full mb-4">Testimonials</span>
+            <span class="inline-block glass text-brand-400 text-xs font-semibold uppercase tracking-widest px-4 py-1.5 rounded-full mb-4">{{ __('landing.testimonials_badge') }}</span>
             <h2 class="text-4xl sm:text-5xl font-extrabold mb-4">
-                Loved by <span class="gradient-text">businesses worldwide</span>
+                {{ __('landing.testimonials_title') }} <span class="gradient-text">{{ __('landing.testimonials_hl') }}</span>
             </h2>
         </div>
 
@@ -479,23 +487,23 @@
 <section id="faq" class="py-24 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
 
     <div class="text-center mb-16">
-        <span class="inline-block glass text-brand-400 text-xs font-semibold uppercase tracking-widest px-4 py-1.5 rounded-full mb-4">FAQ</span>
+        <span class="inline-block glass text-brand-400 text-xs font-semibold uppercase tracking-widest px-4 py-1.5 rounded-full mb-4">{{ __('landing.faq_badge') }}</span>
         <h2 class="text-4xl sm:text-5xl font-extrabold mb-4">
-            Questions? <span class="gradient-text">Answered.</span>
+            {{ __('landing.faq_title') }} <span class="gradient-text">{{ __('landing.faq_title_hl') }}</span>
         </h2>
     </div>
 
     <div class="space-y-4" id="faqList">
         @php
         $faqs = [
-            ['Do I need a credit card to start?',                      'No! Start your 14-day free trial with just your email. No credit card info required until you decide to subscribe.'],
-            ['What happens after my trial ends?',                      'After 14 days, you get a 3-day grace period. During grace, you can still access your data. After that, your account enters read-only mode until you upgrade. Nothing is deleted.'],
-            ['Can I cancel anytime?',                                  'Absolutely. You can cancel your subscription at any time from your billing dashboard. No lock-in contracts, no cancellation fees.'],
-            ['How does the subdomain work?',                           'When you sign up, you choose a unique subdomain (e.g., yoursalon.velora.com). This is your dedicated booking URL to share with customers.'],
-            ['Is my data isolated from other businesses?',             'Yes! Each tenant gets their own dedicated database. Your business data is completely isolated and never mixed with other tenants.'],
-            ['Can I use my own custom domain?',                        'Custom domain support is available on Professional and Enterprise plans. Contact support to set up your custom domain.'],
-            ['What languages are supported?',                          'Velora supports 10 languages: Arabic, English, French, Spanish, German, Italian, Portuguese, Russian, Chinese, and Japanese. Each tenant can configure which languages their customers can use.'],
-            ['How many staff members can I add?',                      'Depends on your plan. Starter allows up to 5 staff, Professional up to 20, and Enterprise allows unlimited staff members.'],
+            [__('landing.faq_1_q'), __('landing.faq_1_a')],
+            [__('landing.faq_2_q'), __('landing.faq_2_a')],
+            [__('landing.faq_3_q'), __('landing.faq_3_a')],
+            [__('landing.faq_4_q'), __('landing.faq_4_a')],
+            [__('landing.faq_5_q'), __('landing.faq_5_a')],
+            [__('landing.faq_6_q'), __('landing.faq_6_a')],
+            [__('landing.faq_7_q'), __('landing.faq_7_a')],
+            [__('landing.faq_8_q'), __('landing.faq_8_a')],
         ];
         @endphp
 
@@ -527,23 +535,22 @@
         <div class="glass rounded-3xl p-12 border border-brand-500/30">
             <div class="text-6xl mb-6">🚀</div>
             <h2 class="text-4xl sm:text-5xl font-extrabold mb-4">
-                Ready to <span class="gradient-text">transform</span> your business?
+                {{ __('landing.cta_title') }} <span class="gradient-text">{{ __('landing.cta_title_hl') }}</span> {{ __('landing.cta_title_sfx') }}
             </h2>
             <p class="text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
-                Join thousands of businesses that trust Velora to manage their appointments and queues.
-                Start your free trial today — no credit card needed.
+                {{ __('landing.cta_sub') }}
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
                 <a href="{{ route('signup') }}"
                    class="btn-primary text-white font-bold text-lg px-10 py-4 rounded-2xl inline-flex items-center justify-center gap-3">
-                    🎉 Start Free 14-Day Trial
+                    {{ __('landing.cta_button') }}
                 </a>
                 <a href="{{ route('pricing') }}"
                    class="glass text-gray-300 hover:text-white font-semibold text-lg px-10 py-4 rounded-2xl inline-flex items-center justify-center gap-2 transition-all">
-                    View Pricing →
+                    {{ __('landing.cta_pricing') }}
                 </a>
             </div>
-            <p class="text-gray-600 text-sm mt-6">No credit card • 14-day free trial • Cancel anytime</p>
+            <p class="text-gray-600 text-sm mt-6">{{ __('landing.cta_note') }}</p>
         </div>
     </div>
 </section>

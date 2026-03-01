@@ -54,16 +54,50 @@
                 </button>
 
                 <!-- Language Switcher -->
-                <div class="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-0.5">
-                    <button onclick="window.location.href='/change-language/en'"
-                        class="px-2.5 py-1 text-xs font-medium rounded-md transition-all {{ !$isArabic ? 'bg-indigo-600 dark:bg-indigo-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }}">
-                        EN
+                @php
+                    $adminLangs = [
+                        'en' => ['label' => 'EN',      'flag' => '🇬🇧'],
+                        'ar' => ['label' => 'عربي',    'flag' => '🇸🇦'],
+                        'fr' => ['label' => 'FR',      'flag' => '🇫🇷'],
+                        'es' => ['label' => 'ES',      'flag' => '🇪🇸'],
+                        'de' => ['label' => 'DE',      'flag' => '🇩🇪'],
+                        'it' => ['label' => 'IT',      'flag' => '🇮🇹'],
+                        'pt' => ['label' => 'PT',      'flag' => '🇵🇹'],
+                        'ru' => ['label' => 'RU',      'flag' => '🇷🇺'],
+                        'zh' => ['label' => '中文',    'flag' => '🇨🇳'],
+                        'ja' => ['label' => '日本語',  'flag' => '🇯🇵'],
+                    ];
+                    $currentLocale = app()->getLocale();
+                    $currentLang = $adminLangs[$currentLocale] ?? $adminLangs['en'];
+                @endphp
+                <div class="relative">
+                    <button onclick="document.getElementById('adminLangMenu').classList.toggle('hidden')"
+                        id="adminLangBtn"
+                        class="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-all">
+                        <span>{{ $currentLang['flag'] }}</span>
+                        <span>{{ $currentLang['label'] }}</span>
+                        <svg class="w-3 h-3 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                     </button>
-                    <button onclick="window.location.href='/change-language/ar'"
-                        class="px-2.5 py-1 text-xs font-medium rounded-md transition-all {{ $isArabic ? 'bg-indigo-600 dark:bg-indigo-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100' }}">
-                        عربي
-                    </button>
+                    <div id="adminLangMenu"
+                        class="hidden absolute right-0 mt-1 w-36 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg py-1 z-50">
+                        @foreach($adminLangs as $code => $lang)
+                        <a href="/change-language/{{ $code }}"
+                            class="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-slate-50 dark:hover:bg-slate-700 {{ $currentLocale === $code ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-700 dark:text-slate-300' }}">
+                            <span>{{ $lang['flag'] }}</span>
+                            <span>{{ $lang['label'] }}</span>
+                        </a>
+                        @endforeach
+                    </div>
                 </div>
+                <script>
+                    document.addEventListener('click', function(e) {
+                        var btn = document.getElementById('adminLangBtn');
+                        var menu = document.getElementById('adminLangMenu');
+                        if (btn && menu && !btn.contains(e.target) && !menu.contains(e.target)) {
+                            menu.classList.add('hidden');
+                        }
+                    });
+                </script>
 
                 <!-- Profile -->
                 <a href="/admin/profile" class="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">

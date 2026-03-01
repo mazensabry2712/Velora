@@ -34,9 +34,17 @@
                         </svg>
                         <span>{{ strtoupper(app()->getLocale()) }}</span>
                     </button>
-                    <div id="languageMenu" class="hidden absolute {{ app()->getLocale() === 'ar' ? 'left-0' : 'right-0' }} mt-2 w-32 bg-white rounded-md shadow-lg py-1 z-10">
-                        <a href="?locale=en" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">English</a>
-                        <a href="?locale=ar" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">العربية</a>
+                    <div id="languageMenu" class="hidden absolute {{ app()->getLocale() === 'ar' ? 'left-0' : 'right-0' }} mt-2 w-40 bg-white rounded-md shadow-lg py-1 z-10">
+                        <a href="/change-language/en" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">🇬🇧 English</a>
+                        <a href="/change-language/ar" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">🇸🇦 العربية</a>
+                        <a href="/change-language/fr" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">🇫🇷 Français</a>
+                        <a href="/change-language/es" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">🇪🇸 Español</a>
+                        <a href="/change-language/de" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">🇩🇪 Deutsch</a>
+                        <a href="/change-language/it" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">🇮🇹 Italiano</a>
+                        <a href="/change-language/pt" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">🇵🇹 Português</a>
+                        <a href="/change-language/ru" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">🇷🇺 Русский</a>
+                        <a href="/change-language/zh" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">🇨🇳 中文</a>
+                        <a href="/change-language/ja" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">🇯🇵 日本語</a>
                     </div>
                 </div>
 

@@ -1,5 +1,10 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+@php
+    $landingLocale = session('central_locale', 'en');
+    app()->setLocale($landingLocale);
+    $isRtl = $landingLocale === 'ar';
+@endphp
+<html lang="{{ $landingLocale }}" dir="{{ $isRtl ? 'rtl' : 'ltr' }}" class="scroll-smooth">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -136,26 +141,66 @@
 
             <!-- Desktop Nav -->
             <div class="hidden md:flex items-center gap-8">
-                <a href="{{ route('landing') }}#features" class="text-sm text-gray-400 hover:text-white transition-colors">Features</a>
-                <a href="{{ route('landing') }}#how-it-works" class="text-sm text-gray-400 hover:text-white transition-colors">How It Works</a>
-                <a href="{{ route('pricing') }}" class="text-sm text-gray-400 hover:text-white transition-colors">Pricing</a>
-                <a href="#testimonials" class="text-sm text-gray-400 hover:text-white transition-colors">Testimonials</a>
-                <a href="#faq" class="text-sm text-gray-400 hover:text-white transition-colors">FAQ</a>
+                <a href="{{ route('landing') }}#features" class="text-sm text-gray-400 hover:text-white transition-colors">{{ __('landing.nav_features') }}</a>
+                <a href="{{ route('landing') }}#how-it-works" class="text-sm text-gray-400 hover:text-white transition-colors">{{ __('landing.nav_how_it_works') }}</a>
+                <a href="{{ route('pricing') }}" class="text-sm text-gray-400 hover:text-white transition-colors">{{ __('landing.nav_pricing') }}</a>
+                <a href="#testimonials" class="text-sm text-gray-400 hover:text-white transition-colors">{{ __('landing.nav_testimonials') }}</a>
+                <a href="#faq" class="text-sm text-gray-400 hover:text-white transition-colors">{{ __('landing.nav_faq') }}</a>
             </div>
 
             <!-- CTA Buttons -->
             <div class="flex items-center gap-3">
                 <a href="{{ route('super-admin.login') }}"
                    class="hidden sm:inline-flex text-sm text-gray-300 hover:text-white transition-colors px-3 py-1.5">
-                    Sign In
+                    {{ __('landing.nav_sign_in') }}
                 </a>
                 <a href="{{ route('signup') }}"
-                   class="btn-primary text-sm font-semibold text-white px-5 py-2.5 rounded-xl inline-flex items-center gap-2">
-                    Start Free Trial
+                   class="btn-primary text-sm font-semibold text-white px-3 sm:px-5 py-2.5 rounded-xl inline-flex items-center gap-2">
+                    <span class="hidden sm:inline">{{ __('landing.nav_start_trial') }}</span>
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
                     </svg>
                 </a>
+
+                <!-- Language Switcher -->
+                @php
+                    $landingLangs = [
+                        'en' => ['flag' => '🇬🇧', 'label' => 'EN'],
+                        'ar' => ['flag' => '🇸🇦', 'label' => 'عربي'],
+                        'fr' => ['flag' => '🇫🇷', 'label' => 'FR'],
+                        'es' => ['flag' => '🇪🇸', 'label' => 'ES'],
+                        'de' => ['flag' => '🇩🇪', 'label' => 'DE'],
+                        'it' => ['flag' => '🇮🇹', 'label' => 'IT'],
+                        'pt' => ['flag' => '🇵🇹', 'label' => 'PT'],
+                        'ru' => ['flag' => '🇷🇺', 'label' => 'RU'],
+                        'zh' => ['flag' => '🇨🇳', 'label' => '中文'],
+                        'ja' => ['flag' => '🇯🇵', 'label' => '日本語'],
+                        'tr' => ['flag' => '🇹🇷', 'label' => 'TR'],
+                        'hi' => ['flag' => '🇮🇳', 'label' => 'हिंदी'],
+                        'ko' => ['flag' => '🇰🇷', 'label' => '한국어'],
+                        'nl' => ['flag' => '🇳🇱', 'label' => 'NL'],
+                        'id' => ['flag' => '🇮🇩', 'label' => 'ID'],
+                    ];
+                    $curLandingLang = $landingLangs[$landingLocale] ?? $landingLangs['en'];
+                @endphp
+                <div class="relative hidden sm:block" id="landingLangWrapper">
+                    <button onclick="document.getElementById('landingLangMenu').classList.toggle('hidden')"
+                        class="flex items-center gap-1.5 text-xs font-medium text-gray-300 hover:text-white px-2.5 py-1.5 rounded-lg border border-white/10 hover:border-white/20 transition-all bg-white/5 hover:bg-white/10">
+                        <span>{{ $curLandingLang['flag'] }}</span>
+                        <span>{{ $curLandingLang['label'] }}</span>
+                        <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div id="landingLangMenu"
+                        class="hidden absolute {{ $isRtl ? 'left-0' : 'right-0' }} mt-2 w-36 bg-[#1a1830] border border-white/10 rounded-xl shadow-xl py-1 z-50">
+                        @foreach($landingLangs as $code => $lang)
+                        <a href="{{ route('landing.lang', $code) }}"
+                            class="flex items-center gap-2 px-3 py-2 text-xs hover:bg-white/5 transition-colors {{ $landingLocale === $code ? 'text-brand-400 font-semibold' : 'text-gray-300' }}">
+                            <span>{{ $lang['flag'] }}</span>
+                            <span>{{ $lang['label'] }}</span>
+                        </a>
+                        @endforeach
+                    </div>
+                </div>
 
                 <!-- Mobile menu toggle -->
                 <button id="menuToggle" class="md:hidden p-2 rounded-lg text-gray-400 hover:text-white">
@@ -167,17 +212,30 @@
         </div>
 
         <!-- Mobile Nav -->
-        <div id="mobileMenu" class="md:hidden hidden pb-4 border-t border-white/5 mt-2 pt-4">
-            <div class="flex flex-col gap-3">
-                <a href="{{ route('landing') }}#features"    class="text-sm text-gray-400 hover:text-white px-2 py-1.5">Features</a>
-                <a href="{{ route('landing') }}#how-it-works" class="text-sm text-gray-400 hover:text-white px-2 py-1.5">How It Works</a>
-                <a href="{{ route('pricing') }}"             class="text-sm text-gray-400 hover:text-white px-2 py-1.5">Pricing</a>
-                <a href="#faq"                               class="text-sm text-gray-400 hover:text-white px-2 py-1.5">FAQ</a>
-                <a href="{{ route('super-admin.login') }}"   class="text-sm text-gray-300 hover:text-white px-2 py-1.5">Sign In</a>
+        <div id="mobileMenu" class="md:hidden hidden pb-5 border-t border-white/5 mt-2 pt-4">
+            <div class="flex flex-col gap-1">
+                <a href="{{ route('landing') }}#features"    class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_features') }}</a>
+                <a href="{{ route('landing') }}#how-it-works" class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_how_it_works') }}</a>
+                <a href="{{ route('pricing') }}"             class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_pricing') }}</a>
+                <a href="#testimonials"                      class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_testimonials') }}</a>
+                <a href="#faq"                               class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_faq') }}</a>
+                <a href="{{ route('super-admin.login') }}"   class="text-sm text-gray-300 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_sign_in') }}</a>
                 <a href="{{ route('signup') }}"
-                   class="btn-primary text-sm font-semibold text-white px-5 py-2.5 rounded-xl text-center mt-2">
-                    Start Free Trial →
+                   class="btn-primary text-sm font-semibold text-white px-5 py-3 rounded-xl text-center mt-2">
+                    {{ __('landing.nav_start_trial') }}
                 </a>
+                {{-- Mobile Language Switcher --}}
+                <div class="mt-3 pt-3 border-t border-white/5">
+                    <p class="text-xs text-gray-600 uppercase tracking-wider px-1 mb-2">Language</p>
+                    <div class="flex flex-wrap gap-1.5">
+                        @foreach($landingLangs as $code => $lang)
+                        <a href="{{ route('landing.lang', $code) }}"
+                           class="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs transition-colors {{ $landingLocale === $code ? 'bg-brand-500/20 text-brand-400 font-semibold border border-brand-500/40' : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-transparent' }}">
+                            <span>{{ $lang['flag'] }}</span><span>{{ $lang['label'] }}</span>
+                        </a>
+                        @endforeach
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -204,7 +262,7 @@
                     <span class="text-xl font-bold">Velora</span>
                 </a>
                 <p class="text-gray-400 text-sm leading-relaxed max-w-xs">
-                    The all-in-one appointment & queue management platform trusted by businesses worldwide.
+                    {{ __('landing.footer_tagline') }}
                 </p>
                 <div class="flex gap-3 mt-4">
                     <a href="#" class="w-8 h-8 rounded-lg glass flex items-center justify-center text-gray-400 hover:text-white transition-colors">
@@ -218,44 +276,44 @@
 
             <!-- Product -->
             <div>
-                <h4 class="text-sm font-semibold text-white mb-4">Product</h4>
+                <h4 class="text-sm font-semibold text-white mb-4">{{ __('landing.footer_product') }}</h4>
                 <ul class="space-y-2.5 text-sm text-gray-400">
-                    <li><a href="{{ route('landing') }}#features" class="hover:text-white transition-colors">Features</a></li>
-                    <li><a href="{{ route('pricing') }}"           class="hover:text-white transition-colors">Pricing</a></li>
-                    <li><a href="#"                                class="hover:text-white transition-colors">Changelog</a></li>
-                    <li><a href="#"                                class="hover:text-white transition-colors">Roadmap</a></li>
+                    <li><a href="{{ route('landing') }}#features" class="hover:text-white transition-colors">{{ __('landing.footer_features') }}</a></li>
+                    <li><a href="{{ route('pricing') }}"           class="hover:text-white transition-colors">{{ __('landing.footer_pricing') }}</a></li>
+                    <li><a href="#"                                class="hover:text-white transition-colors">{{ __('landing.footer_changelog') }}</a></li>
+                    <li><a href="#"                                class="hover:text-white transition-colors">{{ __('landing.footer_roadmap') }}</a></li>
                 </ul>
             </div>
 
             <!-- Company -->
             <div>
-                <h4 class="text-sm font-semibold text-white mb-4">Company</h4>
+                <h4 class="text-sm font-semibold text-white mb-4">{{ __('landing.footer_company') }}</h4>
                 <ul class="space-y-2.5 text-sm text-gray-400">
-                    <li><a href="#" class="hover:text-white transition-colors">About</a></li>
-                    <li><a href="#" class="hover:text-white transition-colors">Blog</a></li>
-                    <li><a href="#" class="hover:text-white transition-colors">Careers</a></li>
-                    <li><a href="#" class="hover:text-white transition-colors">Contact</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">{{ __('landing.footer_about') }}</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">{{ __('landing.footer_blog') }}</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">{{ __('landing.footer_careers') }}</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">{{ __('landing.footer_contact') }}</a></li>
                 </ul>
             </div>
 
             <!-- Legal -->
             <div>
-                <h4 class="text-sm font-semibold text-white mb-4">Legal</h4>
+                <h4 class="text-sm font-semibold text-white mb-4">{{ __('landing.footer_legal') }}</h4>
                 <ul class="space-y-2.5 text-sm text-gray-400">
-                    <li><a href="#" class="hover:text-white transition-colors">Privacy Policy</a></li>
-                    <li><a href="#" class="hover:text-white transition-colors">Terms of Service</a></li>
-                    <li><a href="#" class="hover:text-white transition-colors">Cookie Policy</a></li>
-                    <li><a href="#" class="hover:text-white transition-colors">GDPR</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">{{ __('landing.footer_privacy') }}</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">{{ __('landing.footer_terms') }}</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">{{ __('landing.footer_cookie') }}</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">{{ __('landing.footer_gdpr') }}</a></li>
                 </ul>
             </div>
         </div>
 
         <div class="border-t border-white/10 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <p class="text-gray-500 text-sm">© {{ date('Y') }} Velora. All rights reserved.</p>
+            <p class="text-gray-500 text-sm">© {{ date('Y') }} Velora. {{ __('landing.footer_rights') }}</p>
             <div class="flex items-center gap-2 text-gray-500 text-sm">
-                <span>Available in</span>
+                <span>{{ __('landing.footer_available') }}</span>
                 <div class="flex gap-1">
-                    @foreach(['🇺🇸','🇸🇦','🇫🇷','🇪🇸','🇩🇪','🇧🇷','🇯🇵','🇨🇳'] as $flag)
+                    @foreach(['�🇧','🇸🇦','🇫🇷','🇪🇸','🇩🇪','🇧🇷','🇯🇵','🇨🇳','🇹🇷','🇮🇳','🇰🇷','🇳🇱','🇮🇩'] as $flag)
                         <span class="text-base">{{ $flag }}</span>
                     @endforeach
                 </div>
@@ -268,6 +326,15 @@
 <script>
     document.getElementById('menuToggle')?.addEventListener('click', () => {
         document.getElementById('mobileMenu')?.classList.toggle('hidden');
+    });
+
+    // Close language dropdown on outside click
+    document.addEventListener('click', function(e) {
+        var wrapper = document.getElementById('landingLangWrapper');
+        var menu    = document.getElementById('landingLangMenu');
+        if (wrapper && menu && !wrapper.contains(e.target)) {
+            menu.classList.add('hidden');
+        }
     });
 </script>
 

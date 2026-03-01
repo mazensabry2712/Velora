@@ -21,7 +21,7 @@ Route::post('/webhooks/stripe', [\App\Http\Controllers\StripeWebhookController::
     ->name('webhooks.stripe');
 
 // ── Landing + Marketing Routes ───────────────────────────────────────────
-Route::middleware('web')
+Route::middleware(['web', \App\Http\Middleware\SetCentralLocale::class])
     ->domain(env('APP_DOMAIN', 'velora.test'))
     ->group(function () {
     // Main landing page
@@ -47,6 +47,15 @@ Route::middleware('web')
     Route::get('/login', function () {
         return redirect()->route('super-admin.login');
     })->name('central.login');
+
+    // Language switcher for landing / marketing pages
+    Route::get('/lang/{locale}', function ($locale) {
+        $supported = ['en', 'ar', 'fr', 'es', 'de', 'it', 'pt', 'ru', 'zh', 'ja'];
+        if (in_array($locale, $supported)) {
+            session()->put('central_locale', $locale);
+        }
+        return redirect()->back();
+    })->name('landing.lang');
 });
 
 // Super Admin Routes (Central - No Tenant)
