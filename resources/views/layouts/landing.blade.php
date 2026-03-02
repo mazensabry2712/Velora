@@ -219,7 +219,7 @@
                 <a href="{{ route('pricing') }}"             class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_pricing') }}</a>
                 <a href="#testimonials"                      class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_testimonials') }}</a>
                 <a href="#faq"                               class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_faq') }}</a>
-                <a href="{{ route('super-admin.login') }}"   class="text-sm text-gray-300 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_sign_in') }}</a>
+                <a href="{{ route('central.login') }}"   class="text-sm text-gray-300 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_sign_in') }}</a>
                 <a href="{{ route('signup') }}"
                    class="btn-primary text-sm font-semibold text-white px-5 py-3 rounded-xl text-center mt-2">
                     {{ __('landing.nav_start_trial') }}

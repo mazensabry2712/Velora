@@ -189,6 +189,11 @@
                         <option value="CN" {{ old('country') == 'CN' ? 'selected' : '' }}>🇨🇳 China</option>
                         <option value="RU" {{ old('country') == 'RU' ? 'selected' : '' }}>🇷🇺 Russia</option>
                         <option value="IT" {{ old('country') == 'IT' ? 'selected' : '' }}>🇮🇹 Italy</option>
+                        <option value="TR" {{ old('country') == 'TR' ? 'selected' : '' }}>🇹🇷 Turkey</option>
+                        <option value="IN" {{ old('country') == 'IN' ? 'selected' : '' }}>🇮🇳 India</option>
+                        <option value="KR" {{ old('country') == 'KR' ? 'selected' : '' }}>🇰🇷 South Korea</option>
+                        <option value="NL" {{ old('country') == 'NL' ? 'selected' : '' }}>🇳🇱 Netherlands</option>
+                        <option value="ID" {{ old('country') == 'ID' ? 'selected' : '' }}>🇮🇩 Indonesia</option>
                     </select>
                 </div>
                 <div>
@@ -205,6 +210,11 @@
                         <option value="ru" {{ old('language') == 'ru' ? 'selected' : '' }}>🇷🇺 Russian</option>
                         <option value="zh" {{ old('language') == 'zh' ? 'selected' : '' }}>🇨🇳 Chinese</option>
                         <option value="ja" {{ old('language') == 'ja' ? 'selected' : '' }}>🇯🇵 Japanese</option>
+                        <option value="tr" {{ old('language') == 'tr' ? 'selected' : '' }}>🇹🇷 Turkish</option>
+                        <option value="hi" {{ old('language') == 'hi' ? 'selected' : '' }}>🇮🇳 Hindi</option>
+                        <option value="ko" {{ old('language') == 'ko' ? 'selected' : '' }}>🇰🇷 Korean</option>
+                        <option value="nl" {{ old('language') == 'nl' ? 'selected' : '' }}>🇳🇱 Dutch</option>
+                        <option value="id" {{ old('language') == 'id' ? 'selected' : '' }}>🇮🇩 Indonesian</option>
                     </select>
                 </div>
             </div>
@@ -246,7 +256,7 @@
             {{-- Login redirect --}}
             <p class="text-center text-sm text-gray-500">
                 {{ __('landing.already_have_account') }}
-                <a href="{{ route('super-admin.login') }}" class="text-brand-400 hover:text-brand-300 font-medium">{{ __('landing.sign_in') }}</a>
+                <a href="{{ route('central.login') }}" class="text-brand-400 hover:text-brand-300 font-medium">{{ __('landing.sign_in') }}</a>
             </p>
         </form>
     </div>

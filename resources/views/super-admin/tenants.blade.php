@@ -1,7 +1,7 @@
 @extends('super-admin.layout')
 
-@section('title', 'إدارة الشركات')
-@section('breadcrumb')<span class="text-slate-700 dark:text-slate-200 font-medium">إدارة الشركات</span>@endsection
+@section('title', __('super-admin.tenants_title'))
+@section('breadcrumb')<span class="text-slate-700 dark:text-slate-200 font-medium">{{ __('super-admin.tenants_title') }}</span>@endsection
 
 @section('content')
 <div x-data="tenantsManager()" x-init="loadTenants()">
@@ -10,16 +10,16 @@
     <div class="mb-8 flex flex-wrap gap-4 justify-between items-center">
         <div>
             <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                إدارة الشركات
+                {{ __('super-admin.tenants_title') }}
             </h1>
-            <p class="text-slate-500 dark:text-slate-400 mt-1 text-sm">إضافة وإدارة الشركات المسجلة في النظام</p>
+            <p class="text-slate-500 dark:text-slate-400 mt-1 text-sm">{{ __('super-admin.tenants_subtitle') }}</p>
         </div>
         <button @click="openAddModal()"
                 class="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-semibold px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-200 dark:shadow-indigo-900 transition-all duration-200 hover:-translate-y-0.5">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
-            إضافة شركة جديدة
+            {{ __('super-admin.tenant_add') }}
         </button>
     </div>
 
@@ -59,13 +59,13 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                     </svg>
                 </div>
-                <h2 class="font-bold text-slate-900 dark:text-white">قائمة الشركات</h2>
+                <h2 class="font-bold text-slate-900 dark:text-white">{{ __('super-admin.tenants_list') }}</h2>
                 <span class="text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-full font-medium"
-                      x-text="(filteredTenants.length !== tenants.length ? filteredTenants.length + ' من ' : '') + tenants.length + ' شركة'"></span>
+                      x-text="(filteredTenants.length !== tenants.length ? filteredTenants.length + ' {{ __('super-admin.tenant_of') }} ' : '') + tenants.length + ' {{ __('super-admin.tenant_company_label') }}'" ></span>
             </div>
             <div class="relative">
                 <input type="text" x-model="searchQuery" @input="filterTenants()"
-                       placeholder="بحث عن شركة..."
+                       placeholder="{{ __('super-admin.tenant_search') }}"
                        class="w-56 pr-9 pl-4 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
                 <svg class="w-4 h-4 text-slate-400 absolute right-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
@@ -76,13 +76,13 @@
             <table class="w-full">
                 <thead class="bg-slate-50 dark:bg-slate-900/50">
                     <tr>
-                        <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">الشركة</th>
-                        <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">الدومين</th>
-                        <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">البريد الإلكتروني</th>
-                        <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">الحالة</th>
-                        <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">الخطة</th>
-                        <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">تاريخ الإنشاء</th>
-                        <th class="px-6 py-3.5 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">الإجراءات</th>
+                        <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.tenant_company') }}</th>
+                        <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.tenant_domain') }}</th>
+                        <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.tenant_email') }}</th>
+                        <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.tenant_status') }}</th>
+                        <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.tenant_plan') }}</th>
+                        <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.tenant_created_at') }}</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.tenant_actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
@@ -110,7 +110,7 @@
                                             : 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800'"
                                         class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full hover:opacity-80 transition">
                                     <span :class="tenant.active ? 'bg-emerald-500' : 'bg-amber-500'" class="w-1.5 h-1.5 rounded-full"></span>
-                                    <span x-text="tenant.active ? 'نشط' : 'غير نشط'"></span>
+                                    <span x-text="tenant.active ? '{{ __('super-admin.tenant_active') }}' : '{{ __('super-admin.tenant_inactive') }}'"></span>
                                 </button>
                             </td>
                             <td class="px-6 py-4"> {{-- Plan --}}
@@ -120,31 +120,31 @@
                                         : 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 ring-1 ring-purple-200'"
                                           class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full">
                                         <span x-text="tenant.current_subscription.plan.name"></span>
-                                        <span x-show="tenant.current_subscription.status === 'trial'" class="text-xs opacity-70">(تجريبي)</span>
+                                        <span x-show="tenant.current_subscription.status === 'trial'" class="text-xs opacity-70">({{ __('super-admin.tenant_trial') }})</span>
                                     </span>
                                 </template>
                                 <template x-if="!tenant.current_subscription || !tenant.current_subscription.plan">
-                                    <span class="text-xs text-slate-400 dark:text-slate-500">لا يوجد اشتراك</span>
+                                    <span class="text-xs text-slate-400 dark:text-slate-500">{{ __('super-admin.tenant_no_sub') }}</span>
                                 </template>
                             </td>
                             <td class="px-6 py-4 text-sm text-slate-500 dark:text-slate-400" x-text="formatDate(tenant.created_at)"></td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center justify-center gap-1.5">
                                     <button @click="viewTenant(tenant)"
-                                            class="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition tooltip" data-tip="عرض التفاصيل">
+                                            class="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition tooltip" data-tip="{{ __('super-admin.tenant_view_details') }}">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                         </svg>
                                     </button>
                                     <button @click="resetPassword(tenant.id, tenant.name)"
-                                            class="p-1.5 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition tooltip" data-tip="إعادة تعيين كلمة المرور">
+                                            class="p-1.5 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition tooltip" data-tip="{{ __('super-admin.tenant_reset_password') }}">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
                                         </svg>
                                     </button>
                                     <button @click="confirmDelete(tenant.id, tenant.name)"
-                                            class="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition tooltip" data-tip="حذف الشركة">
+                                            class="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition tooltip" data-tip="{{ __('super-admin.tenant_delete_company') }}">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                         </svg>
@@ -159,8 +159,8 @@
                             <svg class="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/>
                             </svg>
-                            <p class="text-slate-500 dark:text-slate-400 font-medium">لا توجد شركات للعرض</p>
-                            <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">جرّب تعديل بحثك أو أضف شركة جديدة</p>
+                            <p class="text-slate-500 dark:text-slate-400 font-medium">{{ __('super-admin.tenant_no_results') }}</p>
+                            <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">{{ __('super-admin.tenant_empty_hint') }}</p>
                         </td>
                     </tr>
                 </tbody>
@@ -172,7 +172,7 @@
 
             <!-- Per-page + info -->
             <div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                <span>عرض</span>
+                <span>{{ __('super-admin.pagination_show') }}</span>
                 <select x-model.number="perPage" @change="currentPage = 1; paginate()"
                         class="border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none">
                     <option value="5">5</option>
@@ -181,7 +181,7 @@
                     <option value="50">50</option>
                     <option value="100">100</option>
                 </select>
-                <span>لكل صفحة</span>
+                <span>{{ __('super-admin.pagination_per_page') }}</span>
                 <span class="hidden sm:inline text-slate-300 dark:text-slate-600 mx-1">|</span>
                 <span class="hidden sm:inline" x-text="`${((currentPage-1)*perPage)+1}–${Math.min(currentPage*perPage, filteredTenants.length)} من ${filteredTenants.length}`"></span>
             </div>
@@ -253,7 +253,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-slate-900 dark:text-white">إضافة شركة جديدة</h3>
+                    <h3 class="text-xl font-bold text-slate-900 dark:text-white">{{ __('super-admin.tenant_add') }}</h3>
                 </div>
                 <button @click="showAddModal = false" class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -265,30 +265,30 @@
             <form @submit.prevent="addTenant()">
                 <div class="p-6 space-y-4">
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">اسم الشركة <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ __('super-admin.tenant_form_name_label') }} <span class="text-red-500">*</span></label>
                         <input type="text" x-model="newTenant.name" required
                                class="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white transition"
-                               placeholder="شركة المواعيد">
+                               placeholder="{{ __('super-admin.tenant_form_name_ph') }}">
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">الدومين <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ __('super-admin.tenant_domain') }} <span class="text-red-500">*</span></label>
                         <input type="text" x-model="newTenant.domain" required
                                class="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white transition font-mono text-sm"
                                placeholder="company.booking-saas.test">
-                        <p class="text-xs text-slate-400 mt-1">مثال: company.booking-saas.test أو subdomain.yourdomain.com</p>
+                        <p class="text-xs text-slate-400 mt-1">{{ __('super-admin.tenant_form_domain_help') }}</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">البريد الإلكتروني <span class="text-slate-400 font-normal">(اختياري)</span></label>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ __('super-admin.tenant_email') }} <span class="text-slate-400 font-normal">({{ __('super-admin.tenant_form_optional') }})</span></label>
                         <input type="email" x-model="newTenant.email"
                                class="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white transition"
                                placeholder="admin@company.com">
-                        <p class="text-xs text-slate-400 mt-1">سيتم توليده تلقائياً إذا تُرك فارغاً</p>
+                        <p class="text-xs text-slate-400 mt-1">{{ __('super-admin.tenant_form_email_info') }}</p>
                     </div>
                 </div>
                 <div class="flex gap-3 justify-end p-6 pt-0">
                     <button type="button" @click="showAddModal = false"
                             class="px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl transition">
-                        إلغاء
+                        {{ __('super-admin.common_cancel') }}
                     </button>
                     <button type="submit" :disabled="submitting"
                             class="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed">
@@ -296,7 +296,7 @@
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                         </svg>
-                        <span x-text="submitting ? 'جاري الإضافة...' : 'إضافة الشركة'"></span>
+                        <span x-text="submitting ? '{{ __('super-admin.tenant_submitting') }}' : '{{ __('super-admin.tenant_add') }}'"></span>
                     </button>
                 </div>
             </form>
@@ -317,7 +317,7 @@
                  class="inline-block bg-white dark:bg-slate-800 rounded-lg text-right overflow-hidden shadow-xl transform transition-all sm:max-w-lg sm:w-full">
                 <div class="px-6 py-5">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-2xl font-bold text-slate-900 dark:text-white">بيانات الدخول</h3>
+                        <h3 class="text-2xl font-bold text-slate-900 dark:text-white">{{ __('super-admin.tenant_creds_title') }}</h3>
                         <button @click="showCredentialsModal = false" class="text-slate-400 hover:text-slate-600">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -326,23 +326,23 @@
                     </div>
 
                     <div class="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4 mb-4">
-                        <p class="text-sm text-emerald-800 dark:text-emerald-300 mb-2">✅ تم إنشاء الشركة بنجاح!</p>
-                        <p class="text-xs text-emerald-600 dark:text-emerald-400">احفظ هذه البيانات، لن تظهر مرة أخرى.</p>
+                        <p class="text-sm text-emerald-800 dark:text-emerald-300 mb-2">✅ {{ __('super-admin.tenant_creds_created_ok') }}</p>
+                        <p class="text-xs text-emerald-600 dark:text-emerald-400">{{ __('super-admin.tenant_creds_save_hint') }}</p>
                     </div>
 
                     <div class="space-y-3">
                         <div class="bg-slate-100 dark:bg-slate-700 rounded-lg p-4">
-                            <p class="text-xs text-slate-600 dark:text-slate-400 mb-1">البريد الإلكتروني</p>
+                            <p class="text-xs text-slate-600 dark:text-slate-400 mb-1">{{ __('super-admin.tenant_email') }}</p>
                             <p class="text-sm font-mono text-slate-900 dark:text-white" x-text="credentials.email"></p>
                         </div>
 
                         <div class="bg-slate-100 dark:bg-slate-700 rounded-lg p-4">
-                            <p class="text-xs text-slate-600 dark:text-slate-400 mb-1">كلمة المرور</p>
+                            <p class="text-xs text-slate-600 dark:text-slate-400 mb-1">{{ __('super-admin.tenant_creds_password') }}</p>
                             <p class="text-sm font-mono text-slate-900 dark:text-white" x-text="credentials.password"></p>
                         </div>
 
                         <div class="bg-slate-100 dark:bg-slate-700 rounded-lg p-4">
-                            <p class="text-xs text-slate-600 dark:text-slate-400 mb-1">رابط الدخول</p>
+                            <p class="text-xs text-slate-600 dark:text-slate-400 mb-1">{{ __('super-admin.tenant_creds_login_url') }}</p>
                             <a :href="credentials.login_url"
                                target="_blank"
                                class="text-sm font-mono text-indigo-600 dark:text-indigo-400 hover:underline"
@@ -354,7 +354,7 @@
                 <div class="bg-slate-50 dark:bg-slate-900 px-6 py-4 flex justify-end">
                     <button @click="showCredentialsModal = false"
                             class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 rounded-lg transition">
-                        تم
+                        {{ __('super-admin.common_done') }}
                     </button>
                 </div>
             </div>
@@ -379,18 +379,18 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                 </svg>
             </div>
-            <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">حذف الشركة</h3>
-            <p class="text-sm text-slate-500 dark:text-slate-400 mb-1">هل أنت متأكد من حذف:</p>
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">{{ __('super-admin.tenant_delete_title') }}</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mb-1">{{ __('super-admin.tenant_delete_confirm2') }}</p>
             <p class="font-bold text-slate-900 dark:text-white mb-2" x-text="deleteTargetName"></p>
-            <p class="text-xs text-red-500 mb-6">سيتم حذف جميع البيانات نهائياً ولا يمكن التراجع</p>
+            <p class="text-xs text-red-500 mb-6">{{ __('super-admin.tenant_delete_warning') }}</p>
             <div class="flex gap-3">
                 <button @click="showDeleteModal = false"
                         class="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl transition">
-                    إلغاء
+                    {{ __('super-admin.common_cancel') }}
                 </button>
                 <button @click="deleteTenant(deleteTargetId)"
                         class="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-xl transition">
-                    حذف نهائياً
+                    {{ __('super-admin.tenant_delete_permanent') }}
                 </button>
             </div>
         </div>
@@ -407,7 +407,7 @@
              x-transition:enter-end="opacity-100 scale-100"
              class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md">
             <div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
-                <h3 class="text-xl font-bold text-slate-900 dark:text-white">تفاصيل الشركة</h3>
+                <h3 class="text-xl font-bold text-slate-900 dark:text-white">{{ __('super-admin.tenant_view_title') }}</h3>
                 <button @click="showViewModal = false" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -422,25 +422,26 @@
                     <div>
                         <h4 class="text-lg font-bold text-slate-900 dark:text-white" x-text="selectedTenant?.name"></h4>
                         <span :class="selectedTenant?.active ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'"
-                              class="text-xs font-semibold px-2.5 py-1 rounded-full" x-text="selectedTenant?.active ? 'نشط' : 'غير نشط'"></span>
+                              class="text-xs font-semibold px-2.5 py-1 rounded-full"
+                              x-text="selectedTenant?.active ? '{{ __('super-admin.tenant_active') }}' : '{{ __('super-admin.tenant_inactive') }}'"></span>
                     </div>
                 </div>
                 <div class="space-y-3">
                     <div class="flex items-center justify-between py-2.5 border-b border-slate-100 dark:border-slate-700">
-                        <span class="text-sm text-slate-500">الخطة</span>
+                        <span class="text-sm text-slate-500">{{ __('super-admin.tenant_plan') }}</span>
                         <span :class="selectedTenant?.current_subscription?.status === 'active' ? 'text-blue-600 font-semibold' : 'text-purple-600 font-semibold'"
-                              class="text-sm" x-text="selectedTenant?.current_subscription?.plan?.name || 'لا يوجد اشتراك'"></span>
+                              class="text-sm" x-text="selectedTenant?.current_subscription?.plan?.name || '{{ __('super-admin.tenant_no_sub') }}'"></span>
                     </div>
                     <div class="flex items-center justify-between py-2.5 border-b border-slate-100 dark:border-slate-700">
-                        <span class="text-sm text-slate-500">الدومين</span>
+                        <span class="text-sm text-slate-500">{{ __('super-admin.tenant_domain') }}</span>
                         <code class="text-sm bg-slate-100 dark:bg-slate-700 px-2.5 py-1 rounded-lg font-mono" x-text="selectedTenant?.domain"></code>
                     </div>
                     <div class="flex items-center justify-between py-2.5 border-b border-slate-100 dark:border-slate-700">
-                        <span class="text-sm text-slate-500">البريد الإلكتروني</span>
+                        <span class="text-sm text-slate-500">{{ __('super-admin.tenant_email') }}</span>
                         <span class="text-sm text-slate-900 dark:text-white" x-text="selectedTenant?.email || '-'"></span>
                     </div>
                     <div class="flex items-center justify-between py-2.5">
-                        <span class="text-sm text-slate-500">تاريخ الإنشاء</span>
+                        <span class="text-sm text-slate-500">{{ __('super-admin.tenant_created_at') }}</span>
                         <span class="text-sm text-slate-900 dark:text-white" x-text="selectedTenant ? formatDate(selectedTenant.created_at) : '-'"></span>
                     </div>
                 </div>
@@ -452,7 +453,25 @@
 @endsection
 
 @push('scripts')
+@php
+$__tTenants = [
+    'load_fail'      => __('super-admin.toast_tenant_load_fail'),
+    'add_success'    => __('super-admin.toast_tenant_add_success'),
+    'add_error'      => __('super-admin.toast_tenant_add_error'),
+    'status_updated' => __('super-admin.toast_status_updated'),
+    'status_fail'    => __('super-admin.toast_status_fail'),
+    'delete_success' => __('super-admin.toast_delete_success'),
+    'delete_fail'    => __('super-admin.toast_delete_fail'),
+    'delete_error'   => __('super-admin.toast_delete_error2'),
+    'reset_success'  => __('super-admin.toast_reset_pw_success'),
+    'reset_fail'     => __('super-admin.toast_reset_pw_fail'),
+    'reset_error'    => __('super-admin.toast_reset_pw_error'),
+    'reset_confirm'  => __('super-admin.tenant_reset_pw_confirm'),
+    'locale'         => app()->getLocale(),
+];
+@endphp
 <script>
+const __tTenants = @json($__tTenants);
 function tenantsManager() {
     return {
         loading: true,
@@ -503,7 +522,7 @@ function tenantsManager() {
                 }
             } catch (error) {
                 console.error('Error loading tenants:', error);
-                showToast('فشل تحميل الشركات', 'error');
+                showToast(__tTenants.load_fail, 'error');
             } finally {
                 this.loading = false;
             }
@@ -536,16 +555,16 @@ function tenantsManager() {
                     this.showCredentialsModal = true;
                     await this.loadTenants();
                     this.filterTenants();
-                    showToast('تم إضافة الشركة بنجاح!', 'success');
+                    showToast(__tTenants.add_success, 'success');
                 } else {
                     const errMsg = data.errors
-                        ? Object.values(data.errors).flat().join(' • ')
-                        : (data.message || 'حدث خطأ');
+                        ? Object.values(data.errors).flat().join(' \u2022 ')
+                        : (data.message || __tTenants.add_error);
                     showToast(errMsg, 'error');
                 }
             } catch (error) {
                 console.error('Error adding tenant:', error);
-                showToast('حدث خطأ أثناء إضافة الشركة', 'error');
+                showToast(__tTenants.add_error, 'error');
             } finally {
                 this.submitting = false;
             }
@@ -566,9 +585,9 @@ function tenantsManager() {
 
                 if (data.success) {
                     await this.loadTenants();
-                    showToast('تم تحديث حالة الشركة', 'success');
+                    showToast(__tTenants.status_updated, 'success');
                 } else {
-                    showToast(data.message || 'فشل تحديث الحالة', 'error');
+                    showToast(data.message || __tTenants.status_fail, 'error');
                 }
             } catch (error) {
                 console.error('Error toggling status:', error);
@@ -598,18 +617,18 @@ function tenantsManager() {
                 if (data.success) {
                     await this.loadTenants();
                     this.filterTenants();
-                    showToast('تم حذف الشركة بنجاح', 'success');
+                    showToast(__tTenants.delete_success, 'success');
                 } else {
-                    showToast(data.message || 'فشل الحذف', 'error');
+                    showToast(data.message || __tTenants.delete_fail, 'error');
                 }
             } catch (error) {
                 console.error('Error deleting tenant:', error);
-                showToast('حدث خطأ أثناء الحذف', 'error');
+                showToast(__tTenants.delete_error, 'error');
             }
         },
 
         async resetPassword(id, name) {
-            if (!confirm(`إعادة تعيين كلمة مرور مدير شركة: ${name}?`)) return;
+            if (!confirm(__tTenants.reset_confirm.replace(':name', name))) return;
             try {
                 const response = await fetch(`/api/super-admin/tenants/${id}/reset-admin-password`, {
                     method: 'POST',
@@ -629,12 +648,12 @@ function tenantsManager() {
                         login_url: 'https://' + (this.tenants.find(t => t.id === id)?.domain || id)
                     };
                     this.showCredentialsModal = true;
-                    showToast('تم إعادة تعيين كلمة المرور بنجاح', 'success');
+                    showToast(__tTenants.reset_success, 'success');
                 } else {
-                    showToast(data.message || 'فشل إعادة تعيين كلمة المرور', 'error');
+                    showToast(data.message || __tTenants.reset_fail, 'error');
                 }
             } catch (error) {
-                showToast('حدث خطأ أثناء إعادة التعيين', 'error');
+                showToast(__tTenants.reset_error, 'error');
             }
         },
 
@@ -670,7 +689,7 @@ function tenantsManager() {
         },
 
         formatDate(date) {
-            return new Date(date).toLocaleDateString('ar-EG');
+            return new Date(date).toLocaleDateString(__tTenants.locale);
         }
     }
 }

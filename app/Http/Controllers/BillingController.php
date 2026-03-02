@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SubscriptionPlan;
+use App\Services\GeoService;
 use App\Services\StripeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -11,7 +12,8 @@ use Illuminate\Support\Facades\Log;
 class BillingController extends Controller
 {
     public function __construct(
-        protected StripeService $stripeService
+        protected StripeService $stripeService,
+        protected GeoService $geoService,
     ) {}
 
     /**
@@ -117,7 +119,16 @@ class BillingController extends Controller
 
         $plan = SubscriptionPlan::findOrFail($validated['plan_id']);
 
-        if (!$plan->stripe_price_id) {
+        // ── Geo Pricing ──────────────────────────────────────────────────────
+        $countryCode  = session('detected_country', 'US');
+        $geoPrice     = $this->geoService->getPlanPrice($plan, $countryCode);
+        $stripePriceId = $geoPrice?->stripe_price_id ?? $plan->stripe_price_id ?? null;
+        $currency      = $geoPrice?->currency ?? session('current_currency', 'USD');
+        $baseAmount    = (float) ($geoPrice?->amount ?? $plan->price ?? 0);
+        $taxAmount     = $this->geoService->calculateTax($baseAmount, $countryCode);
+        $totalAmount   = round($baseAmount + $taxAmount, 2);
+
+        if (!$stripePriceId) {
             return back()->withErrors(['plan' => 'Payment not available for this plan. Please contact support.']);
         }
 
@@ -127,14 +138,19 @@ class BillingController extends Controller
 
             $session = $this->stripeService->createCheckoutSession(
                 tenantId: $tenantId,
-                stripePriceId: $plan->stripe_price_id,
+                stripePriceId: $stripePriceId,
                 customerEmail: $email,
                 customerName: $name,
                 successUrl: $baseUrl . '/billing/success',
                 cancelUrl: $baseUrl . '/billing/expired',
                 metadata: [
-                    'plan_id'   => $plan->id,
-                    'plan_name' => $plan->name,
+                    'plan_id'      => $plan->id,
+                    'plan_name'    => $plan->name,
+                    'country_code' => $countryCode,
+                    'currency'     => $currency,
+                    'base_amount'  => $baseAmount,
+                    'tax_amount'   => $taxAmount,
+                    'total_amount' => $totalAmount,
                 ]
             );
 

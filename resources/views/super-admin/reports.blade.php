@@ -1,7 +1,7 @@
 @extends('super-admin.layout')
 
-@section('title', 'التقارير والإحصائيات')
-@section('breadcrumb')<span class="text-slate-700 dark:text-slate-200 font-medium">التقارير</span>@endsection
+@section('title', __('super-admin.reports_title'))
+@section('breadcrumb')<span class="text-slate-700 dark:text-slate-200 font-medium">{{ __('super-admin.reports_title') }}</span>@endsection
 
 @section('content')
 <div x-data="reports()" x-init="loadReports()">

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SubscriptionPlan extends Model
 {
@@ -27,6 +28,14 @@ class SubscriptionPlan extends Model
         'is_popular' => 'boolean',
         'price' => 'decimal:2',
     ];
+
+    /**
+     * Get geo-localized prices for this plan.
+     */
+    public function prices(): HasMany
+    {
+        return $this->hasMany(PlanPrice::class, 'plan_id');
+    }
 
     /**
      * Get subscriptions for this plan

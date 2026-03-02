@@ -4,23 +4,25 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\SubscriptionPlan;
+use App\Services\GeoService;
 use Illuminate\Support\Facades\DB;
 
 class LandingController extends Controller
 {
+    public function __construct(private GeoService $geo) {}
+
     /**
      * Show the main landing page.
      */
     public function index()
     {
-        $plans = SubscriptionPlan::where('is_active', true)
-            ->orderBy('price', 'asc')
-            ->get();
-
-        $stats = $this->getPlatformStats();
+        $countryCode = session('detected_country', 'US');
+        $currency    = session('current_currency', 'USD');
+        $plans       = $this->geo->getPlansForCountry($countryCode);
+        $stats       = $this->getPlatformStats();
         $maxTrialDays = $plans->max('trial_days') ?? 14;
 
-        return view('landing.index', compact('plans', 'stats', 'maxTrialDays'));
+        return view('landing.index', compact('plans', 'stats', 'maxTrialDays', 'countryCode', 'currency'));
     }
 
     /**
@@ -28,13 +30,12 @@ class LandingController extends Controller
      */
     public function pricing()
     {
-        $plans = SubscriptionPlan::where('is_active', true)
-            ->orderBy('price', 'asc')
-            ->get();
-
+        $countryCode  = session('detected_country', 'US');
+        $currency     = session('current_currency', 'USD');
+        $plans        = $this->geo->getPlansForCountry($countryCode);
         $maxTrialDays = $plans->max('trial_days') ?? 14;
 
-        return view('landing.pricing', compact('plans', 'maxTrialDays'));
+        return view('landing.pricing', compact('plans', 'maxTrialDays', 'countryCode', 'currency'));
     }
 
     /**
@@ -42,13 +43,11 @@ class LandingController extends Controller
      */
     public function signup()
     {
-        $plans = SubscriptionPlan::where('is_active', true)
-            ->orderBy('price', 'asc')
-            ->get();
-
+        $countryCode  = session('detected_country', 'US');
+        $plans        = $this->geo->getPlansForCountry($countryCode);
         $maxTrialDays = $plans->max('trial_days') ?? 14;
 
-        return view('landing.signup', compact('plans', 'maxTrialDays'));
+        return view('landing.signup', compact('plans', 'maxTrialDays', 'countryCode'));
     }
 
     /**

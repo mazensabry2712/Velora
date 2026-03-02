@@ -24,16 +24,16 @@ class TenantRegistrationService
      */
     public function register(array $data): array
     {
-        // 1. Validate uniqueness
+        // 1. Validate uniqueness first — prevents duplicate tenants
         $this->validateUniqueness($data['subdomain'], $data['email']);
 
-        DB::beginTransaction();
+        $tenant       = null;
+        $trialDays    = 14;
+        $subscription = null;
 
         try {
-            // 2. Create Tenant in central DB
-            $tenant = Tenant::create([
-                'id' => $data['subdomain'],
-            ]);
+            // ── Step 2: Create Tenant (fires TenantCreated → CreateDatabase + MigrateDatabase synchronously) ──
+            $tenant = Tenant::create(['id' => $data['subdomain']]);
 
             $tenant->update([
                 'name'     => $data['business_name'],
@@ -43,22 +43,12 @@ class TenantRegistrationService
                 'active'   => true,
             ]);
 
-            // 3. Create domain
-            $domain = $tenant->domains()->create([
+            // ── Step 3: Create domain (fires DomainCreated → LinkTenantDomain job) ──
+            $tenant->domains()->create([
                 'domain' => $this->buildSubdomain($data['subdomain']),
             ]);
 
-            // 4. Initialize tenant database (runs tenant migrations)
-            $tenant->run(function () {
-                // DB is auto-created + migrations run via tenancy events
-            });
-
-            // Force run migrations for this tenant
-            \Artisan::call('tenants:migrate', [
-                '--tenants' => [$tenant->id],
-            ]);
-
-            // 5. Create Admin User inside tenant DB
+            // ── Step 4: Create Admin User + settings inside tenant DB ──
             $tenant->run(function () use ($data) {
                 $adminRole = \App\Models\Role::firstOrCreate(
                     ['name' => 'Admin Tenant'],
@@ -72,34 +62,32 @@ class TenantRegistrationService
                     'password' => Hash::make($data['password']),
                 ]);
 
-                // Create default settings
                 \App\Models\Setting::firstOrCreate(
                     ['id' => 1],
                     [
-                        'business_name'      => $data['business_name'],
-                        'language'           => $data['language'] ?? 'en',
-                        'timezone'           => 'UTC',
-                        'booking_enabled'    => true,
-                        'queue_enabled'      => true,
+                        'business_name'       => $data['business_name'],
+                        'language'            => $data['language'] ?? 'en',
+                        'timezone'            => 'UTC',
+                        'booking_enabled'     => true,
+                        'queue_enabled'       => true,
                         'available_languages' => json_encode(['en', 'ar']),
                     ]
                 );
             });
 
-            // 6. Create Trial Subscription using selected or cheapest plan
+            // ── Step 5: Back on central DB — create trial subscription ──
             $trialPlan = isset($data['plan_id'])
                 ? SubscriptionPlan::where('is_active', true)->find($data['plan_id'])
                 : null;
 
-            // Fallback to cheapest active plan
             if (!$trialPlan) {
                 $trialPlan = SubscriptionPlan::where('is_active', true)
                     ->orderBy('price', 'asc')
                     ->first();
             }
 
-            $trialDays  = $trialPlan?->trial_days ?? 14;
-            $graceDays  = 3;
+            $trialDays = $trialPlan?->trial_days ?? 14;
+            $graceDays = 3;
 
             $subscription = TenantSubscription::create([
                 'tenant_id'            => $tenant->id,
@@ -114,32 +102,12 @@ class TenantRegistrationService
                 'notes'                => 'Auto-created trial subscription',
             ]);
 
-            DB::commit();
-
-            // 7. Send Welcome Email
-            try {
-                Mail::to($data['email'])->send(new WelcomeTenantMail(
-                    $data['business_name'],
-                    $data['subdomain'],
-                    $this->buildSubdomain($data['subdomain']),
-                    $trialDays
-                ));
-            } catch (\Exception $e) {
-                Log::warning('Welcome email failed for tenant ' . $tenant->id . ': ' . $e->getMessage());
+        } catch (\Exception $e) {
+            // Cleanup: delete tenant (TenantDeleted event will drop the tenant DB automatically)
+            if ($tenant) {
+                try { $tenant->delete(); } catch (\Exception $ignored) {}
             }
 
-            $redirectUrl = 'https://' . $this->buildSubdomain($data['subdomain']) . '/admin/dashboard';
-
-            return [
-                'tenant'       => $tenant,
-                'subdomain'    => $data['subdomain'],
-                'redirect_url' => $redirectUrl,
-                'subscription' => $subscription,
-                'trial_days'   => $trialDays,
-            ];
-
-        } catch (\Exception $e) {
-            DB::rollBack();
             Log::error('Tenant registration failed: ' . $e->getMessage(), [
                 'subdomain' => $data['subdomain'],
                 'email'     => $data['email'],
@@ -147,6 +115,29 @@ class TenantRegistrationService
             ]);
             throw $e;
         }
+
+        // ── Step 6: Welcome email (non-blocking) ─────────────────────────────
+        try {
+            Mail::to($data['email'])->send(new WelcomeTenantMail(
+                $data['business_name'],
+                $data['subdomain'],
+                $this->buildSubdomain($data['subdomain']),
+                $trialDays
+            ));
+        } catch (\Exception $e) {
+            Log::warning('Welcome email failed for tenant ' . $tenant->id . ': ' . $e->getMessage());
+        }
+
+        $scheme      = str_starts_with(config('app.url', 'http://velora.com'), 'https') ? 'https' : 'http';
+        $redirectUrl = $scheme . '://' . $this->buildSubdomain($data['subdomain']) . '/admin/dashboard';
+
+        return [
+            'tenant'       => $tenant,
+            'subdomain'    => $data['subdomain'],
+            'redirect_url' => $redirectUrl,
+            'subscription' => $subscription,
+            'trial_days'   => $trialDays,
+        ];
     }
 
     /**

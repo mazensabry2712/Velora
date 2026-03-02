@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+@php $locale = app()->getLocale(); $isRtl = in_array($locale, ['ar','he','fa']); @endphp
+<html lang="{{ $locale }}" dir="{{ $isRtl ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>تسجيل دخول Super Admin - Booking SaaS</title>
+    <title>{{ __('super-admin.login_page_title') }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         // Dark mode support
@@ -43,7 +44,7 @@
                 </svg>
             </div>
             <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-700 dark:from-indigo-400 dark:to-indigo-500 bg-clip-text text-transparent mb-2">Super Admin</h1>
-            <p class="text-slate-600 dark:text-slate-400 text-base">الدخول للوحة التحكم الرئيسية</p>
+            <p class="text-slate-600 dark:text-slate-400 text-base">{{ __('super-admin.login_subtitle') }}</p>
         </div>
 
         <!-- Success/Error Messages -->
@@ -87,7 +88,7 @@
             <!-- Email -->
             <div>
                 <label for="email" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    البريد الإلكتروني
+                    {{ __('super-admin.login_email') }}
                 </label>
                 <input
                     type="email"
@@ -104,7 +105,7 @@
             <!-- Password -->
             <div>
                 <label for="password" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    كلمة المرور
+                    {{ __('super-admin.login_password') }}
                 </label>
                 <input
                     type="password"
@@ -125,7 +126,7 @@
                     class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
                 >
                 <label for="remember" class="mr-2 text-sm text-slate-700 dark:text-slate-300">
-                    تذكرني
+                    {{ __('super-admin.login_remember') }}
                 </label>
             </div>
 
@@ -137,7 +138,7 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                 </svg>
-                دخول
+                {{ __('super-admin.login_submit') }}
             </button>
         </form>
 
@@ -147,7 +148,7 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
-                <span>تسجيل دخول آمن ومشفر</span>
+                <span>{{ __('super-admin.login_secure') }}</span>
             </div>
         </div>
 

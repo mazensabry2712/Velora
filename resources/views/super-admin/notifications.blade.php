@@ -1,7 +1,7 @@
 @extends('super-admin.layout')
 
-@section('title', 'إشعارات النظام')
-@section('breadcrumb')<span class="text-slate-700 dark:text-slate-200 font-medium">إشعارات النظام</span>@endsection
+@section('title', __('super-admin.notif_title'))
+@section('breadcrumb')<span class="text-slate-700 dark:text-slate-200 font-medium">{{ __('super-admin.notif_title') }}</span>@endsection
 
 @section('content')
 <div x-data="systemNotifications()" x-init="loadNotifications()">

@@ -1,7 +1,7 @@
 @extends('super-admin.layout')
 
-@section('title', 'Super Admin Dashboard')
-@section('breadcrumb')<span class="text-slate-700 dark:text-slate-200 font-medium">لوحة التحكم</span>@endsection
+@section('title', __('super-admin.dashboard_title'))
+@section('breadcrumb')<span class="text-slate-700 dark:text-slate-200 font-medium">{{ __('super-admin.nav_dashboard') }}</span>@endsection
 
 @section('content')
 <div x-data="dashboard()" x-init="init()">
@@ -10,15 +10,15 @@
     <div class="mb-8 flex flex-wrap gap-4 justify-between items-start">
         <div>
             <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                لوحة تحكم المدير الرئيسي
+                {{ __('super-admin.dashboard_h1') }}
                 <!-- Live indicator -->
                 <span class="flex items-center gap-1 text-xs font-medium bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full">
                     <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                    مباشر
+                    {{ __('super-admin.dashboard_live') }}
                 </span>
             </h1>
             <p class="text-slate-500 dark:text-slate-400 mt-1 text-sm">
-                آخر تحديث: <span x-text="lastRefreshed" class="font-medium text-slate-700 dark:text-slate-300">الآن</span>
+                {{ __('super-admin.dashboard_last_updated') }} <span x-text="lastRefreshed" class="font-medium text-slate-700 dark:text-slate-300">{{ __('super-admin.js_just_now') }}</span>
             </p>
         </div>
 
@@ -35,7 +35,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
                 </button>
-                <span class="tooltip-text">تحديث البيانات</span>
+                <span class="tooltip-text">{{ __('super-admin.dashboard_refresh_data') }}</span>
             </div>
 
             <!-- Search Button -->
@@ -47,7 +47,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                 </button>
-                <span class="tooltip-text">بحث ( / )</span>
+                <span class="tooltip-text">{{ __('super-admin.dashboard_search_short') }}</span>
             </div>
 
             <!-- Notifications -->
@@ -62,7 +62,7 @@
                           class="badge-pulse absolute -top-1 -right-1 min-w-[18px] h-[18px] text-xs bg-red-500 text-white rounded-full flex items-center justify-center font-bold px-1"
                           x-text="notifications.length"></span>
                 </button>
-                <span class="tooltip-text">الإشعارات</span>
+                <span class="tooltip-text">{{ __('super-admin.notif_header') }}</span>
 
                 <!-- Notifications Dropdown -->
                 <div x-show="open" @click.away="open = false" x-cloak
@@ -74,8 +74,8 @@
                      x-transition:leave-end="opacity-0 scale-95"
                      class="absolute left-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 z-50 overflow-hidden">
                     <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 flex justify-between items-center">
-                        <h3 class="font-bold text-slate-900 dark:text-white">الإشعارات</h3>
-                        <span class="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full font-medium" x-text="notifications.length + ' جديد'"></span>
+                        <h3 class="font-bold text-slate-900 dark:text-white">{{ __('super-admin.notif_header') }}</h3>
+                        <span class="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full font-medium" x-text="notifications.length + ' {{ __('super-admin.notif_new_badge') }}'"></span>
                     </div>
                     <div class="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700">
                         <template x-for="notif in notifications" :key="notif.id">
@@ -95,11 +95,11 @@
                             <svg class="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
                             </svg>
-                            <p class="text-sm text-slate-500">لا توجد إشعارات جديدة</p>
+                            <p class="text-sm text-slate-500">{{ __('super-admin.notif_none_new') }}</p>
                         </div>
                     </div>
                     <div class="p-3 border-t border-slate-200 dark:border-slate-700">
-                        <a href="{{ route('super-admin.notifications') }}" class="block text-center text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:underline">عرض كل الإشعارات</a>
+                        <a href="{{ route('super-admin.notifications') }}" class="block text-center text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:underline">{{ __('super-admin.notif_view_all') }}</a>
                     </div>
                 </div>
             </div>
@@ -112,7 +112,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                 </button>
-                <span class="tooltip-text">تصدير CSV (E)</span>
+                <span class="tooltip-text">{{ __('super-admin.dashboard_export_csv') }}</span>
             </div>
 
         </div>
@@ -137,11 +137,11 @@
                 x-model="searchQuery"
                 @input="filterData()"
                 @keydown.escape="showSearch = false; searchQuery = ''; filterData()"
-                placeholder="ابحث في الشركات بالاسم أو النطاق الفرعي..."
+                placeholder="{{ __('super-admin.dashboard_search_ph') }}"
                 class="w-full pr-10 pl-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm shadow-sm transition"
             />
             <span x-show="searchQuery" class="absolute left-3 top-1/2 -translate-y-1/2 text-xs bg-slate-100 dark:bg-slate-700 text-slate-500 px-2 py-0.5 rounded">
-                <span x-text="filteredTenants.length"></span> نتيجة
+                <span x-text="filteredTenants.length"></span> {{ __('super-admin.dashboard_results') }}
             </span>
         </div>
     </div>
@@ -172,7 +172,7 @@
             <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            <span class="text-sm">جاري تحميل البيانات...</span>
+            <span class="text-sm">{{ __('super-admin.dashboard_loading') }}</span>
         </div>
     </div>
 
@@ -183,9 +183,9 @@
         <div class="card-animate card-delay-1 group bg-white dark:bg-slate-800 rounded-2xl shadow-sm hover:shadow-lg p-6 border border-slate-200 dark:border-slate-700 transition-all duration-300 hover:-translate-y-1 cursor-default">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">إجمالي الشركات</p>
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ __('super-admin.stat_total_companies') }}</p>
                     <p class="text-4xl font-black text-slate-900 dark:text-white mt-2 tabular-nums" x-text="filteredStats.total_tenants"></p>
-                    <p class="text-xs text-slate-400 mt-1">جميع الشركات المسجلة</p>
+                    <p class="text-xs text-slate-400 mt-1">{{ __('super-admin.stat_all_companies') }}</p>
                 </div>
                 <div class="w-14 h-14 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-md group-hover:shadow-indigo-200 dark:group-hover:shadow-indigo-900 transition-shadow">
                     <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -204,9 +204,9 @@
         <div class="card-animate card-delay-2 group bg-white dark:bg-slate-800 rounded-2xl shadow-sm hover:shadow-lg p-6 border border-slate-200 dark:border-slate-700 transition-all duration-300 hover:-translate-y-1 cursor-default">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">الشركات النشطة</p>
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ __('super-admin.stat_active_companies') }}</p>
                     <p class="text-4xl font-black text-emerald-600 dark:text-emerald-400 mt-2 tabular-nums" x-text="filteredStats.active_tenants"></p>
-                    <p class="text-xs text-slate-400 mt-1">تستخدم النظام حالياً</p>
+                    <p class="text-xs text-slate-400 mt-1">{{ __('super-admin.stat_using_now') }}</p>
                 </div>
                 <div class="w-14 h-14 bg-gradient-to-br from-emerald-500 to-green-500 rounded-2xl flex items-center justify-center shadow-md group-hover:shadow-emerald-200 dark:group-hover:shadow-emerald-900 transition-shadow">
                     <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -219,7 +219,7 @@
                     <div class="bg-gradient-to-r from-emerald-500 to-green-500 h-1.5 rounded-full transition-all duration-1000"
                          :style="`width: ${stats.total_tenants > 0 ? Math.round(filteredStats.active_tenants/stats.total_tenants*100) : 0}%`"></div>
                 </div>
-                <p class="text-xs text-slate-400 mt-1" x-text="stats.total_tenants > 0 ? Math.round(filteredStats.active_tenants/stats.total_tenants*100) + '% من الإجمالي' : ''"></p>
+                <p class="text-xs text-slate-400 mt-1" x-text="stats.total_tenants > 0 ? Math.round(filteredStats.active_tenants/stats.total_tenants*100) + '{{ __('super-admin.stat_pct_of_total') }}' : ''"></p>
             </div>
         </div>
 
@@ -227,9 +227,9 @@
         <div class="card-animate card-delay-3 group bg-white dark:bg-slate-800 rounded-2xl shadow-sm hover:shadow-lg p-6 border border-slate-200 dark:border-slate-700 transition-all duration-300 hover:-translate-y-1 cursor-default">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">غير النشطة</p>
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ __('super-admin.stat_inactive_companies') }}</p>
                     <p class="text-4xl font-black text-amber-600 dark:text-amber-400 mt-2 tabular-nums" x-text="filteredStats.inactive_tenants"></p>
-                    <p class="text-xs text-slate-400 mt-1">تحتاج متابعة</p>
+                    <p class="text-xs text-slate-400 mt-1">{{ __('super-admin.stat_needs_followup') }}</p>
                 </div>
                 <div class="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-md group-hover:shadow-amber-200 dark:group-hover:shadow-amber-900 transition-shadow">
                     <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -242,7 +242,7 @@
                     <div class="bg-gradient-to-r from-amber-500 to-orange-500 h-1.5 rounded-full transition-all duration-1000"
                          :style="`width: ${stats.total_tenants > 0 ? Math.round(filteredStats.inactive_tenants/stats.total_tenants*100) : 0}%`"></div>
                 </div>
-                <p class="text-xs text-slate-400 mt-1" x-text="stats.total_tenants > 0 ? Math.round(filteredStats.inactive_tenants/stats.total_tenants*100) + '% من الإجمالي' : ''"></p>
+                <p class="text-xs text-slate-400 mt-1" x-text="stats.total_tenants > 0 ? Math.round(filteredStats.inactive_tenants/stats.total_tenants*100) + '{{ __('super-admin.stat_pct_of_total') }}' : ''"></p>
             </div>
         </div>
 
@@ -250,9 +250,9 @@
         <div class="card-animate card-delay-4 group bg-white dark:bg-slate-800 rounded-2xl shadow-sm hover:shadow-lg p-6 border border-slate-200 dark:border-slate-700 transition-all duration-300 hover:-translate-y-1 cursor-default">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">هذا الشهر</p>
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ __('super-admin.stat_this_month') }}</p>
                     <p class="text-4xl font-black text-purple-600 dark:text-purple-400 mt-2 tabular-nums" x-text="stats.tenants_this_month"></p>
-                    <p class="text-xs text-slate-400 mt-1">شركة جديدة</p>
+                    <p class="text-xs text-slate-400 mt-1">{{ __('super-admin.stat_new_company') }}</p>
                 </div>
                 <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-violet-600 rounded-2xl flex items-center justify-center shadow-md group-hover:shadow-purple-200 dark:group-hover:shadow-purple-900 transition-shadow">
                     <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -265,8 +265,8 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
                 </svg>
                 <p class="text-xs" :class="stats.tenants_this_month > 0 ? 'text-purple-500 font-semibold' : 'text-slate-400'">
-                    <span x-show="stats.tenants_this_month > 0">نمو إيجابي هذا الشهر</span>
-                    <span x-show="stats.tenants_this_month === 0">لم تُضف شركات بعد</span>
+                    <span x-show="stats.tenants_this_month > 0">{{ __('super-admin.stat_positive_growth') }}</span>
+                    <span x-show="stats.tenants_this_month === 0">{{ __('super-admin.stat_no_new_companies') }}</span>
                 </p>
             </div>
         </div>
@@ -277,7 +277,7 @@
         <!-- Tenants Growth Chart -->
         <div class="card-animate card-delay-1 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl shadow-lg p-6 text-white transition-all hover:shadow-indigo-200 dark:hover:shadow-indigo-900 hover:-translate-y-1 duration-300 group">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-sm font-bold opacity-90">نمو الشركات</h3>
+                <h3 class="text-sm font-bold opacity-90">{{ __('super-admin.mini_tenants_growth') }}</h3>
                 <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                     <svg class="w-6 h-6 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -286,12 +286,12 @@
             </div>
             <div class="space-y-2">
                 <p class="text-3xl font-black" x-text="stats.total_tenants"></p>
-                <p class="text-sm opacity-80">إجمالي الشركات المسجلة</p>
+                <p class="text-sm opacity-80">{{ __('super-admin.mini_tenants_total') }}</p>
                 <div class="flex items-center gap-2 mt-3 pt-3 border-t border-white/20">
                     <span class="text-xs bg-white/20 px-2.5 py-1 rounded-full font-medium">
-                        <span x-text="stats.tenants_this_month"></span> هذا الشهر
+                        <span x-text="stats.tenants_this_month"></span> {{ __('super-admin.mini_this_month_label') }}
                     </span>
-                    <span class="text-xs font-medium" x-show="stats.tenants_this_month > 0">📈 نمو مستمر</span>
+                    <span class="text-xs font-medium" x-show="stats.tenants_this_month > 0">{{ __('super-admin.mini_growth_cont') }}</span>
                 </div>
             </div>
         </div>
@@ -299,7 +299,7 @@
         <!-- Revenue/Subscriptions -->
         <div class="card-animate card-delay-2 bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl shadow-lg p-6 text-white transition-all hover:shadow-emerald-200 dark:hover:shadow-emerald-900 hover:-translate-y-1 duration-300 group">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-sm font-bold opacity-90">الاشتراكات النشطة</h3>
+                <h3 class="text-sm font-bold opacity-90">{{ __('super-admin.mini_active_subs') }}</h3>
                 <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                     <svg class="w-6 h-6 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -308,7 +308,7 @@
             </div>
             <div class="space-y-2">
                 <p class="text-3xl font-black" x-text="stats.active_tenants"></p>
-                <p class="text-sm opacity-80">شركة تستخدم النظام حالياً</p>
+                <p class="text-sm opacity-80">{{ __('super-admin.mini_using_now') }}</p>
                 <div class="flex items-center gap-2 mt-3 pt-3 border-t border-white/20">
                     <div class="flex-1">
                         <div class="bg-white/20 rounded-full h-2">
@@ -327,7 +327,7 @@
         <!-- System Status -->
         <div class="card-animate card-delay-3 bg-gradient-to-br from-purple-500 to-violet-600 rounded-2xl shadow-lg p-6 text-white transition-all hover:shadow-purple-200 dark:hover:shadow-purple-900 hover:-translate-y-1 duration-300 group">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-sm font-bold opacity-90">حالة النظام</h3>
+                <h3 class="text-sm font-bold opacity-90">{{ __('super-admin.mini_system_status') }}</h3>
                 <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                     <svg class="w-6 h-6 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
@@ -337,20 +337,20 @@
             <div class="space-y-2">
                 <div class="flex items-center gap-2">
                     <span class="w-3 h-3 bg-emerald-400 rounded-full animate-pulse"></span>
-                    <p class="text-2xl font-black">نشط</p>
+                    <p class="text-2xl font-black">{{ __('super-admin.mini_status_active') }}</p>
                 </div>
-                <p class="text-sm opacity-80">جميع الخدمات تعمل بشكل طبيعي</p>
+                <p class="text-sm opacity-80">{{ __('super-admin.mini_services_ok') }}</p>
                 <div class="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-white/20">
                     <div class="bg-white/10 rounded-xl p-2 text-center">
-                        <div class="text-xs opacity-80">النشطة</div>
+                        <div class="text-xs opacity-80">{{ __('super-admin.mini_active_label') }}</div>
                         <div class="font-black text-xl" x-text="stats.active_tenants"></div>
                     </div>
                     <div class="bg-white/10 rounded-xl p-2 text-center">
-                        <div class="text-xs opacity-80">تجريبية</div>
+                        <div class="text-xs opacity-80">{{ __('super-admin.mini_trial_label') }}</div>
                         <div class="font-black text-xl" x-text="stats.trial_tenants"></div>
                     </div>
                     <a href="/super-admin/upgrade-requests" class="bg-white/10 hover:bg-white/20 rounded-xl p-2 text-center transition">
-                        <div class="text-xs opacity-80">طلبات ترقية</div>
+                        <div class="text-xs opacity-80">{{ __('super-admin.mini_upgrade_reqs') }}</div>
                         <div class="font-black text-xl flex items-center justify-center gap-1">
                             <span x-text="stats.pending_upgrade_requests"></span>
                             <span x-show="stats.pending_upgrade_requests > 0" class="w-2 h-2 bg-amber-400 rounded-full animate-pulse inline-block"></span>
@@ -373,8 +373,8 @@
                     </svg>
                 </div>
                 <div>
-                    <p class="font-bold text-base">إدارة الشركات</p>
-                    <p class="text-xs opacity-80 mt-0.5">عرض وإضافة وإدارة الشركات</p>
+                    <p class="font-bold text-base">{{ __('super-admin.qa_manage_companies') }}</p>
+                    <p class="text-xs opacity-80 mt-0.5">{{ __('super-admin.qa_manage_sub') }}</p>
                 </div>
                 <svg class="w-5 h-5 mr-auto opacity-60 group-hover:translate-x-1 transition-transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -393,8 +393,8 @@
                     </svg>
                 </div>
                 <div>
-                    <p class="font-bold text-base">الإعدادات</p>
-                    <p class="text-xs opacity-80 mt-0.5">إدارة إعدادات النظام</p>
+                    <p class="font-bold text-base">{{ __('super-admin.settings_title') }}</p>
+                    <p class="text-xs opacity-80 mt-0.5">{{ __('super-admin.qa_settings_sub') }}</p>
                 </div>
                 <svg class="w-5 h-5 mr-auto opacity-60 group-hover:translate-x-1 transition-transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -412,8 +412,8 @@
                     </svg>
                 </div>
                 <div>
-                    <p class="font-bold text-base">التقارير</p>
-                    <p class="text-xs opacity-80 mt-0.5">عرض التقارير والتحليلات</p>
+                    <p class="font-bold text-base">{{ __('super-admin.reports_title') }}</p>
+                    <p class="text-xs opacity-80 mt-0.5">{{ __('super-admin.qa_reports_sub') }}</p>
                 </div>
                 <svg class="w-5 h-5 mr-auto opacity-60 group-hover:translate-x-1 transition-transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -433,9 +433,9 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </div>
-                آخر النشاطات
+                {{ __('super-admin.recent_activities') }}
             </h2>
-            <a href="{{ route('super-admin.activity-logs') }}" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium">عرض الكل</a>
+            <a href="{{ route('super-admin.activity-logs') }}" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium">{{ __('super-admin.view_all') }}</a>
         </div>
         <div class="p-4">
             <div class="space-y-2 max-h-[600px] overflow-y-auto">
@@ -457,7 +457,11 @@
                         </div>
                         <div class="flex-1 min-w-0">
                             <p class="text-xs text-slate-900 dark:text-white font-semibold leading-tight" x-text="activity.message"></p>
-                            <p class="text-xs text-slate-400 mt-0.5" x-text="activity.time"></p>
+                            <div class="flex items-center gap-1 mt-0.5">
+                                <span x-show="activity.user" class="text-xs text-indigo-500 dark:text-indigo-400 font-medium" x-text="activity.user"></span>
+                                <span x-show="activity.user" class="text-xs text-slate-300 dark:text-slate-600">·</span>
+                                <p class="text-xs text-slate-400" x-text="activity.time"></p>
+                            </div>
                         </div>
                     </div>
                 </template>
@@ -466,7 +470,7 @@
                     <svg class="w-10 h-10 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
-                    <p class="text-sm">لا توجد نشاطات بعد</p>
+                    <p class="text-sm">{{ __('super-admin.no_activities') }}</p>
                 </div>
             </div>
         </div>
@@ -481,7 +485,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/>
                     </svg>
                 </div>
-                أحدث الشركات
+                {{ __('super-admin.recent_companies') }}
             </h2>
 
             <!-- Filter by Status -->
@@ -489,17 +493,17 @@
                 <button @click="statusFilter = 'all'; filterData()"
                         :class="statusFilter === 'all' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'"
                         class="px-3 py-1 rounded-lg text-sm hover:opacity-80">
-                    الكل (<span x-text="stats.total_tenants"></span>)
+                    {{ __('super-admin.dash_filter_all') }} (<span x-text="stats.total_tenants"></span>)
                 </button>
                 <button @click="statusFilter = 'active'; filterData()"
                         :class="statusFilter === 'active' ? 'bg-green-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'"
                         class="px-3 py-1 rounded-lg text-sm hover:opacity-80">
-                    النشطة (<span x-text="stats.active_tenants"></span>)
+                    {{ __('super-admin.dash_filter_active') }} (<span x-text="stats.active_tenants"></span>)
                 </button>
                 <button @click="statusFilter = 'inactive'; filterData()"
                         :class="statusFilter === 'inactive' ? 'bg-amber-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'"
                         class="px-3 py-1 rounded-lg text-sm hover:opacity-80">
-                    غير النشطة (<span x-text="stats.inactive_tenants"></span>)
+                    {{ __('super-admin.dash_filter_inactive') }} (<span x-text="stats.inactive_tenants"></span>)
                 </button>
             </div>
         </div>
@@ -509,17 +513,17 @@
                     <tr>
                         <th @click="sortBy('name')" class="px-6 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 select-none transition">
                             <div class="flex items-center gap-1">
-                                الاسم
+                                {{ __('super-admin.dash_name') }}
                                 <svg :class="sortField === 'name' ? 'text-indigo-500' : 'text-slate-300 dark:text-slate-600'" class="w-3.5 h-3.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                           :d="sortField === 'name' && sortDirection === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'" />
                                 </svg>
                             </div>
                         </th>
-                        <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">النطاق الفرعي</th>
+                        <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ __('super-admin.dash_subdomain') }}</th>
                         <th @click="sortBy('status')" class="px-6 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 select-none transition">
                             <div class="flex items-center gap-1">
-                                الحالة
+                                {{ __('super-admin.tenant_status') }}
                                 <svg :class="sortField === 'status' ? 'text-indigo-500' : 'text-slate-300 dark:text-slate-600'" class="w-3.5 h-3.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                           :d="sortField === 'status' && sortDirection === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'" />
@@ -528,14 +532,14 @@
                         </th>
                         <th @click="sortBy('date')" class="px-6 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 select-none transition">
                             <div class="flex items-center gap-1">
-                                تاريخ الإنشاء
+                                {{ __('super-admin.tenant_created_at') }}
                                 <svg :class="sortField === 'date' ? 'text-indigo-500' : 'text-slate-300 dark:text-slate-600'" class="w-3.5 h-3.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                           :d="sortField === 'date' && sortDirection === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'" />
                                 </svg>
                             </div>
                         </th>
-                        <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">الإجراءات</th>
+                        <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ __('super-admin.tenant_actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
@@ -546,10 +550,10 @@
                                 <svg class="w-16 h-16 text-slate-300 dark:text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                                 </svg>
-                                <p class="text-slate-500 dark:text-slate-400 text-lg mb-2">لا توجد شركات حالياً</p>
-                                <p class="text-slate-400 dark:text-slate-500 text-sm mb-4">ابدأ بإضافة أول شركة في النظام</p>
+                                <p class="text-slate-500 dark:text-slate-400 text-lg mb-2">{{ __('super-admin.dash_empty_title') }}</p>
+                                <p class="text-slate-400 dark:text-slate-500 text-sm mb-4">{{ __('super-admin.dash_empty_desc') }}</p>
                                 <a href="/super-admin/tenants" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                                    إدارة الشركات
+                                    {{ __('super-admin.qa_manage_companies') }}
                                 </a>
                             </div>
                         </td>
@@ -576,7 +580,7 @@
                                     : 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 ring-1 ring-amber-200 dark:ring-amber-800'"
                                       class="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-semibold rounded-full">
                                     <span :class="tenant.is_active ? 'bg-emerald-500' : 'bg-amber-500'" class="w-1.5 h-1.5 rounded-full"></span>
-                                    <span x-text="tenant.is_active ? 'نشط' : 'غير نشط'"></span>
+                                    <span x-text="tenant.is_active ? '{{ __('super-admin.tenant_active') }}' : '{{ __('super-admin.tenant_inactive') }}'"></span>
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400" x-text="formatDate(tenant.created_at)"></td>
@@ -590,7 +594,7 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                             </svg>
                                         </a>
-                                        <span class="tooltip-text">عرض</span>
+                                        <span class="tooltip-text">{{ __('super-admin.dash_tooltip_view') }}</span>
                                     </div>
                                     <div class="tooltip-wrapper">
                                         <a :href="`/super-admin/tenants/${tenant.id}/edit`"
@@ -599,7 +603,7 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                             </svg>
                                         </a>
-                                        <span class="tooltip-text">تعديل</span>
+                                        <span class="tooltip-text">{{ __('super-admin.dash_tooltip_edit') }}</span>
                                     </div>
                                     <div class="tooltip-wrapper">
                                         <button @click="confirmDelete(tenant.id, tenant.name)"
@@ -608,7 +612,7 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                             </svg>
                                         </button>
-                                        <span class="tooltip-text">حذف</span>
+                                        <span class="tooltip-text">{{ __('super-admin.dash_tooltip_delete') }}</span>
                                     </div>
                                 </div>
                             </td>
@@ -622,15 +626,15 @@
         <div x-show="totalPages > 1" class="p-6 border-t border-slate-200 dark:border-slate-700">
             <div class="flex items-center justify-between">
                 <div class="text-sm text-slate-600 dark:text-slate-400">
-                    عرض <span x-text="(currentPage - 1) * perPage + 1"></span> إلى
-                    <span x-text="Math.min(currentPage * perPage, filteredTenants.length)"></span> من
-                    <span x-text="filteredTenants.length"></span> شركة
+                    {{ __('super-admin.dash_pag_show') }} <span x-text="(currentPage - 1) * perPage + 1"></span> {{ __('super-admin.dash_pag_to') }}
+                    <span x-text="Math.min(currentPage * perPage, filteredTenants.length)"></span> {{ __('super-admin.dash_pag_of') }}
+                    <span x-text="filteredTenants.length"></span> {{ __('super-admin.dash_pag_companies') }}
                 </div>
                 <div class="flex gap-2">
                     <button @click="currentPage--" :disabled="currentPage === 1"
                             :class="currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-100 dark:hover:bg-slate-700'"
                             class="px-4 py-2 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg">
-                        السابق
+                        {{ __('super-admin.common_previous') }}
                     </button>
                     <template x-for="page in totalPages" :key="page">
                         <button @click="currentPage = page"
@@ -641,7 +645,7 @@
                     <button @click="currentPage++" :disabled="currentPage === totalPages"
                             :class="currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-100 dark:hover:bg-slate-700'"
                             class="px-4 py-2 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg">
-                        التالي
+                        {{ __('super-admin.common_next') }}
                     </button>
                 </div>
             </div>
@@ -654,48 +658,48 @@
         <svg class="w-16 h-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
-        <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">حدث خطأ في تحميل البيانات</h3>
-        <p class="text-slate-600 dark:text-slate-400 mb-6">عذراً، لم نتمكن من تحميل بيانات لوحة التحكم. حاول تحديث الصفحة.</p>
+        <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">{{ __('super-admin.error_load') }}</h3>
+        <p class="text-slate-600 dark:text-slate-400 mb-6">{{ __('super-admin.error_load_desc') }}</p>
         <button onclick="location.reload()" class="px-6 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium">
-            تحديث الصفحة
+            {{ __('super-admin.error_reload') }}
         </button>
     </div>
 
 
     <div x-show="showShortcuts" x-cloak @click.self="showShortcuts = false" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
-            <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-4">اختصارات لوحة المفاتيح</h3>
+            <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-4">{{ __('super-admin.shortcut_title') }}</h3>
             <div class="space-y-2">
                 <div class="flex justify-between text-sm">
-                    <span class="text-slate-600 dark:text-slate-400">بحث</span>
+                    <span class="text-slate-600 dark:text-slate-400">{{ __('super-admin.shortcut_search') }}</span>
                     <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded">/</kbd>
                 </div>
                 <div class="flex justify-between text-sm">
-                    <span class="text-slate-600 dark:text-slate-400">تحديث</span>
+                    <span class="text-slate-600 dark:text-slate-400">{{ __('super-admin.shortcut_refresh') }}</span>
                     <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded">R</kbd>
                 </div>
                 <div class="flex justify-between text-sm">
-                    <span class="text-slate-600 dark:text-slate-400">تبديل الوضع الداكن</span>
+                    <span class="text-slate-600 dark:text-slate-400">{{ __('super-admin.shortcut_dark') }}</span>
                     <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded">D</kbd>
                 </div>
                 <div class="flex justify-between text-sm">
-                    <span class="text-slate-600 dark:text-slate-400">إشعارات</span>
+                    <span class="text-slate-600 dark:text-slate-400">{{ __('super-admin.shortcut_notif') }}</span>
                     <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded">N</kbd>
                 </div>
                 <div class="flex justify-between text-sm">
-                    <span class="text-slate-600 dark:text-slate-400">تصدير CSV</span>
+                    <span class="text-slate-600 dark:text-slate-400">{{ __('super-admin.shortcut_export') }}</span>
                     <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded">E</kbd>
                 </div>
                 <div class="flex justify-between text-sm">
-                    <span class="text-slate-600 dark:text-slate-400">إغلاق</span>
+                    <span class="text-slate-600 dark:text-slate-400">{{ __('super-admin.shortcut_close') }}</span>
                     <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded">ESC</kbd>
                 </div>
                 <div class="flex justify-between text-sm">
-                    <span class="text-slate-600 dark:text-slate-400">مساعدة</span>
+                    <span class="text-slate-600 dark:text-slate-400">{{ __('super-admin.shortcut_help') }}</span>
                     <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded">?</kbd>
                 </div>
             </div>
-            <button @click="showShortcuts = false" class="mt-4 w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">إغلاق</button>
+            <button @click="showShortcuts = false" class="mt-4 w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">{{ __('super-admin.shortcut_close') }}</button>
         </div>
     </div>
 
@@ -726,20 +730,20 @@
                     </svg>
                 </div>
             </div>
-            <h3 class="text-lg font-bold text-slate-900 dark:text-white text-center mb-1">تأكيد الحذف</h3>
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white text-center mb-1">{{ __('super-admin.delete_confirm_title') }}</h3>
             <p class="text-sm text-slate-500 dark:text-slate-400 text-center mb-6">
-                هل أنت متأكد من حذف شركة
+                {{ __('super-admin.delete_confirm_msg') }}
                 <strong class="text-slate-900 dark:text-white" x-text="deleteTargetName"></strong>؟
-                <br><span class="text-red-500 font-medium">لا يمكن التراجع عن هذا الإجراء.</span>
+                <br><span class="text-red-500 font-medium">{{ __('super-admin.delete_irreversible') }}</span>
             </p>
             <div class="flex gap-3">
                 <button @click="showDeleteModal = false"
                         class="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-semibold hover:bg-slate-200 dark:hover:bg-slate-600 transition">
-                    إلغاء
+                    {{ __('super-admin.common_cancel') }}
                 </button>
                 <button @click="deleteTenant(deleteTargetId)"
                         class="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold transition shadow-sm">
-                    حذف نهائياً
+                    {{ __('super-admin.delete_permanent') }}
                 </button>
             </div>
         </div>
@@ -759,7 +763,28 @@
 @endsection
 
 @push('scripts')
+@php
+$__tDash = [
+    'just_now'       => __('super-admin.js_just_now'),
+    'dark_on'        => __('super-admin.js_dark_on'),
+    'dark_off'       => __('super-admin.js_dark_off'),
+    'refresh_ok'     => __('super-admin.js_refresh_success'),
+    'refresh_fail'   => __('super-admin.js_refresh_fail'),
+    'delete_ok'      => __('super-admin.js_delete_success'),
+    'delete_fail'    => __('super-admin.js_delete_fail'),
+    'delete_error'   => __('super-admin.js_delete_error'),
+    'export_ok'      => __('super-admin.js_export_success'),
+    'csv_name'       => __('super-admin.js_csv_name'),
+    'csv_subdomain'  => __('super-admin.js_csv_subdomain'),
+    'csv_status'     => __('super-admin.js_csv_status'),
+    'csv_date'       => __('super-admin.js_csv_date'),
+    'csv_active'     => __('super-admin.js_csv_active'),
+    'csv_inactive'   => __('super-admin.js_csv_inactive'),
+    'locale'         => app()->getLocale(),
+];
+@endphp
 <script>
+const __tDash = @json($__tDash);
 function dashboard() {
     // Initialize with server-side data
     const initialStats = @json($stats);
@@ -785,6 +810,17 @@ function dashboard() {
         filteredTenants: initialStats.recent_tenants || [],
         paginatedTenants: [],
 
+        // Recent Activities - pre-loaded server-side
+        recentActivities: (initialStats.recent_activities || []).map(a => ({
+            id: a.id,
+            type: a.type || 'edit',
+            message: a.message || a.description || '',
+            user: a.user || '',
+            time: new Date(a.time || a.created_at).toLocaleString(__tDash.locale, { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })
+        })),
+        activityTodayCount: initialStats.activity_today || 0,
+        activityWeekCount: initialStats.activity_week || 0,
+
         // Pagination
         currentPage: 1,
         perPage: 10,
@@ -794,9 +830,6 @@ function dashboard() {
         statusFilter: 'all',
         sortField: 'date',
         sortDirection: 'desc',
-
-        // Recent Activities - loaded from API on init
-        recentActivities: [],
 
         // Notifications - loaded from API on init
         notifications: [],
@@ -813,7 +846,7 @@ function dashboard() {
 
         // Refresh
         refreshing: false,
-        lastRefreshed: 'الآن',
+        lastRefreshed: '{{ __('super-admin.js_just_now') }}',
 
         init() {
             this.filterData();
@@ -822,7 +855,7 @@ function dashboard() {
             this.initDarkMode();
             this.listenToToastEvents();
             this.updateLastRefreshed();
-            this.loadActivities();
+            // Activities are pre-loaded server-side; only load notifications via API
             this.loadNotifications();
             // Listen for dark mode change from nav button
             window.addEventListener('dark-mode-changed', (e) => {
@@ -834,19 +867,28 @@ function dashboard() {
             try {
                 const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
                 const res = await fetch('/api/super-admin/dashboard/activity-summary', {
+                    credentials: 'same-origin',
                     headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf }
                 });
+                if (!res.ok) {
+                    console.warn('Activity API returned:', res.status);
+                    return;
+                }
                 const data = await res.json();
-                if (data.success && data.data.recent) {
+                if (data.success && Array.isArray(data.data.recent)) {
+                    this.activityTodayCount = data.data.today_count || 0;
+                    this.activityWeekCount  = data.data.week_count  || 0;
                     this.recentActivities = data.data.recent.map(a => ({
-                        id: a.id,
-                        type: ['created', 'login', 'register', 'add'].includes(a.action) ? 'add'
-                             : a.action === 'deleted' ? 'delete' : 'edit',
-                        message: a.description,
-                        time: new Date(a.created_at).toLocaleString('ar-EG', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })
+                        id:      a.id,
+                        type:    a.type || (['created','login','register','add'].includes(a.action) ? 'add' : (a.action === 'deleted' ? 'delete' : 'edit')),
+                        message: a.description || a.message || '',
+                        user:    a.user || '',
+                        time:    new Date(a.created_at).toLocaleString(__tDash.locale, { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })
                     }));
                 }
-            } catch (e) { /* silent fail */ }
+            } catch (e) {
+                console.warn('loadActivities error:', e);
+            }
         },
 
         async loadNotifications() {
@@ -861,7 +903,7 @@ function dashboard() {
                     this.notifications = items.slice(0, 5).map(n => ({
                         id: n.id,
                         message: n.message || n.title,
-                        time: new Date(n.created_at).toLocaleString('ar-EG', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })
+                        time: new Date(n.created_at).toLocaleString(__tDash.locale, { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })
                     }));
                 }
             } catch (e) { /* silent fail */ }
@@ -876,12 +918,12 @@ function dashboard() {
             document.documentElement.classList.toggle('dark', this.isDarkMode);
             localStorage.setItem('darkMode', this.isDarkMode);
             window.dispatchEvent(new CustomEvent('dark-mode-changed', { detail: { isDark: this.isDarkMode } }));
-            showToast('تم تبديل الوضع ' + (this.isDarkMode ? 'الداكن' : 'الفاتح'), 'info');
+            showToast(this.isDarkMode ? __tDash.dark_on : __tDash.dark_off, 'info');
         },
 
         updateLastRefreshed() {
             const now = new Date();
-            this.lastRefreshed = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+            this.lastRefreshed = now.toLocaleTimeString(__tDash.locale, { hour: '2-digit', minute: '2-digit' });
         },
 
         async refreshDashboard() {
@@ -906,9 +948,9 @@ function dashboard() {
                 }
                 await Promise.all([this.loadActivities(), this.loadNotifications()]);
                 this.updateLastRefreshed();
-                showToast('تم تحديث البيانات بنجاح', 'success');
+                showToast(__tDash.refresh_ok, 'success');
             } catch (e) {
-                showToast('فشل تحديث البيانات', 'error');
+                showToast(__tDash.refresh_fail, 'error');
             } finally {
                 this.refreshing = false;
             }
@@ -1048,23 +1090,23 @@ function dashboard() {
                     this.recentTenants = this.recentTenants.filter(t => t.id !== id);
                     this.stats.total_tenants = Math.max(0, this.stats.total_tenants - 1);
                     this.filterData();
-                    showToast('تم حذف الشركة بنجاح', 'success');
+                    showToast(__tDash.delete_ok, 'success');
                 } else {
                     const err = await res.json().catch(() => ({}));
-                    showToast(err.message || 'فشل حذف الشركة', 'error');
+                    showToast(err.message || __tDash.delete_fail, 'error');
                 }
             } catch (e) {
-                showToast('حدث خطأ أثناء الحذف', 'error');
+                showToast(__tDash.delete_error, 'error');
             }
         },
 
         exportData() {
             const csvContent = [
-                ['الاسم', 'النطاق الفرعي', 'الحالة', 'تاريخ الإنشاء'],
+                [__tDash.csv_name, __tDash.csv_subdomain, __tDash.csv_status, __tDash.csv_date],
                 ...this.filteredTenants.map(t => [
                     t.name,
                     t.subdomain,
-                    t.is_active ? 'نشط' : 'غير نشط',
+                    t.is_active ? __tDash.csv_active : __tDash.csv_inactive,
                     this.formatDate(t.created_at)
                 ])
             ].map(row => row.join(',')).join('\n');
@@ -1074,11 +1116,11 @@ function dashboard() {
             link.href = URL.createObjectURL(blob);
             link.download = `tenants_${new Date().toISOString().split('T')[0]}.csv`;
             link.click();
-            this.showSuccess('تم تصدير البيانات');
+            this.showSuccess(__tDash.export_ok);
         },
 
         formatDate(date) {
-            return new Date(date).toLocaleDateString('ar-EG');
+            return new Date(date).toLocaleDateString(__tDash.locale);
         },
 
         listenToToastEvents() {

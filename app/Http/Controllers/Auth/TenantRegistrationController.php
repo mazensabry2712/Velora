@@ -24,7 +24,7 @@ class TenantRegistrationController extends Controller
             'email'         => 'required|email:rfc,dns|max:191',
             'password'      => 'required|string|min:8|confirmed',
             'country'       => 'nullable|string|size:2',
-            'language'      => 'nullable|string|in:en,ar,fr,es,de,it,pt,ru,zh,ja',
+            'language'      => 'nullable|string|in:en,ar,fr,es,de,it,pt,ru,zh,ja,tr,hi,ko,nl,id',
             'terms'         => 'required|accepted',
             'plan_id'       => 'nullable|integer|exists:subscription_plans,id',
         ], [

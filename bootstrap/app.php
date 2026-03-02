@@ -44,6 +44,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
             // Rate limiting
             'throttle.api' => \App\Http\Middleware\ThrottleRequests::class,
+
+            // Geo localization (country detection + locale + currency)
+            'geo.detect' => \App\Http\Middleware\DetectCountryAndLocale::class,
         ]);
 
         // Enable session and cookies for API routes (needed for Super Admin web-based auth)

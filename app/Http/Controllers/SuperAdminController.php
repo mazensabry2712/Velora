@@ -201,6 +201,26 @@ class SuperAdminController extends Controller
      */
     public function dashboard()
     {
+        // Load recent activities server-side (avoids AJAX auth issues)
+        $recentActivitiesRaw = \App\Models\ActivityLog::select('id', 'action', 'description', 'created_at', 'user_id')
+            ->with(['user:id,name'])
+            ->latest()
+            ->take(10)
+            ->get();
+
+        $recentActivities = $recentActivitiesRaw->map(function ($a) {
+            $action = $a->action ?? 'edit';
+            $type = in_array($action, ['created', 'login', 'register', 'add']) ? 'add'
+                  : ($action === 'deleted' ? 'delete' : 'edit');
+            return [
+                'id'      => $a->id,
+                'type'    => $type,
+                'message' => $a->description ?? __('Activity'),
+                'user'    => $a->user?->name ?? 'System',
+                'time'    => $a->created_at->toISOString(),
+            ];
+        })->values()->toArray();
+
         $stats = [
             'total_tenants' => Tenant::count(),
             'active_tenants' => TenantSubscription::where('status', 'active')->distinct('tenant_id')->count(),
@@ -212,6 +232,9 @@ class SuperAdminController extends Controller
                 ->whereMonth('created_at', now()->month)
                 ->count(),
             'pending_upgrade_requests' => \App\Models\UpgradeRequest::where('status', 'pending')->count(),
+            'recent_activities' => $recentActivities,
+            'activity_today'    => \App\Models\ActivityLog::whereDate('created_at', today())->count(),
+            'activity_week'     => \App\Models\ActivityLog::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
             'recent_tenants' => Tenant::with('subscriptions')
                 ->orderBy('created_at', 'desc')
                 ->limit(10)

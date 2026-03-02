@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\App;
 
 class SetCentralLocale
 {
-    protected array $supported = ['en', 'ar', 'fr', 'es', 'de', 'it', 'pt', 'ru', 'zh', 'ja'];
+    protected array $supported = ['en', 'ar', 'fr', 'es', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'tr', 'hi', 'ko', 'nl', 'id'];
 
     public function handle(Request $request, Closure $next)
     {

@@ -17,6 +17,6 @@
       Psy\Exception\ParseErrorException::fromParseError(Object(PhpParser\Error))
 
   2   vendor\psy\psysh\src\CodeCleaner.php:269
-      Psy\CodeCleaner::parse("<?php print_r(DB::table('domains')-;
+      Psy\CodeCleaner::parse("<?php print_r(DB::table('system_settings')-;
 ")
 

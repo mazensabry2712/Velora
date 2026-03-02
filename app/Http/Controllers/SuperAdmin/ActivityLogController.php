@@ -16,29 +16,30 @@ class ActivityLogController extends Controller
         $query = ActivityLog::with('user')->latest();
 
         // Filter by tenant
-        if ($request->has('tenant_id')) {
+        if ($request->filled('tenant_id')) {
             $query->where('tenant_id', $request->tenant_id);
         }
 
         // Filter by action
-        if ($request->has('action')) {
+        if ($request->filled('action')) {
             $query->where('action', $request->action);
         }
 
         // Filter by date range
-        if ($request->has('date_from')) {
+        if ($request->filled('date_from')) {
             $query->whereDate('created_at', '>=', $request->date_from);
         }
-        if ($request->has('date_to')) {
+        if ($request->filled('date_to')) {
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
         // Search
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $query->where('description', 'like', '%' . $request->search . '%');
         }
 
-        $logs = $query->paginate(50);
+        $perPage = min((int) $request->input('per_page', 15), 100);
+        $logs = $query->paginate($perPage);
 
         return response()->json([
             'success' => true,

@@ -285,11 +285,11 @@
 
             @foreach($steps as $i => [$num, $icon, $title, $desc])
             <div class="relative group">
-                {{-- Connector arrow --}}
+                {{-- Connector arrow (RTL-aware) --}}
                 @if(!$loop->last)
-                <div class="hidden md:block absolute top-12 left-full w-full z-10 pointer-events-none">
-                    <div class="h-px bg-gradient-to-r from-brand-500/50 to-transparent w-full"></div>
-                    <div class="absolute right-0 top-1/2 -translate-y-1/2 border-r-4 border-t-4 border-brand-500/50 w-3 h-3 rotate-45"></div>
+                <div class="hidden md:block absolute top-12 ltr:left-full rtl:right-full w-full z-10 pointer-events-none">
+                    <div class="h-px ltr:bg-gradient-to-r rtl:bg-gradient-to-l from-brand-500/50 to-transparent w-full"></div>
+                    <div class="absolute ltr:right-0 rtl:left-0 top-1/2 -translate-y-1/2 border-t-4 ltr:border-r-4 rtl:border-l-4 border-brand-500/50 w-3 h-3 ltr:rotate-45 rtl:-rotate-45"></div>
                 </div>
                 @endif
 

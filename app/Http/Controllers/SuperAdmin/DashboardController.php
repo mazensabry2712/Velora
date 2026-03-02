@@ -131,22 +131,48 @@ class DashboardController extends Controller
      */
     public function activitySummary()
     {
-        $recentActivities = \App\Models\ActivityLog::with('user')
-            ->latest()
-            ->take(10)
-            ->get();
+        try {
+            $recentActivitiesRaw = \App\Models\ActivityLog::select('id', 'action', 'description', 'created_at', 'user_id')
+                ->with(['user:id,name'])
+                ->latest()
+                ->take(10)
+                ->get();
 
-        $todayCount = \App\Models\ActivityLog::whereDate('created_at', today())->count();
-        $weekCount = \App\Models\ActivityLog::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count();
+            $recent = $recentActivitiesRaw->map(function ($a) {
+                $action = $a->action ?? 'edit';
+                $type = in_array($action, ['created', 'login', 'register', 'add']) ? 'add'
+                      : ($action === 'deleted' ? 'delete' : 'edit');
+                return [
+                    'id'          => $a->id,
+                    'action'      => $action,
+                    'type'        => $type,
+                    'description' => $a->description ?? '',
+                    'user'        => $a->user?->name ?? 'System',
+                    'created_at'  => $a->created_at->toISOString(),
+                ];
+            })->values();
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'recent' => $recentActivities,
-                'today_count' => $todayCount,
-                'week_count' => $weekCount,
-            ]
-        ]);
+            $todayCount = \App\Models\ActivityLog::whereDate('created_at', today())->count();
+            $weekCount  = \App\Models\ActivityLog::whereBetween('created_at', [
+                now()->startOfWeek(), now()->endOfWeek()
+            ])->count();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'recent'      => $recent,
+                    'today_count' => $todayCount,
+                    'week_count'  => $weekCount,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('activitySummary error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch activity summary',
+                'data'    => ['recent' => [], 'today_count' => 0, 'week_count' => 0],
+            ], 500);
+        }
     }
 
     /**
