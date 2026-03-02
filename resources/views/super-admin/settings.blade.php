@@ -9,19 +9,19 @@
     <!-- Header -->
     <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-            <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">إعدادات النظام</h1>
-            <p class="text-slate-500 dark:text-slate-400 mt-1 text-sm">تحكّم في جميع إعدادات المنصة من مكان واحد</p>
+            <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">{{ __('super-admin.settings_h1') }}</h1>
+            <p class="text-slate-500 dark:text-slate-400 mt-1 text-sm">{{ __('super-admin.settings_subtitle') }}</p>
         </div>
         <!-- Save indicator -->
         <div x-show="saved" x-transition x-cloak
              class="inline-flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700 px-4 py-2 rounded-xl text-sm font-medium">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-            تم الحفظ
+            {{ __('super-admin.settings_saved') }}
         </div>
         <div x-show="saving" x-cloak
              class="inline-flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm">
             <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
-            جاري الحفظ...
+            {{ __('super-admin.settings_saving') }}
         </div>
     </div>
 
@@ -66,7 +66,7 @@
                         </div>
                     </div>
                     <span class="text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-full"
-                          x-text="settings[group] ? settings[group].length + ' إعداد' : ''"></span>
+                          x-text="settings[group] ? settings[group].length + __tSettings.setting_count : ''"></span>
                 </div>
 
                 <!-- Settings List -->
@@ -104,7 +104,7 @@
                                         </div>
                                         <span class="text-sm font-medium"
                                               :class="(setting.value == '1') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'"
-                                              x-text="(setting.value == '1') ? 'مفعّل' : 'معطّل'"></span>
+                                              x-text="(setting.value == '1') ? __tSettings.enabled : __tSettings.disabled"></span>
                                     </label>
                                 </template>
 
@@ -148,7 +148,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
             </div>
-            <p class="text-slate-500 dark:text-slate-400 font-medium">لا توجد إعدادات</p>
+            <p class="text-slate-500 dark:text-slate-400 font-medium">{{ __('super-admin.settings_empty') }}</p>
         </div>
     </div>
 
@@ -156,7 +156,30 @@
 @endsection
 
 @push('scripts')
+@php
+$__tSettings = [
+    'setting_count' => __('super-admin.settings_setting_count'),
+    'enabled'       => __('super-admin.settings_enabled'),
+    'disabled'      => __('super-admin.settings_disabled'),
+    'load_fail'     => __('super-admin.settings_load_fail'),
+    'save_fail'     => __('super-admin.settings_save_fail'),
+    'error'         => __('super-admin.settings_error'),
+    'group_general' => __('super-admin.settings_group_general'),
+    'group_email'   => __('super-admin.settings_group_email'),
+    'group_billing' => __('super-admin.settings_group_billing'),
+    'group_payment' => __('super-admin.settings_group_payment'),
+    'group_notif'   => __('super-admin.settings_group_notif'),
+    'group_geo'     => __('super-admin.settings_group_geo'),
+    'gdesc_general' => __('super-admin.settings_gdesc_general'),
+    'gdesc_email'   => __('super-admin.settings_gdesc_email'),
+    'gdesc_billing' => __('super-admin.settings_gdesc_billing'),
+    'gdesc_payment' => __('super-admin.settings_gdesc_payment'),
+    'gdesc_notif'   => __('super-admin.settings_gdesc_notif'),
+    'gdesc_geo'     => __('super-admin.settings_gdesc_geo'),
+];
+@endphp
 <script>
+const __tSettings = @json($__tSettings);
 function systemSettings() {
     return {
         loading: true,
@@ -171,25 +194,27 @@ function systemSettings() {
 
         // ── Group metadata ────────────────────────────────────────────────
         getGroupLabel(g) {
-            return {
-                general:         'الإعدادات العامة',
-                email:           'البريد الإلكتروني',
-                billing:         'الدفع والفوترة (Stripe)',
-                payment_methods: 'طرق الدفع',
-                notifications:   'الإشعارات',
-                geo:             'الجغرافيا واللغة والعملة',
-            }[g] ?? g;
+            const map = {
+                general:         __tSettings.group_general,
+                email:           __tSettings.group_email,
+                billing:         __tSettings.group_billing,
+                payment_methods: __tSettings.group_payment,
+                notifications:   __tSettings.group_notif,
+                geo:             __tSettings.group_geo,
+            };
+            return map[g] ?? g;
         },
 
         getGroupDesc(g) {
-            return {
-                general:         'اسم المنصة، رابطها، الوضع التشغيلي، والتسجيل',
-                email:           'إعدادات إرسال البريد الإلكتروني',
-                billing:         'مفاتيح Stripe لقبول المدفوعات وإعدادات الفواتير',
-                payment_methods: 'فعّل أو عطّل كل بوابة دفع وأدخل مفاتيحها',
-                notifications:   'إعدادات الإشعارات والتنبيهات',
-                geo:             'الكشف التلقائي عن الدولة، اللغة، والعملة حسب موقع الزائر',
-            }[g] ?? '';
+            const map = {
+                general:         __tSettings.gdesc_general,
+                email:           __tSettings.gdesc_email,
+                billing:         __tSettings.gdesc_billing,
+                payment_methods: __tSettings.gdesc_payment,
+                notifications:   __tSettings.gdesc_notif,
+                geo:             __tSettings.gdesc_geo,
+            };
+            return map[g] ?? '';
         },
 
         getGroupStyle(g) {
@@ -477,7 +502,7 @@ function systemSettings() {
                 }
             } catch (e) {
                 console.error(e);
-                showToast('فشل تحميل الإعدادات', 'error');
+                showToast(__tSettings.load_fail, 'error');
             } finally {
                 this.loading = false;
             }
@@ -508,10 +533,10 @@ function systemSettings() {
                     this.saved = true;
                     this.savedTimer = setTimeout(() => { this.saved = false; }, 3000);
                 } else {
-                    showToast('فشل الحفظ', 'error');
+                    showToast(__tSettings.save_fail, 'error');
                 }
             } catch (e) {
-                showToast('حدث خطأ', 'error');
+                showToast(__tSettings.error, 'error');
             } finally {
                 this.saving = false;
             }

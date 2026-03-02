@@ -8,8 +8,8 @@
 
     <!-- Header -->
     <div class="mb-8">
-        <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">التقارير والإحصائيات</h1>
-        <p class="text-slate-500 dark:text-slate-400 mt-1 text-sm">تحليلات شاملة للنظام والأداء</p>
+        <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">{{ __('super-admin.reports_h1') }}</h1>
+        <p class="text-slate-500 dark:text-slate-400 mt-1 text-sm">{{ __('super-admin.reports_subtitle') }}</p>
     </div>
 
     <!-- Loading State -->
@@ -36,12 +36,12 @@
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5 mb-8 border border-slate-200 dark:border-slate-700">
             <div class="flex flex-wrap gap-3 items-end">
                 <div class="flex-1 min-w-[180px]">
-                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">من تاريخ</label>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">{{ __('super-admin.reports_date_from') }}</label>
                     <input type="date" x-model="filters.date_from"
                            class="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-slate-700/50 dark:text-white transition">
                 </div>
                 <div class="flex-1 min-w-[180px]">
-                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">إلى تاريخ</label>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">{{ __('super-admin.reports_date_to') }}</label>
                     <input type="date" x-model="filters.date_to"
                            class="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-slate-700/50 dark:text-white transition">
                 </div>
@@ -50,14 +50,14 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/>
                     </svg>
-                    تطبيق
+                    {{ __('super-admin.reports_apply') }}
                 </button>
                 <button @click="exportReport('excel')"
                         class="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white rounded-xl transition hover:-translate-y-0.5 shadow-md shadow-emerald-200 dark:shadow-emerald-900">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
-                    تصدير Excel
+                    {{ __('super-admin.reports_export_excel') }}
                 </button>
             </div>
         </div>
@@ -67,7 +67,7 @@
             <!-- Total Revenue -->
             <div class="card-animate card-delay-1 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl shadow-lg p-6 text-white hover:-translate-y-1 hover:shadow-emerald-200 dark:hover:shadow-emerald-900 transition-all duration-300">
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-semibold opacity-90">إجمالي الإيرادات</h3>
+                    <h3 class="text-sm font-semibold opacity-90">{{ __('super-admin.reports_total_revenue') }}</h3>
                     <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
                         <svg class="w-5 h-5 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -81,7 +81,7 @@
             <!-- Active Tenants -->
             <div class="card-animate card-delay-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg p-6 text-white hover:-translate-y-1 hover:shadow-indigo-200 dark:hover:shadow-indigo-900 transition-all duration-300">
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-semibold opacity-90">الشركات النشطة</h3>
+                    <h3 class="text-sm font-semibold opacity-90">{{ __('super-admin.reports_active_tenants') }}</h3>
                     <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
                         <svg class="w-5 h-5 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -89,13 +89,13 @@
                     </div>
                 </div>
                 <p class="text-3xl font-black" x-text="stats.active_tenants"></p>
-                <p class="text-sm opacity-80 mt-1" x-text="'من ' + stats.total_tenants + ' إجمالي'"></p>
+                <p class="text-sm opacity-80 mt-1" x-text="stats.total_tenants + ' ' + __tReports.from_total"></p>
             </div>
 
             <!-- Total Subscriptions -->
             <div class="card-animate card-delay-3 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl shadow-lg p-6 text-white hover:-translate-y-1 hover:shadow-blue-200 dark:hover:shadow-blue-900 transition-all duration-300">
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-semibold opacity-90">الاشتراكات النشطة</h3>
+                    <h3 class="text-sm font-semibold opacity-90">{{ __('super-admin.reports_active_subs_card') }}</h3>
                     <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
                         <svg class="w-5 h-5 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
@@ -103,13 +103,13 @@
                     </div>
                 </div>
                 <p class="text-3xl font-black" x-text="stats.active_subscriptions"></p>
-                <p class="text-sm opacity-80 mt-1" x-text="stats.trial_subscriptions + ' في الفترة التجريبية'"></p>
+                <p class="text-sm opacity-80 mt-1" x-text="stats.trial_subscriptions + ' ' + __tReports.in_trial"></p>
             </div>
 
             <!-- Average Revenue -->
             <div class="card-animate card-delay-4 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl shadow-lg p-6 text-white hover:-translate-y-1 hover:shadow-amber-200 dark:hover:shadow-amber-900 transition-all duration-300">
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-semibold opacity-90">متوسط الإيراد</h3>
+                    <h3 class="text-sm font-semibold opacity-90">{{ __('super-admin.reports_avg_revenue') }}</h3>
                     <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
                         <svg class="w-5 h-5 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -117,7 +117,7 @@
                     </div>
                 </div>
                 <p class="text-3xl font-black" x-text="'$' + formatNumber(stats.average_revenue)"></p>
-                <p class="text-sm opacity-80 mt-1">لكل شركة شهرياً</p>
+                <p class="text-sm opacity-80 mt-1">{{ __('super-admin.reports_per_company') }}</p>
             </div>
         </div>
 
@@ -126,7 +126,7 @@
 
             <!-- Revenue Chart -->
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6 border border-slate-200 dark:border-slate-700">
-                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-6">الإيرادات الشهرية</h2>
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-6">{{ __('super-admin.reports_monthly_revenue') }}</h2>
                 <div class="h-64">
                     <canvas id="revenueChart"></canvas>
                 </div>
@@ -134,7 +134,7 @@
 
             <!-- Tenants Growth Chart -->
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6 border border-slate-200 dark:border-slate-700">
-                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-6">نمو الشركات</h2>
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-6">{{ __('super-admin.reports_company_growth') }}</h2>
                 <div class="h-64">
                     <canvas id="tenantsChart"></canvas>
                 </div>
@@ -144,16 +144,16 @@
 
         <!-- Subscription Plans Performance -->
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6 mb-8 border border-slate-200 dark:border-slate-700">
-            <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-6">أداء خطط الاشتراك</h2>
+            <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-6">{{ __('super-admin.reports_plan_performance') }}</h2>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
                     <thead>
                         <tr>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">الخطة</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">المشتركين</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">الإيراد الشهري</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">الإيراد السنوي</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">معدل التحويل</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">{{ __('super-admin.reports_plan_col') }}</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">{{ __('super-admin.reports_subscribers_col') }}</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">{{ __('super-admin.reports_monthly_rev_col') }}</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">{{ __('super-admin.reports_annual_rev_col') }}</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">{{ __('super-admin.reports_conversion_col') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
@@ -163,7 +163,7 @@
                                     <div class="flex items-center">
                                         <div>
                                             <div class="text-sm font-medium text-slate-900 dark:text-white" x-text="plan.name"></div>
-                                            <div class="text-sm text-slate-500" x-text="'$' + plan.price + '/شهر'"></div>
+                                            <div class="text-sm text-slate-500" x-text="'$' + plan.price + __tReports.per_month"></div>
                                         </div>
                                     </div>
                                 </td>
@@ -196,7 +196,7 @@
 
             <!-- Top Tenants -->
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6 border border-slate-200 dark:border-slate-700">
-                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-6">أعلى الشركات نشاطاً</h2>
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-6">{{ __('super-admin.reports_top_companies') }}</h2>
                 <div class="space-y-4">
                     <template x-for="(tenant, index) in topTenants" :key="tenant.id">
                         <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition">
@@ -210,8 +210,8 @@
                                 </div>
                             </div>
                             <div class="text-left">
-                                <p class="text-sm font-semibold text-emerald-600 dark:text-emerald-400" x-text="tenant.activity_count + ' نشاط'"></p>
-                                <p class="text-xs text-slate-500" x-text="tenant.users_count + ' مستخدم'"></p>
+                                <p class="text-sm font-semibold text-emerald-600 dark:text-emerald-400" x-text="tenant.activity_count + ' ' + __tReports.activity_label"></p>
+                                <p class="text-xs text-slate-500" x-text="tenant.users_count + ' ' + __tReports.user_label"></p>
                             </div>
                         </div>
                     </template>
@@ -220,7 +220,7 @@
 
             <!-- Activity Distribution -->
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6 border border-slate-200 dark:border-slate-700">
-                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-6">توزيع الأنشطة</h2>
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-6">{{ __('super-admin.reports_activity_dist') }}</h2>
                 <div class="space-y-4">
                     <template x-for="activity in activityDistribution" :key="activity.type">
                         <div>
@@ -246,8 +246,25 @@
 
 <!-- Chart.js CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+@php
+$__tReports = [
+    'from_total'       => __('super-admin.reports_from_total'),
+    'in_trial'         => __('super-admin.reports_in_trial'),
+    'activity_label'   => __('super-admin.reports_activity_label'),
+    'user_label'       => __('super-admin.reports_user_label'),
+    'chart_revenue'    => __('super-admin.reports_chart_revenue'),
+    'chart_tenants'    => __('super-admin.reports_chart_tenants'),
+    'per_month'        => __('super-admin.reports_per_month'),
+    'activity_created' => __('super-admin.reports_activity_created'),
+    'activity_updated' => __('super-admin.reports_activity_updated'),
+    'activity_deleted' => __('super-admin.reports_activity_deleted'),
+    'activity_login'   => __('super-admin.reports_activity_login'),
+    'growth_pct'       => __('super-admin.reports_growth_pct'),
+    'export_alert'     => __('super-admin.reports_export_alert'),
+];
+@endphp
 <script>
+const __tReports = @json($__tReports);
 function reports() {
     return {
         loading: true,
@@ -321,10 +338,10 @@ function reports() {
 
                 // Activity distribution
                 this.activityDistribution = [
-                    { type: 'created', label: 'إنشاء', count: activityData.today || 0, percentage: 35, color: 'bg-emerald-500' },
-                    { type: 'updated', label: 'تحديث', count: activityData.this_week || 0, percentage: 45, color: 'bg-blue-500' },
-                    { type: 'deleted', label: 'حذف', count: 23, percentage: 10, color: 'bg-red-500' },
-                    { type: 'login', label: 'تسجيل دخول', count: activityData.this_month || 0, percentage: 60, color: 'bg-amber-500' }
+                    { type: 'created', label: __tReports.activity_created, count: activityData.today || 0, percentage: 35, color: 'bg-emerald-500' },
+                    { type: 'updated', label: __tReports.activity_updated, count: activityData.this_week || 0, percentage: 45, color: 'bg-blue-500' },
+                    { type: 'deleted', label: __tReports.activity_deleted, count: 23, percentage: 10, color: 'bg-red-500' },
+                    { type: 'login', label: __tReports.activity_login, count: activityData.this_month || 0, percentage: 60, color: 'bg-amber-500' }
                 ];
 
                 // Draw charts
@@ -350,7 +367,7 @@ function reports() {
                 data: {
                     labels: growthData.months || [],
                     datasets: [{
-                        label: 'الإيرادات ($)',
+                        label: __tReports.chart_revenue,
                         data: growthData.revenue || [],
                         borderColor: 'rgb(16, 185, 129)',
                         backgroundColor: 'rgba(16, 185, 129, 0.1)',
@@ -381,7 +398,7 @@ function reports() {
                 data: {
                     labels: growthData.months || [],
                     datasets: [{
-                        label: 'عدد الشركات',
+                        label: __tReports.chart_tenants,
                         data: growthData.tenants || [],
                         backgroundColor: 'rgba(99, 102, 241, 0.8)',
                         borderColor: 'rgb(99, 102, 241)',
@@ -414,12 +431,12 @@ function reports() {
 
         getGrowthText(growth) {
             const sign = growth >= 0 ? '+' : '';
-            return `${sign}${growth}% من الشهر الماضي`;
+            return sign + growth + __tReports.growth_pct;
         },
 
         exportReport(format) {
             // This would call an API endpoint to generate and download the report
-            alert('سيتم تصدير التقرير بصيغة ' + format);
+            alert(__tReports.export_alert + ' ' + format);
         }
     }
 }

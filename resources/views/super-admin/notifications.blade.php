@@ -9,15 +9,15 @@
     <!-- Header -->
     <div class="mb-8 flex flex-wrap gap-4 justify-between items-center">
         <div>
-            <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">إشعارات النظام</h1>
-            <p class="text-slate-500 dark:text-slate-400 mt-1 text-sm">إرسال إشعارات لجميع الشركات أو شركات محددة</p>
+            <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">{{ __('super-admin.notif_page_h1') }}</h1>
+            <p class="text-slate-500 dark:text-slate-400 mt-1 text-sm">{{ __('super-admin.notif_page_subtitle') }}</p>
         </div>
         <button @click="openAddModal()"
                 class="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-semibold px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-200 dark:shadow-indigo-900 transition-all hover:-translate-y-0.5">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
             </svg>
-            إنشاء إشعار جديد
+            {{ __('super-admin.notif_create_btn') }}
         </button>
     </div>
 
@@ -80,14 +80,14 @@
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                                 </svg>
-                                تم الإرسال
+                                {{ __('super-admin.notif_sent') }}
                             </span>
                             <span x-show="!notification.is_sent"
                                   class="inline-flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
-                                بانتظار
+                                {{ __('super-admin.notif_pending') }}
                             </span>
                         </div>
 
@@ -99,7 +99,7 @@
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
                                 </svg>
-                                <span x-text="notification.target === 'all' ? 'جميع الشركات' : 'شركات محددة (' + (notification.tenant_ids ? notification.tenant_ids.length : 0) + ')'"></span>
+                                <span x-text="notification.target === 'all' ? __tNotifs.all_target : __tNotifs.specific_target + ' (' + (notification.tenant_ids ? notification.tenant_ids.length : 0) + ')'"></span>
                             </span>
                             <span class="flex items-center gap-1">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -113,13 +113,13 @@
                     <!-- Actions -->
                     <div class="flex items-center gap-1.5 flex-shrink-0">
                         <button x-show="!notification.is_sent" @click="sendNotification(notification.id)"
-                                class="p-2 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition tooltip" data-tip="إرسال الآن">
+                                class="p-2 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition tooltip" data-tip="{{ __('super-admin.notif_send_tip') }}">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
                             </svg>
                         </button>
                         <button @click="deleteNotification(notification.id)"
-                                class="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition tooltip" data-tip="حذف">
+                                class="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition tooltip" data-tip="{{ __('super-admin.common_delete') }}">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                             </svg>
@@ -136,22 +136,22 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                 </svg>
             </div>
-            <p class="font-semibold text-slate-700 dark:text-slate-300">لا توجد إشعارات</p>
-            <p class="text-sm text-slate-400 mt-1">أنشئ إشعارًا جديدًا لإرساله للشركات</p>
+            <p class="font-semibold text-slate-700 dark:text-slate-300">{{ __('super-admin.notif_empty_title') }}</p>
+            <p class="text-sm text-slate-400 mt-1">{{ __('super-admin.notif_empty_desc') }}</p>
         </div>
 
         <!-- Pagination -->
         <div x-show="pagination.last_page > 1" class="flex items-center justify-center gap-2 mt-6">
             <button @click="loadPage(pagination.current_page - 1)" :disabled="!pagination.prev_page_url"
                     class="px-4 py-2 text-sm font-medium border border-slate-200 dark:border-slate-600 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition">
-                السابق
+                {{ __('super-admin.common_previous') }}
             </button>
             <span class="text-sm text-slate-500 dark:text-slate-400 px-3">
                 <span x-text="pagination.current_page"></span> / <span x-text="pagination.last_page"></span>
             </span>
             <button @click="loadPage(pagination.current_page + 1)" :disabled="!pagination.next_page_url"
                     class="px-4 py-2 text-sm font-medium border border-slate-200 dark:border-slate-600 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition">
-                التالي
+                {{ __('super-admin.common_next') }}
             </button>
         </div>
     </div>
@@ -178,7 +178,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-slate-900 dark:text-white">إنشاء إشعار جديد</h3>
+                    <h3 class="text-xl font-bold text-slate-900 dark:text-white">{{ __('super-admin.notif_create_btn') }}</h3>
                 </div>
                 <button @click="showModal = false" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -190,68 +190,67 @@
             <form @submit.prevent="createNotification()">
                 <div class="p-6 space-y-4">
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">عنوان الإشعار <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ __('super-admin.notif_title_label') }} <span class="text-red-500">*</span></label>
                         <input type="text" x-model="newNotification.title" required
                                class="w-full px-4 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white transition"
-                               placeholder="عنوان الإشعار">
+                               placeholder="{{ __('super-admin.notif_title_label') }}">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">نص الرسالة <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ __('super-admin.notif_message_label') }} <span class="text-red-500">*</span></label>
                         <textarea x-model="newNotification.message" required rows="4"
                                   class="w-full px-4 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white transition resize-none"
-                                  placeholder="نص الرسالة..."></textarea>
+                                  placeholder="{{ __('super-admin.notif_message_label') }}..."></textarea>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">نوع الإشعار <span class="text-red-500">*</span></label>
+                            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ __('super-admin.notif_type_label') }} <span class="text-red-500">*</span></label>
                             <select x-model="newNotification.type" required
                                     class="w-full px-4 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white transition">
-                                <option value="info">💙 معلومات</option>
-                                <option value="success">💚 نجاح</option>
-                                <option value="warning">🟡 تحذير</option>
-                                <option value="danger">🔴 خطر</option>
+                                <option value="info">{{ __('super-admin.notif_type_info') }}</option>
+                                <option value="success">{{ __('super-admin.notif_type_success') }}</option>
+                                <option value="warning">{{ __('super-admin.notif_type_warning') }}</option>
+                                <option value="danger">{{ __('super-admin.notif_type_danger') }}</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">المستهدفون <span class="text-red-500">*</span></label>
+                            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ __('super-admin.notif_target_label') }} <span class="text-red-500">*</span></label>
                             <select x-model="newNotification.target" required
                                     class="w-full px-4 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white transition">
-                                <option value="all">🌐 جميع الشركات</option>
-                                <option value="specific">🎯 شركات محددة</option>
+                                <option value="all">{{ __('super-admin.notif_target_all_opt') }}</option>
+                                <option value="specific">{{ __('super-admin.notif_target_specific_opt') }}</option>
                             </select>
                         </div>
                     </div>
 
                     <div x-show="newNotification.target === 'specific'">
-                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">معرفات الشركات</label>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ __('super-admin.notif_tenant_ids_label') }}</label>
                         <input type="text" x-model="tenantIdsText" placeholder="tenant-uuid-1, tenant-uuid-2"
                                class="w-full px-4 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white transition font-mono">
-                        <p class="text-xs text-slate-400 mt-1">أدخل معرفات الشركات مفصولة بفواصل</p>
+                        <p class="text-xs text-slate-400 mt-1">{{ __('super-admin.notif_ids_hint') }}</p>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">جدولة الإرسال <span class="text-slate-400 font-normal">(اختياري)</span></label>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ __('super-admin.notif_schedule_label') }} <span class="text-slate-400 font-normal">({{ __('super-admin.notif_schedule_optional') }})</span></label>
                         <input type="datetime-local" x-model="newNotification.scheduled_at"
                                class="w-full px-4 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white transition">
-                        <p class="text-xs text-slate-400 mt-1">اتركه فارغاً للإرسال فوراً</p>
+                        <p class="text-xs text-slate-400 mt-1">{{ __('super-admin.notif_schedule_hint') }}</p>
                     </div>
                 </div>
 
                 <div class="flex gap-3 justify-end p-6 pt-0">
                     <button type="button" @click="showModal = false"
                             class="px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl transition">
-                        إلغاء
+                        {{ __('super-admin.common_cancel') }}
                     </button>
-                        <button type="submit" :disabled="submitting"
                     <button type="submit" :disabled="submitting"
                             class="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed">
                         <svg x-show="submitting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                         </svg>
-                        <span x-text="submitting ? 'جاري الإنشاء...' : 'إنشاء وإرسال'"></span>
+                        <span x-text="submitting ? __tNotifs.submitting : __tNotifs.submit_btn"></span>
                     </button>
                 </div>
             </form>
@@ -262,7 +261,31 @@
 @endsection
 
 @push('scripts')
+@php
+$__tNotifs = [
+    'all_target'     => __('super-admin.notif_all_target'),
+    'specific_target'=> __('super-admin.notif_specific_target'),
+    'label_info'     => __('super-admin.notif_label_info'),
+    'label_success'  => __('super-admin.notif_label_success'),
+    'label_warning'  => __('super-admin.notif_label_warning'),
+    'label_danger'   => __('super-admin.notif_label_danger'),
+    'submitting'     => __('super-admin.notif_submitting'),
+    'submit_btn'     => __('super-admin.notif_submit_btn'),
+    'load_fail'      => __('super-admin.notif_load_fail'),
+    'create_success' => __('super-admin.notif_create_success'),
+    'generic_error'  => __('super-admin.notif_generic_error'),
+    'create_error'   => __('super-admin.notif_create_error'),
+    'send_success'   => __('super-admin.notif_send_success'),
+    'send_error'     => __('super-admin.notif_send_error'),
+    'delete_success' => __('super-admin.notif_delete_success'),
+    'delete_error'   => __('super-admin.notif_delete_error'),
+    'send_confirm'   => __('super-admin.notif_send_confirm'),
+    'delete_confirm' => __('super-admin.notif_delete_confirm'),
+    'date_locale'    => app()->getLocale() === 'ar' ? 'ar-EG' : 'en-US',
+];
+@endphp
 <script>
+const __tNotifs = @json($__tNotifs);
 function systemNotifications() {
     return {
         loading: true,
@@ -308,7 +331,7 @@ function systemNotifications() {
                 }
             } catch (error) {
                 console.error('Error loading notifications:', error);
-                showToast('فشل تحميل الإشعارات', 'error');
+                showToast(__tNotifs.load_fail, 'error');
             } finally {
                 this.loading = false;
             }
@@ -351,20 +374,20 @@ function systemNotifications() {
                 if (data.success) {
                     this.showModal = false;
                     await this.loadNotifications();
-                    showToast('تم إنشاء الإشعار بنجاح!', 'success');
+                    showToast(__tNotifs.create_success, 'success');
                 } else {
-                    showToast(data.message || 'حدث خطأ', 'error');
+                    showToast(data.message || __tNotifs.generic_error, 'error');
                 }
             } catch (error) {
                 console.error('Error creating notification:', error);
-                showToast('حدث خطأ أثناء الإنشاء', 'error');
+                showToast(__tNotifs.create_error, 'error');
             } finally {
                 this.submitting = false;
             }
         },
 
         async sendNotification(id) {
-            if (!confirm('هل تريد إرسال هذا الإشعار الآن؟')) {
+            if (!confirm(__tNotifs.send_confirm)) {
                 return;
             }
 
@@ -381,18 +404,18 @@ function systemNotifications() {
                 const data = await response.json();
                 if (data.success) {
                     await this.loadNotifications();
-                    showToast('تم إرسال الإشعار بنجاح', 'success');
+                    showToast(__tNotifs.send_success, 'success');
                 } else {
                     showToast(data.message || 'حدث خطأ', 'error');
                 }
             } catch (error) {
                 console.error('Error sending notification:', error);
-                showToast('حدث خطأ أثناء الإرسال', 'error');
+                showToast(__tNotifs.send_error, 'error');
             }
         },
 
         async deleteNotification(id) {
-            if (!confirm('هل أنت متأكد من حذف هذا الإشعار؟')) {
+            if (!confirm(__tNotifs.delete_confirm)) {
                 return;
             }
 
@@ -409,11 +432,11 @@ function systemNotifications() {
                 const data = await response.json();
                 if (data.success) {
                     await this.loadNotifications();
-                    showToast('تم حذف الإشعار بنجاح', 'success');
+                    showToast(__tNotifs.delete_success, 'success');
                 }
             } catch (error) {
                 console.error('Error deleting notification:', error);
-                showToast('حدث خطأ أثناء الحذف', 'error');
+                showToast(__tNotifs.delete_error, 'error');
             }
         },
 
@@ -425,16 +448,16 @@ function systemNotifications() {
 
         getTypeLabel(type) {
             const labels = {
-                'info': 'معلومات',
-                'success': 'نجاح',
-                'warning': 'تحذير',
-                'danger': 'خطر'
+                'info':    __tNotifs.label_info,
+                'success': __tNotifs.label_success,
+                'warning': __tNotifs.label_warning,
+                'danger':  __tNotifs.label_danger,
             };
             return labels[type] || type;
         },
 
         formatDate(date) {
-            return new Date(date).toLocaleString('ar-EG', {
+            return new Date(date).toLocaleString(__tNotifs.date_locale, {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric',
