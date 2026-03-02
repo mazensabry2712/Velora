@@ -183,7 +183,7 @@
                 </select>
                 <span>{{ __('super-admin.pagination_per_page') }}</span>
                 <span class="hidden sm:inline text-slate-300 dark:text-slate-600 mx-1">|</span>
-                <span class="hidden sm:inline" x-text="`${((currentPage-1)*perPage)+1}–${Math.min(currentPage*perPage, filteredTenants.length)} من ${filteredTenants.length}`"></span>
+                <span class="hidden sm:inline" x-text="`${((currentPage-1)*perPage)+1}–${Math.min(currentPage*perPage, filteredTenants.length)} ${__tTenants.of_word} ${filteredTenants.length}`"></span>
             </div>
 
             <!-- Page buttons -->
@@ -467,6 +467,7 @@ $__tTenants = [
     'reset_fail'     => __('super-admin.toast_reset_pw_fail'),
     'reset_error'    => __('super-admin.toast_reset_pw_error'),
     'reset_confirm'  => __('super-admin.tenant_reset_pw_confirm'),
+    'of_word'        => __('super-admin.common_of'),
     'locale'         => app()->getLocale(),
 ];
 @endphp

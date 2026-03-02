@@ -194,7 +194,7 @@
                 </select>
                 <span>{{ __('super-admin.pagination_per_page') }}</span>
                 <span class="hidden sm:inline text-slate-300 dark:text-slate-600 mx-1">|</span>
-                <span class="hidden sm:inline" x-text="`${pagination.from}–${pagination.to} من ${pagination.total}`"></span>
+                <span class="hidden sm:inline" x-text="`${pagination.from}–${pagination.to} ${__t.of_word} ${pagination.total}`"></span>
             </div>
 
             <!-- Page buttons -->
@@ -258,6 +258,7 @@ $__t = [
     'action_logout'  => __('super-admin.logs_logout'),
     'action_assign'  => __('super-admin.logs_action_assign'),
     'action_reset'   => __('super-admin.logs_action_reset_pw'),
+    'of_word'        => __('super-admin.common_of'),
     'locale'         => app()->getLocale(),
 ];
 @endphp

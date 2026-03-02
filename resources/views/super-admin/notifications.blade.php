@@ -406,7 +406,7 @@ function systemNotifications() {
                     await this.loadNotifications();
                     showToast(__tNotifs.send_success, 'success');
                 } else {
-                    showToast(data.message || 'حدث خطأ', 'error');
+                    showToast(data.message || __tNotifs.generic_error, 'error');
                 }
             } catch (error) {
                 console.error('Error sending notification:', error);

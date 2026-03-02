@@ -213,7 +213,7 @@
                             <!-- Features -->
                             <div>
                                 <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">{{ __('super-admin.plans_form_features') }}</label>
-                                <textarea x-model="featuresText" rows="4" placeholder="ميزة 1&#10;ميزة 2&#10;ميزة 3"
+                                <textarea x-model="featuresText" rows="4" placeholder="Feature 1&#10;Feature 2&#10;Feature 3"
                                           class="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700/50 dark:text-white transition"></textarea>
                             </div>
 
@@ -393,7 +393,7 @@ function plansManager() {
                 } else {
                     const errMsg = data.errors
                         ? Object.values(data.errors).flat().join(' • ')
-                        : (data.message || 'حدث خطأ');
+                        : (data.message || __tPlans.save_error);
                     showToast(errMsg, 'error');
                 }
             } catch (error) {

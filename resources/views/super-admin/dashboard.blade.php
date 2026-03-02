@@ -733,7 +733,7 @@
             <h3 class="text-lg font-bold text-slate-900 dark:text-white text-center mb-1">{{ __('super-admin.delete_confirm_title') }}</h3>
             <p class="text-sm text-slate-500 dark:text-slate-400 text-center mb-6">
                 {{ __('super-admin.delete_confirm_msg') }}
-                <strong class="text-slate-900 dark:text-white" x-text="deleteTargetName"></strong>؟
+                <strong class="text-slate-900 dark:text-white" x-text="deleteTargetName"></strong>?
                 <br><span class="text-red-500 font-medium">{{ __('super-admin.delete_irreversible') }}</span>
             </p>
             <div class="flex gap-3">

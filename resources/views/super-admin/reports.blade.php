@@ -329,11 +329,11 @@ function reports() {
 
                 // Mock top tenants data
                 this.topTenants = [
-                    { id: 1, name: 'شركة الأول', plan_name: 'Professional', activity_count: 245, users_count: 15 },
-                    { id: 2, name: 'شركة التطوير', plan_name: 'Enterprise', activity_count: 198, users_count: 28 },
-                    { id: 3, name: 'مركز الابتكار', plan_name: 'Basic', activity_count: 156, users_count: 8 },
-                    { id: 4, name: 'مؤسسة النجاح', plan_name: 'Professional', activity_count: 134, users_count: 12 },
-                    { id: 5, name: 'دار الخبرة', plan_name: 'Basic', activity_count: 98, users_count: 5 }
+                    { id: 1, name: 'Company Alpha', plan_name: 'Professional', activity_count: 245, users_count: 15 },
+                    { id: 2, name: 'Tech Solutions', plan_name: 'Enterprise', activity_count: 198, users_count: 28 },
+                    { id: 3, name: 'Innovation Hub', plan_name: 'Basic', activity_count: 156, users_count: 8 },
+                    { id: 4, name: 'Success Corp', plan_name: 'Professional', activity_count: 134, users_count: 12 },
+                    { id: 5, name: 'Expert House', plan_name: 'Basic', activity_count: 98, users_count: 5 }
                 ];
 
                 // Activity distribution
