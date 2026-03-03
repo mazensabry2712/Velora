@@ -22,8 +22,14 @@ class QueueController extends Controller
      */
     public function publicQueue()
     {
-        // Get all active queues (waiting or serving) - same as admin view
+        // Get all active queues (waiting or serving) for today only
         $queues = Queue::whereIn('status', ['waiting', 'serving'])
+            ->where(function ($q) {
+                $q->whereDate('queue_date', today())
+                  ->orWhere(function ($q2) {
+                      $q2->whereNull('queue_date')->whereDate('created_at', today());
+                  });
+            })
             ->orderBy('is_vip', 'desc')
             ->orderBy('queue_number', 'asc')
             ->get();

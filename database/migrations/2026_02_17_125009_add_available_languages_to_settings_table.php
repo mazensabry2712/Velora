@@ -11,18 +11,28 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Guard: settings table is tenant-only; skip if running on central DB.
+        if (! Schema::hasTable('settings')) {
+            return;
+        }
+
         Schema::table('settings', function (Blueprint $table) {
-            $table->json('available_languages')->nullable()->after('language');
+            if (! Schema::hasColumn('settings', 'available_languages')) {
+                $table->json('available_languages')->nullable()->after('language');
+            }
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
+        if (! Schema::hasTable('settings')) {
+            return;
+        }
+
         Schema::table('settings', function (Blueprint $table) {
-            $table->dropColumn('available_languages');
+            if (Schema::hasColumn('settings', 'available_languages')) {
+                $table->dropColumn('available_languages');
+            }
         });
     }
 };

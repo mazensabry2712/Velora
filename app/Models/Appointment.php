@@ -3,32 +3,74 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class Appointment extends Model
 {
+    use SoftDeletes;
+
+    // ── Status constants ─────────────────────────────────────────────────
+    public const STATUS_PENDING   = 'pending';
+    public const STATUS_CONFIRMED = 'confirmed';
+    public const STATUS_COMPLETED = 'completed';
+    public const STATUS_CANCELLED = 'cancelled';
+    public const STATUS_NO_SHOW   = 'no_show';
+
+    public const VALID_TRANSITIONS = [
+        self::STATUS_PENDING   => [self::STATUS_CONFIRMED, self::STATUS_CANCELLED],
+        self::STATUS_CONFIRMED => [self::STATUS_COMPLETED, self::STATUS_CANCELLED, self::STATUS_NO_SHOW],
+        self::STATUS_COMPLETED => [],
+        self::STATUS_CANCELLED => [],
+        self::STATUS_NO_SHOW   => [],
+    ];
 
     protected $fillable = [
-        'customer_id',
-        'staff_id',
-        'service_id',
-        'date',
-        'time_slot',
-        'status',
-        'service_type',
-        'notes',
-        'rating',
-        'rating_comment',
-        'rated_at',
+        // Legacy fields (kept for backward compatibility)
+        'customer_id', 'staff_id', 'date', 'time_slot', 'service_type',
+        'rating', 'rating_comment', 'rated_at',
+        // Core
+        'ulid', 'service_id', 'status', 'notes',
+        // New booking engine fields
+        'customer_id_new', 'staff_id_new', 'resource_id', 'group_id', 'recurring_id',
+        'starts_at', 'ends_at', 'ends_at_with_buffer', 'timezone',
+        'price', 'deposit_paid', 'discount_amount', 'discount_reason', 'attendees',
+        'source', 'internal_notes', 'cancelled_by', 'cancel_reason',
+        'confirmed_at', 'completed_at', 'cancelled_at', 'no_show_at',
+        'reminder_sent_at', 'metadata',
     ];
 
     protected $casts = [
-        'date' => 'date',
-        'rated_at' => 'datetime',
+        'date'                => 'date',
+        'rated_at'            => 'datetime',
+        'starts_at'           => 'datetime',
+        'ends_at'             => 'datetime',
+        'ends_at_with_buffer' => 'datetime',
+        'confirmed_at'        => 'datetime',
+        'completed_at'        => 'datetime',
+        'cancelled_at'        => 'datetime',
+        'no_show_at'          => 'datetime',
+        'reminder_sent_at'    => 'datetime',
+        'price'               => 'decimal:2',
+        'deposit_paid'        => 'decimal:2',
+        'discount_amount'     => 'decimal:2',
+        'metadata'            => 'array',
+        'attendees'           => 'integer',
     ];
 
-    // Model Events
-    protected static function booted()
+    // ── Boot ─────────────────────────────────────────────────────────────
+
+    protected static function booted(): void
     {
+        // Auto-assign ULID on create
+        static::creating(function (self $model) {
+            if (empty($model->ulid)) {
+                $model->ulid = (string) Str::ulid();
+            }
+        });
+
         // When appointment is deleted, delete associated queue entry
         static::deleting(function ($appointment) {
             $appointment->queue()?->delete();
@@ -39,14 +81,36 @@ class Appointment extends Model
             if ($appointment->isDirty('status') && $appointment->queue) {
                 $newStatus = $appointment->status;
 
-                // Sync queue status based on appointment status
+                // Use withoutEvents to prevent circular update loop between Appointment and Queue observers
+                $queue = $appointment->queue;
                 if ($newStatus === 'cancelled') {
-                    $appointment->queue->update(['status' => 'cancelled']);
+                    \Illuminate\Database\Eloquent\Model::withoutEvents(fn () =>
+                        $queue->update(['status' => 'skipped'])
+                    );
                 } elseif ($newStatus === 'completed') {
-                    $appointment->queue->update(['status' => 'completed']);
-                } elseif ($newStatus === 'confirmed' && $appointment->queue->status === 'cancelled') {
-                    // If re-confirming a cancelled appointment, reactivate queue
-                    $appointment->queue->update(['status' => 'waiting']);
+                    \Illuminate\Database\Eloquent\Model::withoutEvents(fn () =>
+                        $queue->update(['status' => 'completed'])
+                    );
+                } elseif ($newStatus === 'confirmed' && in_array($queue->status, ['cancelled', 'skipped'])) {
+                    // If re-confirming a cancelled/skipped appointment, reactivate queue
+                    \Illuminate\Database\Eloquent\Model::withoutEvents(fn () =>
+                        $queue->update(['status' => 'waiting'])
+                    );
+                }
+            }
+
+            // Log status history for every status transition
+            if ($appointment->isDirty('status')) {
+                try {
+                    AppointmentStatusHistory::create([
+                        'appointment_id' => $appointment->id,
+                        'from_status'    => $appointment->getOriginal('status'),
+                        'to_status'      => $appointment->status,
+                        'changed_by'     => auth()->id(),
+                        'actor_type'     => auth()->check() ? 'user' : 'system',
+                    ]);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('StatusHistory: ' . $e->getMessage());
                 }
             }
         });
@@ -113,30 +177,65 @@ class Appointment extends Model
         });
     }
 
-    // Relationships
+    // ── Relationships ────────────────────────────────────────────────────
+
     public function tenant()
     {
         return $this->belongsTo(Tenant::class);
     }
 
-    public function customer()
+    /** Legacy: customer via users table */
+    public function customer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'customer_id');
     }
 
-    public function staff()
+    /** New: customer via dedicated customers table */
+    public function newCustomer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class, 'customer_id_new');
+    }
+
+    /** Legacy: staff via users table */
+    public function staff(): BelongsTo
     {
         return $this->belongsTo(User::class, 'staff_id');
     }
 
-    public function service()
+    /** New: staff via dedicated staff table */
+    public function newStaff(): BelongsTo
+    {
+        return $this->belongsTo(Staff::class, 'staff_id_new');
+    }
+
+    public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class);
+    }
+
+    public function resource(): BelongsTo
+    {
+        return $this->belongsTo(Resource::class);
+    }
+
+    public function recurringRule(): BelongsTo
+    {
+        return $this->belongsTo(RecurringRule::class, 'recurring_id');
     }
 
     public function queue()
     {
         return $this->hasOne(Queue::class);
+    }
+
+    public function statusHistory(): HasMany
+    {
+        return $this->hasMany(AppointmentStatusHistory::class)->orderBy('created_at');
+    }
+
+    public function reminders(): HasMany
+    {
+        return $this->hasMany(ReminderLog::class);
     }
 
     // Scopes
@@ -210,5 +309,32 @@ class Appointment extends Model
                 : $this->service->name;
         }
         return $this->service_type;
+    }
+
+    // ── New helper methods ────────────────────────────────────────────────
+
+    public function canTransitionTo(string $newStatus): bool
+    {
+        return in_array($newStatus, self::VALID_TRANSITIONS[$this->status] ?? [], true);
+    }
+
+    public function getNetPriceAttribute(): float
+    {
+        return max(0, (float) $this->price - (float) $this->discount_amount);
+    }
+
+    public function scopeOnDate($query, \Carbon\Carbon $date)
+    {
+        return $query->whereDate('starts_at', $date->toDateString());
+    }
+
+    public function scopeForStaff($query, int $staffId)
+    {
+        return $query->where('staff_id_new', $staffId);
+    }
+
+    public function scopeForNewCustomer($query, int $customerId)
+    {
+        return $query->where('customer_id_new', $customerId);
     }
 }

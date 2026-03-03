@@ -19,3 +19,9 @@ Schedule::command('subscriptions:check-status')->hourly();
 
 // Send trial & grace reminder emails daily at 9 AM
 Schedule::command('subscriptions:send-trial-reminders')->dailyAt('09:00');
+
+// Process appointment reminders every 15 minutes
+Schedule::command('reminders:process')->everyFifteenMinutes();
+
+// Aggregate analytics data daily at 00:30 (for yesterday)
+Schedule::command('analytics:aggregate')->dailyAt('00:30');

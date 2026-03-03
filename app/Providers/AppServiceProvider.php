@@ -5,6 +5,8 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\DB;
+use App\Models\Appointment;
+use App\Observers\AppointmentObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -22,6 +24,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Register model observers
+        Appointment::observe(AppointmentObserver::class);
+
         // Share system notifications from super-admin with all tenant admin views.
         // Only runs in tenant context (tenant() returns non-null).
         View::composer('layouts.admin', function ($view) {

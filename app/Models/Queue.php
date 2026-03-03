@@ -30,17 +30,21 @@ class Queue extends Model
             if ($queue->isDirty('status') && $queue->appointment) {
                 $newStatus = $queue->status;
 
-                // Sync appointment based on queue status
+                // Use withoutEvents to prevent circular update loop between Queue and Appointment observers
+                $appointment = $queue->appointment;
                 if ($newStatus === 'completed') {
-                    // When queue is completed, complete appointment
-                    $queue->appointment->update(['status' => 'completed']);
+                    \Illuminate\Database\Eloquent\Model::withoutEvents(fn () =>
+                        $appointment->update(['status' => 'completed'])
+                    );
                 } elseif (in_array($newStatus, ['cancelled', 'skipped'])) {
-                    // When queue is cancelled/skipped, cancel appointment
-                    $queue->appointment->update(['status' => 'cancelled']);
+                    \Illuminate\Database\Eloquent\Model::withoutEvents(fn () =>
+                        $appointment->update(['status' => 'cancelled'])
+                    );
                 } elseif ($newStatus === 'serving') {
-                    // When customer is being served, confirm appointment
-                    if ($queue->appointment->status !== 'confirmed') {
-                        $queue->appointment->update(['status' => 'confirmed']);
+                    if ($appointment->status !== 'confirmed') {
+                        \Illuminate\Database\Eloquent\Model::withoutEvents(fn () =>
+                            $appointment->update(['status' => 'confirmed'])
+                        );
                     }
                 }
             }

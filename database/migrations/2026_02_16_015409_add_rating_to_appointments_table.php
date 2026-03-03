@@ -11,10 +11,22 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // This migration was accidentally placed in central migrations.
+        // Skip gracefully if the appointments table does not exist (central DB).
+        if (! Schema::hasTable('appointments')) {
+            return;
+        }
+
         Schema::table('appointments', function (Blueprint $table) {
-            $table->unsignedTinyInteger('rating')->nullable()->after('notes')->comment('1-5 stars rating');
-            $table->text('rating_comment')->nullable()->after('rating');
-            $table->timestamp('rated_at')->nullable()->after('rating_comment');
+            if (! Schema::hasColumn('appointments', 'rating')) {
+                $table->unsignedTinyInteger('rating')->nullable()->after('notes')->comment('1-5 stars rating');
+            }
+            if (! Schema::hasColumn('appointments', 'rating_comment')) {
+                $table->text('rating_comment')->nullable()->after('rating');
+            }
+            if (! Schema::hasColumn('appointments', 'rated_at')) {
+                $table->timestamp('rated_at')->nullable()->after('rating_comment');
+            }
         });
     }
 
@@ -23,8 +35,14 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (! Schema::hasTable('appointments')) {
+            return;
+        }
+
         Schema::table('appointments', function (Blueprint $table) {
-            $table->dropColumn(['rating', 'rating_comment', 'rated_at']);
+            $table->dropColumn(
+                array_filter(['rating', 'rating_comment', 'rated_at'], fn ($col) => Schema::hasColumn('appointments', $col))
+            );
         });
     }
 };

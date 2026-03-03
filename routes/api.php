@@ -221,4 +221,13 @@ Route::prefix('v1')->middleware(['tenant.token', 'tenant.locale', 'auth:sanctum'
     // Invoices
     Route::apiResource('invoices', \App\Http\Controllers\Tenant\InvoiceController::class)
         ->names('api.v1.invoices');
+
+    // Analytics
+    Route::get('analytics/summary', [\App\Http\Controllers\Tenant\AnalyticsController::class, 'summary'])->name('api.v1.analytics.summary');
+    Route::get('analytics/daily',   [\App\Http\Controllers\Tenant\AnalyticsController::class, 'daily'])->name('api.v1.analytics.daily');
+
+    // Push Tokens
+    Route::get('push-tokens',          [\App\Http\Controllers\Tenant\PushTokenController::class, 'index'])->name('api.v1.push-tokens.index');
+    Route::post('push-tokens',         [\App\Http\Controllers\Tenant\PushTokenController::class, 'store'])->name('api.v1.push-tokens.store');
+    Route::delete('push-tokens/{id}',  [\App\Http\Controllers\Tenant\PushTokenController::class, 'destroy'])->name('api.v1.push-tokens.destroy');
 });
