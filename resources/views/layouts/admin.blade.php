@@ -3,15 +3,31 @@
     $locale = app()->getLocale();
     $isRtl  = in_array($locale, ['ar', 'he', 'fa']);
     $businessSettings = \App\Models\Setting::where('tenant_id', tenant()->id)->first();
-    $businessName = $businessSettings->business_name ?? tenant()->name ?? config('app.name');
-    $businessLogo = $businessSettings->logo ?? null;
+    $businessName = $businessSettings?->business_name ?? tenant()->name ?? config('app.name');
+    if (is_array($businessName)) {
+        $businessName = $businessName[$locale] ?? $businessName['en'] ?? (is_array(reset($businessName)) ? config('app.name') : reset($businessName)) ?? config('app.name');
+    }
+    if (is_object($businessName)) {
+        $businessName = $businessName->{$locale} ?? $businessName->en ?? config('app.name');
+    }
+    $businessName = is_scalar($businessName) ? (string) $businessName : config('app.name');
+    $businessLogo = $businessSettings?->logo ?? null;
+    // Helper: safely cast any __() result to string
+    $safeStr = fn($v) => is_array($v) ? (reset($v) ?: '') : (is_object($v) ? (string)($v->{$locale} ?? $v->en ?? '') : (string)$v);
+    $adminTitle = $safeStr(\Illuminate\Support\Facades\Lang::get('Admin'));
+    $safeBusinessName = htmlspecialchars($businessName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 @endphp
 <html lang="{{ $locale }}" dir="{{ $isRtl ? 'rtl' : 'ltr' }}" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', __('Admin')) - {{ $businessName }}</title>
+    @php
+        $pageTitle = \Illuminate\Support\Facades\View::yieldContent('title');
+        if (is_array($pageTitle) || is_object($pageTitle)) { $pageTitle = ''; }
+        $pageTitle = (string)($pageTitle ?: 'Admin');
+    @endphp
+    <title>{{ $pageTitle }} - {{ $businessName }}</title>
 
     <!-- Dark mode: run BEFORE render to avoid flash -->
     <script>

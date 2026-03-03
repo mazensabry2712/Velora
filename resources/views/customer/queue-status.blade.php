@@ -7,6 +7,10 @@
     @php
         $businessSettings = \App\Models\Setting::where('tenant_id', tenant()->id)->first();
         $businessName = $businessSettings->business_name ?? tenant()->name ?? config('app.name');
+        if (is_array($businessName)) {
+            $businessName = $businessName[$locale] ?? $businessName['en'] ?? reset($businessName) ?? config('app.name');
+        }
+        $businessName = (string) $businessName;
         $businessLogo = $businessSettings->logo ?? null;
     @endphp
     <title>{{ __('Queue Status') }} - {{ $businessName }}</title>
