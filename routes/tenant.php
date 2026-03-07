@@ -35,6 +35,7 @@ use App\Http\Controllers\Admin\PaymentTransactionController;
 use App\Http\Controllers\Tenant\InvoiceController;
 use App\Http\Controllers\BillingController;
 use App\Http\Middleware\EnsureSubscriptionIsValid;
+use App\Http\Controllers\Admin\OnboardingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -130,16 +131,24 @@ Route::middleware([
         Route::get('/billing/expired', [BillingController::class, 'expired'])->name('billing.expired');
         Route::get('/billing/success', [BillingController::class, 'success'])->name('billing.success');
         Route::middleware(['auth'])->group(function () {
-            Route::post('/billing/checkout', [BillingController::class, 'checkout'])->name('billing.checkout');
-            Route::post('/billing/portal', [BillingController::class, 'portal'])->name('billing.portal');
+            Route::post('/billing/checkout',      [BillingController::class, 'checkout'])->name('billing.checkout');
+            Route::post('/billing/portal',        [BillingController::class, 'portal'])->name('billing.portal');
+            Route::post('/billing/extend-trial',  [BillingController::class, 'extendTrial'])->name('billing.extend-trial');
         });
     });
 
     // Admin Routes (Protected)
-    Route::middleware(['auth', 'role:Admin Tenant|Staff|Assistant', EnsureSubscriptionIsValid::class])->prefix('admin')->name('admin.')->group(function () {
+    Route::middleware(['auth', 'role:Admin Tenant|Staff|Assistant', EnsureSubscriptionIsValid::class, 'onboarding.redirect'])->prefix('admin')->name('admin.')->group(function () {
 
         // Dashboard
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+        // Onboarding Wizard (shown on first login until completed)
+        Route::get('/onboarding',              [OnboardingController::class, 'index'])->name('onboarding');
+        Route::post('/onboarding/step1',        [OnboardingController::class, 'saveStep1'])->name('onboarding.step1');
+        Route::post('/onboarding/step2',        [OnboardingController::class, 'saveStep2'])->name('onboarding.step2');
+        Route::post('/onboarding/step3',        [OnboardingController::class, 'saveStep3'])->name('onboarding.step3');
+        Route::post('/onboarding/complete',     [OnboardingController::class, 'complete'])->name('onboarding.complete');
 
         // Profile Management
         Route::get('/profile', [ProfileController::class, 'index'])->name('profile');

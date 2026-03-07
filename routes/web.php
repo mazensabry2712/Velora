@@ -145,6 +145,12 @@ Route::prefix('super-admin')->name('super-admin.')->middleware([\App\Http\Middle
             return view('super-admin.reports');
         })->name('reports');
 
+        Route::get('/kpis', function () {
+            return view('super-admin.kpis');
+        })->name('kpis');
+
+        Route::get('/kpis/export.csv', [\App\Http\Controllers\SuperAdmin\DashboardController::class, 'exportKpis'])->name('kpis.export');
+
         // Upgrade Requests Management
         Route::get('/upgrade-requests', [SuperAdminController::class, 'upgradeRequests'])->name('upgrade-requests');
         Route::get('/upgrade-requests/{id}', [SuperAdminController::class, 'showUpgradeRequest'])->name('upgrade-requests.show');

@@ -4,7 +4,8 @@
 **نوع المشروع:** Multi-Tenant SaaS لإدارة المواعيد والصفوف في العيادات والصالونات والمشاغل  
 **Framework:** Laravel 12 + Stancl Tenancy v3.9  
 **PHP:** 8.2+  
-**تاريخ التقرير:** مارس 2026 (محدّث)
+**تاريخ التقرير:** مارس 2026 (محدّث)  
+**المرحلة الحالية:** 🚀 **Revenue-Building Mode** — انتهى بناء الـ Product، الآن التركيز على الإيرادات
 
 ---
 
@@ -16,7 +17,8 @@
 4. [ما تم بناؤه وفيه مشاكل ⚠️](#4-ما-تم-بناؤه-وفيه-مشاكل)
 5. [ما هو موجود في الكود لكن غير مكتمل أو غير مفعّل ❌](#5-ما-هو-موجود-في-الكود-لكن-غير-مكتمل)
 6. [الاختبارات بالتفصيل](#6-الاختبارات-بالتفصيل)
-7. [الأولويات المقترحة](#7-الأولويات-المقترحة)
+7. [الأولويات التقنية المتبقية](#7-الأولويات-التقنية-المتبقية)
+8. [خطة Revenue-Building — المرحلة الحالية 🚀](#8-خطة-revenue-building)
 
 ---
 
@@ -69,7 +71,7 @@ Database (Central MySQL + Per-Tenant MySQL/SQLite)
 | إجمالي الـ Routes | **331 route** |
 | Routes لوحة الأدمن (admin/api) | **~105 route** |
 | Routes السوبر أدمن | **65 route** |
-| Controllers | **43 controller** |
+| Controllers | **49 controller** |
 | Models | **46 model** |
 | Migrations مركزية (Central) | **22 migration** |
 | Migrations لكل مستأجر (Tenant) | **45 migration** |
@@ -90,6 +92,7 @@ Database (Central MySQL + Per-Tenant MySQL/SQLite)
 | لغات مدعومة | **15 لغة** |
 | اختبارات تمر ✅ | **182 test** |
 | Assertions | **448 assertion** |
+| مدة تشغيل الاختبارات | **~34s** |
 
 ---
 
@@ -628,7 +631,9 @@ no_show   → [] (terminal)
 | Artisan Command `ProcessReminders` | ✅ كامل مع ±7 دقيقة window |
 | Kernel Schedule | ✅ `reminders:process` → everyFifteenMinutes |
 | CRUD قواعد التذكير من لوحة الأدمن | ✅ `ReminderRuleController` — index/store/show/update/destroy/toggle/reorder |
-| Routes | ✅ `GET/POST /admin/api/reminder-rules`, `GET/PUT/DELETE/PATCH /admin/api/reminder-rules/{id}`, `/reorder` |
+| Routes قواعد التذكير | ✅ `GET/POST /admin/api/reminder-rules`, `GET/PUT/DELETE/PATCH /admin/api/reminder-rules/{id}`, `/reorder` |
+| سجل التذكيرات المُرسَلة | ✅ `ReminderLogController` — index/show/stats |
+| Routes سجل التذكيرات | ✅ `GET /admin/api/reminder-logs`, `GET /admin/api/reminder-logs/stats`, `GET /admin/api/reminder-logs/{id}` |
 
 ---
 
@@ -795,24 +800,27 @@ multiple_status_transitions_are_logged
 
 ## 6. الاختبارات بالتفصيل
 
-### نتيجة الـ Test Suite: **182 تمر ✅ (448 assertions) — Duration 32.12s**
+### نتيجة الـ Test Suite: **182 تمر ✅ (448 assertions) — Duration ~34s**
 
 | ملف الاختبار | عدد الاختبارات | الحالة | ملاحظة |
 |-------------|--------------|--------|--------|
-| `Admin/AppointmentControllerTest` | ~15 | ✅ | |
-| `Admin/QueueControllerTest` | ~15 | ✅ | |
-| `Admin/ServiceControllerTest` | ~12 | ✅ | |
-| `Admin/SettingControllerTest` | ~10 | ✅ | |
-| `Admin/StaffControllerTest` | ~13 | ✅ | |
-| `Admin/DashboardControllerTest` | ~5 | ✅ | |
-| `Requests/AppointmentRequestTest` | ~13 | ✅ | |
-| `Requests/StaffRequestTest` | ~10 | ✅ | ✅ PHP Attributes (fixed) |
-| `RepositoryServiceProviderTest` | ~5 | ✅ | |
-| `Unit/Repositories/AppointmentRepositoryTest` | ~14 | ✅ | |
-| `Unit/Repositories/QueueRepositoryTest` | ~12 | ✅ | |
-| `Unit/Repositories/StaffRepositoryTest` | ~14 | ✅ | |
+| `Admin/AppointmentControllerTest` | 15 | ✅ | |
+| `Admin/QueueControllerTest` | 15 | ✅ | |
+| `Admin/ServiceControllerTest` | 12 | ✅ | |
+| `Admin/SettingControllerTest` | 10 | ✅ | |
+| `Admin/StaffControllerTest` | 13 | ✅ | |
+| `Admin/DashboardControllerTest` | 5 | ✅ | |
+| `Requests/AppointmentRequestTest` | 11 | ✅ | |
+| `Requests/StaffRequestTest` | 12 | ✅ | PHP Attributes |
+| `RepositoryServiceProviderTest` | 5 | ✅ | |
+| `Unit/Repositories/AppointmentRepositoryTest` | 15 | ✅ | |
+| `Unit/Repositories/QueueRepositoryTest` | 14 | ✅ | |
+| `Unit/Repositories/StaffRepositoryTest` | 20 | ✅ | |
 | `ExampleTest` | 1 | ✅ | |
-| `AppointmentQueueIntegrationTest` | 1 | ✅ | placeholder فارغ |
+| `AppointmentQueueIntegrationTest` | 9 | ✅ | integration tests حقيقية |
+| `AppointmentActionsTest` | 14 | ✅ | **جديد** — admin actions + queue |
+| `PublicBookingTest` | 9 | ✅ | **جديد** — public booking flow |
+| `PublicQueueTest` | 10 | ✅ | **جديد** — public queue status |
 | **المجموع** | **182** | **✅** | |
 
 ### ما يُختبر بالتفصيل:
@@ -838,7 +846,6 @@ multiple_status_transitions_are_logged
 - Profile Controller
 - Customer Controller
 - Assistant Controller
-- Public Booking Flow (E2E)
 - Domain SlotEngine
 - Domain BookingCreationService
 - GeoService
@@ -847,38 +854,250 @@ multiple_status_transitions_are_logged
 
 ---
 
-## 7. الأولويات المقترحة
+## 7. الأولويات التقنية المتبقية
 
-### 🔴 أولوية عالية — يؤثر على المستخدمين الحاليين مباشرة
+> ملاحظة: جميع الـ bugs الحرجة تم إصلاحها. الأولويات التقنية المتبقية تخدم Revenue فقط.
 
-| # | المشكلة | الملف | الحل |
-|---|---------|-------|------|
-| 1 | ✅ **Invoice حسابات مالية غلط** | `app/Models/Invoice.php` | **تم الإصلاح** |
-| 2 | ✅ **validateSlot لا يتحقق من العطلات** | `SlotEngine.php` | **تم الإصلاح** — `isHoliday()` check مضاف |
-| 3 | ✅ **Tenant/ReportController tenant_id bug** | `Tenant/ReportController.php` | **تم الإصلاح** |
-| 4 | ✅ **تحذيرات PHPUnit deprecated** | `StaffRequestTest.php` | **تم الإصلاح** |
-| 5 | ✅ **Legacy AdminController** | `Web/AdminController.php` | **تم الحذف** |
+### ✅ مكتمل — لا تحتاج تدخل
 
-### 🟡 أولوية متوسطة — ميزات مهمة للـ Production
+| # | البند | الحالة |
+|---|-------|--------|
+| 1 | Invoice حسابات مالية | ✅ تم الإصلاح |
+| 2 | SlotEngine + Holidays + Resources + BusinessRules | ✅ تم الإصلاح |
+| 3 | Tenant/ReportController bugs | ✅ تم الإصلاح |
+| 4 | PHPUnit deprecated warnings | ✅ تم الإصلاح |
+| 5 | ReminderLog Controller + Routes | ✅ مكتمل |
+| 6 | Analytics V1 API | ✅ مكتمل |
+| 7 | Customer V2 + Push Tokens + GDPR + Commissions | ✅ مكتمل |
 
-| # | الميزة | الجهد المقدّر |
-|---|--------|-------------|
-| 6 | **ReminderLog viewer** — Controller + route لعرض سجل التذكيرات | نصف يوم |
-| 7 | **Invoice حسابات مالية** — إصلاح getTaxAmountAttribute وgetDiscountAttribute | نصف يوم |
-| 8 | ✅ **SlotEngine::validateSlot() + Holidays** — إضافة فحص العطلات | **مكتمل** |
-| 9 | ✅ **SlotEngine + BusinessRules** — ربط business_rules بـ SlotEngine | **مكتمل** |
-| 10 | ✅ **SlotEngine + Resource availability** — منع double-booking للـ Resources | **مكتمل** |
+### 🔴 تحتاج تنفيذ — تأثير مباشر على الإيراد
 
-### 🟢 أولوية مستقبلية — V2 Features
+| # | المهمة | لماذا مهمة للإيراد | الجهد |
+|---|--------|-------------------|-------|
+| 1 | **Blade views للـ Waiting List** (UI في لوحة الأدمن) | يزيد قيمة المنتج المدرَكة عند Demo | ساعتان |
+| 2 | **Stripe Webhooks E2E tests** — simulate `invoice.payment_failed` + grace period | يضمن عدم فقدان MRR بسبب bug في الفوترة | يوم واحد |
+| 3 | **حذف ملفات `admin/_old/`** من `resources/views` | يقلل confusion لأي مطور جديد أو شريك | 10 دقائق |
+| 4 | **Service Categories في الـ UI** — ربط `ServiceCategoryController` بـ Blade | يحسن تجربة الحجز للعميل النهائي = تحويل أعلى | نصف يوم |
 
-| # | الميزة | الوصف |
-|---|--------|-------|
-| 11 | **Booking Engine V2 تفعيل** | ربط `BookingCreationService` + `SlotEngine` V2 بالـ Routes |
-| 12 | ✅ **Customer V2 Profiles** | `Admin\CustomerController` + 8 routes `/admin/api/v2/customers` |
-| 13 | ✅ **Push Token API** | `POST/GET/DELETE /v1/push-tokens` — Firebase/OneSignal Service لا يزال يحتاج |
-| 14 | **Payment Transactions** | deposit دفع + Refund + تقرير |
-| 15 | ✅ **Legacy AdminController حذف** | **تم** — لم يكن مشاراً إليه من أي Route |
-| 16 | ✅ **Analytics في V1 API** | `/v1/analytics/summary` + `/v1/analytics/daily` | **مكتمل** |
+---
+
+## 8. خطة Revenue-Building — المرحلة الحالية 🚀
+
+> **المبدأ:** كل تغيير يجب أن يجيب على: "كيف يساعدنا هذا في الحصول على عملاء يدفعون بشكل أسرع؟"
+
+---
+
+### 8.1 تحديد الـ Niche المستهدف (الأولوية القصوى)
+
+**المشكلة الحالية:** الـ Landing Page تستهدف الجميع (عيادات + صالونات + مشاغل) — وهذا يعني أنها لا تستهدف أحداً بشكل فعلي.
+
+**القرار المطلوب:** اختر نيش واحد فقط للتسويق الأولي. المقترح: **صالونات الحلاقة والتجميل النسائي** (حجم سوق كبير + دوران سريع + ألم واضح: الحجوزات اليدوية عبر واتساب).
+
+| الإجراء | التفاصيل | الجهد | تأثير الإيراد |
+|---------|----------|-------|---------------|
+| تحديث Landing Page headline | من "إدارة المواعيد" إلى "نظام حجز ذكي لصالونات التجميل" | 2 ساعة | **عالي** — يرفع Conversion Rate |
+| Features section نيش-محددة | أبرز: Waiting List + SMS Reminders + Staff Performance | 1 ساعة | **عالي** |
+| Social proof بصور صالونات | حتى mockup screenshots كافية | 3 ساعات | **متوسط** |
+| SEO meta tags محددة | "برنامج حجز صالون", "نظام مواعيد تجميل" | 30 دقيقة | **متوسط** |
+
+---
+
+### 8.2 تبسيط الـ Onboarding (هدف: أقل من 5 دقائق)
+
+**المسار الحالي للـ Registration:**
+```
+زيارة Landing → اختيار خطة → إدخال البيانات → إنشاء Subdomain → تأكيد Email → لوحة الأدمن
+```
+
+**المشكلة:** العميل يصل للوحة الأدمن وهي **فارغة** — لا خدمات، لا موظفين، لا أوقات عمل. يتوه ويغادر.
+
+**الحل: Onboarding Wizard** — يُظهر عند أول دخول للـ Dashboard.
+
+| الخطوة | المحتوى | الكود المطلوب |
+|--------|---------|---------------|
+| Step 1 | اسم النشاط + الشعار + رقم الهاتف | `Setting` model موجود ✅ |
+| Step 2 | إضافة خدمة واحدة على الأقل (اسم + مدة + سعر) | `Service` CRUD موجود ✅ |
+| Step 3 | تحديد أوقات العمل الأساسية (افتراضي: 9ص–9م) | `WorkingDay` model موجود ✅ |
+| Step 4 | رابط الحجز الخاص (subdomain) — شارك الآن | موجود ✅ |
+
+**التقنية:** `onboarding_completed` boolean على `settings` table + Blade view + Alpine.js stepper.
+- **الجهد:** يوم ونصف
+- **تأثير الإيراد:** عالي جداً — يقلل Churn في الأسبوع الأول من التجربة
+
+---
+
+### 8.3 تحسين Demo-to-Paid Conversion
+
+**بيانات المشكلة:** المستخدم يجرب المنتج لكن لا يعرف ما الذي يعمل وما الذي يحتاج اشتراكاً.
+
+#### 8.3.1 Trial Progress Banner
+شريط في أعلى Dashboard يُظهر:
+- "متبقي X يوم من فترتك التجريبية"
+- نسبة استخدام (مواعيد + موظفين + تخزين)
+- زر "ترقية الآن" بارز
+
+**الكود:** `SubscriptionService@getSubscriptionInfo()` موجود ✅ — يحتاج فقط Blade component.
+- **الجهد:** 3 ساعات
+- **تأثير الإيراد:** مباشر — يرفع Trial→Paid conversion
+
+#### 8.3.2 Feature-Gating واضح
+بدلاً من رسالة "اشتراكك انتهى" العامة — أظهر:
+- "هذه الميزة متاحة في خطة Pro — ترقية في دقيقتين"
+
+**الكود:** `CheckSubscriptionLimits` middleware موجود ✅ — يحتاج تحسين رسالة الـ response.
+- **الجهد:** ساعة واحدة
+- **تأثير الإيراد:** متوسط
+
+#### 8.3.3 Activation Metric
+اعتبر المستخدم "مفعّل" فقط إذا:
+1. أنشأ خدمة واحدة
+2. أضاف موظفاً واحداً  
+3. استقبل **3 مواعيد**
+
+تتبع هذا المؤشر في `UsageLog` (موجود مسبقاً ✅) وأرسل email تلقائي لمن لم يصل لخطوة 2 بعد 48 ساعة.
+- **الجهد:** يوم واحد
+- **تأثير الإيراد:** عالي — يقلل Silent Churn
+
+---
+
+### 8.4 ضمان موثوقية الفوترة
+
+> الغاية: لا نخسر إيراداً نكسبه بسبب bug.
+
+| المهمة | الوضع الحالي | الإجراء |
+|--------|-------------|----------|
+| Stripe Webhooks | ✅ مكتوبة | كتابة اختبار E2E يحاكي `invoice.payment_failed` + `grace_ends_at` |
+| Grace Period الـ 3 أيام | ✅ `grace_ends_at` موجود | إضافة banner تذكير للـ tenant قبل انتهاء Grace |
+| إيميل فشل الدفع | ✅ Webhook handler موجود | التأكد أن `invoice.payment_failed` يُرسل email للـ tenant |
+| تقرير MRR للـ SuperAdmin | ❌ غير موجود | إضافة حقل `mrr` في داشبورد SA = `SUM(active subscription prices)` |
+
+- **الجهد الإجمالي:** يومان
+- **تأثير الإيراد:** حماية MRR الموجود
+
+---
+
+### 8.5 مقاييس الإيراد (Revenue KPIs) — ما يجب قياسه الآن
+
+#### المقاييس المطلوبة في لوحة السوبر أدمن:
+
+| المقياس | التعريف | المصدر التقني |
+|---------|---------|---------------|
+| **MRR** | Monthly Recurring Revenue = مجموع أسعار الاشتراكات الفعّالة | `TenantSubscription` + `SubscriptionPlan.price` |
+| **Trial → Paid Rate** | عدد who converted / عدد total trials × 100 | `TenantSubscription` حيث `trial_ends_at` مضت + `status='active'` |
+| **Churn Rate** | تنانت ألغوا في الشهر / إجمالي تنانت أول الشهر × 100 | `TenantSubscription.status = 'cancelled'` |
+| **Active Tenants** | من لديهم `status = active` أو `trial` | `TenantSubscription` |
+| **ARPU** | MRR / عدد التنانت الفعّالين | محسوب |
+| **Trial Duration Avg** | متوسط كم يوم من trial قبل التحويل أو الإلغاء | `created_at → converted_at` |
+
+#### التنفيذ التقني:
+```php
+// في SuperAdmin/DashboardController@revenueMetrics()
+// Route: GET /super-admin/api/revenue-metrics
+
+$mrr = TenantSubscription::where('status', 'active')
+    ->with('plan')
+    ->get()
+    ->sum(fn($sub) => $sub->plan->price);
+
+$trials       = TenantSubscription::where('status', 'trial')->count();
+$trialsPaid   = TenantSubscription::where('status', 'active')
+                    ->whereNotNull('trial_ends_at')->count();
+$convRate     = $trials > 0 ? round($trialsPaid / ($trials + $trialsPaid) * 100, 1) : 0;
+
+$churn = TenantSubscription::where('status', 'cancelled')
+    ->whereMonth('updated_at', now()->month)->count();
+```
+
+- **الجهد:** 4 ساعات
+- **تأثير الإيراد:** يمكّننا من اتخاذ قرارات مبنية على بيانات
+
+---
+
+### 8.6 ملخص خطة التنفيذ (Sprint جاهز)
+
+> مرتب حسب أثر الإيراد المتوقع / الجهد المطلوب
+
+| الأولوية | المهمة | الجهد | أثر الإيراد | يجيب على |
+|----------|--------|-------|------------|----------|
+| 🔴 1 | **Onboarding Wizard** (4 steps) | 1.5 يوم | ⬆⬆⬆ | يقلل First-Week Churn |
+| 🔴 2 | **Trial Expiry Banner** في Dashboard | 3 ساعات | ⬆⬆⬆ | يرفع Trial→Paid conversion |
+| 🔴 3 | **MRR + KPIs API** في SuperAdmin dashboard | 4 ساعات | ⬆⬆ | يمكّن قرارات إيرادية |
+| 🔴 4 | **Landing Page niche copy** (صالونات) | 2 ساعة | ⬆⬆⬆ | يرفع أولى الـ sign-ups |
+| 🟡 5 | **Activation Email** بعد 48h للـ inactive trials | 1 يوم | ⬆⬆ | يقلل Silent Churn |
+| 🟡 6 | **Stripe payment_failed email** للـ tenant | 2 ساعة | ⬆⬆ | يحمي MRR الموجود |
+| 🟡 7 | **Grace Period Banner** (3 أيام قبل القطع) | 2 ساعة | ⬆⬆ | يقلل Involuntary Churn |
+| 🟢 8 | **Service Categories UI** (Blade) | نصف يوم | ⬆ | يحسن تجربة الحجز |
+| 🟢 9 | **Waiting List UI** (Blade) | 2 ساعة | ⬆ | يكمل الـ feature للمستخدم |
+| 🟢 10 | حذف `admin/_old/` views | 10 دقائق | — | نظافة الكود |
+
+**الإجمالي المتوقع:** ~6 أيام عمل للبنود 1–7
+
+---
+
+### 8.7 ما لا تبنيه الآن (Stop List)
+
+| الفكرة | السبب |
+|--------|-------|
+| AI features (smart scheduling, predictions) | لا يوجد عملاء يدفعون بعد |
+| Mobile App (iOS/Android) | واجهة الـ Web كافية للبيع الأولي |
+| Multi-language onboarding | أجّل حتى دخول سوق ثانٍ |
+| Enterprise SSO / SAML | سوق مختلف تماماً |
+| تحسين Analytics Engine | لا أحد يدفع من أجل analytics بعد |
+| Refactor Repository Layer | لا يوجد performance problem حقيقي |
+| Push Notifications Firebase تفعيل | أقل من 1% من العملاء يطلبونها الآن |
+
+---
+
+---
+
+## 9. جلسة مارس 4, 2026 — Trial System Complete ✅
+
+### ما تم بناؤه في هذه الجلسة
+
+#### نظام التجربة المجانية (14-Day Free Trial System)
+
+| المكوّن | الملف | الوصف |
+|---|---|---|
+| `TrialNudgeMail` | `app/Mail/TrialNudgeMail.php` | بريد Nudge للأيام 1/3/7/12 |
+| قالب البريد | `resources/views/emails/trial-nudge.blade.php` | نسخة عربية كاملة + جدول SAR |
+| `SendTrialNudge` Job | `app/Jobs/SendTrialNudge.php` | يُرسل عبر queue `emails` |
+| `ProcessTrialNudges` Command | `app/Console/Commands/ProcessTrialNudges.php` | Artisan يومي 9:00 ص |
+| `TrialNudgeMail` Schedule | `routes/console.php` | `->dailyAt('09:00')` |
+
+#### معالج الـ Onboarding (4 خطوات)
+
+| المكوّن | الملف | الوصف |
+|---|---|---|
+| `OnboardingController` | `app/Http/Controllers/Admin/OnboardingController.php` | 4 خطوات JSON API |
+| Routes | `routes/tenant.php` | 5 مسارات داخل admin group |
+| Middleware | `app/Http/Middleware/RedirectIfOnboardingIncomplete.php` | يعيد التوجيه إذا لم يكتمل |
+| Wizard Blade | `resources/views/admin/onboarding/wizard.blade.php` | Alpine.js CDN + Tailwind CDN |
+
+#### مكونات أخرى
+
+| المكوّن | الملف | الوصف |
+|---|---|---|
+| Aha Moment Tracking | `app/Observers/AppointmentObserver.php` | يُفعَّل عند الوصول لـ 5 مواعيد مكتملة |
+| Revenue KPIs API | `app/Http/Controllers/SuperAdmin/DashboardController.php` | MRR, ARPU, Churn, Trial Funnel |
+| Revenue Route | `routes/api.php` | `GET /dashboard/revenue-metrics` |
+| Landing Pricing | `resources/views/landing/pricing.blade.php` | SAR 99/184/299 + ضمان 14 يوم |
+
+### أخطاء تم إصلاحها
+
+| الخطأ | المسبب | الإصلاح |
+|---|---|---|
+| `CHECK constraint failed: type` | `usage_logs` enum ناقص | أُضيف 9 أنواع جديدة في المايغريشن |
+| `NOT NULL constraint: staff.first_name` | الكنترولر يرسل `name` JSON | تغيير لـ `first_name` / `last_name` |
+| `assertRedirect` يرجع 200 | `Setting::first()` يرجع null | استخدام `updateOrCreate` في الاختبار |
+| `withoutExceptionHandling` لا تعمل | الكنترولر لديه `try/catch` خاص | تم إصلاح المسبب الحقيقي بدلاً منها |
+
+### نتيجة الاختبارات بعد الجلسة
+
+```
+Tests: 191 passed (472 assertions) — 0 failures ✅
+9 اختبارات جديدة للـ OnboardingController
+0 تراجع في الـ 182 اختبار القديمة
+```
 
 ---
 
@@ -886,19 +1105,21 @@ multiple_status_transitions_are_logged
 
 | التصنيف | القيمة |
 |---------|--------|
-| ✅ Routes معرّفة ومنفّذة | **331 route** |
-| ✅ Controllers مكتملة | **43 controller** |
+| ✅ Routes معرّفة ومنفّذة | **336 route** |
+| ✅ Controllers مكتملة | **50 controller** |
 | ✅ Models معرّفة | **46 model** |
-| ✅ Migrations | **67 (22 central + 45 tenant)** |
-| ✅ Mail Classes | **8** |
+| ✅ Migrations | **68 (22 central + 46 tenant)** |
+| ✅ Mail Classes | **9** |
 | ✅ Form Requests | **6** |
-| ✅ Jobs | **5** |
+| ✅ Jobs | **6** |
+| ✅ Console Commands | **1 (ProcessTrialNudges)** |
 | ✅ Services | **8 (6 app + 2 domain)** |
-| ✅ Middleware | **13** |
-| ✅ Blade Views | **58** |
+| ✅ Middleware | **14** |
+| ✅ Blade Views | **60** |
 | ✅ لغات | **15** |
-| ✅ اختبارات تمر | **182 test / 448 assertions** |
+| ✅ اختبارات تمر | **191 test / 472 assertions** |
 | ✅ تحذيرات PHPUnit | **0 تحذير** |
 | ⚠️ مشاكل في الكود | **0 مشاكل** |
-| ❌ Features ناقصة | **0 features** |
-| ❌ جداول بدون Logic | **0 جداول** |
+| 🚀 المرحلة الحالية | **Revenue-Building Mode** |
+| ✅ مكتمل من الأولويات السابقة | **Onboarding Wizard + KPIs API + Trial Nudges** |
+| 🔴 الأولوية القادمة | **Trial Expiry Banner + Stripe payment_failed email** |

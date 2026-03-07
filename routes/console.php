@@ -25,3 +25,6 @@ Schedule::command('reminders:process')->everyFifteenMinutes();
 
 // Aggregate analytics data daily at 00:30 (for yesterday)
 Schedule::command('analytics:aggregate')->dailyAt('00:30');
+
+// Dispatch trial nudge emails daily at 09:00 (Day 1 / 3 / 7 / 12 of trial)
+Schedule::command('trial:nudges')->dailyAt('09:00');

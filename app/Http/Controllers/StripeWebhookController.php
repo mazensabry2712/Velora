@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\PaymentFailedMail;
+use App\Models\Tenant;
 use App\Services\StripeService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class StripeWebhookController extends Controller
 {
@@ -96,18 +100,68 @@ class StripeWebhookController extends Controller
         $invoice  = $event->data->object;
         $tenantId = $invoice->subscription_details?->metadata['tenant_id'] ?? null;
 
-        if ($tenantId) {
-            Log::warning("Payment failed for tenant {$tenantId}, invoice {$invoice->id}");
-            // Stripe handles Dunning automatically — no action needed here
-            // Optionally: send custom email notification
+        if (! $tenantId) {
+            Log::warning('Stripe payment_failed: no tenant_id in metadata', ['invoice' => $invoice->id]);
+            return;
         }
+
+        Log::warning("Payment failed for tenant {$tenantId}, invoice {$invoice->id}");
+
+        $centralConn = config('tenancy.database.central_connection', 'mysql');
+
+        // Access name/email from tenants.data JSON column (stancl/tenancy stores custom attrs there)
+        $tenantRow    = DB::connection($centralConn)->table('tenants')->where('id', $tenantId)->first();
+        $tenantData   = json_decode($tenantRow?->data ?? '{}', true);
+        $ownerEmail   = $tenantData['email'] ?? null;
+        $businessName = $tenantData['name'] ?? $tenantId;
+
+        if (! $ownerEmail) {
+            Log::warning("Stripe payment_failed: no email for tenant {$tenantId}");
+            return;
+        }
+
+        // Build billing portal URL (best effort — may not have stripe_customer_id yet)
+        $billingPortalUrl = 'https://' . (DB::connection($centralConn)->table('domains')->where('tenant_id', $tenantId)->value('domain') ?? 'app.velora.sa') . '/billing/expired';
+
+        // Set grace period (3 days) on the subscription
+        DB::connection($centralConn)
+            ->table('tenant_subscriptions')
+            ->where('tenant_id', $tenantId)
+            ->where('status', 'active')
+            ->update([
+                'status'        => 'grace',
+                'grace_ends_at' => now()->addDays(3),
+                'updated_at'    => now(),
+            ]);
+
+        Mail::to($ownerEmail)
+            ->queue(new PaymentFailedMail(
+                businessName:     $businessName,
+                ownerEmail:       $ownerEmail,
+                invoiceId:        $invoice->id,
+                billingPortalUrl: $billingPortalUrl,
+                graceDays:        3,
+            ));
     }
 
     private function handleCheckoutCompleted(\Stripe\Event $event): void
     {
-        $session = $event->data->object;
-        // The subscription.created/updated event will handle activation
-        // This is just for logging / CRM sync
-        Log::info('Checkout completed for tenant: ' . ($session->metadata['tenant_id'] ?? 'unknown'));
+        $session  = $event->data->object;
+        $tenantId = $session->metadata['tenant_id'] ?? null;
+
+        Log::info('Checkout completed for tenant: ' . ($tenantId ?? 'unknown'));
+
+        if ($tenantId) {
+            $centralConn = config('tenancy.database.central_connection', 'mysql');
+            // Mark trial as converted
+            DB::connection($centralConn)
+                ->table('tenant_subscriptions')
+                ->where('tenant_id', $tenantId)
+                ->whereNull('converted_at')
+                ->update([
+                    'converted_at' => now(),
+                    'updated_at'   => now(),
+                ]);
+        }
     }
 }

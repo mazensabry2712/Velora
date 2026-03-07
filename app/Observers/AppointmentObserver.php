@@ -6,6 +6,8 @@ namespace App\Observers;
 
 use App\Models\Appointment;
 use App\Models\StaffCommission;
+use App\Models\TenantSubscription;
+use App\Models\UsageLog;
 use App\Jobs\GenerateNextRecurringAppointment;
 use App\Jobs\NotifyWaitingListOnAvailability;
 use Illuminate\Support\Facades\Log;
@@ -32,9 +34,10 @@ class AppointmentObserver
             return;
         }
 
-        // → completed: create staff commission
+        // → completed: create staff commission + check Aha Moment
         if ($appointment->status === Appointment::STATUS_COMPLETED) {
             $this->createCommission($appointment);
+            $this->checkAhaMoment($appointment);
         }
 
         // → confirmed or completed in a recurring series: generate next occurrence
@@ -65,6 +68,49 @@ class AppointmentObserver
             $appointment->staff_id_new,
             $appointment->date ? (string) $appointment->date : null,
         );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+
+    /**
+     * Detect the "Aha Moment": ≥5 completed appointments reached during trial.
+     * Marks aha_reached on TenantSubscription (central DB) the first time.
+     */
+    private function checkAhaMoment(Appointment $appointment): void
+    {
+        try {
+            $completedCount = Appointment::where('status', Appointment::STATUS_COMPLETED)->count();
+
+            if ($completedCount < 5) {
+                return;
+            }
+
+            $tenantId = tenant('id');
+            if (! $tenantId) {
+                return;
+            }
+
+            $sub = TenantSubscription::where('tenant_id', $tenantId)->first();
+
+            if (! $sub || $sub->aha_reached) {
+                return; // already flagged or no subscription record
+            }
+
+            $sub->update([
+                'aha_reached'    => true,
+                'aha_reached_at' => now(),
+            ]);
+
+            UsageLog::log('aha_moment_reached', [
+                'tenant_id'       => $tenantId,
+                'completed_count' => $completedCount,
+                'trial_days_left' => $sub->trialDaysLeft(),
+            ]);
+
+            Log::info("AppointmentObserver: Aha Moment reached for tenant [{$tenantId}] ({$completedCount} completed).");
+        } catch (\Throwable $e) {
+            Log::error('AppointmentObserver.checkAhaMoment: ' . $e->getMessage());
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────

@@ -47,6 +47,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
             // Geo localization (country detection + locale + currency)
             'geo.detect' => \App\Http\Middleware\DetectCountryAndLocale::class,
+
+            // Onboarding wizard redirect (first-login flow)
+            'onboarding.redirect' => \App\Http\Middleware\RedirectIfOnboardingIncomplete::class,
         ]);
 
         // Enable session and cookies for API routes (needed for Super Admin web-based auth)

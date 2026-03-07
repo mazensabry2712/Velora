@@ -9,9 +9,19 @@ class UsageLog extends Model
 {
     /**
      * The connection name for the model.
-     * This model uses the central database (mysql) not tenant database
+     * Uses the configured central connection (respects test env TENANCY_CENTRAL_CONNECTION).
+     * Falls back to 'mysql' in production.
      */
     protected $connection = 'mysql';
+
+    /**
+     * Override Eloquent's connection resolver to use the configured central connection.
+     * This allows tests to use 'sqlite' while production uses 'mysql'.
+     */
+    public function getConnectionName(): ?string
+    {
+        return config('tenancy.database.central_connection', parent::getConnectionName());
+    }
 
     /**
      * The attributes that are mass assignable.

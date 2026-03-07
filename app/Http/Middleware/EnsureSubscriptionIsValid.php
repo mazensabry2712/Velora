@@ -2,10 +2,12 @@
 
 namespace App\Http\Middleware;
 
+use App\Mail\FounderAlertMail;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class EnsureSubscriptionIsValid
 {
@@ -76,19 +78,29 @@ class EnsureSubscriptionIsValid
                 return $this->redirectToExpired($request, 'grace');
             }
 
-            $trialDaysLeft = (int) $now->diffInDays($subscription->trial_ends_at, false);
+            $trialDaysLeft   = (int) $now->diffInDays($subscription->trial_ends_at, false);
+            $trialDayElapsed = (int) now()->parse($subscription->created_at)->diffInDays($now);
 
-            // Warning banner 3 days before trial ends
+            // Trigger founder alert at Day 11 (once only)
+            if ($trialDayElapsed >= 11 && ! $subscription->founder_alerted) {
+                $this->triggerFounderAlert($subscription, 'Day 11 — no upgrade yet');
+            }
+
+            // Build upgrade URL (direct to upgrade page, Stripe Checkout handled there)
+            $upgradeUrl = '/admin/subscription/upgrade';
+
             view()->share('subscriptionBanner', [
-                'type'      => $trialDaysLeft <= 3 ? 'warning' : 'info',
-                'status'    => 'trial',
-                'days_left' => $trialDaysLeft,
-                'message'   => $trialDaysLeft <= 3
-                    ? "⚠️ Your trial ends in {$trialDaysLeft} day(s)! Upgrade now to keep access."
-                    : "🎉 Trial: {$trialDaysLeft} days remaining.",
+                'type'          => $trialDaysLeft <= 3 ? 'warning' : 'info',
+                'status'        => 'trial',
+                'days_left'     => $trialDaysLeft,
+                'trial_extended' => (bool) ($subscription->trial_extended ?? false),
+                'upgrade_url'   => $upgradeUrl,
+                'extend_url'    => '/billing/extend-trial',
+                'message'       => $trialDaysLeft <= 2
+                    ? "⏰ تنتهي تجربتك خلال {$trialDaysLeft} يوم! فعّل اشتراكك لتجنّب فقدان بياناتك."
+                    : "🚀 فترة تجريبية: متبقى {$trialDaysLeft} يوم.",
             ]);
 
-            // Only block destructive actions when < 0 days (grace mode)
             return $next($request);
         }
 
@@ -200,12 +212,52 @@ class EnsureSubscriptionIsValid
             $daysLeft = (int) now()->diffInDays($subscription->ends_at, false);
             if ($daysLeft <= 7) {
                 view()->share('subscriptionBanner', [
-                    'type'      => 'warning',
-                    'status'    => 'active',
-                    'days_left' => $daysLeft,
-                    'message'   => "Your subscription renews in {$daysLeft} day(s).",
+                    'type'        => 'warning',
+                    'status'      => 'active',
+                    'days_left'   => $daysLeft,
+                    'upgrade_url' => '/admin/subscription',
+                    'message'     => "تتجدد صلاحية اشتراكك خلال {$daysLeft} يوم.",
                 ]);
             }
+        }
+    }
+
+    /**
+     * Send a one-time founder alert email when high-intent signals are detected.
+     * Marks founder_alerted=true so it only fires once per subscription.
+     */
+    private function triggerFounderAlert(object $subscription, string $reason): void
+    {
+        try {
+            DB::connection('mysql')
+                ->table('tenant_subscriptions')
+                ->where('id', $subscription->id)
+                ->update(['founder_alerted' => true, 'updated_at' => now()]);
+
+            $founderEmail = config('mail.founder_email', config('mail.from.address'));
+            if (! $founderEmail) {
+                return;
+            }
+
+            // Get tenant email
+            $tenant = DB::connection('mysql')
+                ->table('tenants')
+                ->where('id', $subscription->tenant_id)
+                ->first();
+
+            $trialDaysLeft = $subscription->trial_ends_at
+                ? max(0, (int) now()->diffInDays($subscription->trial_ends_at, false))
+                : 0;
+
+            Mail::to($founderEmail)->queue(new FounderAlertMail(
+                tenantId:     $subscription->tenant_id,
+                businessName: $tenant?->name ?? $subscription->tenant_id,
+                ownerEmail:   $tenant?->email ?? 'unknown',
+                triggerReason: $reason,
+                trialDaysLeft: $trialDaysLeft,
+            ));
+        } catch (\Exception $e) {
+            Log::error("Failed to send founder alert for tenant {$subscription->tenant_id}: " . $e->getMessage());
         }
     }
 }

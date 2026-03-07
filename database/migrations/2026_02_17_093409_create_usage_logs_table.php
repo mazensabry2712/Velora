@@ -14,7 +14,15 @@ return new class extends Migration
         Schema::create('usage_logs', function (Blueprint $table) {
             $table->id();
             $table->string('tenant_id');
-            $table->enum('type', ['user_created', 'user_deleted', 'appointment_created', 'appointment_cancelled', 'storage_used', 'feature_used']);
+            $table->enum('type', [
+                'user_created', 'user_deleted',
+                'appointment_created', 'appointment_cancelled',
+                'storage_used', 'feature_used',
+                'onboarding_step1_completed', 'onboarding_step2_completed',
+                'onboarding_step3_completed', 'onboarding_completed',
+                'aha_moment_reached', 'trial_activated', 'trial_converted',
+                'trial_nudge_sent', 'subscription_upgraded', 'subscription_cancelled',
+            ]);
             $table->json('details')->nullable();
             $table->unsignedBigInteger('user_id')->nullable();
             $table->string('ip_address', 45)->nullable();

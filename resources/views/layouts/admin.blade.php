@@ -12,10 +12,6 @@
     }
     $businessName = is_scalar($businessName) ? (string) $businessName : config('app.name');
     $businessLogo = $businessSettings?->logo ?? null;
-    // Helper: safely cast any __() result to string
-    $safeStr = fn($v) => is_array($v) ? (reset($v) ?: '') : (is_object($v) ? (string)($v->{$locale} ?? $v->en ?? '') : (string)$v);
-    $adminTitle = $safeStr(\Illuminate\Support\Facades\Lang::get('Admin'));
-    $safeBusinessName = htmlspecialchars($businessName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 @endphp
 <html lang="{{ $locale }}" dir="{{ $isRtl ? 'rtl' : 'ltr' }}" class="scroll-smooth">
 <head>
@@ -23,7 +19,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @php
-        $pageTitle = \Illuminate\Support\Facades\View::yieldContent('title');
+        $pageTitle = $__env->yieldContent('title');
         if (is_array($pageTitle) || is_object($pageTitle)) { $pageTitle = ''; }
         $pageTitle = (string)($pageTitle ?: 'Admin');
     @endphp
@@ -392,22 +388,48 @@
     @if(isset($subscriptionBanner))
     @php
         $banner = $subscriptionBanner;
-        $bannerColors = [
-            'info'    => 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700 text-indigo-800 dark:text-indigo-200',
-            'warning' => 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-700 text-amber-800 dark:text-amber-200',
-            'danger'  => 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700 text-red-800 dark:text-red-200',
-        ];
-        $colorClass = $bannerColors[$banner['type']] ?? $bannerColors['info'];
+        $isUrgent = $banner['status'] === 'trial' && ($banner['days_left'] ?? 99) <= 3;
+        $isGrace  = $banner['status'] === 'grace';
+        $bgClass  = match($banner['type'] ?? 'info') {
+            'warning' => 'bg-amber-500',
+            'danger'  => 'bg-red-600',
+            default   => 'bg-indigo-600',
+        };
     @endphp
-    <div class="border-b {{ $colorClass }} px-4 py-2.5">
-        <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
-            <p class="text-sm font-medium">{{ $banner['message'] }}</p>
-            @if(auth()->user()->isAdminTenant())
-            <a href="{{ route('admin.subscription.upgrade') }}"
-               class="flex-shrink-0 text-xs font-semibold underline underline-offset-2 hover:no-underline">
-                {{ __('Upgrade Now') }}
-            </a>
-            @endif
+    <div class="{{ $bgClass }} text-white">
+        <div class="max-w-7xl mx-auto px-4 py-2 flex flex-wrap items-center justify-between gap-3">
+
+            {{-- Left: message + days pill --}}
+            <div class="flex items-center gap-3">
+                @if($banner['status'] === 'trial')
+                    <span class="bg-white/25 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                        {{ $banner['days_left'] ?? 0 }} {{ __('يوم') }}
+                    </span>
+                @endif
+                <span class="text-sm font-medium">{{ $banner['message'] }}</span>
+            </div>
+
+            {{-- Right: action buttons --}}
+            <div class="flex items-center gap-2 flex-shrink-0">
+                @if(isset($banner['upgrade_url']) && auth()->user()?->isAdminTenant())
+                    <a href="{{ $banner['upgrade_url'] }}"
+                       class="bg-white text-{{ $isUrgent || $isGrace ? 'red' : 'indigo' }}-600 text-xs font-bold px-4 py-1.5 rounded-full hover:bg-white/90 transition-colors shadow-sm">
+                        {{ __('ترقية الآن') }} →
+                    </a>
+                @endif
+
+                {{-- 7-day extension offer (Day 12, one-time, trial only) --}}
+                @if($banner['status'] === 'trial' && ($banner['days_left'] ?? 99) <= 2 && !($banner['trial_extended'] ?? false) && auth()->user()?->isAdminTenant())
+                    <form method="POST" action="/billing/extend-trial" class="inline">
+                        @csrf
+                        <button type="submit"
+                                class="bg-white/20 border border-white/40 text-white text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-white/30 transition-colors"
+                                onclick="return confirm('{{ __('تمديد 7 أيام إضافية مجانية؟') }}')">
+                            {{ __('تمديد 7 أيام') }}
+                        </button>
+                    </form>
+                @endif
+            </div>
         </div>
     </div>
     @endif

@@ -64,6 +64,7 @@ Route::prefix('super-admin')->middleware(['auth:web', 'super.admin'])->group(fun
     Route::get('/dashboard/subscription-stats', [DashboardController::class, 'subscriptionStats']);
     Route::get('/dashboard/activity-summary', [DashboardController::class, 'activitySummary']);
     Route::get('/dashboard/growth-metrics', [DashboardController::class, 'growthMetrics']);
+    Route::get('/dashboard/revenue-metrics', [DashboardController::class, 'revenueMetrics']);
 
     // Tenants Management
     Route::apiResource('tenants', TenantController::class);

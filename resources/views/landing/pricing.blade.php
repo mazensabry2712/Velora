@@ -11,6 +11,10 @@
         </h1>
         <p class="relative text-base sm:text-xl text-gray-400 mb-3">{{ __('landing.pricing_page_sub') }}</p>
         <p class="relative text-brand-400 font-semibold text-sm sm:text-base md:text-lg">{{ __('landing.pricing_page_free_note') }}</p>
+        {{-- Anchoring trust copy --}}
+        <p class="relative text-gray-500 text-sm mt-2">
+            💡 {{ app()->getLocale() === 'ar' ? 'الاشتراك = تكلفة موعد واحد ضائع — استرجعوا أكثر من ذلك في أول أسبوع' : 'Subscription = cost of one missed appointment — businesses recover that in week 1' }}
+        </p>
 
         {{-- Billing toggle --}}
         <div class="relative flex items-center justify-center gap-4 mt-8">
@@ -221,6 +225,70 @@
                class="btn-primary text-white font-semibold px-8 py-3 rounded-xl inline-block">
                 {{ __('landing.contact_support') }}
             </a>
+        </div>
+
+        {{-- SAR Pricing Reference (MENA-targeted) --}}
+        <div class="mt-14 sm:mt-20 max-w-4xl mx-auto px-4 sm:px-0" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
+            <h2 class="text-xl sm:text-2xl font-extrabold text-center mb-2 text-white">
+                {{ app()->getLocale() === 'ar' ? '💰 الأسعار بالريال السعودي' : '💰 Pricing in SAR (Saudi Arabia)' }}
+            </h2>
+            <p class="text-center text-gray-500 text-sm mb-8">
+                {{ app()->getLocale() === 'ar' ? 'أسعار تقريبية بالريال السعودي — الاشتراك بالدولار عبر البوابة' : 'Approximate SAR pricing — subscription charged in USD via payment gateway' }}
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {{-- Starter --}}
+                <div class="glass rounded-2xl p-6 border border-white/10 text-center">
+                    <p class="text-xs text-gray-500 uppercase tracking-widest mb-2">{{ app()->getLocale() === 'ar' ? 'ستارتر' : 'Starter' }}</p>
+                    <p class="text-4xl font-black text-white mb-1">99 <span class="text-xl font-semibold text-gray-400">ر.س</span></p>
+                    <p class="text-gray-500 text-xs mb-4">{{ app()->getLocale() === 'ar' ? 'شهرياً' : 'per month' }}</p>
+                    <ul class="text-sm text-gray-400 space-y-1 text-{{ app()->getLocale() === 'ar' ? 'right' : 'left' }}">
+                        <li>✓ {{ app()->getLocale() === 'ar' ? '3 موظفين' : '3 Staff' }}</li>
+                        <li>✓ {{ app()->getLocale() === 'ar' ? 'حجز إلكتروني' : 'Online Booking' }}</li>
+                        <li>✓ {{ app()->getLocale() === 'ar' ? 'تذكيرات تلقائية' : 'Auto Reminders' }}</li>
+                    </ul>
+                </div>
+                {{-- Pro (highlighted) --}}
+                <div class="glass rounded-2xl p-6 border-2 border-brand-500 text-center relative">
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <span class="btn-primary text-white text-xs font-bold px-4 py-1 rounded-full">{{ app()->getLocale() === 'ar' ? 'الأكثر شيوعاً' : 'Most Popular' }}</span>
+                    </div>
+                    <p class="text-xs text-gray-500 uppercase tracking-widest mb-2">Pro</p>
+                    <p class="text-4xl font-black text-white mb-1">184 <span class="text-xl font-semibold text-gray-400">ر.س</span></p>
+                    <p class="text-gray-500 text-xs mb-4">{{ app()->getLocale() === 'ar' ? 'شهرياً' : 'per month' }}</p>
+                    <ul class="text-sm text-gray-400 space-y-1 text-{{ app()->getLocale() === 'ar' ? 'right' : 'left' }}">
+                        <li>✓ {{ app()->getLocale() === 'ar' ? 'موظفون غير محدودون' : 'Unlimited Staff' }}</li>
+                        <li>✓ {{ app()->getLocale() === 'ar' ? 'إدارة الطابور' : 'Queue Management' }}</li>
+                        <li>✓ {{ app()->getLocale() === 'ar' ? 'تقارير متقدمة' : 'Advanced Reports' }}</li>
+                        <li>✓ {{ app()->getLocale() === 'ar' ? 'علامة تجارية مخصصة' : 'Custom Branding' }}</li>
+                    </ul>
+                </div>
+                {{-- Business --}}
+                <div class="glass rounded-2xl p-6 border border-white/10 text-center">
+                    <p class="text-xs text-gray-500 uppercase tracking-widest mb-2">{{ app()->getLocale() === 'ar' ? 'بزنس' : 'Business' }}</p>
+                    <p class="text-4xl font-black text-white mb-1">299 <span class="text-xl font-semibold text-gray-400">ر.س</span></p>
+                    <p class="text-gray-500 text-xs mb-4">{{ app()->getLocale() === 'ar' ? 'شهرياً' : 'per month' }}</p>
+                    <ul class="text-sm text-gray-400 space-y-1 text-{{ app()->getLocale() === 'ar' ? 'right' : 'left' }}">
+                        <li>✓ {{ app()->getLocale() === 'ar' ? 'API + تكاملات' : 'API + Integrations' }}</li>
+                        <li>✓ {{ app()->getLocale() === 'ar' ? 'وايت ليبل' : 'White Label' }}</li>
+                        <li>✓ {{ app()->getLocale() === 'ar' ? 'دعم مخصص' : 'Dedicated Support' }}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        {{-- Guarantee Strip --}}
+        <div class="mt-14 sm:mt-16 max-w-3xl mx-auto px-4 sm:px-0">
+            <div class="glass rounded-2xl p-6 sm:p-8 border border-green-500/30 text-center">
+                <div class="text-3xl mb-3">🛡️</div>
+                <h3 class="text-lg font-extrabold text-white mb-2">
+                    {{ app()->getLocale() === 'ar' ? 'لا بطاقة مطلوبة — 14 يوم تجربة مجانية كاملة' : 'No credit card required — full 14-day free trial' }}
+                </h3>
+                <p class="text-gray-400 text-sm max-w-lg mx-auto">
+                    {{ app()->getLocale() === 'ar'
+                        ? 'جرّب كل الميزات بدون قيود. إذا ما عجبك، ما تدفع شيئاً. وإذا قررت الاشتراك، نقل بياناتك معك بالكامل.'
+                        : "Try every feature, no restrictions. If it's not for you, pay nothing. If you subscribe, all your data carries over." }}
+                </p>
+            </div>
         </div>
     </div>
 </div>

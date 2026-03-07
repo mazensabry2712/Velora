@@ -168,7 +168,7 @@ class DashboardController extends Controller
                 return null;
             }
 
-            $subscription = DB::connection('mysql')->table('tenant_subscriptions')
+            $subscription = DB::connection(config('tenancy.database.central_connection', 'mysql'))->table('tenant_subscriptions')
                 ->join('subscription_plans', 'tenant_subscriptions.subscription_plan_id', '=', 'subscription_plans.id')
                 ->where('tenant_subscriptions.tenant_id', $tenant->id)
                 ->whereIn('tenant_subscriptions.status', ['active', 'trial'])

@@ -184,7 +184,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ __('super-admin.stat_total_companies') }}</p>
-                    <p class="text-4xl font-black text-slate-900 dark:text-white mt-2 tabular-nums" x-text="filteredStats.total_tenants"></p>
+                    <p class="text-4xl font-black text-slate-900 dark:text-white mt-2 tabular-nums" x-text="stats.total_tenants"></p>
                     <p class="text-xs text-slate-400 mt-1">{{ __('super-admin.stat_all_companies') }}</p>
                 </div>
                 <div class="w-14 h-14 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-md group-hover:shadow-indigo-200 dark:group-hover:shadow-indigo-900 transition-shadow">
@@ -1065,10 +1065,11 @@ function dashboard() {
         },
 
         updateFilteredStats() {
-            this.filteredStats.total_tenants = this.filteredTenants.length;
-            this.filteredStats.active_tenants = this.filteredTenants.filter(t => t.is_active).length;
-            this.filteredStats.inactive_tenants = this.filteredTenants.filter(t => !t.is_active).length;
-            this.filteredStats.trial_tenants = this.stats.trial_tenants; // Global stat — not per-filtered-row
+            const hasFilter = this.searchQuery || this.statusFilter !== 'all';
+            this.filteredStats.total_tenants    = hasFilter ? this.filteredTenants.length : this.stats.total_tenants;
+            this.filteredStats.active_tenants   = hasFilter ? this.filteredTenants.filter(t => t.is_active).length : this.stats.active_tenants;
+            this.filteredStats.inactive_tenants = hasFilter ? this.filteredTenants.filter(t => !t.is_active).length : this.stats.inactive_tenants;
+            this.filteredStats.trial_tenants    = this.stats.trial_tenants; // Global stat — not per-filtered-row
             this.updatePagination();
         },
 

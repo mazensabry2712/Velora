@@ -230,4 +230,62 @@ class BillingController extends Controller
             return back()->withErrors(['portal' => 'Could not open billing portal. Please contact support.']);
         }
     }
+
+    // ── Trial Extension ─────────────────────────────────────────────────
+
+    /**
+     * Grant a one-time 7-day trial extension.
+     * Route: POST /billing/extend-trial
+     * Conditions: status=trial AND trial_extended=false
+     */
+    public function extendTrial(Request $request)
+    {
+        $tenantId = tenant('id');
+        $centralConnection = config('tenancy.database.central_connection', 'mysql');
+
+        $subscription = DB::connection($centralConnection)
+            ->table('tenant_subscriptions')
+            ->where('tenant_id', $tenantId)
+            ->where('status', 'trial')
+            ->orderByDesc('created_at')
+            ->first();
+
+        if (! $subscription) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No active trial found.',
+            ], 422);
+        }
+
+        if ($subscription->trial_extended) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Trial has already been extended once.',
+            ], 422);
+        }
+
+        $newTrialEndsAt = now()->parse($subscription->trial_ends_at)->addDays(7);
+
+        DB::connection($centralConnection)
+            ->table('tenant_subscriptions')
+            ->where('id', $subscription->id)
+            ->update([
+                'trial_ends_at'      => $newTrialEndsAt,
+                'trial_extended'     => true,
+                'trial_extended_at'  => now(),
+                'updated_at'         => now(),
+            ]);
+
+        Log::info("Trial extended 7 days for tenant {$tenantId}. New trial_ends_at: {$newTrialEndsAt}");
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success'          => true,
+                'message'          => 'Trial extended by 7 days.',
+                'new_trial_ends_at' => $newTrialEndsAt->toDateTimeString(),
+            ]);
+        }
+
+        return back()->with('success', 'تم تمديد فترة تجربتك 7 أيام إضافية!');
+    }
 }

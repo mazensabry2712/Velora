@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('tenant_id');
             $table->foreignId('subscription_plan_id')->constrained()->onDelete('cascade');
-            $table->enum('status', ['trial', 'active', 'suspended', 'cancelled', 'expired'])->default('trial');
+            $table->enum('status', ['trial', 'active', 'grace', 'suspended', 'cancelled', 'expired'])->default('trial');
             $table->timestamp('trial_ends_at')->nullable();
             $table->timestamp('starts_at')->nullable();
             $table->timestamp('ends_at')->nullable();

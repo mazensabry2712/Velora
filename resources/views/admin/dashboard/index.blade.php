@@ -163,7 +163,7 @@
 
     <!-- Quick Actions - 3 Primary Buttons -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <a href="/admin/appointments" class="group relative bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 rounded-xl shadow-lg hover:shadow-xl transition-all p-6 text-white overflow-hidden">
+        <a href="/admin/appointments/create" class="group relative bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 rounded-xl shadow-lg hover:shadow-xl transition-all p-6 text-white overflow-hidden">
             <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full"></div>
             <div class="relative">
                 <div class="flex items-center justify-between mb-3">
@@ -328,6 +328,7 @@
             </div>
             <div class="p-5">
                 @if(count($topServices) > 0)
+                    @php $maxTotal = $topServices->first()->total ?? 1; @endphp
                     <div class="space-y-4">
                         @foreach($topServices as $index => $service)
                         <div class="flex items-center gap-3">
@@ -338,7 +339,6 @@
                                 <p class="font-medium text-slate-900 dark:text-slate-100">{{ $service->name }}</p>
                                 <div class="flex items-center gap-2 mt-1">
                                     <div class="flex-1 bg-slate-200 dark:bg-slate-700 rounded-full h-2">
-                                        @php $maxTotal = $topServices->first()->total ?? 1; @endphp
                                         <div class="bg-indigo-600 h-2 rounded-full" style="width: {{ ($service->total / $maxTotal) * 100 }}%"></div>
                                     </div>
                                     <span class="text-sm font-medium text-slate-600 dark:text-slate-400">{{ $service->total }}</span>
@@ -368,13 +368,23 @@
                                 ($activity['type'] === 'confirmed' ? 'bg-blue-100 dark:bg-blue-900' :
                                 ($activity['type'] === 'cancelled' ? 'bg-red-100 dark:bg-red-900' : 'bg-slate-100 dark:bg-slate-700'))
                             }}">
-                                <svg class="w-4 h-4 {{
-                                    $activity['type'] === 'completed' ? 'text-emerald-600 dark:text-emerald-400' :
-                                    ($activity['type'] === 'confirmed' ? 'text-blue-600 dark:text-blue-400' :
-                                    ($activity['type'] === 'cancelled' ? 'text-red-600 dark:text-red-400' : 'text-slate-600 dark:text-slate-400'))
-                                }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
+                                @if($activity['type'] === 'completed')
+                                    <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                @elseif($activity['type'] === 'confirmed')
+                                    <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                @elseif($activity['type'] === 'cancelled')
+                                    <svg class="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                @else
+                                    <svg class="w-4 h-4 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                @endif
                             </div>
                             <div class="flex-1">
                                 <p class="text-slate-900 dark:text-slate-100 font-medium">{{ $activity['description'] }}</p>
@@ -387,6 +397,39 @@
                     <p class="text-center text-slate-500 dark:text-slate-400 py-8">{{ __('No recent activities') }}</p>
                 @endif
             </div>
+        </div>
+    </div>
+
+    <!-- Recent Customers -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 mb-8">
+        <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+            <h3 class="font-semibold text-slate-900 dark:text-slate-100">{{ __('Recent Customers') }}</h3>
+            <a href="/admin/customers" class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">{{ __('View all') }} →</a>
+        </div>
+        <div class="divide-y divide-slate-100 dark:divide-slate-700">
+            @if(isset($recentCustomers) && count($recentCustomers) > 0)
+                @foreach($recentCustomers as $customer)
+                <div class="flex items-center gap-4 px-5 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors">
+                    @if($customer['avatar'])
+                        <img src="{{ $customer['avatar'] }}" alt="{{ $customer['name'] }}" class="w-10 h-10 rounded-full object-cover flex-shrink-0">
+                    @else
+                        <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="text-purple-600 dark:text-purple-400 font-bold">{{ substr($customer['name'], 0, 1) }}</span>
+                        </div>
+                    @endif
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium text-slate-900 dark:text-slate-100 truncate">{{ $customer['name'] }}</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 truncate">{{ $customer['email'] }}</p>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                        <p class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ $customer['appointments_count'] }} {{ __('appts') }}</p>
+                        <p class="text-xs text-slate-400 dark:text-slate-500">{{ $customer['joined'] }}</p>
+                    </div>
+                </div>
+                @endforeach
+            @else
+                <p class="text-center text-slate-500 dark:text-slate-400 py-8">{{ __('No customers yet') }}</p>
+            @endif
         </div>
     </div>
 

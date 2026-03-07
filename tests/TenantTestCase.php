@@ -78,6 +78,7 @@ abstract class TenantTestCase extends TestCase
             InitializeTenancyByDomain::class,
             PreventAccessFromCentralDomains::class,
             \App\Http\Middleware\EnsureSubscriptionIsValid::class,
+            \App\Http\Middleware\RedirectIfOnboardingIncomplete::class,
         ]);
 
         if (!self::$migrationsDone) {
