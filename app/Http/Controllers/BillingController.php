@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\SubscriptionPlan;
 use App\Services\GeoService;
+use App\Services\MoyasarService;
 use App\Services\StripeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -12,8 +13,9 @@ use Illuminate\Support\Facades\Log;
 class BillingController extends Controller
 {
     public function __construct(
-        protected StripeService $stripeService,
-        protected GeoService $geoService,
+        protected StripeService  $stripeService,
+        protected MoyasarService $moyasarService,
+        protected GeoService     $geoService,
     ) {}
 
     /**
@@ -128,6 +130,21 @@ class BillingController extends Controller
         $taxAmount     = $this->geoService->calculateTax($baseAmount, $countryCode);
         $totalAmount   = round($baseAmount + $taxAmount, 2);
 
+        // ── Route Saudi users to Moyasar ────────────────────────────────────
+        if ($countryCode === 'SA') {
+            $amountSar     = (float) ($geoPrice?->amount ?? $plan->price ?? 0);
+            $amountHalalas = (int) round($amountSar * 100);
+
+            session([
+                'moyasar_plan_id'   => $plan->id,
+                'moyasar_amount'    => $amountHalalas,
+                'moyasar_plan_name' => $plan->name,
+                'moyasar_currency'  => 'SAR',
+            ]);
+
+            return redirect()->route('billing.moyasar.pay');
+        }
+
         if (!$stripePriceId) {
             return back()->withErrors(['plan' => 'Payment not available for this plan. Please contact support.']);
         }
@@ -195,6 +212,93 @@ class BillingController extends Controller
 
         $message = 'Your subscription has been activated successfully! Welcome aboard.';
         return redirect()->route('admin.dashboard')->with('success', $message);
+    }
+
+    // ── Moyasar (Saudi Payment Gateway) ───────────────────────────────────────
+
+    /**
+     * Show Moyasar hosted payment form (for SA tenants).
+     * Route: GET /billing/moyasar/pay
+     */
+    public function moyasarPay(Request $request)
+    {
+        $planId   = session('moyasar_plan_id');
+        $amount   = session('moyasar_amount');  // halalas
+
+        if (!$planId || !$amount) {
+            return redirect()->route('billing.expired')
+                ->withErrors(['payment' => 'جلسة الدفع انتهت، الرجاء المحاولة مرة أخرى.']);
+        }
+
+        $plan        = SubscriptionPlan::findOrFail($planId);
+        $callbackUrl = url('/billing/moyasar/callback') . '?plan_id=' . $planId;
+
+        return view('billing.moyasar-pay', [
+            'plan'           => $plan,
+            'amount'         => $amount,
+            'callbackUrl'    => $callbackUrl,
+            'publishableKey' => $this->moyasarService->getPublishableKey(),
+            'tenantId'       => tenant('id'),
+        ]);
+    }
+
+    /**
+     * Handle Moyasar redirect callback after payment.
+     * Route: GET /billing/moyasar/callback
+     */
+    public function moyasarCallback(Request $request)
+    {
+        $paymentId = $request->query('id');
+        $status    = $request->query('status');
+        $planId    = $request->query('plan_id') ?? session('moyasar_plan_id');
+
+        if (!$paymentId) {
+            return redirect()->route('billing.expired')
+                ->withErrors(['payment' => 'لم يتم استكمال الدفع.']);
+        }
+
+        try {
+            $payment = $this->moyasarService->verifyPayment($paymentId);
+
+            if (($payment['status'] ?? '') !== 'paid') {
+                Log::warning('Moyasar callback: payment not paid', [
+                    'payment_id' => $paymentId,
+                    'status'     => $payment['status'] ?? 'unknown',
+                    'tenant'     => tenant('id'),
+                ]);
+                return redirect()->route('billing.expired')
+                    ->withErrors(['payment' => 'لم يتم تأكيد الدفع. تواصل مع الدعم إذا تم خصم المبلغ.']);
+            }
+
+            $tenantId       = tenant('id');
+            $resolvedPlanId = $planId ?? ($payment['metadata']['plan_id'] ?? null);
+
+            if (!$resolvedPlanId) {
+                Log::error('Moyasar callback: missing plan_id', ['payment_id' => $paymentId]);
+                return redirect()->route('billing.expired')
+                    ->withErrors(['payment' => 'حدث خطأ في تحديد الخطة. الرجاء التواصل مع الدعم.']);
+            }
+
+            $this->moyasarService->activateSubscription(
+                $tenantId,
+                (int) $resolvedPlanId,
+                (int) ($payment['amount'] ?? 0),
+                $paymentId
+            );
+
+            session()->forget(['moyasar_plan_id', 'moyasar_amount', 'moyasar_plan_name', 'moyasar_currency']);
+
+            return redirect()->route('admin.dashboard')
+                ->with('success', 'تم تفعيل اشتراكك بنجاح! 🎉');
+
+        } catch (\Exception $e) {
+            Log::error('Moyasar callback error: ' . $e->getMessage(), [
+                'payment_id' => $paymentId,
+                'tenant'     => tenant('id'),
+            ]);
+            return redirect()->route('billing.expired')
+                ->withErrors(['payment' => 'حدث خطأ أثناء تفعيل الاشتراك. الرجاء التواصل مع الدعم.']);
+        }
     }
 
     /**

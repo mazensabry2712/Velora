@@ -13,58 +13,63 @@
     </div>
 
     <!-- Statistics Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div class="card-animate card-delay-1 bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6 border border-slate-200 dark:border-slate-700 hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-            <div class="flex items-center justify-between">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <!-- Total -->
+        <div class="card-animate card-delay-1 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+            <div class="h-1 bg-slate-400 dark:bg-slate-500"></div>
+            <div class="p-5 flex items-center justify-between gap-3">
                 <div>
-                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.logs_today') }}</p>
-                    <p class="text-3xl font-black text-indigo-600 dark:text-indigo-400 mt-2" x-text="stats.today"></p>
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.logs_total') }}</p>
+                    <p class="text-3xl font-black text-slate-800 dark:text-white mt-1" x-text="pagination.total || 0"></p>
                 </div>
-                <div class="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/40 rounded-xl flex items-center justify-center">
-                    <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <div class="w-11 h-11 bg-slate-100 dark:bg-slate-700 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-slate-500 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                 </div>
             </div>
         </div>
-
-        <div class="card-animate card-delay-2 bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6 border border-slate-200 dark:border-slate-700 hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.logs_this_week') }}</p>
-                    <p class="text-3xl font-black text-emerald-600 dark:text-emerald-400 mt-2" x-text="stats.this_week"></p>
-                </div>
-                <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/40 rounded-xl flex items-center justify-center">
-                    <svg class="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                </div>
-            </div>
-        </div>
-
-        <div class="card-animate card-delay-3 bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6 border border-slate-200 dark:border-slate-700 hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-            <div class="flex items-center justify-between">
+        <!-- This Month -->
+        <div class="card-animate card-delay-2 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+            <div class="h-1 bg-amber-400"></div>
+            <div class="p-5 flex items-center justify-between gap-3">
                 <div>
                     <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.logs_this_month') }}</p>
-                    <p class="text-3xl font-black text-amber-600 dark:text-amber-400 mt-2" x-text="stats.this_month"></p>
+                    <p class="text-3xl font-black text-amber-600 dark:text-amber-400 mt-1" x-text="stats.this_month"></p>
                 </div>
-                <div class="w-12 h-12 bg-amber-100 dark:bg-amber-900/40 rounded-xl flex items-center justify-center">
-                    <svg class="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="w-11 h-11 bg-amber-100 dark:bg-amber-900/40 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
                 </div>
             </div>
         </div>
-
-        <div class="card-animate card-delay-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6 border border-slate-200 dark:border-slate-700 hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-            <div class="flex items-center justify-between">
+        <!-- This Week -->
+        <div class="card-animate card-delay-3 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+            <div class="h-1 bg-emerald-400"></div>
+            <div class="p-5 flex items-center justify-between gap-3">
                 <div>
-                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.logs_total') }}</p>
-                    <p class="text-3xl font-black text-slate-900 dark:text-white mt-2" x-text="pagination.total || 0"></p>
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.logs_this_week') }}</p>
+                    <p class="text-3xl font-black text-emerald-600 dark:text-emerald-400 mt-1" x-text="stats.this_week"></p>
                 </div>
-                <div class="w-12 h-12 bg-slate-100 dark:bg-slate-700 rounded-xl flex items-center justify-center">
-                    <svg class="w-6 h-6 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                <div class="w-11 h-11 bg-emerald-100 dark:bg-emerald-900/40 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <!-- Today -->
+        <div class="card-animate card-delay-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+            <div class="h-1 bg-indigo-500"></div>
+            <div class="p-5 flex items-center justify-between gap-3">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.logs_today') }}</p>
+                    <p class="text-3xl font-black text-indigo-600 dark:text-indigo-400 mt-1" x-text="stats.today"></p>
+                </div>
+                <div class="w-11 h-11 bg-indigo-100 dark:bg-indigo-900/40 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </div>
             </div>
@@ -151,26 +156,40 @@
                 </thead>
                 <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
                     <template x-for="log in logs" :key="log.id">
-                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                            <td class="px-6 py-4 text-sm text-slate-900 dark:text-white">
-                                <span x-text="log.user ? log.user.name : 'System'"></span>
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                            <!-- User -->
+                            <td class="px-6 py-3.5">
+                                <div class="flex items-center gap-2.5">
+                                    <div :class="log.user
+                                            ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
+                                            : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'"
+                                         class="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black flex-shrink-0"
+                                         x-text="log.user ? log.user.name.charAt(0).toUpperCase() : 'S'"></div>
+                                    <span class="text-sm font-medium text-slate-800 dark:text-slate-200 whitespace-nowrap"
+                                          x-text="log.user ? log.user.name : 'System'"></span>
+                                </div>
                             </td>
-                            <td class="px-6 py-4">
+                            <!-- Action badge -->
+                            <td class="px-6 py-3.5">
                                 <span :class="{
-                                    'bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300': log.action === 'created',
-                                    'bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-300': log.action === 'updated',
-                                    'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300': log.action === 'deleted',
-                                    'bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-300': log.action === 'logged_in' || log.action === 'logged_out'
-                                }" class="px-2 py-1 text-xs font-semibold rounded-full" x-text="getActionLabel(log.action)"></span>
+                                    'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-200 dark:ring-emerald-800': log.action === 'created',
+                                    'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-200 dark:ring-indigo-800': log.action === 'updated',
+                                    'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 ring-1 ring-red-200 dark:ring-red-800': log.action === 'deleted',
+                                    'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 ring-1 ring-amber-200 dark:ring-amber-800': log.action === 'logged_in' || log.action === 'logged_out'
+                                }" class="inline-flex items-center px-2.5 py-1 text-xs font-bold rounded-full whitespace-nowrap"
+                                   x-text="getActionLabel(log.action)"></span>
                             </td>
-                            <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
-                                <span x-text="log.description"></span>
+                            <!-- Description -->
+                            <td class="px-6 py-3.5 max-w-xs">
+                                <span class="text-sm text-slate-600 dark:text-slate-400 line-clamp-1" x-text="log.description" :title="log.description"></span>
                             </td>
-                            <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
-                                <span x-text="log.ip_address || '-'"></span>
+                            <!-- IP -->
+                            <td class="px-6 py-3.5">
+                                <code class="text-xs bg-slate-100 dark:bg-slate-700/60 text-slate-500 dark:text-slate-400 px-2 py-1 rounded-md" x-text="log.ip_address || '—'"></code>
                             </td>
-                            <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
-                                <span x-text="formatDate(log.created_at)"></span>
+                            <!-- Date -->
+                            <td class="px-6 py-3.5 whitespace-nowrap">
+                                <span class="text-sm text-slate-500 dark:text-slate-400" x-text="formatDate(log.created_at)"></span>
                             </td>
                         </tr>
                     </template>

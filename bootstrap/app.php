@@ -59,10 +59,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Session\Middleware\StartSession::class,
         ]);
 
-        // Exclude API routes and Stripe webhook from CSRF verification
+        // Exclude API routes and payment webhooks from CSRF verification
         $middleware->validateCsrfTokens(except: [
             'api/*',
             'webhooks/stripe',
+            'webhooks/moyasar',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

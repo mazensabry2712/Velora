@@ -296,7 +296,7 @@
                                         </div>
                                         <span class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('super-admin.nav_toggle_mode') }}</span>
                                     </div>
-                                    <button onclick="toggleNavDark()"
+                                    <button onclick="toggleNavDark()" dir="ltr"
                                             class="relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none bg-slate-200 dark:bg-indigo-600 cursor-pointer">
                                         <span class="inline-block h-4 w-4 rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 translate-x-0.5 dark:translate-x-[21px]"></span>
                                     </button>

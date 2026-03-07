@@ -446,32 +446,54 @@
                 </div>
                 {{ __('super-admin.recent_activities') }}
             </h2>
-            <a href="{{ route('super-admin.activity-logs') }}" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium">{{ __('super-admin.view_all') }}</a>
+            <a href="{{ route('super-admin.activity-logs') }}" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium flex items-center gap-1">
+                {{ __('super-admin.view_all') }}
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </a>
         </div>
-        <div class="p-4">
-            <div class="space-y-2 max-h-[600px] overflow-y-auto">
+        <!-- Today / Week mini stats -->
+        <div class="grid grid-cols-2 gap-3 p-4 border-b border-slate-100 dark:border-slate-700">
+            <div class="bg-slate-50 dark:bg-slate-700/40 rounded-xl px-3 py-2.5 text-center">
+                <p class="text-xl font-black text-slate-900 dark:text-white" x-text="activityTodayCount"></p>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">{{ __('super-admin.activity_today') }}</p>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-700/40 rounded-xl px-3 py-2.5 text-center">
+                <p class="text-xl font-black text-slate-900 dark:text-white" x-text="activityWeekCount"></p>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">{{ __('super-admin.activity_week') }}</p>
+            </div>
+        </div>
+        <div class="p-3">
+            <div class="space-y-0.5 max-h-[500px] overflow-y-auto">
                 <template x-for="activity in recentActivities" :key="activity.id">
-                    <div class="flex items-start gap-2 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                        <div :class="activity.type === 'add' ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300' :
-                                     activity.type === 'edit' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300' :
-                                     'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'"
-                             class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0">
-                            <svg x-show="activity.type === 'add'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="flex items-start gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group cursor-default">
+                        <!-- Icon -->
+                        <div :class="activity.type === 'add'
+                                        ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400'
+                                        : activity.type === 'edit'
+                                            ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
+                                            : 'bg-red-100 dark:bg-red-900/50 text-red-500 dark:text-red-400'"
+                             class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <svg x-show="activity.type === 'add'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                             </svg>
-                            <svg x-show="activity.type === 'edit'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg x-show="activity.type === 'edit'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
-                            <svg x-show="activity.type === 'delete'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg x-show="activity.type === 'delete'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                         </div>
+                        <!-- Text -->
                         <div class="flex-1 min-w-0">
-                            <p class="text-xs text-slate-900 dark:text-white font-semibold leading-tight" x-text="activity.message"></p>
-                            <div class="flex items-center gap-1 mt-0.5">
-                                <span x-show="activity.user" class="text-xs text-indigo-500 dark:text-indigo-400 font-medium" x-text="activity.user"></span>
-                                <span x-show="activity.user" class="text-xs text-slate-300 dark:text-slate-600">·</span>
-                                <p class="text-xs text-slate-400" x-text="activity.time"></p>
+                            <p class="text-sm text-slate-800 dark:text-slate-200 font-medium leading-snug line-clamp-2" x-text="activity.message"></p>
+                            <div class="flex items-center gap-1.5 mt-1">
+                                <template x-if="activity.user">
+                                    <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-[9px] font-black text-indigo-700 dark:text-indigo-300 flex-shrink-0"
+                                          x-text="activity.user.charAt(0).toUpperCase()"></span>
+                                </template>
+                                <span x-show="activity.user" class="text-xs font-semibold text-indigo-500 dark:text-indigo-400 truncate max-w-[80px]" x-text="activity.user"></span>
+                                <span class="text-slate-300 dark:text-slate-600 text-xs">·</span>
+                                <span class="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap" x-text="activity.time"></span>
                             </div>
                         </div>
                     </div>
@@ -499,22 +521,37 @@
                 {{ __('super-admin.recent_companies') }}
             </h2>
 
-            <!-- Filter by Status -->
-            <div class="flex gap-2">
+            <!-- Filter by Status - pill style -->
+            <div class="flex gap-2 flex-wrap">
                 <button @click="statusFilter = 'all'; filterData()"
-                        :class="statusFilter === 'all' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'"
-                        class="px-3 py-1 rounded-lg text-sm hover:opacity-80">
-                    {{ __('super-admin.dash_filter_all') }} (<span x-text="stats.total_tenants"></span>)
+                        :class="statusFilter === 'all'
+                            ? 'bg-indigo-600 text-white shadow-sm'
+                            : 'bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'"
+                        class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all">
+                    {{ __('super-admin.dash_filter_all') }}
+                    <span :class="statusFilter === 'all' ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-500'"
+                          class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold text-white"
+                          x-text="stats.total_tenants"></span>
                 </button>
                 <button @click="statusFilter = 'active'; filterData()"
-                        :class="statusFilter === 'active' ? 'bg-green-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'"
-                        class="px-3 py-1 rounded-lg text-sm hover:opacity-80">
-                    {{ __('super-admin.dash_filter_active') }} (<span x-text="stats.active_tenants"></span>)
+                        :class="statusFilter === 'active'
+                            ? 'bg-emerald-600 text-white shadow-sm'
+                            : 'bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'"
+                        class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all">
+                    {{ __('super-admin.dash_filter_active') }}
+                    <span :class="statusFilter === 'active' ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-500'"
+                          class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold text-white"
+                          x-text="stats.active_tenants"></span>
                 </button>
                 <button @click="statusFilter = 'inactive'; filterData()"
-                        :class="statusFilter === 'inactive' ? 'bg-amber-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'"
-                        class="px-3 py-1 rounded-lg text-sm hover:opacity-80">
-                    {{ __('super-admin.dash_filter_inactive') }} (<span x-text="stats.inactive_tenants"></span>)
+                        :class="statusFilter === 'inactive'
+                            ? 'bg-amber-500 text-white shadow-sm'
+                            : 'bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'"
+                        class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all">
+                    {{ __('super-admin.dash_filter_inactive') }}
+                    <span :class="statusFilter === 'inactive' ? 'bg-amber-400' : 'bg-slate-300 dark:bg-slate-500'"
+                          class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold text-white"
+                          x-text="stats.inactive_tenants"></span>
                 </button>
             </div>
         </div>
@@ -582,8 +619,8 @@
                                     <div class="text-sm font-semibold text-slate-900 dark:text-white" x-text="tenant.name"></div>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <code class="text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-1 rounded" x-text="tenant.subdomain"></code>
+                            <td class="px-6 py-4 whitespace-nowrap max-w-[150px]">
+                                <code class="text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-1 rounded block truncate" x-text="tenant.subdomain" :title="tenant.subdomain"></code>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span :class="tenant.is_active

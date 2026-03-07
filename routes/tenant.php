@@ -130,6 +130,11 @@ Route::middleware([
     Route::middleware([EnsureSubscriptionIsValid::class])->group(function () {
         Route::get('/billing/expired', [BillingController::class, 'expired'])->name('billing.expired');
         Route::get('/billing/success', [BillingController::class, 'success'])->name('billing.success');
+
+        // ── Moyasar (no strict auth needed for callback – Moyasar redirects here) ──
+        Route::get('/billing/moyasar/pay',      [BillingController::class, 'moyasarPay'])->name('billing.moyasar.pay');
+        Route::get('/billing/moyasar/callback', [BillingController::class, 'moyasarCallback'])->name('billing.moyasar.callback');
+
         Route::middleware(['auth'])->group(function () {
             Route::post('/billing/checkout',      [BillingController::class, 'checkout'])->name('billing.checkout');
             Route::post('/billing/portal',        [BillingController::class, 'portal'])->name('billing.portal');

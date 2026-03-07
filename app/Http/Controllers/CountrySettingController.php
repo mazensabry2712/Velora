@@ -11,8 +11,30 @@ class CountrySettingController extends Controller
 {
     public function index()
     {
-        $countries = CountrySetting::orderBy('country_name')->paginate(50);
-        return view('super-admin.countries.index', compact('countries'));
+        $allCountries = CountrySetting::orderBy('country_name')->get();
+
+        // Load taxes separately (keyed by country_code)
+        $taxes = CountryTax::where('is_active', true)
+            ->get()
+            ->keyBy('country_code');
+
+        $countries = $allCountries->map(fn($c) => [
+                'id'               => $c->id,
+                'country_code'     => $c->country_code,
+                'country_name'     => $c->country_name,
+                'default_language' => $c->default_language,
+                'default_currency' => $c->default_currency,
+                'is_active'        => (bool) $c->is_active,
+                'tax_name'         => $taxes->get($c->country_code)?->tax_name,
+                'tax_percentage'   => $taxes->get($c->country_code)?->tax_percentage,
+                'edit_url'         => route('super-admin.countries.edit', $c),
+                'delete_url'       => route('super-admin.countries.destroy', $c),
+            ]);
+
+        return view('super-admin.countries.index', [
+            'countriesJson' => $countries->toJson(),
+            'total'         => $countries->count(),
+        ]);
     }
 
     public function create()

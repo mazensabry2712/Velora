@@ -22,6 +22,11 @@ Route::post('/webhooks/stripe', [\App\Http\Controllers\StripeWebhookController::
     ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
     ->name('webhooks.stripe');
 
+// ── Moyasar Webhook (no CSRF, no middleware) ─────────────────────────────
+Route::post('/webhooks/moyasar', [\App\Http\Controllers\MoyasarWebhookController::class, 'handle'])
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
+    ->name('webhooks.moyasar');
+
 // ── Landing + Marketing Routes ───────────────────────────────────────────
 Route::middleware(['web', \App\Http\Middleware\SetCentralLocale::class, 'geo.detect'])
     ->domain(env('APP_DOMAIN', 'velora.test'))

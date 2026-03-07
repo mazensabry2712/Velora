@@ -41,6 +41,12 @@ return [
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
 
+    'moyasar' => [
+        'publishable_key' => env('MOYASAR_PUBLISHABLE_KEY', ''),
+        'secret_key'      => env('MOYASAR_SECRET_KEY', ''),
+        'webhook_secret'  => env('MOYASAR_WEBHOOK_SECRET', ''),
+    ],
+
     'firebase' => [
         'server_key' => env('FIREBASE_SERVER_KEY'),
     ],
