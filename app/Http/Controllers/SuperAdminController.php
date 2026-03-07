@@ -18,13 +18,27 @@ class SuperAdminController extends Controller
     /**
      * Show all upgrade requests
      */
-    public function upgradeRequests()
+    public function upgradeRequests(Request $request)
     {
-        $requests = UpgradeRequest::with(['currentPlan', 'requestedPlan'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+        $statusFilter = $request->get('status', 'all');
 
-        return view('super-admin.upgrade-requests.index', compact('requests'));
+        $query = UpgradeRequest::with(['currentPlan', 'requestedPlan'])
+            ->orderBy('created_at', 'desc');
+
+        if ($statusFilter !== 'all') {
+            $query->where('status', $statusFilter);
+        }
+
+        $requests = $query->paginate(15)->withQueryString();
+
+        $counts = [
+            'total'    => UpgradeRequest::count(),
+            'pending'  => UpgradeRequest::where('status', 'pending')->count(),
+            'approved' => UpgradeRequest::where('status', 'approved')->count(),
+            'rejected' => UpgradeRequest::where('status', 'rejected')->count(),
+        ];
+
+        return view('super-admin.upgrade-requests.index', compact('requests', 'counts', 'statusFilter'));
     }
 
     /**

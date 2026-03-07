@@ -6,6 +6,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\SubscriptionService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
+use App\Mail\UpgradeRequestedMail;
+use App\Mail\FounderAlertMail;
 
 class SubscriptionController extends Controller
 {
@@ -80,6 +84,36 @@ class SubscriptionController extends Controller
                 'upgrade_requested',
                 "Tenant requested upgrade from plan [" . ($subscriptionInfo['plan_name'] ?? 'N/A') . "] to [{$plan->name}]. Requested by: " . auth()->user()->email
             );
+
+            // ── Notify tenant: request received confirmation ─────────────
+            try {
+                Mail::to(auth()->user()->email)
+                    ->queue(new UpgradeRequestedMail(
+                        tenantName:          auth()->user()->name,
+                        currentPlanName:     $subscriptionInfo['plan_name'] ?? 'N/A',
+                        requestedPlanName:   $plan->name,
+                        requestedPlanPrice:  number_format($plan->price, 2),
+                    ));
+            } catch (\Exception $e) {
+                Log::warning('Failed to send upgrade confirmation email: ' . $e->getMessage());
+            }
+
+            // ── Notify super-admin: new upgrade request pending ──────────
+            try {
+                $adminEmail = config('mail.founder_email');
+                if ($adminEmail) {
+                    Mail::to($adminEmail)
+                        ->queue(new FounderAlertMail(
+                            tenantId:     $tenantId,
+                            businessName: $subscriptionInfo['plan_name'] ?? $tenantId,
+                            ownerEmail:   auth()->user()->email,
+                            triggerReason: 'New upgrade request: ' . ($subscriptionInfo['plan_name'] ?? 'N/A') . ' → ' . $plan->name,
+                            trialDaysLeft: 0,
+                        ));
+                }
+            } catch (\Exception $e) {
+                Log::warning('Failed to send admin upgrade alert: ' . $e->getMessage());
+            }
 
             return redirect()->route('admin.subscription.index')
                 ->with('success', __('Upgrade request submitted successfully. Our team will contact you shortly.'));

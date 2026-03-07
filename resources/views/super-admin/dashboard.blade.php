@@ -349,12 +349,23 @@
                         <div class="text-xs opacity-80">{{ __('super-admin.mini_trial_label') }}</div>
                         <div class="font-black text-xl" x-text="stats.trial_tenants"></div>
                     </div>
-                    <a href="/super-admin/upgrade-requests" class="bg-white/10 hover:bg-white/20 rounded-xl p-2 text-center transition">
+                    <a href="{{ route('super-admin.upgrade-requests') }}"
+                       :class="stats.pending_upgrade_requests > 0
+                           ? 'bg-amber-400/30 hover:bg-amber-400/50 ring-1 ring-amber-300/60'
+                           : 'bg-white/10 hover:bg-white/20'"
+                       class="rounded-xl p-2 text-center transition-all duration-200 group/upg relative">
                         <div class="text-xs opacity-80">{{ __('super-admin.mini_upgrade_reqs') }}</div>
                         <div class="font-black text-xl flex items-center justify-center gap-1">
-                            <span x-text="stats.pending_upgrade_requests"></span>
-                            <span x-show="stats.pending_upgrade_requests > 0" class="w-2 h-2 bg-amber-400 rounded-full animate-pulse inline-block"></span>
+                            <span x-text="stats.pending_upgrade_requests"
+                                  :class="stats.pending_upgrade_requests > 0 ? 'text-amber-200' : ''"></span>
+                            <span x-show="stats.pending_upgrade_requests > 0"
+                                  class="w-2.5 h-2.5 bg-amber-400 rounded-full animate-pulse inline-block"></span>
                         </div>
+                        <!-- Arrow hint on hover -->
+                        <svg class="w-3 h-3 mx-auto mt-0.5 opacity-0 group-hover/upg:opacity-70 transition-opacity -rotate-45"
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                        </svg>
                     </a>
                 </div>
             </div>

@@ -115,4 +115,10 @@ return [
         'name' => env('MAIL_FROM_NAME', 'Example'),
     ],
 
+    /*
+    | Super-admin / founder email — receives system alerts and upgrade request
+    | notifications. Falls back to MAIL_FROM_ADDRESS if not set.
+    */
+    'founder_email' => env('SUPER_ADMIN_EMAIL', env('MAIL_FROM_ADDRESS', 'hello@example.com')),
+
 ];
