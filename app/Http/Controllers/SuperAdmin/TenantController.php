@@ -20,7 +20,7 @@ class TenantController extends Controller
      */
     public function index()
     {
-        $tenants = Tenant::with(['domains', 'currentSubscription.plan'])->latest()->paginate(20);
+        $tenants = Tenant::with(['domains', 'currentSubscription.plan'])->latest()->get();
 
         return response()->json([
             'success' => true,

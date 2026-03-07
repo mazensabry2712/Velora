@@ -343,7 +343,7 @@
                 <div class="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-white/20">
                     <div class="bg-white/10 rounded-xl p-2 text-center">
                         <div class="text-xs opacity-80">{{ __('super-admin.mini_active_label') }}</div>
-                        <div class="font-black text-xl" x-text="stats.active_tenants"></div>
+                        <div class="font-black text-xl" x-text="stats.paid_tenants"></div>
                     </div>
                     <div class="bg-white/10 rounded-xl p-2 text-center">
                         <div class="text-xs opacity-80">{{ __('super-admin.mini_trial_label') }}</div>
@@ -795,6 +795,7 @@ function dashboard() {
         stats: {
             total_tenants: initialStats.total_tenants || 0,
             active_tenants: initialStats.active_tenants || 0,
+            paid_tenants: initialStats.paid_tenants || 0,
             trial_tenants: initialStats.trial_tenants || 0,
             inactive_tenants: initialStats.inactive_tenants || 0,
             tenants_this_month: initialStats.tenants_this_month || 0,
@@ -939,6 +940,7 @@ function dashboard() {
                     const d = data.data;
                     this.stats.total_tenants     = d.total_tenants     ?? this.stats.total_tenants;
                     this.stats.active_tenants    = d.active_tenants    ?? this.stats.active_tenants;
+                    this.stats.paid_tenants      = d.paid_tenants      ?? this.stats.paid_tenants;
                     this.stats.trial_tenants     = d.trial_tenants     ?? this.stats.trial_tenants;
                     this.stats.inactive_tenants  = d.inactive_tenants  ?? this.stats.inactive_tenants;
                     this.stats.tenants_this_month= d.tenants_this_month?? this.stats.tenants_this_month;

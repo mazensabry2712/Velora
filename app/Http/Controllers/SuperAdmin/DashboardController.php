@@ -17,7 +17,8 @@ class DashboardController extends Controller
     {
         $stats = [
             'total_tenants'             => Tenant::count(),
-            'active_tenants'            => TenantSubscription::where('status', 'active')->distinct('tenant_id')->count(),
+            'active_tenants'            => TenantSubscription::whereIn('status', ['active', 'trial'])->distinct('tenant_id')->count(),
+            'paid_tenants'              => TenantSubscription::where('status', 'active')->distinct('tenant_id')->count(),
             'trial_tenants'             => TenantSubscription::where('status', 'trial')->distinct('tenant_id')->count(),
             'inactive_tenants'          => Tenant::whereDoesntHave('subscriptions', function ($q) {
                                                $q->whereIn('status', ['active', 'trial']);

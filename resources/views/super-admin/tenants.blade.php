@@ -518,7 +518,7 @@ function tenantsManager() {
                 const data = await response.json();
 
                 if (data.success) {
-                    this.tenants = data.data.data;
+                    this.tenants = data.data;
                     this.filterTenants();
                 }
             } catch (error) {
