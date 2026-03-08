@@ -50,6 +50,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
             // Onboarding wizard redirect (first-login flow)
             'onboarding.redirect' => \App\Http\Middleware\RedirectIfOnboardingIncomplete::class,
+
+            // Maintenance mode for landing/public pages
+            'maintenance' => \App\Http\Middleware\CheckMaintenanceMode::class,
         ]);
 
         // Enable session and cookies for API routes (needed for Super Admin web-based auth)

@@ -28,6 +28,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
     <!-- Tailwind CDN (prod: compile with Vite) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -79,6 +82,7 @@
 
     <style>
         body { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; }
+        [x-cloak] { display: none !important; }
         .gradient-text {
             background: linear-gradient(135deg, #6C63FF 0%, #a78bfa 50%, #38bdf8 100%);
             -webkit-background-clip: text;
@@ -130,20 +134,23 @@
         <div class="flex items-center justify-between h-16">
             <!-- Logo -->
             <a href="{{ route('landing') }}" class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-lg btn-primary flex items-center justify-center">
-                    <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                    </svg>
-                </div>
-                <span class="text-xl font-bold text-white tracking-tight">Velora</span>
+                @if(!empty($appLogoUrl ?? ''))
+                    <img src="{{ $appLogoUrl }}" alt="{{ $appName ?? 'Velora' }}" class="h-8 w-auto" />
+                @else
+                    <div class="w-8 h-8 rounded-lg btn-primary flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                @endif
+                <span class="text-xl font-bold text-white tracking-tight">{{ $appName ?? 'Velora' }}</span>
             </a>
 
             <!-- Desktop Nav -->
             <div class="hidden md:flex items-center gap-8">
                 <a href="{{ route('landing') }}#features" class="text-sm text-gray-400 hover:text-white transition-colors">{{ __('landing.nav_features') }}</a>
                 <a href="{{ route('landing') }}#how-it-works" class="text-sm text-gray-400 hover:text-white transition-colors">{{ __('landing.nav_how_it_works') }}</a>
-                <a href="{{ route('pricing') }}" class="text-sm text-gray-400 hover:text-white transition-colors">{{ __('landing.nav_pricing') }}</a>
                 <a href="#testimonials" class="text-sm text-gray-400 hover:text-white transition-colors">{{ __('landing.nav_testimonials') }}</a>
                 <a href="#faq" class="text-sm text-gray-400 hover:text-white transition-colors">{{ __('landing.nav_faq') }}</a>
             </div>
@@ -154,6 +161,7 @@
                    class="hidden sm:inline-flex text-sm text-gray-300 hover:text-white transition-colors px-3 py-1.5">
                     {{ __('landing.nav_sign_in') }}
                 </a>
+                @if($registrationEnabled ?? true)
                 <a href="{{ route('signup') }}"
                    class="btn-primary text-sm font-semibold text-white px-3 sm:px-5 py-2.5 rounded-xl inline-flex items-center gap-2">
                     <span class="hidden sm:inline">{{ __('landing.nav_start_trial') }}</span>
@@ -161,46 +169,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
                     </svg>
                 </a>
-
-                <!-- Language Switcher -->
-                @php
-                    $landingLangs = [
-                        'en' => ['flag' => '🇬🇧', 'label' => 'EN'],
-                        'ar' => ['flag' => '🇸🇦', 'label' => 'عربي'],
-                        'fr' => ['flag' => '🇫🇷', 'label' => 'FR'],
-                        'es' => ['flag' => '🇪🇸', 'label' => 'ES'],
-                        'de' => ['flag' => '🇩🇪', 'label' => 'DE'],
-                        'it' => ['flag' => '🇮🇹', 'label' => 'IT'],
-                        'pt' => ['flag' => '🇵🇹', 'label' => 'PT'],
-                        'ru' => ['flag' => '🇷🇺', 'label' => 'RU'],
-                        'zh' => ['flag' => '🇨🇳', 'label' => '中文'],
-                        'ja' => ['flag' => '🇯🇵', 'label' => '日本語'],
-                        'tr' => ['flag' => '🇹🇷', 'label' => 'TR'],
-                        'hi' => ['flag' => '🇮🇳', 'label' => 'हिंदी'],
-                        'ko' => ['flag' => '🇰🇷', 'label' => '한국어'],
-                        'nl' => ['flag' => '🇳🇱', 'label' => 'NL'],
-                        'id' => ['flag' => '🇮🇩', 'label' => 'ID'],
-                    ];
-                    $curLandingLang = $landingLangs[$landingLocale] ?? $landingLangs['en'];
-                @endphp
-                <div class="relative hidden sm:block" id="landingLangWrapper">
-                    <button onclick="document.getElementById('landingLangMenu').classList.toggle('hidden')"
-                        class="flex items-center gap-1.5 text-xs font-medium text-gray-300 hover:text-white px-2.5 py-1.5 rounded-lg border border-white/10 hover:border-white/20 transition-all bg-white/5 hover:bg-white/10">
-                        <span>{{ $curLandingLang['flag'] }}</span>
-                        <span>{{ $curLandingLang['label'] }}</span>
-                        <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                    </button>
-                    <div id="landingLangMenu"
-                        class="hidden absolute {{ $isRtl ? 'left-0' : 'right-0' }} mt-2 w-36 bg-[#1a1830] border border-white/10 rounded-xl shadow-xl py-1 z-50">
-                        @foreach($landingLangs as $code => $lang)
-                        <a href="{{ route('landing.lang', $code) }}"
-                            class="flex items-center gap-2 px-3 py-2 text-xs hover:bg-white/5 transition-colors {{ $landingLocale === $code ? 'text-brand-400 font-semibold' : 'text-gray-300' }}">
-                            <span>{{ $lang['flag'] }}</span>
-                            <span>{{ $lang['label'] }}</span>
-                        </a>
-                        @endforeach
-                    </div>
-                </div>
+                @endif
 
                 <!-- Mobile menu toggle -->
                 <button id="menuToggle" class="md:hidden p-2 rounded-lg text-gray-400 hover:text-white">
@@ -216,26 +185,15 @@
             <div class="flex flex-col gap-1">
                 <a href="{{ route('landing') }}#features"    class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_features') }}</a>
                 <a href="{{ route('landing') }}#how-it-works" class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_how_it_works') }}</a>
-                <a href="{{ route('pricing') }}"             class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_pricing') }}</a>
                 <a href="#testimonials"                      class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_testimonials') }}</a>
                 <a href="#faq"                               class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_faq') }}</a>
                 <a href="{{ route('central.login') }}"   class="text-sm text-gray-300 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_sign_in') }}</a>
+                @if($registrationEnabled ?? true)
                 <a href="{{ route('signup') }}"
                    class="btn-primary text-sm font-semibold text-white px-5 py-3 rounded-xl text-center mt-2">
                     {{ __('landing.nav_start_trial') }}
                 </a>
-                {{-- Mobile Language Switcher --}}
-                <div class="mt-3 pt-3 border-t border-white/5">
-                    <p class="text-xs text-gray-600 uppercase tracking-wider px-1 mb-2">Language</p>
-                    <div class="flex flex-wrap gap-1.5">
-                        @foreach($landingLangs as $code => $lang)
-                        <a href="{{ route('landing.lang', $code) }}"
-                           class="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs transition-colors {{ $landingLocale === $code ? 'bg-brand-500/20 text-brand-400 font-semibold border border-brand-500/40' : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-transparent' }}">
-                            <span>{{ $lang['flag'] }}</span><span>{{ $lang['label'] }}</span>
-                        </a>
-                        @endforeach
-                    </div>
-                </div>
+                @endif
             </div>
         </div>
     </div>
@@ -253,13 +211,17 @@
             <!-- Brand -->
             <div class="col-span-2">
                 <a href="{{ route('landing') }}" class="flex items-center gap-2 mb-4">
-                    <div class="w-8 h-8 rounded-lg btn-primary flex items-center justify-center">
-                        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                        </svg>
-                    </div>
-                    <span class="text-xl font-bold">Velora</span>
+                    @if(!empty($appLogoUrl ?? ''))
+                        <img src="{{ $appLogoUrl }}" alt="{{ $appName ?? 'Velora' }}" class="h-8 w-auto" />
+                    @else
+                        <div class="w-8 h-8 rounded-lg btn-primary flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                    @endif
+                    <span class="text-xl font-bold">{{ $appName ?? 'Velora' }}</span>
                 </a>
                 <p class="text-gray-400 text-sm leading-relaxed max-w-xs">
                     {{ __('landing.footer_tagline') }}
@@ -279,7 +241,6 @@
                 <h4 class="text-sm font-semibold text-white mb-4">{{ __('landing.footer_product') }}</h4>
                 <ul class="space-y-2.5 text-sm text-gray-400">
                     <li><a href="{{ route('landing') }}#features" class="hover:text-white transition-colors">{{ __('landing.footer_features') }}</a></li>
-                    <li><a href="{{ route('pricing') }}"           class="hover:text-white transition-colors">{{ __('landing.footer_pricing') }}</a></li>
                     <li><a href="#"                                class="hover:text-white transition-colors">{{ __('landing.footer_changelog') }}</a></li>
                     <li><a href="#"                                class="hover:text-white transition-colors">{{ __('landing.footer_roadmap') }}</a></li>
                 </ul>
@@ -309,7 +270,7 @@
         </div>
 
         <div class="border-t border-white/10 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <p class="text-gray-500 text-sm">© {{ date('Y') }} Velora. {{ __('landing.footer_rights') }}</p>
+            <p class="text-gray-500 text-sm">© {{ date('Y') }} {{ $appName ?? 'Velora' }}. {{ __('landing.footer_rights') }}</p>
             <div class="flex items-center gap-2 text-gray-500 text-sm">
                 <span>{{ __('landing.footer_available') }}</span>
                 <div class="flex gap-1">
@@ -339,5 +300,28 @@
 </script>
 
 @stack('scripts')
+<script>
+(function(){
+    var LANGS = {
+        en:['🇬🇧','EN'],  ar:['🇸🇦','عربي'], fr:['🇫🇷','FR'],
+        es:['🇪🇸','ES'],  de:['🇩🇪','DE'],   it:['🇮🇹','IT'],
+        pt:['🇵🇹','PT'],  ru:['🇷🇺','RU'],   zh:['🇨🇳','中文'],
+        ja:['🇯🇵','日本語'],tr:['🇹🇷','TR'],   hi:['🇮🇳','हिंदी'],
+        ko:['🇰🇷','한국어'],nl:['🇳🇱','NL'],   id:['🇮🇩','ID'],
+    };
+    function updateNavLang(lang){
+        var data = LANGS[lang] || LANGS['en'];
+        var f = document.getElementById('navLangFlag');
+        var l = document.getElementById('navLangLabel');
+        if(f) f.textContent = data[0];
+        if(l) l.textContent = data[1];
+    }
+    var saved = localStorage.getItem('velora_lang');
+    if(saved) updateNavLang(saved);
+    document.addEventListener('velora:lang-changed', function(e){
+        updateNavLang(e.detail.lang);
+    });
+})();
+</script>
 </body>
 </html>

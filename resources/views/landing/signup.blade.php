@@ -313,6 +313,56 @@
                 </div>
             </div>
 
+            {{-- Trial timeline --}}
+            @php
+                $graceStart = $maxTrialDays + 1;
+                $graceEnd   = $maxTrialDays + 3;
+                $roDay      = $maxTrialDays + 4;
+            @endphp
+            <div class="mt-8">
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">{{ __('landing.signup_what_next') }}</p>
+                <div class="space-y-0">
+                    {{-- Step 1 --}}
+                    <div class="flex gap-4">
+                        <div class="flex flex-col items-center">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
+                                 style="background:rgba(108,99,255,0.2);border:1px solid rgba(108,99,255,0.5);color:#a78bfa;">1</div>
+                            <div class="w-px flex-1 my-1" style="background:rgba(108,99,255,0.2);"></div>
+                        </div>
+                        <div class="pb-5">
+                            <span class="text-xs text-brand-400 font-medium">{{ __('landing.signup_timeline_1_label', ['days' => $maxTrialDays]) }}</span>
+                            <p class="text-sm font-semibold text-white mt-0.5">{{ __('landing.signup_timeline_1_title') }}</p>
+                            <p class="text-xs text-gray-400 mt-0.5 leading-relaxed">{{ __('landing.signup_timeline_1_desc') }}</p>
+                        </div>
+                    </div>
+                    {{-- Step 2 --}}
+                    <div class="flex gap-4">
+                        <div class="flex flex-col items-center">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
+                                 style="background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.4);color:#fbbf24;">2</div>
+                            <div class="w-px flex-1 my-1" style="background:rgba(251,191,36,0.2);"></div>
+                        </div>
+                        <div class="pb-5">
+                            <span class="text-xs text-yellow-400 font-medium">{{ __('landing.signup_timeline_2_label', ['start' => $graceStart, 'end' => $graceEnd]) }}</span>
+                            <p class="text-sm font-semibold text-white mt-0.5">{{ __('landing.signup_timeline_2_title') }}</p>
+                            <p class="text-xs text-gray-400 mt-0.5 leading-relaxed">{{ __('landing.signup_timeline_2_desc') }}</p>
+                        </div>
+                    </div>
+                    {{-- Step 3 --}}
+                    <div class="flex gap-4">
+                        <div class="flex flex-col items-center">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
+                                 style="background:rgba(156,163,175,0.1);border:1px solid rgba(156,163,175,0.3);color:#9ca3af;">3</div>
+                        </div>
+                        <div class="pb-1">
+                            <span class="text-xs text-gray-500 font-medium">{{ __('landing.signup_timeline_3_label', ['day' => $roDay]) }}</span>
+                            <p class="text-sm font-semibold text-white mt-0.5">{{ __('landing.signup_timeline_3_title') }}</p>
+                            <p class="text-xs text-gray-400 mt-0.5 leading-relaxed">{{ __('landing.signup_timeline_3_desc') }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {{-- Fake social proof widget --}}
             <div class="mt-6 flex items-center gap-3">
                 <div class="flex -space-x-2">

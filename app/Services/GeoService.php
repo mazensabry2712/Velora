@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\CountrySetting;
 use App\Models\CountryTax;
+use App\Models\CountryPricing;
 use App\Models\PlanPrice;
 use App\Models\SubscriptionPlan;
 use App\Models\SystemSetting;
@@ -133,5 +134,51 @@ class GeoService
     public function amountWithTax(float $amount, string $countryCode): float
     {
         return round($amount + $this->calculateTax($amount, $countryCode), 2);
+    }
+
+    // ─── Full Multi-Region Context ────────────────────────────────────────────
+
+    /**
+     * Return the complete pricing + region context for a country in one call.
+     *
+     * This is the single source of truth used by the checkout, pricing page,
+     * and any other consumer that needs to know: "what does the user pay, in
+     * what currency, with which gateways, and including what taxes?"
+     *
+     * Returns:
+     *   country_code, country_name, locale, currency,
+     *   base_price, tax_pct, tax_name, tax_amount, total_price,
+     *   formatted_price, payment_methods (gateway keys)
+     */
+    public function getPricingContext(string $countryCode): array
+    {
+        $countryCode = strtoupper(trim($countryCode));
+
+        return Cache::remember("geo_pricing_context:{$countryCode}", 900, function () use ($countryCode) {
+            $pricing    = CountryPricing::forCountry($countryCode);
+            $taxRecord  = CountryTax::forCountry($countryCode);
+            $locale     = $this->getLocaleForCountry($countryCode);
+            $basePrice  = (float) $pricing->price;
+            $taxPct     = SystemSetting::get('enable_vat_per_country', false)
+                ? (float) ($taxRecord?->tax_percentage ?? 0)
+                : 0.0;
+            $taxAmount  = $taxPct > 0 ? round($basePrice * ($taxPct / 100), 2) : 0.0;
+            $total      = round($basePrice + $taxAmount, 2);
+
+            return [
+                'country_code'    => $pricing->country_code,
+                'country_name'    => $pricing->country_name,
+                'locale'          => $locale,
+                'currency'        => $pricing->currency,
+                'base_price'      => $basePrice,
+                'tax_pct'         => $taxPct,
+                'tax_name'        => $taxRecord?->tax_name ?? 'VAT',
+                'tax_amount'      => $taxAmount,
+                'total_price'     => $total,
+                'formatted_price' => $pricing->formattedPrice(),
+                'payment_methods' => $pricing->payment_methods ?? [],
+                'is_global'       => $pricing->country_code === 'GLOBAL',
+            ];
+        });
     }
 }

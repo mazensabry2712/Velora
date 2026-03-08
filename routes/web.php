@@ -7,6 +7,9 @@ use App\Http\Controllers\PlanPriceController;
 use App\Http\Controllers\SuperAdminController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\Auth\TenantRegistrationController;
+use App\Http\Controllers\SuperAdmin\CountryPricingController;
+use App\Http\Controllers\PricingController;
+use App\Services\PricingService;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,15 +30,22 @@ Route::post('/webhooks/moyasar', [\App\Http\Controllers\MoyasarWebhookController
     ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
     ->name('webhooks.moyasar');
 
-// ── Landing + Marketing Routes ───────────────────────────────────────────
-Route::middleware(['web', \App\Http\Middleware\SetCentralLocale::class, 'geo.detect'])
+// ── Landing + Marketing Routes ───────────────────────────────────────────────
+Route::middleware(['web', \App\Http\Middleware\SetCentralLocale::class, 'geo.detect', 'maintenance'])
     ->domain(env('APP_DOMAIN', 'velora.test'))
     ->group(function () {
     // Main landing page
     Route::get('/', [LandingController::class, 'index'])->name('landing');
 
-    // Pricing page
+    // Dedicated pricing page
     Route::get('/pricing', [LandingController::class, 'pricing'])->name('pricing');
+
+    // AJAX: set pricing country override (called by country-switcher)
+    Route::post('/pricing/set-country', [PricingController::class, 'setCountry'])
+         ->name('pricing.set-country')
+         ->middleware('throttle:30,1');
+
+
 
     // Signup page
     Route::get('/signup', [LandingController::class, 'signup'])->name('signup');
@@ -62,10 +72,27 @@ Route::middleware(['web', \App\Http\Middleware\SetCentralLocale::class, 'geo.det
         $supported = ['en', 'ar', 'fr', 'es', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'tr', 'hi', 'ko', 'nl', 'id'];
         if (in_array($locale, $supported)) {
             session()->put('central_locale', $locale);
-            cookie()->queue(cookie()->forever('velora_locale_override', $locale));
+            return redirect()->back(302, [], route('landing'))
+                ->withCookie(cookie()->forever('velora_locale_override', $locale));
         }
-        return redirect()->back();
+        return redirect(route('landing'));
     })->name('landing.lang');
+
+    // Combined region+language switcher — sets both locale + country in one server hop
+    // Hostinger-style: navigate here, cookies attach to the redirect response, browser stores them
+    Route::get('/region/{locale}/{country}', function ($locale, $country) {
+        $supported = ['en', 'ar', 'fr', 'es', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'tr', 'hi', 'ko', 'nl', 'id'];
+        $locale = in_array($locale, $supported) ? $locale : 'en';
+        $code   = strtoupper(preg_replace('/[^A-Za-z]/', '', $country));
+        if (strlen($code) < 2 || strlen($code) > 10) {
+            return redirect(route('landing'));
+        }
+        session()->put('central_locale', $locale);
+        session(['pricing_country_override' => $code]);
+        return redirect()->back(302, [], route('landing'))
+            ->withCookie(cookie()->forever('velora_locale_override', $locale))
+            ->withCookie(cookie()->forever('velora_country_override', $code));
+    })->name('landing.region');
 
     // Currency switcher for landing / marketing pages
     Route::get('/currency/{currency}', function ($currency) {
@@ -76,6 +103,8 @@ Route::middleware(['web', \App\Http\Middleware\SetCentralLocale::class, 'geo.det
         }
         return redirect()->back();
     })->name('landing.currency');
+
+
 });
 
 // Super Admin Routes (Central - No Tenant)
@@ -174,5 +203,11 @@ Route::prefix('super-admin')->name('super-admin.')->middleware([\App\Http\Middle
             ->name('plan-prices.update');
         Route::delete('/subscription-plans/{plan}/prices/{planPrice}', [PlanPriceController::class, 'destroy'])
             ->name('plan-prices.destroy');
+
+        // ── Country Pricing ─────────────────────────────────────────────────
+        Route::resource('country-pricing', CountryPricingController::class)
+            ->names('country-pricing');
+        Route::post('country-pricing/{countryPricing}/toggle', [CountryPricingController::class, 'toggleActive'])
+            ->name('country-pricing.toggle');
     });
 });

@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\DB;
 use App\Models\Appointment;
+use App\Models\SystemSetting;
 use App\Observers\AppointmentObserver;
 
 class AppServiceProvider extends ServiceProvider
@@ -26,6 +27,23 @@ class AppServiceProvider extends ServiceProvider
     {
         // Register model observers
         Appointment::observe(AppointmentObserver::class);
+
+        // Share platform settings with all landing views (layout + pages)
+        View::composer('layouts.landing', function ($view) {
+            try {
+                $appName             = SystemSetting::get('app_name', config('app.name', 'Velora'));
+                $appLogoUrl          = SystemSetting::get('app_logo_url', '');
+                $registrationEnabled = SystemSetting::get('registration_enabled', true);
+                $defaultTrialDays    = SystemSetting::get('default_trial_days', 14);
+            } catch (\Throwable $e) {
+                $appName             = config('app.name', 'Velora');
+                $appLogoUrl          = '';
+                $registrationEnabled = true;
+                $defaultTrialDays    = 14;
+            }
+
+            $view->with(compact('appName', 'appLogoUrl', 'registrationEnabled', 'defaultTrialDays'));
+        });
 
         // Share system notifications from super-admin with all tenant admin views.
         // Only runs in tenant context (tenant() returns non-null).
