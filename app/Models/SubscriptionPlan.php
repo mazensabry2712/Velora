@@ -7,6 +7,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SubscriptionPlan extends Model
 {
+    /**
+     * Always read from the central (non-tenant) DB connection so that
+     * tenant-context requests can still resolve plans correctly.
+     */
+    public function getConnectionName(): string
+    {
+        return config('tenancy.database.central_connection', parent::getConnectionName() ?? 'mysql');
+    }
+
     protected $fillable = [
         'name',
         'slug',

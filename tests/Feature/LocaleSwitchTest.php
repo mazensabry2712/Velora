@@ -2,13 +2,49 @@
 
 namespace Tests\Feature;
 
-use App\Models\SystemSetting;
 use App\Models\CountryPricing;
+use App\Models\SystemSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class LocaleSwitchTest extends TestCase
 {
+    use RefreshDatabase;
+
+    /** Domain used by the central route group */
+    private string $host;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->host = env('APP_DOMAIN', 'velora.test');
+
+        // Seed the GLOBAL fallback record (required by LandingController::global())
+        CountryPricing::create([
+            'country_code'    => 'GLOBAL',
+            'country_name'    => 'Global',
+            'price'           => 9.99,
+            'currency'        => 'USD',
+            'payment_methods' => json_encode(['stripe']),
+            'is_active'       => true,
+        ]);
+
+        // Seed the EG pricing row with lang='ar'
+        CountryPricing::create([
+            'country_code'    => 'EG',
+            'country_name'    => 'Egypt',
+            'price'           => 29.00,
+            'currency'        => 'EGP',
+            'lang'            => 'ar',
+            'payment_methods' => json_encode(['paymob', 'stripe']),
+            'is_active'       => true,
+        ]);
+
+        // allow_manual_language_switch is already seeded by
+        // migration 2026_03_02_000003_seed_geo_system_settings (updateOrCreate)
+        // No duplicate insert needed here.
+    }
     /**
      * Test 1: CountryPricing has a 'lang' column for EG
      */
@@ -32,7 +68,7 @@ class LocaleSwitchTest extends TestCase
     {
         $value = SystemSetting::get('allow_manual_language_switch', 'NOT_SET');
 
-        $this->assertNotEquals('NOT_SET', $value,
+        $this->assertNotSame('NOT_SET', $value,
             'SystemSetting "allow_manual_language_switch" does not exist in DB'
         );
 
@@ -46,22 +82,17 @@ class LocaleSwitchTest extends TestCase
      */
     public function test_set_country_response_includes_locale_cookie(): void
     {
-        $response = $this->postJson('/pricing/set-country', [
-            'country_code' => 'EG',
-            'lang'         => 'ar',
-        ]);
+        $response = $this->withServerVariables(['HTTP_HOST' => $this->host, 'SERVER_NAME' => $this->host])
+            ->postJson('/pricing/set-country', [
+                'country_code' => 'EG',
+                'lang'         => 'ar',
+            ]);
 
         $response->assertStatus(200);
         $response->assertJson(['ok' => true]);
 
         // The response must carry Set-Cookie: velora_locale_override=ar
-        $cookies = $response->headers->getCookies();
-        $locCookie = collect($cookies)->firstWhere('name', 'velora_locale_override');
-
-        $this->assertNotNull($locCookie,
-            'Response does NOT have velora_locale_override cookie. Cookies found: '
-            . implode(', ', collect($cookies)->pluck('name')->all())
-        );
+        $response->assertCookie('velora_locale_override', 'ar');
     }
 
     /**
@@ -69,9 +100,9 @@ class LocaleSwitchTest extends TestCase
      */
     public function test_landing_renders_arabic_when_locale_cookie_is_ar(): void
     {
-        // Simulate browser sending back the cookie
-        $response = $this->withCookie('velora_locale_override', 'ar')
-                         ->get('/');
+        $response = $this->withServerVariables(['HTTP_HOST' => $this->host, 'SERVER_NAME' => $this->host])
+            ->withCookie('velora_locale_override', 'ar')
+            ->get('/');
 
         $response->assertStatus(200);
 
@@ -85,16 +116,21 @@ class LocaleSwitchTest extends TestCase
      */
     public function test_full_roundtrip_post_set_country_then_get_landing(): void
     {
+        $serverVars = ['HTTP_HOST' => $this->host, 'SERVER_NAME' => $this->host];
+
         // Step 1: POST to set country
-        $post = $this->postJson('/pricing/set-country', [
-            'country_code' => 'EG',
-            'lang'         => 'ar',
-        ]);
+        $post = $this->withServerVariables($serverVars)
+            ->postJson('/pricing/set-country', [
+                'country_code' => 'EG',
+                'lang'         => 'ar',
+            ]);
 
         $post->assertStatus(200);
 
         // Step 2: GET / with the session that was just modified
-        $get = $this->withSession(['central_locale' => 'ar'])->get('/');
+        $get = $this->withServerVariables($serverVars)
+            ->withSession(['central_locale' => 'ar'])
+            ->get('/');
 
         $get->assertStatus(200);
         $get->assertSee('dir="rtl"', false);

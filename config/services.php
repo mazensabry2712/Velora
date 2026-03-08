@@ -56,4 +56,19 @@ return [
         'rest_api_key' => env('ONESIGNAL_REST_API_KEY'),
     ],
 
+    // ── New payment gateways ──────────────────────────────────────────────
+
+    'paymob' => [
+        'api_key'        => env('PAYMOB_API_KEY', ''),
+        'integration_id' => env('PAYMOB_INTEGRATION_ID', ''),
+        'iframe_id'      => env('PAYMOB_IFRAME_ID', ''),
+        'hmac_secret'    => env('PAYMOB_HMAC_SECRET', ''),
+    ],
+
+    'paypal' => [
+        'client_id'     => env('PAYPAL_CLIENT_ID', ''),
+        'client_secret' => env('PAYPAL_CLIENT_SECRET', ''),
+        'mode'          => env('PAYPAL_MODE', 'live'), // sandbox | live
+    ],
+
 ];

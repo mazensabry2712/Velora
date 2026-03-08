@@ -212,4 +212,14 @@ class StripeService
             'return_url' => $returnUrl,
         ]);
     }
+
+    /**
+     * Issue a full refund for a PaymentIntent ID.
+     */
+    public function refund(string $paymentIntentId): \Stripe\Refund
+    {
+        return $this->stripe->refunds->create([
+            'payment_intent' => $paymentIntentId,
+        ]);
+    }
 }

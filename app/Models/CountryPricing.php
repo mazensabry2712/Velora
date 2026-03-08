@@ -14,6 +14,7 @@ class CountryPricing extends Model
         'country_name',
         'price',
         'currency',
+        'lang',
         'payment_methods',
         'is_active',
     ];

@@ -2,12 +2,14 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\DB;
 use App\Models\Appointment;
 use App\Models\SystemSetting;
 use App\Observers\AppointmentObserver;
+use App\Payments\Contracts\PaymentGatewayInterface;
+use App\Payments\PaymentGatewayManager;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -18,6 +20,10 @@ class AppServiceProvider extends ServiceProvider
     {
         // Tell Laravel to load translation files from /lang (not /resources/lang)
         $this->app->useLangPath(base_path('lang'));
+
+        // Register PaymentGatewayManager as a singleton so driver instances are
+        // resolved from the container (supports constructor injection in gateways).
+        $this->app->singleton(PaymentGatewayManager::class);
     }
 
     /**

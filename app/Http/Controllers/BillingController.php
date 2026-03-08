@@ -3,19 +3,25 @@
 namespace App\Http\Controllers;
 
 use App\Models\SubscriptionPlan;
+use App\Payments\PaymentGatewayManager;
 use App\Services\GeoService;
 use App\Services\MoyasarService;
+use App\Services\PaymentGatewayRouter;
 use App\Services\StripeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class BillingController extends Controller
 {
     public function __construct(
-        protected StripeService  $stripeService,
-        protected MoyasarService $moyasarService,
-        protected GeoService     $geoService,
+        protected PaymentGatewayManager $paymentManager,
+        protected PaymentGatewayRouter  $gatewayRouter,
+        protected GeoService            $geoService,
+        // Legacy services kept for portal + webhook operations that call them directly
+        protected StripeService         $stripeService,
+        protected MoyasarService        $moyasarService,
     ) {}
 
     /**
@@ -105,19 +111,21 @@ class BillingController extends Controller
      */
     public function checkout(Request $request)
     {
+        $centralConn = config('tenancy.database.central_connection', 'mysql');
         $validated = $request->validate([
-            'plan_id' => 'required|integer|exists:mysql.subscription_plans,id',
+            'plan_id' => ['required', 'integer', Rule::exists("{$centralConn}.subscription_plans", 'id')],
         ]);
 
         $tenantId = tenant('id');
 
         // Get tenant info from central data
-        $tenantData = DB::table('tenants')
+        $tenantData = DB::connection($centralConn)->table('tenants')
             ->where('id', $tenantId)
             ->first();
 
-        $name  = data_get(json_decode($tenantData->data ?? '{}', true), 'name', 'Tenant');
-        $email = data_get(json_decode($tenantData->data ?? '{}', true), 'email', 'tenant@velora.com');
+        $data  = json_decode((string) ($tenantData?->data ?? '{}'), true) ?? [];
+        $name  = data_get($data, 'name', 'Tenant');
+        $email = data_get($data, 'email', 'tenant@velora.com');
 
         $plan = SubscriptionPlan::findOrFail($validated['plan_id']);
 
@@ -130,51 +138,46 @@ class BillingController extends Controller
         $taxAmount     = $this->geoService->calculateTax($baseAmount, $countryCode);
         $totalAmount   = round($baseAmount + $taxAmount, 2);
 
-        // ── Route Saudi users to Moyasar ────────────────────────────────────
-        if ($countryCode === 'SA') {
-            $amountSar     = (float) ($geoPrice?->amount ?? $plan->price ?? 0);
-            $amountHalalas = (int) round($amountSar * 100);
+        // ── Resolve the primary gateway for this country via PaymentGatewayRouter ──
+        $availableGateways = $this->gatewayRouter->forCountry($countryCode);
+        $primaryGateway    = $availableGateways[0] ?? 'stripe';
 
-            session([
-                'moyasar_plan_id'   => $plan->id,
-                'moyasar_amount'    => $amountHalalas,
-                'moyasar_plan_name' => $plan->name,
-                'moyasar_currency'  => 'SAR',
-            ]);
+        $tenantDomain = tenant()->domains()->first()?->domain;
+        $baseUrl      = 'https://' . $tenantDomain;
 
-            return redirect()->route('billing.moyasar.pay');
-        }
-
-        if (!$stripePriceId) {
+        // Validate Stripe price ID when Stripe is selected
+        if ($primaryGateway === 'stripe' && !$stripePriceId) {
             return back()->withErrors(['plan' => 'Payment not available for this plan. Please contact support.']);
         }
 
         try {
-            $tenantDomain = tenant()->domains()->first()?->domain;
-            $baseUrl      = 'https://' . $tenantDomain;
-
-            $session = $this->stripeService->createCheckoutSession(
-                tenantId: $tenantId,
-                stripePriceId: $stripePriceId,
-                customerEmail: $email,
-                customerName: $name,
-                successUrl: $baseUrl . '/billing/success',
-                cancelUrl: $baseUrl . '/billing/expired',
-                metadata: [
-                    'plan_id'      => $plan->id,
+            $checkoutData = [
+                'plan_id'         => $plan->id,
+                'plan_name'       => $plan->name,
+                'tenant_id'       => $tenantId,
+                'customer_email'  => $email,
+                'customer_name'   => $name,
+                'success_url'     => $baseUrl . '/billing/success',
+                'cancel_url'      => $baseUrl . '/billing/expired',
+                'amount'          => $baseAmount,
+                'currency'        => $currency,
+                'country_code'    => $countryCode,
+                'stripe_price_id' => $stripePriceId,
+                'metadata'        => [
                     'plan_name'    => $plan->name,
-                    'country_code' => $countryCode,
-                    'currency'     => $currency,
-                    'base_amount'  => $baseAmount,
                     'tax_amount'   => $taxAmount,
                     'total_amount' => $totalAmount,
-                ]
-            );
+                ],
+            ];
 
-            return redirect()->away($session->url);
+            $redirectUrl = $this->paymentManager->driver($primaryGateway)->createCheckout($checkoutData);
+
+            Log::info("BillingController: tenant {$tenantId} initiated checkout via [{$primaryGateway}] for plan {$plan->id}");
+
+            return redirect()->away($redirectUrl);
 
         } catch (\Exception $e) {
-            Log::error('Stripe checkout failed for tenant ' . $tenantId . ': ' . $e->getMessage());
+            Log::error("BillingController: checkout failed via [{$primaryGateway}] for tenant {$tenantId}: " . $e->getMessage());
             return back()->withErrors(['checkout' => 'Payment initialization failed. Please try again.']);
         }
     }
@@ -233,11 +236,14 @@ class BillingController extends Controller
         $plan        = SubscriptionPlan::findOrFail($planId);
         $callbackUrl = url('/billing/moyasar/callback') . '?plan_id=' . $planId;
 
+        /** @var \App\Payments\Gateways\MoyasarGateway $moyasarGateway */
+        $moyasarGateway = $this->paymentManager->driver('moyasar');
+
         return view('billing.moyasar-pay', [
             'plan'           => $plan,
             'amount'         => $amount,
             'callbackUrl'    => $callbackUrl,
-            'publishableKey' => $this->moyasarService->getPublishableKey(),
+            'publishableKey' => $moyasarGateway->getPublishableKey(),
             'tenantId'       => tenant('id'),
         ]);
     }
@@ -258,9 +264,10 @@ class BillingController extends Controller
         }
 
         try {
-            $payment = $this->moyasarService->verifyPayment($paymentId);
+            $verified = $this->paymentManager->driver('moyasar')->verifyPayment(['payment_id' => $paymentId]);
+            $payment  = $this->moyasarService->verifyPayment($paymentId); // needed for activateSubscription
 
-            if (($payment['status'] ?? '') !== 'paid') {
+            if (!$verified) {
                 Log::warning('Moyasar callback: payment not paid', [
                     'payment_id' => $paymentId,
                     'status'     => $payment['status'] ?? 'unknown',
