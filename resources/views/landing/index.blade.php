@@ -360,6 +360,246 @@ window._vInit = {!! json_encode([
     </div>
 </section>
 
+{{-- ══════════════════════════════════════════════════════════════════════
+     PRICING SECTION — fully dynamic, reacts to country switcher
+══════════════════════════════════════════════════════════════════════════ --}}
+<section id="pricing" class="py-14 sm:py-20 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <div class="text-center mb-12">
+        <span class="inline-block glass text-brand-400 text-xs font-semibold uppercase tracking-widest px-4 py-1.5 rounded-full mb-4">{{ __('landing.pricing_badge') }}</span>
+        <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4">
+            {{ __('landing.pricing_title') }} <span class="gradient-text">{{ __('landing.pricing_title_hl') }}</span>{{ __('landing.pricing_title_sfx') ? ' '.__('landing.pricing_title_sfx') : '' }}
+        </h2>
+        <p class="text-base sm:text-xl text-gray-400 max-w-xl mx-auto">
+            {{ __('landing.pricing_one_plan') }}
+        </p>
+    </div>
+
+    {{-- Billing Toggle --}}
+    <div class="flex justify-center mb-10">
+        <div class="glass rounded-2xl p-1 flex gap-1">
+            <button @click="billing = 'monthly'"
+                    :class="billing === 'monthly' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'"
+                    class="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200">
+                {{ __('landing.billing_monthly') }}
+            </button>
+            <button @click="billing = 'annual'"
+                    :class="billing === 'annual' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'"
+                    class="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2">
+                {{ __('landing.billing_yearly') }}
+                <span class="text-xs font-bold px-2 py-0.5 rounded-full transition-all"
+                      :class="billing === 'annual' ? 'bg-green-500/30 text-green-300' : 'bg-white/8 text-gray-500'">
+                    {{ __('landing.billing_save_months') }}
+                </span>
+            </button>
+        </div>
+    </div>
+
+    {{-- 2-col: sticky pricing card + features --}}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+
+        {{-- LEFT: Pricing Card (sticky) --}}
+        <div class="lg:sticky lg:top-28 order-first">
+            <div class="glass rounded-3xl overflow-hidden border border-brand-500/40"
+                 style="box-shadow:0 0 60px rgba(108,99,255,0.12);">
+
+                {{-- Card Header --}}
+                <div class="px-5 sm:px-8 pt-6 sm:pt-8 pb-5 sm:pb-6 border-b border-white/5">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                                 style="background:linear-gradient(135deg,#6C63FF,#8b76ff);box-shadow:0 4px 15px rgba(108,99,255,0.4)">
+                                <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="font-bold text-white text-sm">{{ $appName }}</p>
+                                <p class="text-gray-500 text-xs">
+                                    {{ __('landing.pricing_platform') }} &mdash; <span x-text="countryName" class="text-gray-400"></span>
+                                    <template x-if="currentLang && currentLang !== 'en'">
+                                        <span class="ml-1 uppercase font-mono text-brand-400/70 text-[10px]" x-text="'· ' + currentLang"></span>
+                                    </template>
+                                </p>
+                            </div>
+                        </div>
+                        <span class="text-xs font-bold px-3 py-1.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30 whitespace-nowrap">
+                            {{ __('landing.pricing_trial_badge', ['days' => $trialDays]) }}
+                        </span>
+                    </div>
+
+                    {{-- Price --}}
+                    <div class="mb-3">
+                        <div x-show="billing === 'monthly'" class="flex items-end gap-2">
+                            <span class="text-4xl sm:text-6xl font-black text-white leading-none" x-text="monthlyFormatted"></span>
+                            <span class="text-gray-400 text-lg mb-1">{{ __('landing.pricing_per_mo') }}</span>
+                        </div>
+                        <div x-show="billing === 'annual'" x-cloak class="flex items-end gap-2">
+                            <span class="text-4xl sm:text-6xl font-black text-white leading-none" x-text="annualPerMonthFormatted"></span>
+                            <div class="mb-1">
+                                <p class="text-gray-400 text-sm">{{ __('landing.pricing_per_mo') }}</p>
+                                <p class="text-green-400 text-xs font-medium"
+                                   x-text="'{{ __('landing.billing_billed') }}' + annualTotalFormatted + '{{ __('landing.pricing_per_year') }}'"></p>
+                            </div>
+                        </div>
+                        <p class="text-green-400 text-xs font-medium mt-2">✓ {{ __('landing.pricing_no_card_trial') }}</p>
+                    </div>
+
+                    {{-- Tax badge --}}
+                    <div x-show="taxPct > 0" x-cloak
+                         class="mb-1 inline-flex items-center gap-1.5 text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1 rounded-full">
+                        <svg class="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/>
+                        </svg>
+                        <span x-text="taxName"></span> (<span x-text="taxPct + '%'"></span>) {{ __('landing.pricing_tax_badge') }} <span x-text="taxTotalFormatted" class="font-bold"></span>{{ __('landing.pricing_per_mo') }}
+                    </div>
+                </div>
+
+                {{-- CTA --}}
+                <div class="px-5 sm:px-8 py-5 sm:py-6 border-b border-white/5">
+                    @if($registrationEnabled ?? true)
+                    <a href="{{ route('signup') }}"
+                       class="btn-primary block w-full text-white font-bold text-base px-6 py-4 rounded-2xl text-center transition-transform hover:scale-[1.01]">
+                        {{ __('landing.pricing_start_trial', ['days' => $trialDays]) }}
+                    </a>
+                    <p class="text-center text-xs text-gray-500 mt-3">{{ __('landing.pricing_no_fees_note') }}</p>
+                    @else
+                    <div class="text-center py-3 px-5 rounded-xl bg-white/5 border border-white/10 text-gray-400 text-sm">
+                        {{ __('landing.registration_closed') }}
+                    </div>
+                    @endif
+                </div>
+
+                {{-- Payment Methods --}}
+                <div class="px-5 sm:px-8 py-4 sm:py-5 border-b border-white/5">
+                    <p class="text-xs text-gray-500 uppercase tracking-widest mb-3">{{ __('landing.pricing_methods_heading') }}</p>
+                    <div class="flex flex-wrap gap-2" x-html="renderPaymentMethods()"></div>
+                </div>
+
+                {{-- Tax notice --}}
+                <div x-show="taxPct > 0" x-cloak class="mx-5 sm:mx-8 mb-1 mt-2 flex items-center gap-2 rounded-xl border border-yellow-500/20 bg-yellow-500/5 px-4 py-2.5 text-xs">
+                    <svg class="w-4 h-4 flex-shrink-0 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span class="text-yellow-300">
+                        <span x-text="taxName"></span> (<span x-text="taxPct + '%'"></span>) {{ __('landing.pricing_tax_note') }}
+                        <span x-text="taxTotalFormatted" class="font-bold"></span>{{ __('landing.pricing_per_mo') }}
+                    </span>
+                </div>
+
+                {{-- Footer meta --}}
+                <div class="px-5 sm:px-8 py-4 sm:py-5 space-y-3.5">
+                    <div class="flex items-center gap-3 text-sm">
+                        <svg class="w-4 h-4 text-green-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                        <span class="text-gray-300">{{ __('landing.pricing_money_back') }}</span>
+                    </div>
+                    <div class="flex items-center gap-3 text-sm">
+                        <svg class="w-4 h-4 text-gray-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        <span class="text-gray-400">{{ __('landing.pricing_region_label') }} <span x-text="countryName" class="text-white font-medium"></span></span>
+                        <button @click="openSwitcher = true"
+                                class="ml-auto text-brand-400 hover:text-brand-300 text-xs underline underline-offset-2 transition-colors">
+                            {{ __('landing.pricing_change_region') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- RIGHT: Features + Trial Timeline + Stats --}}
+        <div class="space-y-6">
+            <div class="glass rounded-3xl p-5 sm:p-8 border border-white/5">
+                <h3 class="text-white font-bold text-lg mb-6">{{ __('landing.whats_included') }}</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3.5">
+                    @foreach([
+                        __('landing.pricing_feat_scheduling'),
+                        __('landing.pricing_feat_queue'),
+                        __('landing.pricing_feat_staff'),
+                        __('landing.pricing_feat_ratings'),
+                        __('landing.pricing_feat_analytics'),
+                        __('landing.pricing_feat_reminders'),
+                        __('landing.pricing_feat_languages'),
+                        __('landing.pricing_feat_onboarding'),
+                        __('landing.pricing_feat_database'),
+                        __('landing.pricing_feat_api'),
+                        __('landing.pricing_feat_booking'),
+                        __('landing.pricing_feat_support'),
+                    ] as $feature)
+                    <div class="flex items-center gap-3 text-sm text-gray-300">
+                        <svg class="w-4 h-4 text-brand-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        {{ $feature }}
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- Trial Timeline --}}
+            <div class="glass rounded-3xl p-5 sm:p-8 border border-white/5">
+                <h3 class="text-white font-bold text-lg mb-6">{{ __('landing.pricing_after_trial') }}</h3>
+                @php $graceEnd = $trialDays + 3; $roDay = $trialDays + 4; @endphp
+                <div class="space-y-5">
+                    <div class="flex gap-4 items-start">
+                        <div class="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black flex-shrink-0 mt-0.5"
+                             style="background:rgba(108,99,255,0.2);border:1px solid rgba(108,99,255,0.4);color:#a78bfa">1</div>
+                        <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <p class="text-white font-semibold text-sm">{{ __('landing.trial_full_access') }}</p>
+                                <span class="text-xs px-2 py-0.5 rounded-full bg-brand-500/15 text-brand-300">{{ __('landing.trial_full_days', ['days' => $trialDays]) }}</span>
+                            </div>
+                            <p class="text-gray-400 text-xs mt-1">{{ __('landing.trial_full_desc') }}</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4 items-start">
+                        <div class="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black flex-shrink-0 mt-0.5"
+                             style="background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.35);color:#fbbf24">2</div>
+                        <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <p class="text-white font-semibold text-sm">{{ __('landing.trial_grace_title') }}</p>
+                                <span class="text-xs px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400">{{ __('landing.trial_grace_days', ['start' => $trialDays + 1, 'end' => $graceEnd]) }}</span>
+                            </div>
+                            <p class="text-gray-400 text-xs mt-1">{{ __('landing.trial_grace_desc') }}</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4 items-start">
+                        <div class="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black flex-shrink-0 mt-0.5"
+                             style="background:rgba(156,163,175,0.08);border:1px solid rgba(156,163,175,0.2);color:#9ca3af">3</div>
+                        <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <p class="text-white font-semibold text-sm">{{ __('landing.trial_readonly_title') }}</p>
+                                <span class="text-xs px-2 py-0.5 rounded-full bg-white/5 text-gray-500">{{ __('landing.trial_readonly_day', ['day' => $roDay]) }}</span>
+                            </div>
+                            <p class="text-gray-400 text-xs mt-1">{{ __('landing.trial_readonly_desc') }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Stats --}}
+            <div class="glass rounded-3xl p-4 sm:p-6 border border-white/5">
+                <div class="grid grid-cols-3 divide-x divide-white/5 text-center">
+                    <div class="px-4">
+                        <p class="text-2xl sm:text-3xl font-black text-white">2,400<span class="text-brand-400">+</span></p>
+                        <p class="text-xs text-gray-500 mt-1">{{ __('landing.stat_businesses') }}</p>
+                    </div>
+                    <div class="px-4">
+                        <p class="text-2xl sm:text-3xl font-black text-white">1M<span class="text-brand-400">+</span></p>
+                        <p class="text-xs text-gray-500 mt-1">{{ __('landing.stat_appointments') }}</p>
+                    </div>
+                    <div class="px-4">
+                        <p class="text-2xl sm:text-3xl font-black text-white">29<span class="text-brand-400">+</span></p>
+                        <p class="text-xs text-gray-500 mt-1">{{ __('landing.stat_countries') }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </section>
 
 {{-- ══════════════════════════════════════════════════════════════════════
@@ -448,247 +688,6 @@ window._vInit = {!! json_encode([
             </div>
         </div>
         @endforeach
-    </div>
-</section>
-
-{{-- ══════════════════════════════════════════════════════════════════════
-     PRICING SECTION — fully dynamic, reacts to country switcher
-══════════════════════════════════════════════════════════════════════════ --}}
-<section id="pricing" class="py-14 sm:py-20 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-
-    <div class="text-center mb-12">
-        <span class="inline-block glass text-brand-400 text-xs font-semibold uppercase tracking-widest px-4 py-1.5 rounded-full mb-4">Pricing</span>
-        <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4">
-            Simple, honest <span class="gradient-text">pricing.</span>
-        </h2>
-        <p class="text-base sm:text-xl text-gray-400 max-w-xl mx-auto">
-            One plan &mdash; all features &mdash; price adapts to your region.
-        </p>
-    </div>
-
-    {{-- Billing Toggle --}}
-    <div class="flex justify-center mb-10">
-        <div class="glass rounded-2xl p-1 flex gap-1">
-            <button @click="billing = 'monthly'"
-                    :class="billing === 'monthly' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'"
-                    class="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200">
-                Monthly
-            </button>
-            <button @click="billing = 'annual'"
-                    :class="billing === 'annual' ? 'bg-brand-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'"
-                    class="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2">
-                Annual
-                <span class="text-xs font-bold px-2 py-0.5 rounded-full transition-all"
-                      :class="billing === 'annual' ? 'bg-green-500/30 text-green-300' : 'bg-white/8 text-gray-500'">
-                    Save 2 months
-                </span>
-            </button>
-        </div>
-    </div>
-
-    {{-- 2-col: sticky pricing card + features --}}
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-
-        {{-- LEFT: Pricing Card (sticky) --}}
-        <div class="lg:sticky lg:top-28 order-first">
-            <div class="glass rounded-3xl overflow-hidden border border-brand-500/40"
-                 style="box-shadow:0 0 60px rgba(108,99,255,0.12);">
-
-                {{-- Card Header --}}
-                <div class="px-5 sm:px-8 pt-6 sm:pt-8 pb-5 sm:pb-6 border-b border-white/5">
-                    <div class="flex items-center justify-between mb-6">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                                 style="background:linear-gradient(135deg,#6C63FF,#8b76ff);box-shadow:0 4px 15px rgba(108,99,255,0.4)">
-                                <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="font-bold text-white text-sm">{{ $appName }}</p>
-                                <p class="text-gray-500 text-xs">
-                                    Full Platform &mdash; <span x-text="countryName" class="text-gray-400"></span>
-                                    <template x-if="currentLang && currentLang !== 'en'">
-                                        <span class="ml-1 uppercase font-mono text-brand-400/70 text-[10px]" x-text="'· ' + currentLang"></span>
-                                    </template>
-                                </p>
-                            </div>
-                        </div>
-                        <span class="text-xs font-bold px-3 py-1.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30 whitespace-nowrap">
-                            {{ $trialDays }}-day free trial
-                        </span>
-                    </div>
-
-                    {{-- Price --}}
-                    <div class="mb-3">
-                        <div x-show="billing === 'monthly'" class="flex items-end gap-2">
-                            <span class="text-4xl sm:text-6xl font-black text-white leading-none" x-text="monthlyFormatted"></span>
-                            <span class="text-gray-400 text-lg mb-1">/mo</span>
-                        </div>
-                        <div x-show="billing === 'annual'" x-cloak class="flex items-end gap-2">
-                            <span class="text-4xl sm:text-6xl font-black text-white leading-none" x-text="annualPerMonthFormatted"></span>
-                            <div class="mb-1">
-                                <p class="text-gray-400 text-sm">/mo</p>
-                                <p class="text-green-400 text-xs font-medium" x-text="'Billed ' + annualTotalFormatted + '/yr'"></p>
-                            </div>
-                        </div>
-                        <p class="text-green-400 text-xs font-medium mt-2">✓ No credit card for the free trial</p>
-                    </div>
-
-                    {{-- Tax badge --}}
-                    <div x-show="taxPct > 0" x-cloak
-                         class="mb-1 inline-flex items-center gap-1.5 text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1 rounded-full">
-                        <svg class="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/>
-                        </svg>
-                        <span x-text="taxName"></span> (<span x-text="taxPct + '%'"></span>) — total <span x-text="taxTotalFormatted" class="font-bold"></span>/mo
-                    </div>
-                </div>
-
-                {{-- CTA --}}
-                <div class="px-5 sm:px-8 py-5 sm:py-6 border-b border-white/5">
-                    @if($registrationEnabled ?? true)
-                    <a href="{{ route('signup') }}"
-                       class="btn-primary block w-full text-white font-bold text-base px-6 py-4 rounded-2xl text-center transition-transform hover:scale-[1.01]">
-                        Start {{ $trialDays }}-Day Free Trial
-                    </a>
-                    <p class="text-center text-xs text-gray-500 mt-3">No credit card &nbsp;·&nbsp; Cancel anytime &nbsp;·&nbsp; No setup fees</p>
-                    @else
-                    <div class="text-center py-3 px-5 rounded-xl bg-white/5 border border-white/10 text-gray-400 text-sm">
-                        Registration is currently closed. Check back soon.
-                    </div>
-                    @endif
-                </div>
-
-                {{-- Payment Methods --}}
-                <div class="px-5 sm:px-8 py-4 sm:py-5 border-b border-white/5">
-                    <p class="text-xs text-gray-500 uppercase tracking-widest mb-3">Payment methods</p>
-                    <div class="flex flex-wrap gap-2" x-html="renderPaymentMethods()"></div>
-                </div>
-
-                {{-- Tax notice --}}
-                <div x-show="taxPct > 0" x-cloak class="mx-5 sm:mx-8 mb-1 mt-2 flex items-center gap-2 rounded-xl border border-yellow-500/20 bg-yellow-500/5 px-4 py-2.5 text-xs">
-                    <svg class="w-4 h-4 flex-shrink-0 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <span class="text-yellow-300">
-                        <span x-text="taxName"></span> (<span x-text="taxPct + '%'"></span>) will be added at checkout.
-                        Total: <span x-text="taxTotalFormatted" class="font-bold"></span>/mo
-                    </span>
-                </div>
-
-                {{-- Footer meta --}}
-                <div class="px-5 sm:px-8 py-4 sm:py-5 space-y-3.5">
-                    <div class="flex items-center gap-3 text-sm">
-                        <svg class="w-4 h-4 text-green-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                        </svg>
-                        <span class="text-gray-300">30-day money-back guarantee</span>
-                    </div>
-                    <div class="flex items-center gap-3 text-sm">
-                        <svg class="w-4 h-4 text-gray-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                        </svg>
-                        <span class="text-gray-400">Region: <span x-text="countryName" class="text-white font-medium"></span></span>
-                        <button @click="openSwitcher = true"
-                                class="ml-auto text-brand-400 hover:text-brand-300 text-xs underline underline-offset-2 transition-colors">
-                            Change
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {{-- RIGHT: Features + Trial Timeline + Stats --}}
-        <div class="space-y-6">
-            <div class="glass rounded-3xl p-5 sm:p-8 border border-white/5">
-                <h3 class="text-white font-bold text-lg mb-6">Everything included</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3.5">
-                    @foreach([
-                        'Smart appointment scheduling',
-                        'Real-time digital queue',
-                        'Unlimited staff accounts',
-                        'Customer ratings & feedback',
-                        'Analytics & business reports',
-                        'Automated SMS & email reminders',
-                        '15 interface languages',
-                        'Onboarding wizard',
-                        'Isolated database per tenant',
-                        'API access',
-                        'Custom booking page',
-                        'Priority support',
-                    ] as $feature)
-                    <div class="flex items-center gap-3 text-sm text-gray-300">
-                        <svg class="w-4 h-4 text-brand-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                        </svg>
-                        {{ $feature }}
-                    </div>
-                    @endforeach
-                </div>
-            </div>
-
-            {{-- Trial Timeline --}}
-            <div class="glass rounded-3xl p-5 sm:p-8 border border-white/5">
-                <h3 class="text-white font-bold text-lg mb-6">What happens after the trial?</h3>
-                @php $graceEnd = $trialDays + 3; $roDay = $trialDays + 4; @endphp
-                <div class="space-y-5">
-                    <div class="flex gap-4 items-start">
-                        <div class="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black flex-shrink-0 mt-0.5"
-                             style="background:rgba(108,99,255,0.2);border:1px solid rgba(108,99,255,0.4);color:#a78bfa">1</div>
-                        <div>
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <p class="text-white font-semibold text-sm">Full Access</p>
-                                <span class="text-xs px-2 py-0.5 rounded-full bg-brand-500/15 text-brand-300">Days 1–{{ $trialDays }}</span>
-                            </div>
-                            <p class="text-gray-400 text-xs mt-1">All features unlocked. Email only. No card needed.</p>
-                        </div>
-                    </div>
-                    <div class="flex gap-4 items-start">
-                        <div class="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black flex-shrink-0 mt-0.5"
-                             style="background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.35);color:#fbbf24">2</div>
-                        <div>
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <p class="text-white font-semibold text-sm">Grace Period</p>
-                                <span class="text-xs px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400">Days {{ $trialDays + 1 }}–{{ $graceEnd }}</span>
-                            </div>
-                            <p class="text-gray-400 text-xs mt-1">3 extra days to choose a plan before restrictions kick in.</p>
-                        </div>
-                    </div>
-                    <div class="flex gap-4 items-start">
-                        <div class="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black flex-shrink-0 mt-0.5"
-                             style="background:rgba(156,163,175,0.08);border:1px solid rgba(156,163,175,0.2);color:#9ca3af">3</div>
-                        <div>
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <p class="text-white font-semibold text-sm">Read-Only Mode</p>
-                                <span class="text-xs px-2 py-0.5 rounded-full bg-white/5 text-gray-500">Day {{ $roDay }}+</span>
-                            </div>
-                            <p class="text-gray-400 text-xs mt-1">Nothing is deleted. Upgrade any time to restore full access.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Stats --}}
-            <div class="glass rounded-3xl p-4 sm:p-6 border border-white/5">
-                <div class="grid grid-cols-3 divide-x divide-white/5 text-center">
-                    <div class="px-4">
-                        <p class="text-2xl sm:text-3xl font-black text-white">2,400<span class="text-brand-400">+</span></p>
-                        <p class="text-xs text-gray-500 mt-1">Businesses</p>
-                    </div>
-                    <div class="px-4">
-                        <p class="text-2xl sm:text-3xl font-black text-white">1M<span class="text-brand-400">+</span></p>
-                        <p class="text-xs text-gray-500 mt-1">Appointments</p>
-                    </div>
-                    <div class="px-4">
-                        <p class="text-2xl sm:text-3xl font-black text-white">29<span class="text-brand-400">+</span></p>
-                        <p class="text-xs text-gray-500 mt-1">Countries</p>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 </section>
 
