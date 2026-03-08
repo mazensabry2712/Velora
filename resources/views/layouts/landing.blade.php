@@ -151,6 +151,7 @@
             <div class="hidden md:flex items-center gap-8">
                 <a href="{{ route('landing') }}#features" class="text-sm text-gray-400 hover:text-white transition-colors">{{ __('landing.nav_features') }}</a>
                 <a href="{{ route('landing') }}#how-it-works" class="text-sm text-gray-400 hover:text-white transition-colors">{{ __('landing.nav_how_it_works') }}</a>
+                <a href="#pricing" class="text-sm text-gray-400 hover:text-white transition-colors">{{ __('landing.nav_pricing') }}</a>
                 <a href="#testimonials" class="text-sm text-gray-400 hover:text-white transition-colors">{{ __('landing.nav_testimonials') }}</a>
                 <a href="#faq" class="text-sm text-gray-400 hover:text-white transition-colors">{{ __('landing.nav_faq') }}</a>
             </div>
@@ -185,6 +186,7 @@
             <div class="flex flex-col gap-1">
                 <a href="{{ route('landing') }}#features"    class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_features') }}</a>
                 <a href="{{ route('landing') }}#how-it-works" class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_how_it_works') }}</a>
+                <a href="#pricing"                            class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_pricing') }}</a>
                 <a href="#testimonials"                      class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_testimonials') }}</a>
                 <a href="#faq"                               class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_faq') }}</a>
                 <a href="{{ route('central.login') }}"   class="text-sm text-gray-300 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_sign_in') }}</a>

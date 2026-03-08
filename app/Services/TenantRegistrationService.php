@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Tenant;
 use App\Models\SubscriptionPlan;
 use App\Models\TenantSubscription;
+use App\Models\PromoCode;
 use App\Mail\WelcomeTenantMail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -24,8 +25,20 @@ class TenantRegistrationService
      */
     public function register(array $data): array
     {
-        // 1. Validate uniqueness first — prevents duplicate tenants
+        // ── Step 1: Validate uniqueness first — prevents duplicate tenants
         $this->validateUniqueness($data['subdomain'], $data['email']);
+
+        // ── Promo code validation (before any DB writes) ──────────────────
+        $promoCode = null;
+        if (! empty($data['promo_code'])) {
+            $promoCode = PromoCode::where('code', strtoupper(trim($data['promo_code'])))->first();
+
+            if (! $promoCode || ! $promoCode->isValid()) {
+                throw ValidationException::withMessages([
+                    'promo_code' => ['This promo code is invalid or has expired.'],
+                ]);
+            }
+        }
 
         $tenant       = null;
         $trialDays    = 14;
@@ -36,11 +49,13 @@ class TenantRegistrationService
             $tenant = Tenant::create(['id' => $data['subdomain']]);
 
             $tenant->update([
-                'name'     => $data['business_name'],
-                'email'    => $data['email'],
-                'country'  => $data['country'] ?? null,
-                'language' => $data['language'] ?? 'en',
-                'active'   => true,
+                'name'          => $data['business_name'],
+                'email'         => $data['email'],
+                'country'       => $data['country'] ?? null,
+                'language'      => $data['language'] ?? 'en',
+                'active'        => true,
+                'gateway'       => $this->resolveGatewayForCountry($data['country'] ?? 'US'),
+                'business_type' => $data['business_type'] ?? null,
             ]);
 
             // ── Step 3: Create domain (fires DomainCreated → LinkTenantDomain job) ──
@@ -98,9 +113,15 @@ class TenantRegistrationService
                 'starts_at'            => now(),
                 'ends_at'              => null,
                 'amount_paid'          => 0,
-                'payment_method'       => null,
-                'notes'                => 'Auto-created trial subscription',
+                'payment_method'       => $this->resolveGatewayForCountry($data['country'] ?? 'US'),
+                'notes'                => 'Auto-created trial subscription'
+                                         . ($promoCode ? ' | promo: ' . $promoCode->code : ''),
             ]);
+
+            // Increment promo code usage now that the subscription is committed
+            if ($promoCode) {
+                $promoCode->incrementUsage();
+            }
 
         } catch (\Exception $e) {
             // Cleanup: delete tenant (TenantDeleted event will drop the tenant DB automatically)
@@ -195,5 +216,24 @@ class TenantRegistrationService
     {
         $base = config('app.base_domain', 'velora.com');
         return $slug . '.' . $base;
+    }
+
+    /**
+     * Map a country code to the appropriate payment gateway.
+     * EG → Paymob | SA/AE/KW/BH/OM/QA → Moyasar | default → Stripe
+     */
+    private function resolveGatewayForCountry(string $countryCode): string
+    {
+        $code = strtoupper(trim($countryCode));
+
+        if ($code === 'EG') {
+            return 'paymob';
+        }
+
+        if (in_array($code, ['SA', 'AE', 'KW', 'BH', 'OM', 'QA'])) {
+            return 'moyasar';
+        }
+
+        return 'stripe';
     }
 }

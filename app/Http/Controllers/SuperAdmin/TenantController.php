@@ -96,6 +96,8 @@ class TenantController extends Controller
             ]);
         });
 
+        ActivityLog::log('created', "Created tenant: {$tenant->name}, domain: {$validated['domain']}");
+
         return response()->json([
             'success' => true,
             'message' => 'Tenant created successfully',
@@ -129,10 +131,14 @@ class TenantController extends Controller
     public function update(Request $request, string $id)
     {
         $tenant = Tenant::findOrFail($id);
+        $currentDomain = $tenant->domains()->first()?->domain;
 
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
-            'domain' => 'sometimes|string|max:255',
+            'domain' => [
+                'sometimes', 'string', 'max:255',
+                \Illuminate\Validation\Rule::unique('domains', 'domain')->ignore($currentDomain, 'domain'),
+            ],
             'active' => 'sometimes|boolean',
         ]);
 
@@ -153,6 +159,8 @@ class TenantController extends Controller
             ]);
         }
 
+        ActivityLog::log('updated', "Updated tenant: {$tenant->name}");
+
         return response()->json([
             'success' => true,
             'message' => 'Tenant updated successfully',
@@ -166,11 +174,74 @@ class TenantController extends Controller
     public function destroy(string $id)
     {
         $tenant = Tenant::findOrFail($id);
-        $tenant->delete();
+        $tenantName   = $tenant->name;
+        $tenantDomain = $tenant->domains()->first()?->domain ?? 'unknown';
+
+        ActivityLog::log('deleted', "Moved tenant to trash: {$tenantName}, domain: {$tenantDomain}");
+
+        // Wrap in withoutEvents to prevent Stancl's TenantDeleted event from
+        // firing the DeleteDatabase pipeline. We only want that on forceDelete().
+        Tenant::withoutEvents(function () use ($tenant) {
+            $tenant->delete(); // soft delete — only sets deleted_at
+        });
 
         return response()->json([
             'success' => true,
             'message' => 'Tenant deleted successfully'
+        ]);
+    }
+
+    /**
+     * List soft-deleted (trashed) tenants.
+     */
+    public function trash()
+    {
+        $tenants = Tenant::onlyTrashed()->with('domains')->latest('deleted_at')->get();
+
+        return response()->json([
+            'success' => true,
+            'data'    => $tenants,
+        ]);
+    }
+
+    /**
+     * Restore a soft-deleted tenant.
+     */
+    public function restore(string $id)
+    {
+        $tenant = Tenant::onlyTrashed()->findOrFail($id);
+
+        // BaseTenant::save() only persists the 'data' JSON column; deleted_at
+        // is a first-class column so we bypass Eloquent and update it directly.
+        \Illuminate\Support\Facades\DB::table('tenants')
+            ->where('id', $id)
+            ->update(['deleted_at' => null]);
+
+        ActivityLog::log('restored', "Restored tenant from trash: {$tenant->name}");
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tenant restored successfully',
+            'data'    => $tenant->fresh()->load('domains'),
+        ]);
+    }
+
+    /**
+     * Permanently delete a trashed tenant.
+     */
+    public function forceDelete(string $id)
+    {
+        $tenant = Tenant::onlyTrashed()->findOrFail($id);
+        $tenantName   = $tenant->name;
+        $tenantDomain = $tenant->domains()->first()?->domain ?? 'unknown';
+
+        ActivityLog::log('force_deleted', "Permanently deleted tenant: {$tenantName}, domain: {$tenantDomain}");
+
+        $tenant->forceDelete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tenant permanently deleted',
         ]);
     }
 
@@ -182,6 +253,9 @@ class TenantController extends Controller
         $tenant = Tenant::findOrFail($id);
         $tenant->active = !$tenant->active;
         $tenant->save();
+
+        $status = $tenant->active ? 'activated' : 'deactivated';
+        ActivityLog::log('toggle_status', "Tenant {$status}: {$tenant->name}");
 
         return response()->json([
             'success' => true,
@@ -200,26 +274,74 @@ class TenantController extends Controller
     {
         $tenant = Tenant::findOrFail($id);
 
-        // Initialize tenancy to get tenant data
-        tenancy()->initialize($tenant);
-
         $stats = [
-            'total_users' => \App\Models\User::count(),
-            'total_appointments' => \App\Models\Appointment::count(),
-            'pending_appointments' => \App\Models\Appointment::where('status', 'Pending')->count(),
-            'confirmed_appointments' => \App\Models\Appointment::where('status', 'Confirmed')->count(),
-            'total_invoices' => \App\Models\Invoice::count(),
-            'pending_invoices' => \App\Models\Invoice::where('status', 'Pending')->count(),
-            'paid_invoices' => \App\Models\Invoice::where('status', 'Paid')->count(),
+            'total_users'            => 0,
+            'total_appointments'     => 0,
+            'pending_appointments'   => 0,
+            'confirmed_appointments' => 0,
+            'total_invoices'         => 0,
+            'pending_invoices'       => 0,
+            'paid_invoices'          => 0,
         ];
 
-        // End tenancy
-        tenancy()->end();
+        try {
+            // Build a throwaway connection directly to the tenant SQLite database.
+            // This avoids tenancy()->initialize() which triggers FilesystemTenancyBootstrapper
+            // and can crash with "Undefined array key" when the tenant DB is missing/empty.
+            $dbName = config('tenancy.database.prefix') . $tenant->getTenantKey() . config('tenancy.database.suffix', '');
+            $dbPath = database_path($dbName);
+
+            if (! file_exists($dbPath)) {
+                return response()->json(['success' => true, 'data' => $stats]);
+            }
+
+            $connName = 'tenant_stats_tmp_' . $tenant->getTenantKey();
+
+            config(["database.connections.{$connName}" => [
+                'driver'                  => 'sqlite',
+                'database'                => $dbPath,
+                'foreign_key_constraints' => true,
+            ]]);
+
+            $db = \Illuminate\Support\Facades\DB::connection($connName);
+
+            $stats = [
+                'total_users'            => $db->table('users')->count(),
+                'total_appointments'     => $this->safeCount($db, 'appointments'),
+                'pending_appointments'   => $this->safeCount($db, 'appointments', ['status' => 'Pending']),
+                'confirmed_appointments' => $this->safeCount($db, 'appointments', ['status' => 'Confirmed']),
+                'total_invoices'         => $this->safeCount($db, 'invoices'),
+                'pending_invoices'       => $this->safeCount($db, 'invoices', ['status' => 'Pending']),
+                'paid_invoices'          => $this->safeCount($db, 'invoices', ['status' => 'Paid']),
+            ];
+        } catch (\Throwable $e) {
+            // DB inaccessible or tables missing — return zeros
+        } finally {
+            // Purge the throwaway connection so it doesn't linger
+            if (isset($connName)) {
+                \Illuminate\Support\Facades\DB::purge($connName);
+                \Illuminate\Support\Facades\Config::offsetUnset("database.connections.{$connName}");
+            }
+        }
 
         return response()->json([
             'success' => true,
-            'data' => $stats
+            'data'    => $stats,
         ]);
+    }
+
+    /** Count rows safely — returns 0 if the table doesn't exist yet. */
+    private function safeCount(\Illuminate\Database\ConnectionInterface $db, string $table, array $where = []): int
+    {
+        try {
+            $query = $db->table($table);
+            foreach ($where as $col => $val) {
+                $query->where($col, $val);
+            }
+            return $query->count();
+        } catch (\Throwable $e) {
+            return 0;
+        }
     }
 
     /**

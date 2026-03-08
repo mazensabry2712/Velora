@@ -22,22 +22,47 @@
     <script>
         tailwind.config = {
             darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'Tajawal', 'Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        // Brand color matching Velora landing page
+                        indigo: {
+                            50:  '#f0eeff',
+                            100: '#e4e0ff',
+                            200: '#ccc5ff',
+                            300: '#aa9eff',
+                            400: '#8b76ff',
+                            500: '#6C63FF',
+                            600: '#5b4ff7',
+                            700: '#4d3de3',
+                            800: '#4032bc',
+                            900: '#362e98',
+                            950: '#211c5e',
+                        },
+                        surface: '#0f0e1a',
+                    },
+                },
+            },
         }
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <style>
         [x-cloak] { display: none !important; }
 
-        /* Arabic Font */
-        *, body { font-family: 'Tajawal', sans-serif; }
+        /* Fonts: Arabic Tajawal + Latin Plus Jakarta Sans */
+        *, body { font-family: 'Tajawal', 'Plus Jakarta Sans', 'Inter', sans-serif; }
+        :not([lang='ar']) * { font-family: 'Plus Jakarta Sans', 'Tajawal', 'Inter', sans-serif; }
 
         /* Scroll progress bar */
         #scroll-progress {
             position: fixed; top: 0; right: 0; left: 0; height: 3px; z-index: 9999;
-            background: linear-gradient(to left, #6366f1, #8b5cf6, #06b6d4);
+            background: linear-gradient(to left, #6C63FF, #8b76ff, #38bdf8);
             transform-origin: right;
             transition: transform 0.1s linear;
         }
@@ -87,7 +112,7 @@
         /* Nav active underline */
         .nav-link-active::after {
             content: ''; display: block; height: 3px;
-            background: linear-gradient(to left, #6366f1, #8b5cf6);
+            background: linear-gradient(to left, #6C63FF, #8b76ff);
             border-radius: 9999px; margin-top: 2px;
         }
 
@@ -112,7 +137,7 @@
         }
         .back-top-ring::before {
             content: ''; position: absolute; inset: 0;
-            border-radius: 9999px; border: 2px solid #6366f1;
+            border-radius: 9999px; border: 2px solid #6C63FF;
             animation: ripple 1.5s infinite;
         }
 
@@ -136,7 +161,31 @@
         tbody tr { transition: background 0.15s ease; }
 
         /* Focus rings */
-        *:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; border-radius: 6px; }
+        *:focus-visible { outline: 2px solid #6C63FF; outline-offset: 2px; border-radius: 6px; }
+
+        /* Landing page glass + gradient utilities */
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(108, 99, 255, 0.15);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #6C63FF 0%, #aa9eff 50%, #38bdf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .brand-glow {
+            box-shadow: 0 8px 30px rgba(108, 99, 255, 0.35);
+        }
+        .brand-glow:hover {
+            box-shadow: 0 12px 40px rgba(108, 99, 255, 0.5);
+        }
 
         /* Toast improved */
         @keyframes toastIn {
@@ -165,13 +214,13 @@
         .dark ::-webkit-scrollbar-thumb { background: #475569; }
     </style>
 </head>
-<body class="bg-slate-50 dark:bg-slate-900 min-h-screen antialiased">
+<body class="bg-slate-50 dark:bg-surface min-h-screen antialiased">
 
     <!-- Scroll Progress Bar -->
     <div id="scroll-progress"></div>
 
     <!-- Navigation -->
-    <nav class="bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm shadow-sm border-b border-slate-200 dark:border-slate-700 sticky top-0 z-40" x-data="{ mobileOpen: false }">
+    <nav class="bg-white/95 dark:bg-[#0c0b18]/90 backdrop-blur-md shadow-sm border-b border-slate-200 dark:border-white/[0.07] sticky top-0 z-40" x-data="{ mobileOpen: false }">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <!-- Logo -->
@@ -182,38 +231,141 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                             </svg>
                         </div>
-                        <span class="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent hidden sm:block">Super Admin</span>
+                        <span class="text-xl font-bold gradient-text hidden sm:block" style="font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: -0.01em">Super Admin</span>
                     </a>
                 </div>
 
                 <!-- Desktop Navigation Links -->
-                <div class="hidden lg:flex lg:items-center lg:gap-1">
-                    @php
-                        $navLinks = [
-                            ['route' => 'super-admin.dashboard',          'label' => __('super-admin.nav_dashboard'),     'icon' => 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'],
-                            ['route' => 'super-admin.tenants',             'label' => __('super-admin.nav_companies'),     'icon' => 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5'],
-                            ['route' => 'super-admin.subscription-plans',  'label' => __('super-admin.nav_subscriptions'), 'icon' => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2'],
-                            ['route' => 'super-admin.countries.index',     'label' => __('super-admin.nav_countries'),     'icon' => 'M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z'],
-                            ['route' => 'super-admin.country-pricing.index', 'label' => 'Country Pricing',                'icon' => 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z'],
-                            ['route' => 'super-admin.activity-logs',       'label' => __('super-admin.nav_logs'),          'icon' => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2'],
-                            ['route' => 'super-admin.notifications',       'label' => __('super-admin.nav_notifications'), 'icon' => 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9'],
-                            ['route' => 'super-admin.reports',             'label' => __('super-admin.nav_reports'),       'icon' => 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'],
-                            ['route' => 'super-admin.settings',            'label' => __('super-admin.nav_settings'),      'icon' => 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z'],
-                        ];
-                    @endphp
-                    @foreach($navLinks as $link)
-                        @php $isActive = request()->routeIs($link['route']); @endphp
-                        <a href="{{ route($link['route']) }}"
-                           class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150
-                                  {{ $isActive
-                                    ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
-                                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white' }}">
+                @php
+                    $billingActive = request()->routeIs(
+                        'super-admin.subscription-plans',
+                        'super-admin.country-pricing.*',
+                        'super-admin.promo-codes.*',
+                        'super-admin.upgrade-requests'
+                    );
+                    $systemActive = request()->routeIs(
+                        'super-admin.activity-logs',
+                        'super-admin.notifications',
+                        'super-admin.analytics',
+                        'super-admin.reports',
+                        'super-admin.kpis',
+                        'super-admin.settings'
+                    );
+                @endphp
+                <div class="hidden lg:flex lg:items-center lg:gap-0.5">
+
+                    {{-- Dashboard --}}
+                    @php $isActive = request()->routeIs('super-admin.dashboard'); @endphp
+                    <a href="{{ route('super-admin.dashboard') }}"
+                       class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150
+                              {{ $isActive ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white' }}">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                        </svg>
+                        {{ __('super-admin.nav_dashboard') }}
+                    </a>
+
+                    {{-- Companies --}}
+                    @php $isActive = request()->routeIs('super-admin.tenants'); @endphp
+                    <a href="{{ route('super-admin.tenants') }}"
+                       class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150
+                              {{ $isActive ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white' }}">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/>
+                        </svg>
+                        {{ __('super-admin.nav_companies') }}
+                    </a>
+
+                    {{-- ── البلينج والأسعار (Dropdown) ───────────── --}}
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open" @keydown.escape="open = false"
+                                class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150
+                                       {{ $billingActive ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white' }}">
                             <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $link['icon'] }}" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
-                            {{ $link['label'] }}
-                        </a>
-                    @endforeach
+                            البلينج والأسعار
+                            <svg class="w-3.5 h-3.5 transition-transform" :class="open && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+
+                        <div x-show="open" x-cloak @click.away="open = false"
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0 scale-95 -translate-y-1"
+                             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-100"
+                             x-transition:leave-start="opacity-100"
+                             x-transition:leave-end="opacity-0 scale-95"
+                             class="absolute top-full mt-1.5 start-0 w-52 bg-white dark:bg-[#12101f] rounded-xl shadow-xl border border-slate-200 dark:border-white/10 overflow-hidden z-50 py-1">
+
+                            @php
+                                $billingLinks = [
+                                    ['route' => 'super-admin.subscription-plans',    'label' => __('super-admin.nav_subscriptions'), 'icon' => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2'],
+                                    ['route' => 'super-admin.country-pricing.index', 'label' => 'الأسواق والأسعار',                  'icon' => 'M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z'],
+                                    ['route' => 'super-admin.promo-codes.index',     'label' => 'Promo Codes',                        'icon' => 'M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z'],
+                                    ['route' => 'super-admin.upgrade-requests',      'label' => 'طلبات الترقية',                      'icon' => 'M7 11l5-5m0 0l5 5m-5-5v12'],
+                                ];
+                            @endphp
+                            @foreach($billingLinks as $link)
+                                @php $isActive = request()->routeIs($link['route']); @endphp
+                                <a href="{{ route($link['route']) }}" @click="open = false"
+                                   class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium transition-colors
+                                          {{ $isActive ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60 hover:text-slate-900 dark:hover:text-white' }}">
+                                    <svg class="w-4 h-4 flex-shrink-0 {{ $isActive ? 'text-indigo-500' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $link['icon'] }}"/>
+                                    </svg>
+                                    {{ $link['label'] }}
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    {{-- ── النظام (Dropdown) ───────────────────────── --}}
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open" @keydown.escape="open = false"
+                                class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150
+                                       {{ $systemActive ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white' }}">
+                            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            النظام
+                            <svg class="w-3.5 h-3.5 transition-transform" :class="open && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+
+                        <div x-show="open" x-cloak @click.away="open = false"
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0 scale-95 -translate-y-1"
+                             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-100"
+                             x-transition:leave-start="opacity-100"
+                             x-transition:leave-end="opacity-0 scale-95"
+                             class="absolute top-full mt-1.5 start-0 w-48 bg-white dark:bg-[#12101f] rounded-xl shadow-xl border border-slate-200 dark:border-white/10 overflow-hidden z-50 py-1">
+
+                            @php
+                                $systemLinks = [
+                                    ['route' => 'super-admin.activity-logs',  'label' => __('super-admin.nav_logs'),          'icon' => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01'],
+                                    ['route' => 'super-admin.notifications',   'label' => __('super-admin.nav_notifications'), 'icon' => 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9'],
+                                    ['route' => 'super-admin.analytics',       'label' => 'التحليلات',                         'icon' => 'M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z'],
+                                    ['route' => 'super-admin.settings',        'label' => __('super-admin.nav_settings'),      'icon' => 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z'],
+                                ];
+                            @endphp
+                            @foreach($systemLinks as $link)
+                                @php $isActive = request()->routeIs($link['route']); @endphp
+                                <a href="{{ route($link['route']) }}" @click="open = false"
+                                   class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium transition-colors
+                                          {{ $isActive ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60 hover:text-slate-900 dark:hover:text-white' }}">
+                                    <svg class="w-4 h-4 flex-shrink-0 {{ $isActive ? 'text-indigo-500' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $link['icon'] }}"/>
+                                    </svg>
+                                    {{ $link['label'] }}
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+
                 </div>
 
                 <!-- Right: User menu + mobile toggle -->
@@ -244,11 +396,11 @@
                              x-transition:leave="transition ease-in duration-100"
                              x-transition:leave-start="opacity-100"
                              x-transition:leave-end="opacity-0 scale-95"
-                             class="absolute end-0 mt-2 w-72 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden z-50">
+                             class="absolute end-0 mt-2 w-72 bg-white dark:bg-[#12101f] rounded-2xl shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden z-50">
 
                             {{-- ── Profile Header ── --}}
                             <div class="relative px-4 py-4 overflow-hidden">
-                                <div class="absolute inset-0 bg-gradient-to-br from-indigo-600 via-indigo-500 to-purple-600 opacity-100"></div>
+                                <div class="absolute inset-0" style="background: linear-gradient(135deg, #4d3de3 0%, #6C63FF 60%, #8b76ff 100%)"></div>
                                 <div class="relative flex items-center gap-3">
                                     <div class="w-11 h-11 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0 shadow-inner">
                                         <span class="text-white font-black text-lg">{{ substr(auth()->user()->name, 0, 1) }}</span>
@@ -257,7 +409,7 @@
                                         <p class="text-sm font-bold text-white leading-tight truncate">{{ auth()->user()->name }}</p>
                                         <p class="text-xs text-indigo-200 mt-0.5 truncate">{{ auth()->user()->email }}</p>
                                     </div>
-                                    <span class="ms-auto flex-shrink-0 text-[10px] font-bold bg-white/20 text-white px-2 py-0.5 rounded-full border border-white/30">
+                                    <span class="ms-auto flex-shrink-0 text-[10px] font-bold bg-white/25 text-white px-2.5 py-0.5 rounded-full border border-white/40 tracking-wide uppercase" style="font-family: 'Plus Jakarta Sans', sans-serif">
                                         Super Admin
                                     </span>
                                 </div>
@@ -371,28 +523,64 @@
              x-transition:leave="transition ease-in duration-150"
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0 -translate-y-2"
-             class="lg:hidden border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 pb-4">
-            <div class="px-4 pt-3 space-y-1">
-                @foreach($navLinks as $link)
+             class="lg:hidden border-t border-slate-200 dark:border-white/[0.07] bg-white dark:bg-[#0c0b18] pb-4">
+            <div class="px-4 pt-3 space-y-0.5">
+
+                {{-- Dashboard --}}
+                @php $isActive = request()->routeIs('super-admin.dashboard'); @endphp
+                <a href="{{ route('super-admin.dashboard') }}" @click="mobileOpen = false"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition {{ $isActive ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    {{ __('super-admin.nav_dashboard') }}
+                </a>
+
+                {{-- Companies --}}
+                @php $isActive = request()->routeIs('super-admin.tenants'); @endphp
+                <a href="{{ route('super-admin.tenants') }}" @click="mobileOpen = false"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition {{ $isActive ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/></svg>
+                    {{ __('super-admin.nav_companies') }}
+                </a>
+
+                {{-- Billing group label --}}
+                <p class="px-3 pt-3 pb-1 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">البلينج والأسعار</p>
+                @foreach([
+                    ['route' => 'super-admin.subscription-plans',    'label' => __('super-admin.nav_subscriptions'), 'icon' => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2'],
+                    ['route' => 'super-admin.country-pricing.index', 'label' => 'الأسواق والأسعار',                  'icon' => 'M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z'],
+                    ['route' => 'super-admin.promo-codes.index',     'label' => 'Promo Codes',                        'icon' => 'M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z'],
+                    ['route' => 'super-admin.upgrade-requests',      'label' => 'طلبات الترقية',                      'icon' => 'M7 11l5-5m0 0l5 5m-5-5v12'],
+                ] as $link)
                     @php $isActive = request()->routeIs($link['route']); @endphp
-                    <a href="{{ route($link['route']) }}"
-                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition
-                              {{ $isActive
-                                ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
-                                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $link['icon'] }}" />
-                        </svg>
+                    <a href="{{ route($link['route']) }}" @click="mobileOpen = false"
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ps-7 {{ $isActive ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700' }}">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $link['icon'] }}"/></svg>
                         {{ $link['label'] }}
                     </a>
                 @endforeach
+
+                {{-- System group label --}}
+                <p class="px-3 pt-3 pb-1 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">النظام</p>
+                @foreach([
+                    ['route' => 'super-admin.activity-logs',  'label' => __('super-admin.nav_logs'),          'icon' => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01'],
+                    ['route' => 'super-admin.notifications',   'label' => __('super-admin.nav_notifications'), 'icon' => 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9'],
+                    ['route' => 'super-admin.analytics',       'label' => 'التحليلات',                         'icon' => 'M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z'],
+                    ['route' => 'super-admin.settings',        'label' => __('super-admin.nav_settings'),      'icon' => 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z'],
+                ] as $link)
+                    @php $isActive = request()->routeIs($link['route']); @endphp
+                    <a href="{{ route($link['route']) }}" @click="mobileOpen = false"
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ps-7 {{ $isActive ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700' }}">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $link['icon'] }}"/></svg>
+                        {{ $link['label'] }}
+                    </a>
+                @endforeach
+
             </div>
         </div>
     </nav>
 
     <!-- Breadcrumb -->
     @hasSection('breadcrumb')
-    <div class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+    <div class="bg-white dark:bg-[#0c0b18] border-b border-slate-200 dark:border-white/[0.07]">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5">
             <nav class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                 <a href="{{ route('super-admin.dashboard') }}" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition flex items-center gap-1">

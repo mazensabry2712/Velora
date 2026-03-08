@@ -67,6 +67,9 @@ Route::prefix('super-admin')->middleware(['auth:web', 'super.admin'])->group(fun
     Route::get('/dashboard/revenue-metrics', [DashboardController::class, 'revenueMetrics']);
 
     // Tenants Management
+    Route::get('/tenants/trash', [TenantController::class, 'trash']);                       // must be before apiResource
+    Route::post('/tenants/{id}/restore', [TenantController::class, 'restore']);
+    Route::delete('/tenants/{id}/force-delete', [TenantController::class, 'forceDelete']);
     Route::apiResource('tenants', TenantController::class);
     Route::post('/tenants/{id}/toggle-status', [TenantController::class, 'toggleStatus']);
     Route::get('/tenants/{id}/statistics', [TenantController::class, 'statistics']);

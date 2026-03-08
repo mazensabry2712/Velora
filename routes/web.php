@@ -8,6 +8,7 @@ use App\Http\Controllers\SuperAdminController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\Auth\TenantRegistrationController;
 use App\Http\Controllers\SuperAdmin\CountryPricingController;
+use App\Http\Controllers\SuperAdmin\PromoCodeController;
 use App\Http\Controllers\PricingController;
 use App\Services\PricingService;
 
@@ -175,12 +176,18 @@ Route::prefix('super-admin')->name('super-admin.')->middleware([\App\Http\Middle
             return view('super-admin.notifications');
         })->name('notifications');
 
+        // ── Analytics (merged Reports + KPIs) ───────────────────────────────
+        Route::get('/analytics', function () {
+            return view('super-admin.analytics');
+        })->name('analytics');
+
+        // Legacy redirects – keep old URLs working
         Route::get('/reports', function () {
-            return view('super-admin.reports');
+            return redirect()->route('super-admin.analytics', ['tab' => 'reports']);
         })->name('reports');
 
         Route::get('/kpis', function () {
-            return view('super-admin.kpis');
+            return redirect()->route('super-admin.analytics', ['tab' => 'kpis']);
         })->name('kpis');
 
         Route::get('/kpis/export.csv', [\App\Http\Controllers\SuperAdmin\DashboardController::class, 'exportKpis'])->name('kpis.export');
@@ -209,5 +216,11 @@ Route::prefix('super-admin')->name('super-admin.')->middleware([\App\Http\Middle
             ->names('country-pricing');
         Route::post('country-pricing/{countryPricing}/toggle', [CountryPricingController::class, 'toggleActive'])
             ->name('country-pricing.toggle');
+
+        // ── Promo Codes ─────────────────────────────────────────────────────
+        Route::get('/promo-codes', [PromoCodeController::class, 'index'])->name('promo-codes.index');
+        Route::post('/promo-codes', [PromoCodeController::class, 'store'])->name('promo-codes.store');
+        Route::patch('/promo-codes/{id}/toggle', [PromoCodeController::class, 'toggle'])->name('promo-codes.toggle');
+        Route::delete('/promo-codes/{id}', [PromoCodeController::class, 'destroy'])->name('promo-codes.destroy');
     });
 });

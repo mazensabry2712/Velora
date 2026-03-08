@@ -20,6 +20,7 @@ class TenantRegistrationController extends Controller
     {
         $validated = $request->validate([
             'business_name' => 'required|string|min:2|max:100',
+            'business_type' => 'nullable|string|max:60',
             'subdomain'     => 'required|string|min:3|max:32|regex:/^[a-z0-9][a-z0-9\-]{1,30}[a-z0-9]$/',
             'email'         => 'required|email:rfc,dns|max:191',
             'password'      => 'required|string|min:8|confirmed',
@@ -27,6 +28,7 @@ class TenantRegistrationController extends Controller
             'language'      => 'nullable|string|in:en,ar,fr,es,de,it,pt,ru,zh,ja,tr,hi,ko,nl,id',
             'terms'         => 'required|accepted',
             'plan_id'       => 'nullable|integer|exists:subscription_plans,id',
+            'promo_code'    => 'nullable|string|max:32',
         ], [
             'subdomain.regex'    => 'Subdomain must be lowercase letters, numbers, or hyphens only.',
             'terms.accepted'     => 'You must accept the Terms of Service.',

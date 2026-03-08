@@ -14,34 +14,45 @@
             </h1>
             <p class="text-slate-500 dark:text-slate-400 mt-1 text-sm">{{ __('super-admin.tenants_subtitle') }}</p>
         </div>
-        <button @click="openAddModal()"
-                class="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-semibold px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-200 dark:shadow-indigo-900 transition-all duration-200 hover:-translate-y-0.5">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-            {{ __('super-admin.tenant_add') }}
-        </button>
+        <div class="flex items-center gap-2">
+            <button @click="openTrashModal()"
+                    class="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 border border-slate-200 dark:border-white/[0.1] hover:border-red-300 dark:hover:border-red-800 bg-white dark:bg-white/[0.03] hover:bg-red-50 dark:hover:bg-red-900/20 font-semibold px-4 py-2.5 rounded-xl transition-all duration-200">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                <span x-text="__tTenants.locale === 'ar' ? 'سلة المحذوفات' : 'Trash'"></span>
+                <span x-show="trashedCount > 0"
+                      x-text="trashedCount"
+                      class="inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold bg-red-500 text-white rounded-full"></span>
+            </button>
+            <button @click="openAddModal()"
+                    class="flex items-center gap-2 bg-gradient-to-r from-[#5b4ff7] to-[#6C63FF] hover:from-[#4d3de3] hover:to-[#5b4ff7] text-white font-semibold px-5 py-2.5 rounded-xl shadow-lg shadow-[#6C63FF]/30 dark:shadow-[#6C63FF]/20 transition-all duration-200 hover:-translate-y-0.5">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                {{ __('super-admin.tenant_add') }}
+            </button>
+        </div>
     </div>
 
     <!-- Skeleton Loading State -->
     <div x-show="loading" class="space-y-4">
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-            <div class="p-4 border-b border-slate-200 dark:border-slate-700">
-                <div class="h-5 bg-slate-200 dark:bg-slate-700 rounded-lg w-32 skeleton"></div>
+        <div class="bg-white dark:bg-[#0d0c1a] rounded-2xl shadow-sm border border-slate-200 dark:border-white/[0.07] overflow-hidden">
+            <div class="p-4 border-b border-slate-200 dark:border-white/[0.07]">
+                <div class="h-5 bg-slate-200 dark:bg-white/[0.07] rounded-lg w-32 skeleton"></div>
             </div>
-            <div class="divide-y divide-slate-200 dark:divide-slate-700">
+            <div class="divide-y divide-slate-200 dark:divide-white/[0.05]">
                 <template x-for="i in 6" :key="i">
                     <div class="px-6 py-4 flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 skeleton flex-shrink-0"></div>
+                        <div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-white/[0.07] skeleton flex-shrink-0"></div>
                         <div class="flex-1 space-y-2">
-                            <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/3 skeleton"></div>
-                            <div class="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/2 skeleton"></div>
+                            <div class="h-4 bg-slate-200 dark:bg-white/[0.07] rounded w-1/3 skeleton"></div>
+                            <div class="h-3 bg-slate-200 dark:bg-white/[0.05] rounded w-1/2 skeleton"></div>
                         </div>
-                        <div class="h-6 w-16 bg-slate-200 dark:bg-slate-700 rounded-full skeleton"></div>
-                        <div class="h-4 w-24 bg-slate-200 dark:bg-slate-700 rounded skeleton"></div>
+                        <div class="h-6 w-16 bg-slate-200 dark:bg-white/[0.07] rounded-full skeleton"></div>
                         <div class="flex gap-2">
-                            <div class="h-8 w-8 bg-slate-200 dark:bg-slate-700 rounded-lg skeleton"></div>
-                            <div class="h-8 w-8 bg-slate-200 dark:bg-slate-700 rounded-lg skeleton"></div>
+                            <div class="h-8 w-8 bg-slate-200 dark:bg-white/[0.07] rounded-lg skeleton"></div>
+                            <div class="h-8 w-8 bg-slate-200 dark:bg-white/[0.07] rounded-lg skeleton"></div>
                         </div>
                     </div>
                 </template>
@@ -50,9 +61,9 @@
     </div>
 
     <!-- Tenants List -->
-    <div x-show="!loading" x-cloak class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+    <div x-show="!loading" x-cloak class="bg-white dark:bg-[#0d0c1a] rounded-2xl shadow-sm border border-slate-200 dark:border-white/[0.07]">
         <!-- Table header with search -->
-        <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex flex-wrap gap-3 items-center justify-between">
+        <div class="p-5 border-b border-slate-200 dark:border-white/[0.07] flex flex-wrap gap-3 items-center justify-between">
             <div class="flex items-center gap-2">
                 <div class="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/40 rounded-lg flex items-center justify-center">
                     <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,13 +71,13 @@
                     </svg>
                 </div>
                 <h2 class="font-bold text-slate-900 dark:text-white">{{ __('super-admin.tenants_list') }}</h2>
-                <span class="text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-full font-medium"
+                <span class="text-xs bg-slate-100 dark:bg-white/[0.07] text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-full font-medium"
                       x-text="(filteredTenants.length !== tenants.length ? filteredTenants.length + ' {{ __('super-admin.tenant_of') }} ' : '') + tenants.length + ' {{ __('super-admin.tenant_company_label') }}'" ></span>
             </div>
             <div class="relative">
                 <input type="text" x-model="searchQuery" @input="filterTenants()"
                        placeholder="{{ __('super-admin.tenant_search') }}"
-                       class="w-56 pr-9 pl-4 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+                       class="w-56 pr-9 pl-4 py-2 text-sm border border-slate-200 dark:border-white/[0.1] rounded-xl bg-slate-50 dark:bg-white/[0.05] text-slate-900 dark:text-white focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent transition">
                 <svg class="w-4 h-4 text-slate-400 absolute right-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
                 </svg>
@@ -74,20 +85,19 @@
         </div>
         <div class="overflow-x-auto">
             <table class="w-full">
-                <thead class="bg-slate-50 dark:bg-slate-900/50">
+                <thead class="bg-slate-50 dark:bg-[#0c0b18]/70">
                     <tr>
                         <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.tenant_company') }}</th>
                         <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.tenant_domain') }}</th>
                         <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.tenant_email') }}</th>
                         <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.tenant_status') }}</th>
-                        <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.tenant_plan') }}</th>
                         <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.tenant_created_at') }}</th>
                         <th class="px-6 py-3.5 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.tenant_actions') }}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
+                <tbody class="divide-y divide-slate-100 dark:divide-white/[0.05]">
                     <template x-for="tenant in pagedTenants" :key="tenant.id">
-                        <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-700/30 transition-colors duration-150 group">
+                        <tr class="hover:bg-slate-50/70 dark:hover:bg-white/[0.03] transition-colors duration-150 group">
                             <td class="px-6 py-4">
                                 <div class="flex items-center gap-3">
                                     <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white text-sm flex-shrink-0 shadow-sm"
@@ -100,7 +110,7 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4">
-                                <code class="text-xs bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-2 py-1 rounded-md font-mono" x-text="tenant.domain"></code>
+                                <code class="text-xs bg-slate-100 dark:bg-white/[0.07] text-slate-700 dark:text-slate-300 px-2 py-1 rounded-md font-mono" x-text="tenant.domain"></code>
                             </td>
                             <td class="px-6 py-4 text-sm text-slate-500 dark:text-slate-400" x-text="tenant.email || '-'"></td>
                             <td class="px-6 py-4"> {{-- Active status --}}
@@ -113,31 +123,23 @@
                                     <span x-text="tenant.active ? '{{ __('super-admin.tenant_active') }}' : '{{ __('super-admin.tenant_inactive') }}'"></span>
                                 </button>
                             </td>
-                            <td class="px-6 py-4"> {{-- Plan --}}
-                                <template x-if="tenant.current_subscription && tenant.current_subscription.plan">
-                                    <span :class="tenant.current_subscription.status === 'active'
-                                        ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ring-1 ring-blue-200'
-                                        : 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 ring-1 ring-purple-200'"
-                                          class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full">
-                                        <span x-text="tenant.current_subscription.plan.name"></span>
-                                        <span x-show="tenant.current_subscription.status === 'trial'" class="text-xs opacity-70">({{ __('super-admin.tenant_trial') }})</span>
-                                    </span>
-                                </template>
-                                <template x-if="!tenant.current_subscription || !tenant.current_subscription.plan">
-                                    <span class="text-xs text-slate-400 dark:text-slate-500">{{ __('super-admin.tenant_no_sub') }}</span>
-                                </template>
-                            </td>
                             <td class="px-6 py-4 text-sm text-slate-500 dark:text-slate-400" x-text="formatDate(tenant.created_at)"></td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center justify-center gap-1.5">
                                     <button @click="viewTenant(tenant)"
-                                            class="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition tooltip" data-tip="{{ __('super-admin.tenant_view_details') }}">
+                                            class="p-1.5 text-slate-400 hover:text-[#6C63FF] dark:hover:text-[#8b76ff] hover:bg-[#6C63FF]/10 rounded-lg transition tooltip" data-tip="{{ __('super-admin.tenant_view_details') }}">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                         </svg>
                                     </button>
-                                    <button @click="resetPassword(tenant.id, tenant.name)"
+                                    <button @click="openEditModal(tenant)"
+                                            class="p-1.5 text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20 rounded-lg transition tooltip" data-tip="{{ __('super-admin.tenant_edit') ?? 'تعديل' }}">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        </svg>
+                                    </button>
+                                    <button @click="confirmReset(tenant.id, tenant.name)"
                                             class="p-1.5 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition tooltip" data-tip="{{ __('super-admin.tenant_reset_password') }}">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
@@ -155,7 +157,7 @@
                     </template>
                     <!-- Empty state -->
                     <tr x-show="filteredTenants.length === 0 && !loading">
-                        <td colspan="7" class="px-6 py-16 text-center">
+                        <td colspan="6" class="px-6 py-16 text-center">
                             <svg class="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/>
                             </svg>
@@ -168,13 +170,13 @@
         </div>
 
         <!-- Pagination -->
-        <div x-show="filteredTenants.length > 0" class="px-5 py-4 border-t border-slate-200 dark:border-slate-700 flex flex-wrap gap-3 items-center justify-between">
+        <div x-show="filteredTenants.length > 0" class="px-5 py-4 border-t border-slate-200 dark:border-white/[0.07] flex flex-wrap gap-3 items-center justify-between">
 
             <!-- Per-page + info -->
             <div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                 <span>{{ __('super-admin.pagination_show') }}</span>
                 <select x-model.number="perPage" @change="currentPage = 1; paginate()"
-                        class="border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                        class="border border-slate-200 dark:border-white/[0.1] rounded-lg px-2 py-1 text-sm bg-white dark:bg-[#0c0b18] text-slate-900 dark:text-white focus:ring-2 focus:ring-[#6C63FF] outline-none">
                     <option value="5">5</option>
                     <option value="10">10</option>
                     <option value="25">25</option>
@@ -207,8 +209,8 @@
                               class="px-1 text-slate-400 dark:text-slate-500 text-sm select-none">…</span>
                         <button @click="goToPage(page)"
                                 :class="currentPage === page
-                                    ? 'bg-indigo-600 text-white shadow-sm'
-                                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'"
+                                    ? 'bg-[#6C63FF] text-white shadow-sm'
+                                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.08]'"
                                 class="min-w-[32px] h-8 px-1.5 rounded-lg text-sm font-medium transition"
                                 x-text="page"></button>
                         <!-- Ellipsis after -->
@@ -243,10 +245,10 @@
              x-transition:leave="transition ease-in duration-150"
              x-transition:leave-start="opacity-100 scale-100"
              x-transition:leave-end="opacity-0 scale-95"
-             class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg">
+             class="relative bg-white dark:bg-[#12101f] dark:border dark:border-white/[0.08] rounded-2xl shadow-2xl w-full max-w-lg">
 
             <!-- Header -->
-            <div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+            <div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-white/[0.07]">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/40 rounded-xl flex items-center justify-center">
                         <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -255,7 +257,7 @@
                     </div>
                     <h3 class="text-xl font-bold text-slate-900 dark:text-white">{{ __('super-admin.tenant_add') }}</h3>
                 </div>
-                <button @click="showAddModal = false" class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition">
+                <button @click="showAddModal = false" class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.08] rounded-lg transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -267,31 +269,31 @@
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ __('super-admin.tenant_form_name_label') }} <span class="text-red-500">*</span></label>
                         <input type="text" x-model="newTenant.name" required
-                               class="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white transition"
+                           class="w-full px-4 py-2.5 border border-slate-200 dark:border-white/[0.1] rounded-xl focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent bg-slate-50 dark:bg-white/[0.05] text-slate-900 dark:text-white transition"
                                placeholder="{{ __('super-admin.tenant_form_name_ph') }}">
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ __('super-admin.tenant_domain') }} <span class="text-red-500">*</span></label>
                         <input type="text" x-model="newTenant.domain" required
-                               class="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white transition font-mono text-sm"
+                           class="w-full px-4 py-2.5 border border-slate-200 dark:border-white/[0.1] rounded-xl focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent bg-slate-50 dark:bg-white/[0.05] text-slate-900 dark:text-white transition font-mono text-sm"
                                placeholder="company.booking-saas.test">
                         <p class="text-xs text-slate-400 mt-1">{{ __('super-admin.tenant_form_domain_help') }}</p>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ __('super-admin.tenant_email') }} <span class="text-slate-400 font-normal">({{ __('super-admin.tenant_form_optional') }})</span></label>
                         <input type="email" x-model="newTenant.email"
-                               class="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white transition"
+                           class="w-full px-4 py-2.5 border border-slate-200 dark:border-white/[0.1] rounded-xl focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent bg-slate-50 dark:bg-white/[0.05] text-slate-900 dark:text-white transition"
                                placeholder="admin@company.com">
                         <p class="text-xs text-slate-400 mt-1">{{ __('super-admin.tenant_form_email_info') }}</p>
                     </div>
                 </div>
                 <div class="flex gap-3 justify-end p-6 pt-0">
                     <button type="button" @click="showAddModal = false"
-                            class="px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl transition">
+                            class="px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] rounded-xl transition">
                         {{ __('super-admin.common_cancel') }}
                     </button>
                     <button type="submit" :disabled="submitting"
-                            class="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed">
+                            class="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-[#5b4ff7] to-[#6C63FF] hover:from-[#4d3de3] hover:to-[#5b4ff7] rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#6C63FF]/30">
                         <svg x-show="submitting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
@@ -311,10 +313,10 @@
         <div class="flex items-center justify-center min-h-screen px-4">
             <div x-show="showCredentialsModal"
                  @click="showCredentialsModal = false"
-                 class="fixed inset-0 transition-opacity bg-slate-900 bg-opacity-75"></div>
+                 class="fixed inset-0 transition-opacity bg-black/60 backdrop-blur-sm"></div>
 
             <div x-show="showCredentialsModal"
-                 class="inline-block bg-white dark:bg-slate-800 rounded-lg text-right overflow-hidden shadow-xl transform transition-all sm:max-w-lg sm:w-full">
+                 class="inline-block bg-white dark:bg-[#12101f] dark:border dark:border-white/[0.08] rounded-xl text-right overflow-hidden shadow-2xl transform transition-all sm:max-w-lg sm:w-full">
                 <div class="px-6 py-5">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-2xl font-bold text-slate-900 dark:text-white">{{ __('super-admin.tenant_creds_title') }}</h3>
@@ -325,23 +327,23 @@
                         </button>
                     </div>
 
-                    <div class="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4 mb-4">
+                        <div class="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-lg p-4 mb-4">
                         <p class="text-sm text-emerald-800 dark:text-emerald-300 mb-2">✅ {{ __('super-admin.tenant_creds_created_ok') }}</p>
                         <p class="text-xs text-emerald-600 dark:text-emerald-400">{{ __('super-admin.tenant_creds_save_hint') }}</p>
                     </div>
 
                     <div class="space-y-3">
-                        <div class="bg-slate-100 dark:bg-slate-700 rounded-lg p-4">
+                        <div class="bg-slate-100 dark:bg-white/[0.05] dark:border dark:border-white/[0.07] rounded-lg p-4">
                             <p class="text-xs text-slate-600 dark:text-slate-400 mb-1">{{ __('super-admin.tenant_email') }}</p>
                             <p class="text-sm font-mono text-slate-900 dark:text-white" x-text="credentials.email"></p>
                         </div>
 
-                        <div class="bg-slate-100 dark:bg-slate-700 rounded-lg p-4">
+                        <div class="bg-slate-100 dark:bg-white/[0.05] dark:border dark:border-white/[0.07] rounded-lg p-4">
                             <p class="text-xs text-slate-600 dark:text-slate-400 mb-1">{{ __('super-admin.tenant_creds_password') }}</p>
                             <p class="text-sm font-mono text-slate-900 dark:text-white" x-text="credentials.password"></p>
                         </div>
 
-                        <div class="bg-slate-100 dark:bg-slate-700 rounded-lg p-4">
+                        <div class="bg-slate-100 dark:bg-white/[0.05] dark:border dark:border-white/[0.07] rounded-lg p-4">
                             <p class="text-xs text-slate-600 dark:text-slate-400 mb-1">{{ __('super-admin.tenant_creds_login_url') }}</p>
                             <a :href="credentials.login_url"
                                target="_blank"
@@ -351,12 +353,111 @@
                     </div>
                 </div>
 
-                <div class="bg-slate-50 dark:bg-slate-900 px-6 py-4 flex justify-end">
+                <div class="bg-slate-50 dark:bg-[#0c0b18]/60 px-6 py-4 flex justify-end">
                     <button @click="showCredentialsModal = false"
-                            class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 rounded-lg transition">
+                            class="bg-gradient-to-r from-[#5b4ff7] to-[#6C63FF] hover:from-[#4d3de3] hover:to-[#5b4ff7] text-white font-semibold px-6 py-2 rounded-lg transition shadow-lg shadow-[#6C63FF]/30">
                         {{ __('super-admin.common_done') }}
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Tenant Modal -->
+    <div x-show="showEditModal" x-cloak
+         @keydown.escape.window="showEditModal = false"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showEditModal = false"></div>
+        <div x-show="showEditModal"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95"
+             class="relative bg-white dark:bg-[#12101f] dark:border dark:border-white/[0.08] rounded-2xl shadow-2xl w-full max-w-lg">
+
+            <!-- Header -->
+            <div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-white/[0.07]">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-sky-100 dark:bg-sky-900/30 rounded-xl flex items-center justify-center">
+                        <svg class="w-5 h-5 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 dark:text-white">{{ __('super-admin.tenant_edit') ?? 'تعديل الشركة' }}</h3>
+                </div>
+                <button @click="showEditModal = false" class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.08] rounded-lg transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <form @submit.prevent="updateTenant()">
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ __('super-admin.tenant_form_name_label') }} <span class="text-red-500">*</span></label>
+                        <input type="text" x-model="editForm.name" required
+                               class="w-full px-4 py-2.5 border border-slate-200 dark:border-white/[0.1] rounded-xl focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent bg-slate-50 dark:bg-white/[0.05] text-slate-900 dark:text-white transition"
+                               placeholder="{{ __('super-admin.tenant_form_name_ph') }}">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ __('super-admin.tenant_domain') }} <span class="text-red-500">*</span></label>
+                        <input type="text" x-model="editForm.domain" required
+                               class="w-full px-4 py-2.5 border border-slate-200 dark:border-white/[0.1] rounded-xl focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent bg-slate-50 dark:bg-white/[0.05] text-slate-900 dark:text-white transition font-mono text-sm"
+                               placeholder="company.velora.test">
+                        <p class="text-xs text-slate-400 mt-1">{{ __('super-admin.tenant_form_domain_help') }}</p>
+                    </div>
+                </div>
+                <div class="flex gap-3 justify-end p-6 pt-0">
+                    <button type="button" @click="showEditModal = false"
+                            class="px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] rounded-xl transition">
+                        {{ __('super-admin.common_cancel') }}
+                    </button>
+                    <button type="submit" :disabled="submitting"
+                            class="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-sky-500/25">
+                        <svg x-show="submitting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                        <span x-text="submitting ? '{{ __('super-admin.tenant_submitting') }}' : '{{ __('super-admin.tenant_save') ?? 'حفظ التغييرات' }}'"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reset Password Confirmation Modal -->
+    <div x-show="showResetModal" x-cloak
+         @keydown.escape.window="showResetModal = false"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showResetModal = false"></div>
+        <div x-show="showResetModal"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95"
+             class="relative bg-white dark:bg-[#12101f] dark:border dark:border-white/[0.08] rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+            <div class="w-14 h-14 bg-amber-100 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <svg class="w-7 h-7 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">{{ __('super-admin.tenant_reset_password') }}</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mb-1">{{ __('super-admin.tenant_reset_pw_confirm_msg') ?? 'سيتم إنشاء كلمة مرور جديدة لـ' }}</p>
+            <p class="font-bold text-slate-900 dark:text-white mb-5" x-text="resetTargetName"></p>
+            <div class="flex gap-3">
+                <button @click="showResetModal = false"
+                        class="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] rounded-xl transition">
+                    {{ __('super-admin.common_cancel') }}
+                </button>
+                <button @click="doResetPassword()"
+                        class="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 rounded-xl transition shadow-lg shadow-amber-500/25">
+                    {{ __('super-admin.tenant_reset_password') }}
+                </button>
             </div>
         </div>
     </div>
@@ -373,7 +474,7 @@
              x-transition:leave="transition ease-in duration-150"
              x-transition:leave-start="opacity-100 scale-100"
              x-transition:leave-end="opacity-0 scale-95"
-             class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+             class="relative bg-white dark:bg-[#12101f] dark:border dark:border-white/[0.08] rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
             <div class="w-14 h-14 bg-red-100 dark:bg-red-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <svg class="w-7 h-7 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -385,11 +486,11 @@
             <p class="text-xs text-red-500 mb-6">{{ __('super-admin.tenant_delete_warning') }}</p>
             <div class="flex gap-3">
                 <button @click="showDeleteModal = false"
-                        class="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl transition">
+                        class="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] rounded-xl transition">
                     {{ __('super-admin.common_cancel') }}
                 </button>
                 <button @click="deleteTenant(deleteTargetId)"
-                        class="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-xl transition">
+                        class="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-xl transition shadow-lg shadow-red-500/25">
                     {{ __('super-admin.tenant_delete_permanent') }}
                 </button>
             </div>
@@ -400,51 +501,293 @@
     <div x-show="showViewModal" x-cloak
          @keydown.escape.window="showViewModal = false"
          class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showViewModal = false"></div>
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showViewModal = false"></div>
         <div x-show="showViewModal"
+             x-transition:enter="transition ease-out duration-250"
+             x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95"
+             class="relative bg-white dark:bg-[#12101f] dark:border dark:border-white/[0.08] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+
+            <!-- Gradient Header -->
+            <div class="relative h-28 flex items-end px-6 pb-0 overflow-hidden"
+                 :style="selectedTenant ? `background: linear-gradient(135deg, hsl(${(selectedTenant.name.charCodeAt(0)*37)%360},65%,45%), hsl(${(selectedTenant.name.charCodeAt(0)*37+40)%360},65%,35%))` : 'background:#6C63FF'">
+                <!-- Decorative circles -->
+                <div class="absolute top-[-20px] right-[-20px] w-32 h-32 rounded-full bg-white/10"></div>
+                <div class="absolute top-4 right-16 w-16 h-16 rounded-full bg-white/10"></div>
+                <!-- Close button -->
+                <button @click="showViewModal = false"
+                        class="absolute top-3 left-3 p-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+                <!-- Avatar -->
+                <div class="relative mb-[-28px] flex items-end gap-4">
+                    <div class="w-14 h-14 rounded-2xl border-4 border-white dark:border-[#12101f] flex items-center justify-center text-white text-xl font-black shadow-lg flex-shrink-0"
+                         :style="selectedTenant ? `background: hsl(${(selectedTenant.name.charCodeAt(0)*37)%360},65%,38%)` : ''">
+                        <span x-text="selectedTenant ? selectedTenant.name.charAt(0).toUpperCase() : ''"></span>
+                    </div>
+                    <div class="pb-1">
+                        <p class="text-white font-bold text-base leading-tight drop-shadow" x-text="selectedTenant?.name"></p>
+                        <span :class="selectedTenant?.active
+                                ? 'bg-emerald-400/90 text-white'
+                                : 'bg-amber-400/90 text-white'"
+                              class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-white opacity-90 inline-block"></span>
+                            <span x-text="selectedTenant?.active ? '{{ __('super-admin.tenant_active') }}' : '{{ __('super-admin.tenant_inactive') }}'"></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Body -->
+            <div class="pt-10 px-6 pb-6" x-show="selectedTenant">
+
+                <!-- Info Grid -->
+                <div class="grid grid-cols-2 gap-3 mb-5">
+                    <!-- Domain -->
+                    <div class="col-span-2 bg-slate-50 dark:bg-white/[0.04] dark:border dark:border-white/[0.06] rounded-xl px-4 py-3 flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"/>
+                            </svg>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[10px] text-slate-400 uppercase font-semibold tracking-wide">{{ __('super-admin.tenant_domain') }}</p>
+                            <p class="text-sm font-mono font-semibold text-slate-800 dark:text-white truncate" x-text="selectedTenant?.domain || '-'"></p>
+                        </div>
+                    </div>
+                    <!-- Email -->
+                    <div class="bg-slate-50 dark:bg-white/[0.04] dark:border dark:border-white/[0.06] rounded-xl px-4 py-3 flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-sky-100 dark:bg-sky-900/40 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[10px] text-slate-400 uppercase font-semibold tracking-wide">{{ __('super-admin.tenant_email') }}</p>
+                            <p class="text-sm text-slate-800 dark:text-white truncate" x-text="selectedTenant?.email || '-'"></p>
+                        </div>
+                    </div>
+                    <!-- Created At -->
+                    <div class="bg-slate-50 dark:bg-white/[0.04] dark:border dark:border-white/[0.06] rounded-xl px-4 py-3 flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[10px] text-slate-400 uppercase font-semibold tracking-wide">{{ __('super-admin.tenant_created_at') }}</p>
+                            <p class="text-sm text-slate-800 dark:text-white" x-text="selectedTenant ? formatDate(selectedTenant.created_at) : '-'"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Panel -->
+                <div class="grid grid-cols-3 gap-2 mb-4">
+                    <!-- Users -->
+                    <div class="bg-indigo-50 dark:bg-indigo-900/20 dark:border dark:border-indigo-700/30 rounded-xl p-3 text-center">
+                        <div x-show="tenantStatsLoading" class="h-7 flex items-center justify-center">
+                            <svg class="w-4 h-4 animate-spin text-indigo-400" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                        </div>
+                        <p x-show="!tenantStatsLoading" class="text-xl font-black text-indigo-700 dark:text-indigo-300" x-text="tenantStats?.total_users ?? '—'"></p>
+                        <p class="text-[10px] text-indigo-500 dark:text-indigo-400 font-semibold uppercase tracking-wide mt-0.5" x-text="__tTenants.locale === 'ar' ? 'مستخدمون' : 'Users'"></p>
+                    </div>
+                    <!-- Appointments -->
+                    <div class="bg-violet-50 dark:bg-violet-900/20 dark:border dark:border-violet-700/30 rounded-xl p-3 text-center">
+                        <div x-show="tenantStatsLoading" class="h-7 flex items-center justify-center">
+                            <svg class="w-4 h-4 animate-spin text-violet-400" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                        </div>
+                        <p x-show="!tenantStatsLoading" class="text-xl font-black text-violet-700 dark:text-violet-300" x-text="tenantStats?.total_appointments ?? '—'"></p>
+                        <p class="text-[10px] text-violet-500 dark:text-violet-400 font-semibold uppercase tracking-wide mt-0.5" x-text="__tTenants.locale === 'ar' ? 'مواعيد' : 'Appts'"></p>
+                    </div>
+                    <!-- Invoices -->
+                    <div class="bg-emerald-50 dark:bg-emerald-900/20 dark:border dark:border-emerald-700/30 rounded-xl p-3 text-center">
+                        <div x-show="tenantStatsLoading" class="h-7 flex items-center justify-center">
+                            <svg class="w-4 h-4 animate-spin text-emerald-400" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                        </div>
+                        <p x-show="!tenantStatsLoading" class="text-xl font-black text-emerald-700 dark:text-emerald-300" x-text="tenantStats?.total_invoices ?? '—'"></p>
+                        <p class="text-[10px] text-emerald-500 dark:text-emerald-400 font-semibold uppercase tracking-wide mt-0.5" x-text="__tTenants.locale === 'ar' ? 'فواتير' : 'Invoices'"></p>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-2.5 pt-1">
+                    <button @click="openEditModal(selectedTenant); showViewModal = false"
+                            class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 dark:bg-sky-900/20 dark:text-sky-400 dark:border-sky-800 dark:hover:bg-sky-900/40 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                        {{ __('super-admin.tenant_edit') }}
+                    </button>
+                    <button @click="toggleStatus(selectedTenant.id, selectedTenant.active); showViewModal = false"
+                            :class="selectedTenant?.active
+                                ? 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 dark:hover:bg-amber-900/40'
+                                : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-900/40'"
+                            class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/>
+                        </svg>
+                        <span x-text="selectedTenant?.active ? '{{ __('super-admin.tenant_deactivate') }}' : '{{ __('super-admin.tenant_activate') }}'"></span>
+                    </button>
+                    <button @click="confirmDelete(selectedTenant.id, selectedTenant.name); showViewModal = false"
+                            class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/40 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                        {{ __('super-admin.tenant_delete_company') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trash Modal -->
+    <div x-show="showTrashModal" x-cloak
+         @keydown.escape.window="showTrashModal = false"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showTrashModal = false"></div>
+        <div x-show="showTrashModal"
              x-transition:enter="transition ease-out duration-200"
              x-transition:enter-start="opacity-0 scale-95"
              x-transition:enter-end="opacity-100 scale-100"
-             class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md">
-            <div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
-                <h3 class="text-xl font-bold text-slate-900 dark:text-white">{{ __('super-admin.tenant_view_title') }}</h3>
-                <button @click="showViewModal = false" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition">
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95"
+             class="relative bg-white dark:bg-[#12101f] dark:border dark:border-white/[0.08] rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+
+            <!-- Header -->
+            <div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-white/[0.07] flex-shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center">
+                        <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-slate-900 dark:text-white" x-text="__tTenants.locale === 'ar' ? 'سلة المحذوفات' : 'Trash'"></h3>
+                        <p class="text-xs text-slate-400" x-text="__tTenants.locale === 'ar' ? 'الشركات المحذوفة مؤقتاً' : 'Soft-deleted companies'"></p>
+                    </div>
+                </div>
+                <button @click="showTrashModal = false" class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.08] rounded-lg transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                 </button>
             </div>
-            <div class="p-6" x-show="selectedTenant">
-                <div class="flex items-center gap-4 mb-6 pb-6 border-b border-slate-100 dark:border-slate-700">
-                    <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-lg"
-                         :style="selectedTenant ? `background: hsl(${(selectedTenant.name.charCodeAt(0) * 37) % 360}, 65%, 50%)` : ''"
-                         x-text="selectedTenant ? selectedTenant.name.charAt(0).toUpperCase() : ''"></div>
-                    <div>
-                        <h4 class="text-lg font-bold text-slate-900 dark:text-white" x-text="selectedTenant?.name"></h4>
-                        <span :class="selectedTenant?.active ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'"
-                              class="text-xs font-semibold px-2.5 py-1 rounded-full"
-                              x-text="selectedTenant?.active ? '{{ __('super-admin.tenant_active') }}' : '{{ __('super-admin.tenant_inactive') }}'"></span>
-                    </div>
+
+            <!-- Body -->
+            <div class="overflow-y-auto flex-1 p-6">
+
+                <!-- Loading -->
+                <div x-show="trashLoading" class="flex items-center justify-center py-12">
+                    <svg class="w-8 h-8 animate-spin text-red-400" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
                 </div>
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between py-2.5 border-b border-slate-100 dark:border-slate-700">
-                        <span class="text-sm text-slate-500">{{ __('super-admin.tenant_plan') }}</span>
-                        <span :class="selectedTenant?.current_subscription?.status === 'active' ? 'text-blue-600 font-semibold' : 'text-purple-600 font-semibold'"
-                              class="text-sm" x-text="selectedTenant?.current_subscription?.plan?.name || '{{ __('super-admin.tenant_no_sub') }}'"></span>
-                    </div>
-                    <div class="flex items-center justify-between py-2.5 border-b border-slate-100 dark:border-slate-700">
-                        <span class="text-sm text-slate-500">{{ __('super-admin.tenant_domain') }}</span>
-                        <code class="text-sm bg-slate-100 dark:bg-slate-700 px-2.5 py-1 rounded-lg font-mono" x-text="selectedTenant?.domain"></code>
-                    </div>
-                    <div class="flex items-center justify-between py-2.5 border-b border-slate-100 dark:border-slate-700">
-                        <span class="text-sm text-slate-500">{{ __('super-admin.tenant_email') }}</span>
-                        <span class="text-sm text-slate-900 dark:text-white" x-text="selectedTenant?.email || '-'"></span>
-                    </div>
-                    <div class="flex items-center justify-between py-2.5">
-                        <span class="text-sm text-slate-500">{{ __('super-admin.tenant_created_at') }}</span>
-                        <span class="text-sm text-slate-900 dark:text-white" x-text="selectedTenant ? formatDate(selectedTenant.created_at) : '-'"></span>
-                    </div>
+
+                <!-- Empty State -->
+                <div x-show="!trashLoading && trashedTenants.length === 0" class="text-center py-12">
+                    <svg class="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                    <p class="text-slate-500 dark:text-slate-400 font-medium" x-text="__tTenants.locale === 'ar' ? 'سلة المحذوفات فارغة' : 'Trash is empty'"></p>
                 </div>
+
+                <!-- Trashed list -->
+                <div x-show="!trashLoading && trashedTenants.length > 0" class="space-y-3">
+                    <!-- Warning banner -->
+                    <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 rounded-xl px-4 py-3 flex items-start gap-3 mb-4">
+                        <svg class="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                        </svg>
+                        <p class="text-xs text-amber-700 dark:text-amber-400" x-text="__tTenants.locale === 'ar' ? 'الحذف النهائي لا يمكن التراجع عنه.' : 'Permanent deletion cannot be undone.'"></p>
+                    </div>
+
+                    <template x-for="t in trashedTenants" :key="t.id">
+                        <div class="flex items-center gap-4 bg-slate-50 dark:bg-white/[0.03] dark:border dark:border-white/[0.06] rounded-xl px-4 py-3">
+                            <!-- Avatar -->
+                            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-black flex-shrink-0"
+                                 :style="`background: hsl(${(t.name.charCodeAt(0)*37)%360},55%,45%)`">
+                                <span x-text="t.name.charAt(0).toUpperCase()"></span>
+                            </div>
+                            <!-- Info -->
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-semibold text-slate-800 dark:text-white truncate" x-text="t.name"></p>
+                                <p class="text-xs text-slate-400 font-mono truncate" x-text="t.domain"></p>
+                            </div>
+                            <!-- Deleted at -->
+                            <p class="text-xs text-slate-400 flex-shrink-0" x-text="formatDate(t.deleted_at)"></p>
+                            <!-- Actions -->
+                            <div class="flex items-center gap-1.5 flex-shrink-0">
+                                <button @click="restoreTenant(t.id, t.name)"
+                                        :disabled="submitting"
+                                        class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-800 rounded-lg transition disabled:opacity-50">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+                                    </svg>
+                                    <span x-text="__tTenants.locale === 'ar' ? 'استعادة' : 'Restore'"></span>
+                                </button>
+                                <button @click="confirmForceDelete(t.id, t.name)"
+                                        :disabled="submitting"
+                                        class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800 rounded-lg transition disabled:opacity-50">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                    <span x-text="__tTenants.locale === 'ar' ? 'حذف نهائي' : 'Delete forever'"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Force Delete Confirmation Modal -->
+    <div x-show="showForceDeleteModal" x-cloak
+         @keydown.escape.window="showForceDeleteModal = false"
+         class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showForceDeleteModal = false"></div>
+        <div x-show="showForceDeleteModal"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95"
+             class="relative bg-white dark:bg-[#12101f] dark:border dark:border-white/[0.08] rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+            <div class="w-14 h-14 bg-red-100 dark:bg-red-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <svg class="w-7 h-7 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2" x-text="__tTenants.locale === 'ar' ? 'حذف نهائي' : 'Delete Forever'"></h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mb-1" x-text="__tTenants.locale === 'ar' ? 'سيتم حذف هذه الشركة بشكل دائم:' : 'This will permanently delete:'"></p>
+            <p class="font-bold text-slate-900 dark:text-white mb-2" x-text="forceDeleteTargetName"></p>
+            <p class="text-xs text-red-500 mb-6" x-text="__tTenants.locale === 'ar' ? 'لا يمكن التراجع عن هذا الإجراء.' : 'This action is irreversible.'"></p>
+            <div class="flex gap-3">
+                <button @click="showForceDeleteModal = false"
+                        class="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] rounded-xl transition">
+                    {{ __('super-admin.common_cancel') }}
+                </button>
+                <button @click="doForceDelete()"
+                        class="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-xl transition shadow-lg shadow-red-500/25">
+                    <span x-text="__tTenants.locale === 'ar' ? 'احذف نهائياً' : 'Delete Forever'"></span>
+                </button>
             </div>
         </div>
     </div>
@@ -487,17 +830,35 @@ function tenantsManager() {
             return Math.max(1, Math.ceil(this.filteredTenants.length / this.perPage));
         },
         showAddModal: false,
+        showEditModal: false,
         showCredentialsModal: false,
         showDeleteModal: false,
+        showResetModal: false,
         showViewModal: false,
+        showTrashModal: false,
+        showForceDeleteModal: false,
+        trashLoading: false,
+        trashedTenants: [],
+        trashedCount: 0,
+        forceDeleteTargetId: null,
+        forceDeleteTargetName: '',
         deleteTargetId: null,
         deleteTargetName: '',
+        resetTargetId: null,
+        resetTargetName: '',
+        editingTenantId: null,
         selectedTenant: null,
+        tenantStats: null,
+        tenantStatsLoading: false,
         credentials: {},
         newTenant: {
             name: '',
             domain: '',
             email: ''
+        },
+        editForm: {
+            name: '',
+            domain: ''
         },
 
         async loadTenants() {
@@ -520,6 +881,17 @@ function tenantsManager() {
                 if (data.success) {
                     this.tenants = data.data;
                     this.filterTenants();
+                    this.loadTrashCount();
+
+                    // Auto-open view modal if redirected from dashboard with ?view= or ?edit=
+                    const params = new URLSearchParams(window.location.search);
+                    const targetId = params.get('view') || params.get('edit');
+                    if (targetId) {
+                        const tenant = this.tenants.find(t => t.id === targetId);
+                        if (tenant) this.viewTenant(tenant);
+                        // Clean up the URL without reload
+                        window.history.replaceState({}, '', window.location.pathname);
+                    }
                 }
             } catch (error) {
                 console.error('Error loading tenants:', error);
@@ -628,8 +1000,59 @@ function tenantsManager() {
             }
         },
 
-        async resetPassword(id, name) {
-            if (!confirm(__tTenants.reset_confirm.replace(':name', name))) return;
+        openEditModal(tenant) {
+            this.editingTenantId = tenant.id;
+            this.editForm = {
+                name: tenant.name,
+                domain: tenant.domain
+            };
+            this.showEditModal = true;
+        },
+
+        async updateTenant() {
+            this.submitting = true;
+            try {
+                const response = await fetch(`/api/super-admin/tenants/${this.editingTenantId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(this.editForm)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    this.showEditModal = false;
+                    await this.loadTenants();
+                    showToast(__tTenants.update_success ?? 'تم تحديث بيانات الشركة', 'success');
+                } else {
+                    const errMsg = data.errors
+                        ? Object.values(data.errors).flat().join(' \u2022 ')
+                        : (data.message || 'حدث خطأ');
+                    showToast(errMsg, 'error');
+                }
+            } catch (error) {
+                console.error('Error updating tenant:', error);
+                showToast('حدث خطأ أثناء التحديث', 'error');
+            } finally {
+                this.submitting = false;
+            }
+        },
+
+        confirmReset(id, name) {
+            this.resetTargetId = id;
+            this.resetTargetName = name;
+            this.showResetModal = true;
+        },
+
+        async doResetPassword() {
+            this.showResetModal = false;
+            const id = this.resetTargetId;
+            const name = this.resetTargetName;
             try {
                 const response = await fetch(`/api/super-admin/tenants/${id}/reset-admin-password`, {
                     method: 'POST',
@@ -660,7 +1083,28 @@ function tenantsManager() {
 
         viewTenant(tenant) {
             this.selectedTenant = tenant;
+            this.tenantStats = null;
             this.showViewModal = true;
+            this.loadTenantStats(tenant.id);
+        },
+
+        async loadTenantStats(id) {
+            this.tenantStatsLoading = true;
+            try {
+                const response = await fetch(`/api/super-admin/tenants/${id}/statistics`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                if (data.success) this.tenantStats = data.data;
+            } catch (e) {
+                // stats unavailable — non-critical
+            } finally {
+                this.tenantStatsLoading = false;
+            }
         },
 
         paginate() {
@@ -691,7 +1135,85 @@ function tenantsManager() {
 
         formatDate(date) {
             return new Date(date).toLocaleDateString(__tTenants.locale);
-        }
+        },
+
+        async loadTrashCount() {
+            try {
+                const r = await fetch('/api/super-admin/tenants/trash', {
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                    credentials: 'include'
+                });
+                const d = await r.json();
+                if (d.success) this.trashedCount = d.data.length;
+            } catch (_) {}
+        },
+
+        async openTrashModal() {
+            this.showTrashModal = true;
+            this.trashLoading = true;
+            try {
+                const r = await fetch('/api/super-admin/tenants/trash', {
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                    credentials: 'include'
+                });
+                const d = await r.json();
+                if (d.success) {
+                    this.trashedTenants = d.data;
+                    this.trashedCount = d.data.length;
+                }
+            } catch (_) {}
+            finally { this.trashLoading = false; }
+        },
+
+        async restoreTenant(id, name) {
+            this.submitting = true;
+            try {
+                const r = await fetch(`/api/super-admin/tenants/${id}/restore`, {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                    credentials: 'include'
+                });
+                const d = await r.json();
+                if (d.success) {
+                    this.trashedTenants = this.trashedTenants.filter(t => t.id !== id);
+                    this.trashedCount = this.trashedTenants.length;
+                    await this.loadTenants();
+                    showToast(__tTenants.locale === 'ar' ? `تمت استعادة ${name}` : `${name} restored`, 'success');
+                } else {
+                    showToast(d.message || 'Error', 'error');
+                }
+            } catch (_) { showToast('Error', 'error'); }
+            finally { this.submitting = false; }
+        },
+
+        confirmForceDelete(id, name) {
+            this.forceDeleteTargetId = id;
+            this.forceDeleteTargetName = name;
+            this.showForceDeleteModal = true;
+        },
+
+        async doForceDelete() {
+            this.showForceDeleteModal = false;
+            this.submitting = true;
+            const id   = this.forceDeleteTargetId;
+            const name = this.forceDeleteTargetName;
+            try {
+                const r = await fetch(`/api/super-admin/tenants/${id}/force-delete`, {
+                    method: 'DELETE',
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                    credentials: 'include'
+                });
+                const d = await r.json();
+                if (d.success) {
+                    this.trashedTenants = this.trashedTenants.filter(t => t.id !== id);
+                    this.trashedCount = this.trashedTenants.length;
+                    showToast(__tTenants.locale === 'ar' ? `تم حذف ${name} نهائياً` : `${name} permanently deleted`, 'error');
+                } else {
+                    showToast(d.message || 'Error', 'error');
+                }
+            } catch (_) { showToast('Error', 'error'); }
+            finally { this.submitting = false; }
+        },
     }
 }
 </script>

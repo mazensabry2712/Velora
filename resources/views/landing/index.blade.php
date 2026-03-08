@@ -740,8 +740,8 @@ window._vInit = {!! json_encode([
 
         <div class="px-6 py-5 border-b border-white/5 flex items-center justify-between">
             <div>
-                <h3 class="font-bold text-white" x-text="firstVisit ? 'Select your region' : 'Choose your country'"></h3>
-                <p x-show="firstVisit" x-cloak class="text-xs text-gray-400 mt-0.5">See local pricing and payment options for your location</p>
+                <h3 class="font-bold text-white" x-text="firstVisit ? '{{ __('landing.switcher_title_first') }}' : '{{ __('landing.switcher_title') }}'"></h3>
+                <p x-show="firstVisit" x-cloak class="text-xs text-gray-400 mt-0.5">{{ __('landing.switcher_subtitle') }}</p>
             </div>
             <button @click="openSwitcher = false"
                     class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/10 text-gray-400 hover:text-white transition-all">
@@ -758,7 +758,7 @@ window._vInit = {!! json_encode([
                 </svg>
                 <input type="text"
                        x-model="countrySearch"
-                       placeholder="Search country…"
+                       placeholder="{{ __('landing.switcher_search_ph') }}"
                        class="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-brand-500 transition-colors">
             </div>
         </div>
@@ -780,14 +780,14 @@ window._vInit = {!! json_encode([
                     </button>
                 </template>
                 <button @click="switchCountry('GLOBAL')"
-                        x-show="!countrySearch || 'other countries'.includes(countrySearch.toLowerCase())"
+                        x-show="!countrySearch || '{{ __('landing.switcher_other') }}'.toLowerCase().includes(countrySearch.toLowerCase()) || 'other countries'.includes(countrySearch.toLowerCase())"
                         :class="countryCode === 'GLOBAL'
                             ? 'bg-brand-600/25 border-brand-500/40 text-white'
                             : 'border-transparent hover:bg-white/5 text-gray-400 hover:text-white'"
                         class="flex items-center gap-2.5 px-3 py-3 rounded-xl border text-left transition-all w-full">
                     <span class="text-2xl leading-none flex-shrink-0">🌍</span>
                     <div class="min-w-0 flex-1">
-                        <div class="text-sm font-medium">Other countries</div>
+                        <div class="text-sm font-medium">{{ __('landing.switcher_other') }}</div>
                         <div class="text-xs text-gray-500">English</div>
                     </div>
                 </button>
@@ -796,7 +796,7 @@ window._vInit = {!! json_encode([
 
         <div class="px-6 py-3 border-t border-white/5">
             <p class="text-xs text-gray-500 text-center">
-                Regional pricing reflects local purchasing power. Same features everywhere.
+                {{ __('landing.switcher_footer') }}
             </p>
         </div>
     </div>

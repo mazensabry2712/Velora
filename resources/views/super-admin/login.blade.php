@@ -6,160 +6,194 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ __('super-admin.login_page_title') }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // Dark mode support
-        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark')
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Plus Jakarta Sans', 'Tajawal', 'Inter', 'sans-serif'] },
+                    colors: {
+                        brand: { 400: '#8b76ff', 500: '#6C63FF', 600: '#5b4ff7', 700: '#4d3de3' },
+                        surface: '#0f0e1a',
+                    },
+                }
+            }
         }
+        // Always dark mode for login page (matches landing page)
+        document.documentElement.classList.add('dark');
     </script>
-</head>
-<body class="bg-slate-100 dark:bg-slate-900 min-h-screen flex items-center justify-center p-4">
+    <style>
+        *, body { font-family: 'Plus Jakarta Sans', 'Tajawal', 'Inter', sans-serif; }
+        [x-cloak] { display: none !important; }
 
-    <!-- Background Pattern -->
-    <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        <div class="absolute top-0 -left-4 w-72 h-72 bg-indigo-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 dark:opacity-10 animate-blob"></div>
-        <div class="absolute top-0 -right-4 w-72 h-72 bg-indigo-600 rounded-full mix-blend-multiply filter blur-xl opacity-20 dark:opacity-10 animate-blob animation-delay-2000"></div>
-        <div class="absolute -bottom-8 left-20 w-72 h-72 bg-indigo-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 dark:opacity-10 animate-blob animation-delay-4000"></div>
+        .gradient-text {
+            background: linear-gradient(135deg, #6C63FF 0%, #aa9eff 50%, #38bdf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .glass-card {
+            background: rgba(255,255,255,0.04);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(108, 99, 255, 0.2);
+        }
+        .btn-brand {
+            background: linear-gradient(135deg, #6C63FF 0%, #8b76ff 100%);
+            box-shadow: 0 8px 30px rgba(108, 99, 255, 0.45);
+            transition: all 0.25s ease;
+        }
+        .btn-brand:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(108, 99, 255, 0.6);
+        }
+        .input-field {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: #fff;
+            transition: all 0.2s ease;
+        }
+        .input-field::placeholder { color: rgba(255,255,255,0.3); }
+        .input-field:focus {
+            outline: none;
+            border-color: #6C63FF;
+            background: rgba(108,99,255,0.1);
+            box-shadow: 0 0 0 3px rgba(108,99,255,0.2);
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-20px) scale(1.05); }
+        }
+        .blob { animation: float 8s ease-in-out infinite; }
+        .blob-2 { animation: float 10s ease-in-out infinite 2s; }
+        .blob-3 { animation: float 12s ease-in-out infinite 4s; }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .fade-up { animation: fadeUp 0.6s ease both; }
+        .fade-up-2 { animation: fadeUp 0.6s ease 0.1s both; }
+    </style>
+</head>
+<body class="bg-surface min-h-screen flex items-center justify-center p-4 overflow-hidden">
+
+    <!-- Ambient Blobs (same as landing) -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        <div class="blob absolute top-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full opacity-20"
+             style="background: radial-gradient(circle, #6C63FF 0%, transparent 70%); filter: blur(60px)"></div>
+        <div class="blob-2 absolute bottom-[-10%] right-[-5%] w-[400px] h-[400px] rounded-full opacity-15"
+             style="background: radial-gradient(circle, #8b76ff 0%, transparent 70%); filter: blur(60px)"></div>
+        <div class="blob-3 absolute top-[40%] left-[40%] w-[300px] h-[300px] rounded-full opacity-10"
+             style="background: radial-gradient(circle, #38bdf8 0%, transparent 70%); filter: blur(50px)"></div>
+        <!-- Grid overlay -->
+        <div class="absolute inset-0 opacity-[0.03]"
+             style="background-image: linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px); background-size: 40px 40px;"></div>
     </div>
 
-    <style>
-        @keyframes blob {
-            0% { transform: translate(0px, 0px) scale(1); }
-            33% { transform: translate(30px, -50px) scale(1.1); }
-            66% { transform: translate(-20px, 20px) scale(0.9); }
-            100% { transform: translate(0px, 0px) scale(1); }
-        }
-        .animate-blob { animation: blob 7s infinite; }
-        .animation-delay-2000 { animation-delay: 2s; }
-        .animation-delay-4000 { animation-delay: 4s; }
-    </style>
+    <!-- Login Card -->
+    <div class="relative z-10 glass-card rounded-2xl p-8 w-full max-w-md fade-up">
 
-    <div class="relative z-10 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-8 w-full max-w-md border border-slate-200 dark:border-slate-700">
         <!-- Logo/Header -->
-        <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl mb-4 shadow-lg">
-                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        <div class="text-center mb-8 fade-up-2">
+            <!-- Brand icon -->
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-5 btn-brand">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                 </svg>
             </div>
-            <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-700 dark:from-indigo-400 dark:to-indigo-500 bg-clip-text text-transparent mb-2">Super Admin</h1>
-            <p class="text-slate-600 dark:text-slate-400 text-base">{{ __('super-admin.login_subtitle') }}</p>
+            <h1 class="text-3xl font-bold gradient-text mb-1" style="font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: -0.02em">
+                Super Admin
+            </h1>
+            <p class="text-gray-400 text-sm mt-1">{{ __('super-admin.login_subtitle') }}</p>
         </div>
 
-        <!-- Success/Error Messages -->
+        <!-- Alerts -->
         @if(session('success'))
-            <div class="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-400 px-4 py-3 rounded-lg mb-6 flex items-center">
-                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <div class="mb-5 px-4 py-3 rounded-xl flex items-center gap-2 text-sm"
+                 style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: #34d399">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
-                <span>{{ session('success') }}</span>
+                {{ session('success') }}
             </div>
         @endif
 
-        @if(session('error'))
-            <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-400 px-4 py-3 rounded-lg mb-6 flex items-center">
-                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        @if(session('error') || $errors->any())
+            <div class="mb-5 px-4 py-3 rounded-xl flex items-start gap-2 text-sm"
+                 style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #fc8181">
+                <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
-                <span>{{ session('error') }}</span>
-            </div>
-        @endif
-
-        @if ($errors->any())
-            <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-400 px-4 py-3 rounded-lg mb-6">
-                <div class="flex items-start">
-                    <svg class="w-5 h-5 ml-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <ul class="list-disc list-inside">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
+                <div>
+                    @if(session('error'))
+                        {{ session('error') }}
+                    @endif
+                    @foreach ($errors->all() as $error)
+                        <div>{{ $error }}</div>
+                    @endforeach
                 </div>
             </div>
         @endif
 
         <!-- Login Form -->
-        <form method="POST" action="{{ route('super-admin.login.post') }}" class="space-y-6">
+        <form method="POST" action="{{ route('super-admin.login.post') }}" class="space-y-5">
             @csrf
 
             <!-- Email -->
             <div>
-                <label for="email" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label for="email" class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
                     {{ __('super-admin.login_email') }}
                 </label>
-                <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value="{{ old('email') }}"
-                    required
-                    autofocus
-                    class="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 transition"
-                    placeholder="admin@example.com"
-                >
+                <input type="email" id="email" name="email" value="{{ old('email') }}"
+                       required autofocus
+                       class="input-field w-full px-4 py-3 rounded-xl text-sm"
+                       placeholder="admin@velora.app">
             </div>
 
             <!-- Password -->
             <div>
-                <label for="password" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label for="password" class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
                     {{ __('super-admin.login_password') }}
                 </label>
-                <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    required
-                    class="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 transition"
-                    placeholder="••••••••"
-                >
+                <input type="password" id="password" name="password"
+                       required
+                       class="input-field w-full px-4 py-3 rounded-xl text-sm"
+                       placeholder="••••••••">
             </div>
 
             <!-- Remember Me -->
-            <div class="flex items-center">
-                <input
-                    type="checkbox"
-                    id="remember"
-                    name="remember"
-                    class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
-                >
-                <label for="remember" class="mr-2 text-sm text-slate-700 dark:text-slate-300">
+            <div class="flex items-center gap-2">
+                <input type="checkbox" id="remember" name="remember"
+                       class="w-4 h-4 rounded border-white/20 bg-white/10 checked:bg-brand-500 focus:ring-brand-500 focus:ring-offset-0">
+                <label for="remember" class="text-sm text-gray-400 cursor-pointer">
                     {{ __('super-admin.login_remember') }}
                 </label>
             </div>
 
-            <!-- Submit Button -->
-            <button
-                type="submit"
-                class="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-semibold py-3.5 rounded-lg transition duration-200 transform hover:scale-[1.02] shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-            >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+            <!-- Submit -->
+            <button type="submit"
+                    class="btn-brand w-full text-white font-semibold py-3.5 rounded-xl text-sm flex items-center justify-center gap-2 mt-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
                 </svg>
                 {{ __('super-admin.login_submit') }}
             </button>
         </form>
 
-        <!-- Additional Info -->
-        <div class="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
-            <div class="flex items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        <!-- Footer row -->
+        <div class="mt-6 pt-5 border-t border-white/[0.07] flex items-center justify-between text-xs text-gray-500">
+            <div class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                 </svg>
                 <span>{{ __('super-admin.login_secure') }}</span>
             </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
-            <p class="flex items-center justify-center gap-1">
-                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
-                </svg>
-                Booking SaaS System © 2026
-            </p>
+            <span>Velora © {{ date('Y') }}</span>
         </div>
     </div>
 

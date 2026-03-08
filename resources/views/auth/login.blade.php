@@ -1,6 +1,15 @@
 <!DOCTYPE html>
 @php
     $isArabic = app()->getLocale() === 'ar';
+    $businessSettings = \App\Models\Setting::where('tenant_id', tenant()->id)->first();
+    $businessLogo = $businessSettings?->logo ?? null;
+    $businessName = $businessSettings?->business_name ?? null;
+    if (is_array($businessName)) {
+        $locale = app()->getLocale();
+        $businessName = $businessName[$locale] ?? $businessName['en'] ?? reset($businessName) ?? null;
+    }
+    $businessName = is_scalar($businessName) ? (string) $businessName : null;
+    $displayName = $businessName ?: tenant()->name;
 @endphp
 <html lang="{{ app()->getLocale() }}" dir="{{ $isArabic ? 'rtl' : 'ltr' }}">
 <head>
@@ -53,8 +62,12 @@
 
         <!-- Header -->
         <div class="text-center mb-8">
+            @if($businessLogo)
+                <img src="{{ asset('storage/' . $businessLogo) }}" alt="{{ $displayName }}"
+                     class="h-16 w-auto mx-auto mb-4 object-contain">
+            @endif
             <h1 class="text-4xl font-bold text-slate-800 dark:text-white mb-2">{{ $isArabic ? 'تسجيل الدخول' : 'Login' }}</h1>
-            <p class="text-indigo-600 dark:text-indigo-400 font-medium">{{ tenant()->name }}</p>
+            <p class="text-indigo-600 dark:text-indigo-400 font-medium">{{ $displayName }}</p>
         </div>
 
         <!-- Form -->

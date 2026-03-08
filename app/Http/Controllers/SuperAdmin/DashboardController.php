@@ -15,31 +15,27 @@ class DashboardController extends Controller
      */
     public function index()
     {
+        $allTenants = Tenant::latest()->get();
+
         $stats = [
-            'total_tenants'             => Tenant::count(),
-            'active_tenants'            => TenantSubscription::whereIn('status', ['active', 'trial'])->distinct('tenant_id')->count(),
+            'total_tenants'             => $allTenants->count(),
+            'active_tenants'            => $allTenants->filter(fn($t) => $t->active)->count(),
             'paid_tenants'              => TenantSubscription::where('status', 'active')->distinct('tenant_id')->count(),
             'trial_tenants'             => TenantSubscription::where('status', 'trial')->distinct('tenant_id')->count(),
-            'inactive_tenants'          => Tenant::whereDoesntHave('subscriptions', function ($q) {
-                                               $q->whereIn('status', ['active', 'trial']);
-                                           })->count(),
+            'inactive_tenants'          => $allTenants->filter(fn($t) => !$t->active)->count(),
             'tenants_this_month'        => Tenant::whereYear('created_at', now()->year)
                                                ->whereMonth('created_at', now()->month)
                                                ->count(),
             'pending_upgrade_requests'  => UpgradeRequest::where('status', 'pending')->count(),
-            'recent_tenants'            => Tenant::with('subscriptions')
-                                               ->orderBy('created_at', 'desc')
-                                               ->limit(10)
-                                               ->get()
-                                               ->map(function ($tenant) {
-                                                   return [
-                                                       'id'         => $tenant->id,
-                                                       'name'       => $tenant->name ?? 'N/A',
-                                                       'subdomain'  => $tenant->id,
-                                                       'is_active'  => $tenant->subscriptions->whereIn('status', ['active', 'trial'])->count() > 0,
-                                                       'created_at' => $tenant->created_at->toISOString(),
-                                                   ];
-                                               }),
+            'recent_tenants'            => $allTenants->map(function ($tenant) {
+                                               return [
+                                                   'id'         => $tenant->id,
+                                                   'name'       => $tenant->name ?? 'N/A',
+                                                   'subdomain'  => $tenant->id,
+                                                   'is_active'  => $tenant->active,
+                                                   'created_at' => $tenant->created_at->toISOString(),
+                                               ];
+                                           })->values(),
         ];
 
         return response()->json([
