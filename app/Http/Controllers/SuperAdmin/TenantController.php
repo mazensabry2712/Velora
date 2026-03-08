@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Config;
 
 class TenantController extends Controller
 {
@@ -192,6 +193,29 @@ class TenantController extends Controller
     }
 
     /**
+     * Soft-delete ALL active tenants (move them all to trash).
+     */
+    public function deleteAll()
+    {
+        $tenants = Tenant::all();
+
+        $count = $tenants->count();
+
+        foreach ($tenants as $tenant) {
+            Tenant::withoutEvents(function () use ($tenant) {
+                $tenant->delete();
+            });
+            ActivityLog::log('deleted', "Moved tenant to trash: {$tenant->name}");
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'All tenants moved to trash',
+            'count'   => $count,
+        ]);
+    }
+
+    /**
      * List soft-deleted (trashed) tenants.
      */
     public function trash()
@@ -227,6 +251,51 @@ class TenantController extends Controller
     }
 
     /**
+     * Restore ALL trashed tenants.
+     */
+    public function restoreAll()
+    {
+        $trashed = Tenant::onlyTrashed()->get();
+
+        $count = $trashed->count();
+
+        foreach ($trashed as $tenant) {
+            \Illuminate\Support\Facades\DB::table('tenants')
+                ->where('id', $tenant->getTenantKey())
+                ->update(['deleted_at' => null]);
+
+            ActivityLog::log('restored', "Restored tenant from trash: {$tenant->name}");
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'All trashed tenants restored',
+            'count'   => $count,
+        ]);
+    }
+
+    /**
+     * Permanently delete ALL trashed tenants.
+     */
+    public function forceDeleteAll()
+    {
+        $trashed = Tenant::onlyTrashed()->get();
+
+        foreach ($trashed as $tenant) {
+            $tenantName   = $tenant->name;
+            $tenantDomain = $tenant->domains()->first()?->domain ?? 'unknown';
+            ActivityLog::log('force_deleted', "Permanently deleted tenant: {$tenantName}, domain: {$tenantDomain}");
+            $this->safeForceDelete($tenant);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'All trashed tenants permanently deleted',
+            'count'   => $trashed->count(),
+        ]);
+    }
+
+    /**
      * Permanently delete a trashed tenant.
      */
     public function forceDelete(string $id)
@@ -237,12 +306,32 @@ class TenantController extends Controller
 
         ActivityLog::log('force_deleted', "Permanently deleted tenant: {$tenantName}, domain: {$tenantDomain}");
 
-        $tenant->forceDelete();
+        $this->safeForceDelete($tenant);
 
         return response()->json([
             'success' => true,
             'message' => 'Tenant permanently deleted',
         ]);
+    }
+
+    /**
+     * Safely force-delete a tenant.
+     * If the tenant database doesn't exist (e.g. test data or failed provisioning),
+     * MySQL error 1008 is raised by the TenantDeleted → DeleteDatabase event.
+     * In that case we fall back to withoutEvents() so the Eloquent record is still removed.
+     */
+    private function safeForceDelete(Tenant $tenant): void
+    {
+        try {
+            $tenant->forceDelete(); // fires TenantDeleted → drops DB
+        } catch (\Illuminate\Database\QueryException $e) {
+            // 1008 = "Can't drop database; database doesn't exist"
+            if ($e->getCode() === '1008' || str_contains($e->getMessage(), "Can't drop database")) {
+                Tenant::withoutEvents(fn () => $tenant->forceDelete());
+            } else {
+                throw $e;
+            }
+        }
     }
 
     /**
@@ -284,29 +373,20 @@ class TenantController extends Controller
             'paid_invoices'          => 0,
         ];
 
+        $connName = 'tenant_stats_' . $tenant->getTenantKey();
+
         try {
-            // Build a throwaway connection directly to the tenant SQLite database.
-            // This avoids tenancy()->initialize() which triggers FilesystemTenancyBootstrapper
-            // and can crash with "Undefined array key" when the tenant DB is missing/empty.
-            $dbName = config('tenancy.database.prefix') . $tenant->getTenantKey() . config('tenancy.database.suffix', '');
-            $dbPath = database_path($dbName);
+            // Build a throwaway DB connection using Stancl's own connection config.
+            // This avoids tenancy()->initialize() which triggers Filesystem/Cache bootstrappers
+            // that can crash in certain environments.
+            $connConfig = $tenant->database()->connection();
 
-            if (! file_exists($dbPath)) {
-                return response()->json(['success' => true, 'data' => $stats]);
-            }
-
-            $connName = 'tenant_stats_tmp_' . $tenant->getTenantKey();
-
-            config(["database.connections.{$connName}" => [
-                'driver'                  => 'sqlite',
-                'database'                => $dbPath,
-                'foreign_key_constraints' => true,
-            ]]);
+            Config::set("database.connections.{$connName}", $connConfig);
 
             $db = \Illuminate\Support\Facades\DB::connection($connName);
 
             $stats = [
-                'total_users'            => $db->table('users')->count(),
+                'total_users'            => $this->safeCount($db, 'users'),
                 'total_appointments'     => $this->safeCount($db, 'appointments'),
                 'pending_appointments'   => $this->safeCount($db, 'appointments', ['status' => 'Pending']),
                 'confirmed_appointments' => $this->safeCount($db, 'appointments', ['status' => 'Confirmed']),
@@ -317,11 +397,8 @@ class TenantController extends Controller
         } catch (\Throwable $e) {
             // DB inaccessible or tables missing — return zeros
         } finally {
-            // Purge the throwaway connection so it doesn't linger
-            if (isset($connName)) {
-                \Illuminate\Support\Facades\DB::purge($connName);
-                \Illuminate\Support\Facades\Config::offsetUnset("database.connections.{$connName}");
-            }
+            \Illuminate\Support\Facades\DB::purge($connName);
+            Config::offsetUnset("database.connections.{$connName}");
         }
 
         return response()->json([

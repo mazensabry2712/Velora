@@ -68,8 +68,11 @@ Route::prefix('super-admin')->middleware(['auth:web', 'super.admin'])->group(fun
 
     // Tenants Management
     Route::get('/tenants/trash', [TenantController::class, 'trash']);                       // must be before apiResource
+    Route::post('/tenants/restore-all', [TenantController::class, 'restoreAll']);             // must be before apiResource
+    Route::delete('/tenants/delete-all', [TenantController::class, 'deleteAll']);             // must be before apiResource
     Route::post('/tenants/{id}/restore', [TenantController::class, 'restore']);
     Route::delete('/tenants/{id}/force-delete', [TenantController::class, 'forceDelete']);
+    Route::delete('/tenants/force-delete-all', [TenantController::class, 'forceDeleteAll']);  // must be before apiResource
     Route::apiResource('tenants', TenantController::class);
     Route::post('/tenants/{id}/toggle-status', [TenantController::class, 'toggleStatus']);
     Route::get('/tenants/{id}/statistics', [TenantController::class, 'statistics']);

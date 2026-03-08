@@ -15,6 +15,14 @@
             <p class="text-slate-500 dark:text-slate-400 mt-1 text-sm">{{ __('super-admin.tenants_subtitle') }}</p>
         </div>
         <div class="flex items-center gap-2">
+            <button x-show="!loading && tenants.length > 0" @click="showDeleteAllModal = true"
+                    :disabled="submitting"
+                    class="flex items-center gap-2 text-red-600 dark:text-red-400 hover:text-white border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/20 hover:bg-red-600 dark:hover:bg-red-700 font-semibold px-4 py-2.5 rounded-xl transition-all duration-200 disabled:opacity-50">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                <span x-text="__tTenants.locale === 'ar' ? 'حذف الجميع' : 'Delete All'"></span>
+            </button>
             <button @click="openTrashModal()"
                     class="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 border border-slate-200 dark:border-white/[0.1] hover:border-red-300 dark:hover:border-red-800 bg-white dark:bg-white/[0.03] hover:bg-red-50 dark:hover:bg-red-900/20 font-semibold px-4 py-2.5 rounded-xl transition-all duration-200">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -463,6 +471,43 @@
     </div>
 
     <!-- Delete Confirmation Modal -->
+    <!-- Delete ALL Confirmation Modal -->
+    <div x-show="showDeleteAllModal" x-cloak
+         @keydown.escape.window="showDeleteAllModal = false"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="showDeleteAllModal = false"></div>
+        <div x-show="showDeleteAllModal"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95"
+             class="relative bg-white dark:bg-[#12101f] dark:border dark:border-red-900/40 rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+            <div class="w-16 h-16 bg-red-100 dark:bg-red-900/40 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-red-600 dark:text-red-400 mb-2" x-text="__tTenants.locale === 'ar' ? 'حذف جميع الشركات' : 'Delete All Companies'"></h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mb-1" x-text="__tTenants.locale === 'ar' ? 'سيتم نقل جميع الشركات إلى سلة المحذوفات:' : 'All companies will be moved to trash:'"></p>
+            <p class="text-2xl font-black text-red-600 dark:text-red-400 my-3" x-text="tenants.length"></p>
+            <p class="text-xs text-amber-600 dark:text-amber-400 font-semibold mb-6" x-text="__tTenants.locale === 'ar' ? 'يمكنك الاسترداد لاحقاً من سلة المحذوفات.' : 'You can restore them later from the trash.'"></p>
+            <div class="flex gap-3">
+                <button @click="showDeleteAllModal = false"
+                        class="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] rounded-xl transition">
+                    {{ __('super-admin.common_cancel') }}
+                </button>
+                <button @click="doDeleteAll()"
+                        :disabled="submitting"
+                        class="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-xl transition shadow-lg shadow-red-500/25 disabled:opacity-50">
+                    <span x-text="__tTenants.locale === 'ar' ? 'احذف الجميع' : 'Delete All'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Single Tenant Confirmation Modal -->
     <div x-show="showDeleteModal" x-cloak
          @keydown.escape.window="showDeleteModal = false"
          class="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -688,6 +733,30 @@
                 </button>
             </div>
 
+            <!-- Footer: Restore All + Delete All buttons -->
+            <div x-show="!trashLoading && trashedTenants.length > 0"
+                 class="flex items-center justify-between px-6 py-4 border-t border-slate-200 dark:border-white/[0.07] flex-shrink-0 gap-3">
+                <p class="text-xs text-slate-400 flex-shrink-0" x-text="(__tTenants.locale === 'ar' ? trashedTenants.length + ' شركة في السلة' : trashedTenants.length + ' companies in trash')"></p>
+                <div class="flex items-center gap-2">
+                    <button @click="showRestoreAllModal = true"
+                            :disabled="submitting"
+                            class="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 rounded-xl transition shadow-md shadow-emerald-500/20 disabled:opacity-50">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+                        </svg>
+                        <span x-text="__tTenants.locale === 'ar' ? 'استعادة الكل' : 'Restore All'"></span>
+                    </button>
+                    <button @click="showForceDeleteAllModal = true"
+                            :disabled="submitting"
+                            class="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-xl transition shadow-md shadow-red-500/20 disabled:opacity-50">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                        <span x-text="__tTenants.locale === 'ar' ? 'حذف الجميع نهائياً' : 'Delete All Forever'"></span>
+                    </button>
+                </div>
+            </div>
+
             <!-- Body -->
             <div class="overflow-y-auto flex-1 p-6">
 
@@ -753,6 +822,78 @@
                         </div>
                     </template>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Restore ALL Confirmation Modal -->
+    <div x-show="showRestoreAllModal" x-cloak
+         @keydown.escape.window="showRestoreAllModal = false"
+         class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="showRestoreAllModal = false"></div>
+        <div x-show="showRestoreAllModal"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95"
+             class="relative bg-white dark:bg-[#12101f] dark:border dark:border-emerald-900/40 rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+            <div class="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/40 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-emerald-600 dark:text-emerald-400 mb-2" x-text="__tTenants.locale === 'ar' ? 'استعادة الكل' : 'Restore All'"></h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mb-1" x-text="__tTenants.locale === 'ar' ? 'سيتم استعادة جميع الشركات الموجودة في السلة:' : 'This will restore all trashed companies:'"></p>
+            <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400 my-3" x-text="trashedTenants.length"></p>
+            <p class="text-xs text-slate-400 dark:text-slate-500 font-medium mb-6" x-text="__tTenants.locale === 'ar' ? 'ستعود الشركات للعمل بشكل طبيعي.' : 'Companies will be fully restored and active again.'"></p>
+            <div class="flex gap-3">
+                <button @click="showRestoreAllModal = false"
+                        class="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] rounded-xl transition">
+                    {{ __('super-admin.common_cancel') }}
+                </button>
+                <button @click="doRestoreAll()"
+                        :disabled="submitting"
+                        class="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 rounded-xl transition shadow-lg shadow-emerald-500/25 disabled:opacity-50">
+                    <span x-text="__tTenants.locale === 'ar' ? 'استعادة الجميع' : 'Restore All'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Force Delete ALL Confirmation Modal -->
+    <div x-show="showForceDeleteAllModal" x-cloak
+         @keydown.escape.window="showForceDeleteAllModal = false"
+         class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="showForceDeleteAllModal = false"></div>
+        <div x-show="showForceDeleteAllModal"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95"
+             class="relative bg-white dark:bg-[#12101f] dark:border dark:border-red-900/40 rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+            <div class="w-16 h-16 bg-red-100 dark:bg-red-900/40 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-red-600 dark:text-red-400 mb-2" x-text="__tTenants.locale === 'ar' ? 'حذف الجميع نهائياً' : 'Delete All Forever'"></h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mb-1" x-text="__tTenants.locale === 'ar' ? 'سيتم حذف جميع الشركات الموجودة في السلة:' : 'This will permanently delete all trashed companies:'"></p>
+            <p class="text-2xl font-black text-red-600 dark:text-red-400 my-3" x-text="trashedTenants.length"></p>
+            <p class="text-xs text-red-500 dark:text-red-400 font-semibold mb-6" x-text="__tTenants.locale === 'ar' ? 'لا يمكن التراجع عن هذا الإجراء نهائياً.' : 'This action is completely irreversible.'"></p>
+            <div class="flex gap-3">
+                <button @click="showForceDeleteAllModal = false"
+                        class="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] rounded-xl transition">
+                    {{ __('super-admin.common_cancel') }}
+                </button>
+                <button @click="doForceDeleteAll()"
+                        :disabled="submitting"
+                        class="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-xl transition shadow-lg shadow-red-500/25 disabled:opacity-50">
+                    <span x-text="__tTenants.locale === 'ar' ? 'احذف الجميع' : 'Delete All'"></span>
+                </button>
             </div>
         </div>
     </div>
@@ -837,11 +978,14 @@ function tenantsManager() {
         showViewModal: false,
         showTrashModal: false,
         showForceDeleteModal: false,
+        showForceDeleteAllModal: false,
+        showDeleteAllModal: false,
         trashLoading: false,
         trashedTenants: [],
         trashedCount: 0,
         forceDeleteTargetId: null,
         forceDeleteTargetName: '',
+        showRestoreAllModal: false,
         deleteTargetId: null,
         deleteTargetName: '',
         resetTargetId: null,
@@ -971,6 +1115,32 @@ function tenantsManager() {
             this.deleteTargetId = id;
             this.deleteTargetName = name;
             this.showDeleteModal = true;
+        },
+
+        async doDeleteAll() {
+            this.showDeleteAllModal = false;
+            this.submitting = true;
+            const count = this.tenants.length;
+            try {
+                const r = await fetch('/api/super-admin/tenants/delete-all', {
+                    method: 'DELETE',
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                    credentials: 'include'
+                });
+                const d = await r.json();
+                if (d.success) {
+                    await this.loadTenants();
+                    showToast(
+                        __tTenants.locale === 'ar'
+                            ? `تم نقل ${count} شركة إلى سلة المحذوفات`
+                            : `${count} companies moved to trash`,
+                        'success'
+                    );
+                } else {
+                    showToast(d.message || 'Error', 'error');
+                }
+            } catch (_) { showToast('Error', 'error'); }
+            finally { this.submitting = false; }
         },
 
         async deleteTenant(id) {
@@ -1208,6 +1378,61 @@ function tenantsManager() {
                     this.trashedTenants = this.trashedTenants.filter(t => t.id !== id);
                     this.trashedCount = this.trashedTenants.length;
                     showToast(__tTenants.locale === 'ar' ? `تم حذف ${name} نهائياً` : `${name} permanently deleted`, 'error');
+                } else {
+                    showToast(d.message || 'Error', 'error');
+                }
+            } catch (_) { showToast('Error', 'error'); }
+            finally { this.submitting = false; }
+        },
+
+        async doForceDeleteAll() {
+            this.showForceDeleteAllModal = false;
+            this.submitting = true;
+            try {
+                const r = await fetch('/api/super-admin/tenants/force-delete-all', {
+                    method: 'DELETE',
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                    credentials: 'include'
+                });
+                const d = await r.json();
+                if (d.success) {
+                    const count = this.trashedTenants.length;
+                    this.trashedTenants = [];
+                    this.trashedCount = 0;
+                    showToast(
+                        __tTenants.locale === 'ar'
+                            ? `تم حذف ${count} شركة نهائياً`
+                            : `${count} companies permanently deleted`,
+                        'error'
+                    );
+                } else {
+                    showToast(d.message || 'Error', 'error');
+                }
+            } catch (_) { showToast('Error', 'error'); }
+            finally { this.submitting = false; }
+        },
+
+        async doRestoreAll() {
+            this.showRestoreAllModal = false;
+            this.submitting = true;
+            const count = this.trashedTenants.length;
+            try {
+                const r = await fetch('/api/super-admin/tenants/restore-all', {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                    credentials: 'include'
+                });
+                const d = await r.json();
+                if (d.success) {
+                    this.trashedTenants = [];
+                    this.trashedCount = 0;
+                    await this.loadTenants();
+                    showToast(
+                        __tTenants.locale === 'ar'
+                            ? `تمت استعادة ${count} شركة`
+                            : `${count} companies restored`,
+                        'success'
+                    );
                 } else {
                     showToast(d.message || 'Error', 'error');
                 }
