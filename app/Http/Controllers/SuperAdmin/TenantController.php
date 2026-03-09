@@ -13,6 +13,8 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\TenantsExport;
 
 class TenantController extends Controller
 {
@@ -21,7 +23,7 @@ class TenantController extends Controller
      */
     public function index()
     {
-        $tenants = Tenant::with(['domains', 'currentSubscription.plan'])->latest()->get();
+        $tenants = Tenant::with(['domains', 'currentSubscription.plan', 'subscriptions.plan'])->latest()->get();
 
         return response()->json([
             'success' => true,
@@ -39,6 +41,8 @@ class TenantController extends Controller
             'domain' => 'required|string|max:255|unique:domains,domain',
             'email' => 'nullable|email|max:255',
             'active' => 'boolean',
+            'country' => 'nullable|string|max:100',
+            'specialty' => 'nullable|string|max:100',
         ]);
 
         // Generate email and password for tenant admin
@@ -56,6 +60,8 @@ class TenantController extends Controller
         $tenant->name = $validated['name'];
         $tenant->active = $validated['active'] ?? true;
         $tenant->email = $generatedEmail;
+        $tenant->country = $validated['country'] ?? null;
+        $tenant->specialty = $validated['specialty'] ?? null;
         $tenant->save();
 
         // Create domain for the tenant
@@ -141,6 +147,8 @@ class TenantController extends Controller
                 \Illuminate\Validation\Rule::unique('domains', 'domain')->ignore($currentDomain, 'domain'),
             ],
             'active' => 'sometimes|boolean',
+            'country' => 'sometimes|nullable|string|max:100',
+            'specialty' => 'sometimes|nullable|string|max:100',
         ]);
 
         // Update custom attributes
@@ -149,6 +157,12 @@ class TenantController extends Controller
         }
         if (isset($validated['active'])) {
             $tenant->active = $validated['active'];
+        }
+        if (array_key_exists('country', $validated)) {
+            $tenant->country = $validated['country'];
+        }
+        if (array_key_exists('specialty', $validated)) {
+            $tenant->specialty = $validated['specialty'];
         }
         $tenant->save();
 
@@ -190,6 +204,15 @@ class TenantController extends Controller
             'success' => true,
             'message' => 'Tenant deleted successfully'
         ]);
+    }
+
+    /**
+     * Export all tenants to Excel.
+     */
+    public function exportExcel()
+    {
+        $filename = 'tenants-' . now()->format('Y-m-d') . '.xlsx';
+        return Excel::download(new TenantsExport(), $filename);
     }
 
     /**
@@ -430,10 +453,11 @@ class TenantController extends Controller
 
         $validated = $request->validate([
             'subscription_plan_id' => 'required|exists:subscription_plans,id',
-            'status' => 'sometimes|in:trial,active,suspended,cancelled',
-            'starts_at' => 'nullable|date',
-            'ends_at' => 'nullable|date|after:starts_at',
-            'trial_days' => 'nullable|integer|min:0',
+            'status'               => 'sometimes|in:trial,active,suspended,cancelled',
+            'starts_at'            => 'nullable|date',
+            'ends_at'              => 'nullable|date|after:starts_at',
+            'trial_days'           => 'nullable|integer|min:0',
+            'amount_paid'          => 'nullable|numeric|min:0|max:99999',
         ]);
 
         // Cancel any existing active subscription
@@ -443,12 +467,13 @@ class TenantController extends Controller
 
         // Create new subscription
         $subscription = \App\Models\TenantSubscription::create([
-            'tenant_id' => $tenant->id,
+            'tenant_id'            => $tenant->id,
             'subscription_plan_id' => $validated['subscription_plan_id'],
-            'status' => $validated['status'] ?? 'trial',
-            'trial_ends_at' => isset($validated['trial_days']) ? now()->addDays($validated['trial_days']) : null,
-            'starts_at' => $validated['starts_at'] ?? now(),
-            'ends_at' => $validated['ends_at'] ?? null,
+            'status'               => $validated['status'] ?? 'trial',
+            'trial_ends_at'        => isset($validated['trial_days']) ? now()->addDays($validated['trial_days']) : null,
+            'starts_at'            => $validated['starts_at'] ?? now(),
+            'ends_at'              => $validated['ends_at'] ?? null,
+            'amount_paid'          => $validated['amount_paid'] ?? 0,
         ]);
 
         \App\Models\ActivityLog::log('assigned_subscription', "Assigned subscription to tenant: {$tenant->name}");

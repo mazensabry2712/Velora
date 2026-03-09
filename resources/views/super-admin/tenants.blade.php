@@ -33,6 +33,23 @@
                       x-text="trashedCount"
                       class="inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold bg-red-500 text-white rounded-full"></span>
             </button>
+            {{-- Excel Export --}}
+            <a x-show="!loading && tenants.length > 0"
+               href="/api/super-admin/tenants/export-excel"
+               class="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 hover:text-white border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-600 dark:hover:bg-emerald-700 font-semibold px-4 py-2.5 rounded-xl transition-all duration-200">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                </svg>
+                <span x-text="__tTenants.locale === 'ar' ? 'تصدير Excel' : 'Excel'"></span>
+            </a>
+            {{-- Print --}}
+            <button x-show="!loading && tenants.length > 0" @click="window.print()"
+                    class="flex items-center gap-2 text-sky-700 dark:text-sky-400 hover:text-white border border-sky-300 dark:border-sky-800 bg-sky-50 dark:bg-sky-900/20 hover:bg-sky-600 dark:hover:bg-sky-700 font-semibold px-4 py-2.5 rounded-xl transition-all duration-200">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                </svg>
+                <span x-text="__tTenants.locale === 'ar' ? 'طباعة' : 'Print'"></span>
+            </button>
             <button @click="openAddModal()"
                     class="flex items-center gap-2 bg-gradient-to-r from-[#5b4ff7] to-[#6C63FF] hover:from-[#4d3de3] hover:to-[#5b4ff7] text-white font-semibold px-5 py-2.5 rounded-xl shadow-lg shadow-[#6C63FF]/30 dark:shadow-[#6C63FF]/20 transition-all duration-200 hover:-translate-y-0.5">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -99,6 +116,7 @@
                         <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.tenant_domain') }}</th>
                         <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.tenant_email') }}</th>
                         <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.tenant_status') }}</th>
+                        <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.tenant_subscription') }}</th>
                         <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.tenant_created_at') }}</th>
                         <th class="px-6 py-3.5 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ __('super-admin.tenant_actions') }}</th>
                     </tr>
@@ -113,7 +131,18 @@
                                          x-text="tenant.name.charAt(0).toUpperCase()"></div>
                                     <div>
                                         <p class="text-sm font-semibold text-slate-900 dark:text-white" x-text="tenant.name"></p>
-                                        <p class="text-xs text-slate-400" x-text="'#' + tenant.id"></p>
+                                        <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                            <span x-show="tenant.country" class="inline-flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400">
+                                                <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 004 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/></svg>
+                                                <span x-text="tenant.country"></span>
+                                            </span>
+                                            <span x-show="tenant.country && tenant.specialty" class="text-[10px] text-slate-300 dark:text-slate-600">&bull;</span>
+                                            <span x-show="tenant.specialty" class="inline-flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400">
+                                                <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.78 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                                                <span x-text="tenant.specialty"></span>
+                                            </span>
+                                            <span x-show="!tenant.country && !tenant.specialty" class="text-[10px] text-slate-400" x-text="'#' + tenant.id"></span>
+                                        </div>
                                     </div>
                                 </div>
                             </td>
@@ -130,6 +159,33 @@
                                     <span :class="tenant.active ? 'bg-emerald-500' : 'bg-amber-500'" class="w-1.5 h-1.5 rounded-full"></span>
                                     <span x-text="tenant.active ? '{{ __('super-admin.tenant_active') }}' : '{{ __('super-admin.tenant_inactive') }}'"></span>
                                 </button>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div x-show="tenant.current_subscription" class="flex flex-col gap-1">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                                              :class="{
+                                                  'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400': tenant.current_subscription && tenant.current_subscription.status === 'active',
+                                                  'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400': tenant.current_subscription && tenant.current_subscription.status === 'trial',
+                                                  'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400': tenant.current_subscription && !['active','trial'].includes(tenant.current_subscription.status)
+                                              }"
+                                              x-text="tenant.current_subscription && tenant.current_subscription.plan ? tenant.current_subscription.plan.name : (tenant.current_subscription ? tenant.current_subscription.status : '')"></span>
+                                        <span x-show="tenant.subscriptions && tenant.subscriptions.length"
+                                              class="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400"
+                                              x-text="currencySymbol(tenant.country) + totalPaid(tenant.subscriptions).toFixed(2)"></span>
+                                        <span x-show="totalMonths(tenant.subscriptions) > 0"
+                                              class="text-[10px] text-slate-400 dark:text-slate-500"
+                                              x-text="'·\u00a0' + subDurationLabel(totalMonths(tenant.subscriptions))"></span>
+                                    </div>
+                                    <div x-show="tenant.current_subscription && tenant.current_subscription.ends_at" class="flex items-center gap-1">
+                                        <span class="text-[10px] text-slate-400"
+                                              x-text="tenant.current_subscription && tenant.current_subscription.ends_at ? new Date(tenant.current_subscription.ends_at).toLocaleDateString() : ''"></span>
+                                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                                              :class="(function(){ var d = tenant.current_subscription && tenant.current_subscription.ends_at ? Math.ceil((new Date(tenant.current_subscription.ends_at) - new Date()) / 86400000) : 0; return d > 7 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : d > 0 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'; })()"
+                                              x-text="(function(){ var d = tenant.current_subscription && tenant.current_subscription.ends_at ? Math.ceil((new Date(tenant.current_subscription.ends_at) - new Date()) / 86400000) : 0; return d > 0 ? (d + 'd') : 'Exp'; })()"></span>
+                                    </div>
+                                </div>
+                                <span x-show="!tenant.current_subscription" class="text-xs text-slate-300 dark:text-slate-600">&mdash;</span>
                             </td>
                             <td class="px-6 py-4 text-sm text-slate-500 dark:text-slate-400" x-text="formatDate(tenant.created_at)"></td>
                             <td class="px-6 py-4">
@@ -294,6 +350,20 @@
                                placeholder="admin@company.com">
                         <p class="text-xs text-slate-400 mt-1">{{ __('super-admin.tenant_form_email_info') }}</p>
                     </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ __('super-admin.tenant_country') ?? 'Country' }} <span class="text-slate-400 font-normal">({{ __('super-admin.tenant_form_optional') }})</span></label>
+                            <input type="text" x-model="newTenant.country"
+                               class="w-full px-4 py-2.5 border border-slate-200 dark:border-white/[0.1] rounded-xl focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent bg-slate-50 dark:bg-white/[0.05] text-slate-900 dark:text-white transition"
+                               placeholder="Saudi Arabia">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ __('super-admin.tenant_specialty') ?? 'Specialty' }} <span class="text-slate-400 font-normal">({{ __('super-admin.tenant_form_optional') }})</span></label>
+                            <input type="text" x-model="newTenant.specialty"
+                               class="w-full px-4 py-2.5 border border-slate-200 dark:border-white/[0.1] rounded-xl focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent bg-slate-50 dark:bg-white/[0.05] text-slate-900 dark:text-white transition"
+                               placeholder="Medical Clinic">
+                        </div>
+                    </div>
                 </div>
                 <div class="flex gap-3 justify-end p-6 pt-0">
                     <button type="button" @click="showAddModal = false"
@@ -416,6 +486,20 @@
                                class="w-full px-4 py-2.5 border border-slate-200 dark:border-white/[0.1] rounded-xl focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent bg-slate-50 dark:bg-white/[0.05] text-slate-900 dark:text-white transition font-mono text-sm"
                                placeholder="company.velora.test">
                         <p class="text-xs text-slate-400 mt-1">{{ __('super-admin.tenant_form_domain_help') }}</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ __('super-admin.tenant_country') ?? 'Country' }} <span class="text-slate-400 font-normal">({{ __('super-admin.tenant_form_optional') }})</span></label>
+                            <input type="text" x-model="editForm.country"
+                               class="w-full px-4 py-2.5 border border-slate-200 dark:border-white/[0.1] rounded-xl focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent bg-slate-50 dark:bg-white/[0.05] text-slate-900 dark:text-white transition"
+                               placeholder="Saudi Arabia">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ __('super-admin.tenant_specialty') ?? 'Specialty' }} <span class="text-slate-400 font-normal">({{ __('super-admin.tenant_form_optional') }})</span></label>
+                            <input type="text" x-model="editForm.specialty"
+                               class="w-full px-4 py-2.5 border border-slate-200 dark:border-white/[0.1] rounded-xl focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent bg-slate-50 dark:bg-white/[0.05] text-slate-900 dark:text-white transition"
+                               placeholder="Medical Clinic">
+                        </div>
                     </div>
                 </div>
                 <div class="flex gap-3 justify-end p-6 pt-0">
@@ -629,6 +713,30 @@
                             <p class="text-sm text-slate-800 dark:text-white" x-text="selectedTenant ? formatDate(selectedTenant.created_at) : '-'"></p>
                         </div>
                     </div>
+                    <!-- Country -->
+                    <div x-show="selectedTenant && selectedTenant.country" class="bg-slate-50 dark:bg-white/[0.04] dark:border dark:border-white/[0.06] rounded-xl px-4 py-3 flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 004 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/>
+                            </svg>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[10px] text-slate-400 uppercase font-semibold tracking-wide">{{ __('super-admin.tenant_country') ?? 'Country' }}</p>
+                            <p class="text-sm text-slate-800 dark:text-white truncate" x-text="selectedTenant ? (selectedTenant.country || '&mdash;') : '&mdash;'"></p>
+                        </div>
+                    </div>
+                    <!-- Specialty -->
+                    <div x-show="selectedTenant && selectedTenant.specialty" class="bg-slate-50 dark:bg-white/[0.04] dark:border dark:border-white/[0.06] rounded-xl px-4 py-3 flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.78 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                            </svg>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[10px] text-slate-400 uppercase font-semibold tracking-wide">{{ __('super-admin.tenant_specialty') ?? 'Specialty' }}</p>
+                            <p class="text-sm text-slate-800 dark:text-white truncate" x-text="selectedTenant ? (selectedTenant.specialty || '&mdash;') : '&mdash;'"></p>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Stats Panel -->
@@ -665,6 +773,91 @@
                         </div>
                         <p x-show="!tenantStatsLoading" class="text-xl font-black text-emerald-700 dark:text-emerald-300" x-text="tenantStats?.total_invoices ?? '—'"></p>
                         <p class="text-[10px] text-emerald-500 dark:text-emerald-400 font-semibold uppercase tracking-wide mt-0.5" x-text="__tTenants.locale === 'ar' ? 'فواتير' : 'Invoices'"></p>
+                    </div>
+                </div>
+
+                <!-- Subscription Info -->
+                <div x-show="selectedTenant && selectedTenant.current_subscription" class="mb-4">
+                    <div class="rounded-xl border border-slate-200 dark:border-white/[0.07] overflow-hidden">
+                        <div class="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-[#5b4ff7]/10 to-[#6C63FF]/5 border-b border-slate-200 dark:border-white/[0.07]">
+                            <span class="text-[10px] font-bold text-[#6C63FF] dark:text-[#9B93FF] uppercase tracking-wider"
+                                  x-text="__tTenants.locale === 'ar' ? 'تفاصيل الاشتراك' : 'Subscription'"></span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase"
+                                  :class="{
+                                      'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400': selectedTenant && selectedTenant.current_subscription && selectedTenant.current_subscription.status === 'active',
+                                      'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400': selectedTenant && selectedTenant.current_subscription && selectedTenant.current_subscription.status === 'trial',
+                                      'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400': selectedTenant && selectedTenant.current_subscription && !['active','trial'].includes(selectedTenant.current_subscription.status)
+                                  }"
+                                  x-text="selectedTenant && selectedTenant.current_subscription ? (selectedTenant.current_subscription.status === 'active' ? (__tTenants.locale === 'ar' ? 'نشط' : 'Active') : selectedTenant.current_subscription.status === 'trial' ? (__tTenants.locale === 'ar' ? 'تجريبي' : 'Trial') : selectedTenant.current_subscription.status) : ''"></span>
+                        </div>
+                        <div class="px-4 py-3 space-y-2">
+                            <div x-show="selectedTenant && selectedTenant.current_subscription && selectedTenant.current_subscription.plan" class="flex items-center justify-between">
+                                <span class="text-[11px] text-slate-500 dark:text-slate-400" x-text="__tTenants.locale === 'ar' ? 'الخطة' : 'Plan'"></span>
+                                <span class="text-xs font-semibold text-slate-800 dark:text-white" x-text="selectedTenant && selectedTenant.current_subscription && selectedTenant.current_subscription.plan ? selectedTenant.current_subscription.plan.name : '—'"></span>
+                            </div>
+                            <div x-show="selectedTenant && selectedTenant.current_subscription && selectedTenant.current_subscription.amount_paid" class="flex items-center justify-between">
+                                <span class="text-[11px] text-slate-500 dark:text-slate-400" x-text="__tTenants.locale === 'ar' ? 'المبلغ المدفوع' : 'Amount Paid'"></span>
+                                <span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400"
+                                      x-text="selectedTenant && selectedTenant.current_subscription ? (currencySymbol(selectedTenant.country) + parseFloat(selectedTenant.current_subscription.amount_paid || 0).toFixed(2)) : '—'"></span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] text-slate-500 dark:text-slate-400" x-text="__tTenants.locale === 'ar' ? 'بداية الاشتراك' : 'Start Date'"></span>
+                                <span class="text-xs text-slate-700 dark:text-slate-300"
+                                      x-text="selectedTenant && selectedTenant.current_subscription && selectedTenant.current_subscription.starts_at ? new Date(selectedTenant.current_subscription.starts_at).toLocaleDateString() : '—'"></span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] text-slate-500 dark:text-slate-400" x-text="__tTenants.locale === 'ar' ? 'انتهاء الاشتراك' : 'End Date'"></span>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-xs text-slate-700 dark:text-slate-300"
+                                          x-text="selectedTenant && selectedTenant.current_subscription && selectedTenant.current_subscription.ends_at ? new Date(selectedTenant.current_subscription.ends_at).toLocaleDateString() : '—'"></span>
+                                    <span x-show="selectedTenant && selectedTenant.current_subscription && selectedTenant.current_subscription.ends_at"
+                                          class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                                          :class="(function(){ var d = selectedTenant && selectedTenant.current_subscription && selectedTenant.current_subscription.ends_at ? Math.ceil((new Date(selectedTenant.current_subscription.ends_at) - new Date()) / 86400000) : 0; return d > 7 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : d > 0 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'; })()"
+                                          x-text="(function(){ var d = selectedTenant && selectedTenant.current_subscription && selectedTenant.current_subscription.ends_at ? Math.ceil((new Date(selectedTenant.current_subscription.ends_at) - new Date()) / 86400000) : 0; return d > 0 ? (d + (__tTenants.locale === 'ar' ? ' يوم' : 'd')) : (__tTenants.locale === 'ar' ? 'منتهي' : 'Expired'); })()"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subscription History -->
+                <div x-show="selectedTenant && selectedTenant.subscriptions && selectedTenant.subscriptions.length" class="mb-4">
+                    <div class="rounded-xl border border-slate-200 dark:border-white/[0.07] overflow-hidden">
+                        <div class="flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-white/[0.03] border-b border-slate-200 dark:border-white/[0.07]">
+                            <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider"
+                                  x-text="__tTenants.locale === 'ar' ? 'سجل الاشتراكات' : 'Subscription History'"></span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400"
+                                      x-text="(currencySymbol(selectedTenant.country) + totalPaid(selectedTenant.subscriptions).toFixed(2)) + ' ' + (__tTenants.locale === 'ar' ? 'إجمالي' : 'total')"></span>
+                                <span x-show="totalMonths(selectedTenant.subscriptions) > 0"
+                                      class="text-[10px] text-slate-400 dark:text-slate-500"
+                                      x-text="'·\u00a0' + subDurationLabel(totalMonths(selectedTenant.subscriptions))"></span>
+                            </div>
+                        </div>
+                        <div class="divide-y divide-slate-100 dark:divide-white/[0.04] max-h-52 overflow-y-auto">
+                            <template x-for="sub in (selectedTenant.subscriptions || []).slice().sort((a,b) => new Date(b.created_at||0) - new Date(a.created_at||0))" :key="sub.id">
+                                <div class="px-4 py-2.5 flex items-center gap-2">
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
+                                          :class="{
+                                              'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400': sub.status === 'active',
+                                              'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400': sub.status === 'trial',
+                                              'bg-slate-100 text-slate-500 dark:bg-white/[0.07] dark:text-slate-400': sub.status === 'cancelled' || sub.status === 'expired',
+                                              'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400': !['active','trial','cancelled','expired'].includes(sub.status)
+                                          }"
+                                          x-text="sub.plan ? sub.plan.name : sub.status"></span>
+                                    <div class="flex-1 min-w-0 text-[10px] text-slate-400 dark:text-slate-500">
+                                        <span x-text="sub.starts_at ? new Date(sub.starts_at).toLocaleDateString() : '?'"></span>
+                                        <span class="mx-0.5">→</span>
+                                        <span x-text="sub.ends_at ? new Date(sub.ends_at).toLocaleDateString() : '∞'"></span>
+                                        <span x-show="sub.starts_at && sub.ends_at"
+                                              x-text="' (' + subDuration(sub.starts_at, sub.ends_at) + ')'"></span>
+                                    </div>
+                                    <span x-show="parseFloat(sub.amount_paid || 0) > 0"
+                                          class="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 flex-shrink-0"
+                                          x-text="currencySymbol(selectedTenant.country) + parseFloat(sub.amount_paid).toFixed(2)"></span>
+                                </div>
+                            </template>
+                        </div>
                     </div>
                 </div>
 
@@ -998,11 +1191,15 @@ function tenantsManager() {
         newTenant: {
             name: '',
             domain: '',
-            email: ''
+            email: '',
+            country: '',
+            specialty: ''
         },
         editForm: {
             name: '',
-            domain: ''
+            domain: '',
+            country: '',
+            specialty: ''
         },
 
         async loadTenants() {
@@ -1046,7 +1243,7 @@ function tenantsManager() {
         },
 
         openAddModal() {
-            this.newTenant = { name: '', domain: '', email: '' };
+            this.newTenant = { name: '', domain: '', email: '', country: '', specialty: '' };
             this.showAddModal = true;
         },
 
@@ -1174,7 +1371,9 @@ function tenantsManager() {
             this.editingTenantId = tenant.id;
             this.editForm = {
                 name: tenant.name,
-                domain: tenant.domain
+                domain: tenant.domain,
+                country: tenant.country || '',
+                specialty: tenant.specialty || ''
             };
             this.showEditModal = true;
         },
@@ -1305,6 +1504,63 @@ function tenantsManager() {
 
         formatDate(date) {
             return new Date(date).toLocaleDateString(__tTenants.locale);
+        },
+
+        currencySymbol(country) {
+            if (!country) return '$';
+            const c = (country || '').trim().toLowerCase();
+            const map = {
+                'egypt': 'E£',    'مصر': 'E£',    'eg': 'E£',
+                'saudi arabia': '﷼', 'السعودية': '﷼', 'المملكة العربية السعودية': '﷼', 'sa': '﷼', 'ksa': '﷼',
+                'uae': 'AED', 'united arab emirates': 'AED', 'الإمارات': 'AED', 'الامارات': 'AED', 'ae': 'AED',
+                'kuwait': 'KD',   'الكويت': 'KD',  'kw': 'KD',
+                'qatar': 'QR',    'قطر': 'QR',     'qa': 'QR',
+                'bahrain': 'BD',  'البحرين': 'BD', 'bh': 'BD',
+                'jordan': 'JD',   'الأردن': 'JD',  'الاردن': 'JD', 'jo': 'JD',
+                'oman': 'OMR',    'عمان': 'OMR',   'عُمان': 'OMR', 'om': 'OMR',
+                'morocco': 'DH',  'المغرب': 'DH',  'ma': 'DH',
+                'tunisia': 'DT',  'تونس': 'DT',    'tn': 'DT',
+                'libya': 'LD',    'ليبيا': 'LD',   'ly': 'LD',
+                'iraq': 'IQD',    'العراق': 'IQD', 'iq': 'IQD',
+                'lebanon': 'LL',  'لبنان': 'LL',   'lb': 'LL',
+                'turkey': '₺',    'türkiye': '₺',  'تركيا': '₺',  'tr': '₺',
+                'uk': '£',        'united kingdom': '£', 'great britain': '£', 'gb': '£',
+                'germany': '€',   'france': '€',   'spain': '€',  'italy': '€', 'netherlands': '€', 'eu': '€',
+            };
+            return map[c] || '$';
+        },
+
+        totalPaid(subscriptions) {
+            if (!subscriptions || !subscriptions.length) return 0;
+            return subscriptions.reduce((sum, s) => sum + parseFloat(s.amount_paid || 0), 0);
+        },
+
+        totalMonths(subscriptions) {
+            if (!subscriptions || !subscriptions.length) return 0;
+            return subscriptions.reduce((sum, s) => {
+                if (!s.starts_at || !s.ends_at) return sum;
+                const m = Math.round((new Date(s.ends_at) - new Date(s.starts_at)) / (1000 * 60 * 60 * 24 * 30.44));
+                return sum + (m > 0 ? m : 0);
+            }, 0);
+        },
+
+        subDuration(starts, ends) {
+            if (!starts || !ends) return '';
+            const m = Math.round((new Date(ends) - new Date(starts)) / (1000 * 60 * 60 * 24 * 30.44));
+            return this.subDurationLabel(m);
+        },
+
+        subDurationLabel(m) {
+            if (m <= 0) return '';
+            const ar = __tTenants.locale === 'ar';
+            if (m >= 12) {
+                const y = Math.floor(m / 12);
+                const rem = m % 12;
+                let label = ar ? (y + (y === 1 ? ' سنة' : ' سنوات')) : (y + (y === 1 ? ' yr' : ' yrs'));
+                if (rem > 0) label += (ar ? ' و' : ' ') + rem + (ar ? ' شهر' : 'mo');
+                return label;
+            }
+            return ar ? (m + ' شهر') : (m + ' mo');
         },
 
         async loadTrashCount() {

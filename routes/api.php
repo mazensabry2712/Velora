@@ -68,6 +68,7 @@ Route::prefix('super-admin')->middleware(['auth:web', 'super.admin'])->group(fun
 
     // Tenants Management
     Route::get('/tenants/trash', [TenantController::class, 'trash']);                       // must be before apiResource
+    Route::get('/tenants/export-excel', [TenantController::class, 'exportExcel']);            // must be before apiResource
     Route::post('/tenants/restore-all', [TenantController::class, 'restoreAll']);             // must be before apiResource
     Route::delete('/tenants/delete-all', [TenantController::class, 'deleteAll']);             // must be before apiResource
     Route::post('/tenants/{id}/restore', [TenantController::class, 'restore']);

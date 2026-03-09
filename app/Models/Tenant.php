@@ -15,7 +15,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     /**
      * Append computed attributes to JSON output
      */
-    protected $appends = ['name', 'domain', 'email', 'active'];
+    protected $appends = ['name', 'domain', 'email', 'active', 'country', 'specialty'];
 
     /**
      * Custom attributes stored in 'data' JSON column
@@ -65,6 +65,26 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     public function getDomainAttribute()
     {
         return $this->domains()->first()?->domain ?? 'unknown';
+    }
+
+    /**
+     * Get tenant country - stored in stancl data column
+     */
+    public function getCountryAttribute()
+    {
+        return data_get($this->getAttributes(), 'country',
+            data_get(json_decode($this->getRawOriginal('data') ?? '{}', true), 'country', null)
+        );
+    }
+
+    /**
+     * Get tenant specialty - stored in stancl data column
+     */
+    public function getSpecialtyAttribute()
+    {
+        return data_get($this->getAttributes(), 'specialty',
+            data_get(json_decode($this->getRawOriginal('data') ?? '{}', true), 'specialty', null)
+        );
     }
 
     // Relationships
