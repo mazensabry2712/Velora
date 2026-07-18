@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Jobs\LinkTenantDomain;
+use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -28,6 +30,7 @@ class TenancyServiceProvider extends ServiceProvider
                     Jobs\CreateDatabase::class,
                     Jobs\MigrateDatabase::class,
                     // Jobs\SeedDatabase::class,
+                    Jobs\SeedDatabase::class,
 
                     // Your own jobs to prepare the tenant.
                     // Provision API keys, create S3 buckets, anything you want!
@@ -53,7 +56,7 @@ class TenancyServiceProvider extends ServiceProvider
             Events\CreatingDomain::class => [],
             Events\DomainCreated::class => [
                 JobPipeline::make([
-                    \App\Jobs\LinkTenantDomain::class, // Auto-link domain to Herd
+                    LinkTenantDomain::class, // Auto-link domain to Herd
                 ])->send(function (Events\DomainCreated $event) {
                     return $event->domain;
                 })->shouldBeQueued(false),
@@ -148,7 +151,7 @@ class TenancyServiceProvider extends ServiceProvider
         ];
 
         foreach (array_reverse($tenancyMiddleware) as $middleware) {
-            $this->app[\Illuminate\Contracts\Http\Kernel::class]->prependToMiddlewarePriority($middleware);
+            $this->app[Kernel::class]->prependToMiddlewarePriority($middleware);
         }
     }
 }

@@ -10,6 +10,11 @@ use Stancl\Tenancy\Database\Concerns\HasDomains;
 
 class Tenant extends BaseTenant implements TenantWithDatabase
 {
+
+
+
+
+
     use HasDatabase, HasDomains, SoftDeletes;
 
     /**
@@ -93,10 +98,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         return $this->hasOne(Setting::class);
     }
 
-    public function users()
-    {
-        return $this->hasMany(User::class);
-    }
+
 
     public function subscriptions()
     {

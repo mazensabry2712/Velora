@@ -3,15 +3,19 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens;
+    /** @use HasFactory<UserFactory> */
+    // use HasApiTokens, HasFactory, HasRoles , Notifiable;
+
+    use HasApiTokens, HasFactory, HasRoles, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -19,7 +23,6 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'role_id',
         'name',
         'email',
         'phone',
@@ -28,7 +31,6 @@ class User extends Authenticatable
         'password',
         'is_vip',
         'avatar',
-        'permissions',
     ];
 
     /**
@@ -51,7 +53,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'permissions' => 'array',
+
         ];
     }
 
@@ -62,13 +64,15 @@ class User extends Authenticatable
     {
         if ($this->avatar) {
             // Check if image exists in new structure
-            $image = \App\Models\Image::where('filename', $this->avatar)->first();
+            $image = Image::where('filename', $this->avatar)->first();
             if ($image) {
                 return $image->url;
             }
+
             // Fallback to direct path in project_img/avatars
-            return asset('project_img/avatars/' . $this->avatar);
+            return asset('project_img/avatars/'.$this->avatar);
         }
+
         return '';
     }
 
@@ -91,30 +95,17 @@ class User extends Authenticatable
     /**
      * Check if user has specific permission
      */
-    public function hasPermission(string $permission): bool
-    {
-        // Admin Tenant has all permissions
-        if ($this->isAdminTenant()) {
-            return true;
-        }
-
-        $permissions = $this->permissions ?? [];
-        return in_array($permission, $permissions);
-    }
 
     /**
      * Check if user is an Assistant
      */
-    public function isAssistant(): bool
-    {
-        return $this->role && $this->role->name === 'Assistant';
-    }
+   public function isAssistant(): bool
+{
+    return $this->hasRole('Assistant');
+}
 
     // Relationships
-    public function role()
-    {
-        return $this->belongsTo(Role::class);
-    }
+
 
     public function tenant()
     {
@@ -156,29 +147,34 @@ class User extends Authenticatable
         return $this->hasMany(StaffSchedule::class)->where('is_active', true);
     }
 
-    // Helper methods
     public function isSuperAdmin(): bool
     {
-        return $this->role && $this->role->name === 'Super Admin';
+        return $this->hasRole('Super Admin');
+
     }
 
     public function isAdminTenant(): bool
     {
-        return $this->role && $this->role->name === 'Admin Tenant';
+        return $this->hasRole('Admin Tenant');
+
+
     }
 
     public function isStaff(): bool
     {
-        return $this->role && $this->role->name === 'Staff';
+        return $this->hasRole('Staff');
+
     }
 
     public function isCustomer(): bool
     {
-        return $this->role && $this->role->name === 'Customer';
+        return $this->hasRole('Customer');
+
     }
+
 
     public function getRoleName(): ?string
     {
-        return $this->role?->name;
+        return $this->getRoleNames()->first();
     }
 }
