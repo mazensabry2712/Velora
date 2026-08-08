@@ -106,13 +106,13 @@ class TenancyServiceProvider extends ServiceProvider
         //
     }
 
-    public function boot()
-    {
-        $this->bootEvents();
-        $this->mapRoutes();
 
-        $this->makeTenancyMiddlewareHighestPriority();
-    }
+ public function boot()
+{
+    $this->bootEvents();
+    // $this->mapRoutes();
+    $this->makeTenancyMiddlewareHighestPriority();
+}
 
     protected function bootEvents()
     {
@@ -127,15 +127,19 @@ class TenancyServiceProvider extends ServiceProvider
         }
     }
 
-    protected function mapRoutes()
-    {
-        $this->app->booted(function () {
-            if (file_exists(base_path('routes/tenant.php'))) {
-                Route::namespace(static::$controllerNamespace)
-                    ->group(base_path('routes/tenant.php'));
-            }
-        });
-    }
+
+
+protected function mapRoutes()
+{
+    $this->app->booted(function () {
+        if (file_exists(base_path('routes/tenant.php'))) {
+            Route::namespace(static::$controllerNamespace)
+                ->group(base_path('routes/tenant.php'));
+        }
+    });
+}
+
+
 
     protected function makeTenancyMiddlewareHighestPriority()
     {

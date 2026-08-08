@@ -1,9 +1,25 @@
 <?php
 
+use App\Http\Middleware\CheckMaintenanceMode;
+use App\Http\Middleware\CheckRole;
+use App\Http\Middleware\CheckSubscriptionLimits;
+use App\Http\Middleware\CheckSuperAdmin;
+use App\Http\Middleware\CheckTokenAbility;
+use App\Http\Middleware\DetectCountryAndLocale;
+use App\Http\Middleware\EnsureSubscriptionIsValid;
+use App\Http\Middleware\InitializeTenancyByToken;
+use App\Http\Middleware\RedirectIfOnboardingIncomplete;
+use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\SetTenantLocale;
+use App\Http\Middleware\SuperAdminAuth;
+use App\Http\Middleware\ThrottleRequests;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Support\Facades\Route;
+use Illuminate\Session\Middleware\StartSession;
+use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -11,55 +27,48 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
-        then: function () {
-            // Load tenant routes
-            Route::middleware([
-                'web',
-                \Stancl\Tenancy\Middleware\InitializeTenancyByDomain::class,
-                \Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains::class,
-            ])->group(base_path('routes/tenant.php'));
-        },
+
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Global middleware - security headers for all requests
-        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+        $middleware->append(SecurityHeaders::class);
 
         // Register tenancy middleware
         $middleware->alias([
-            'tenant' => \Stancl\Tenancy\Middleware\InitializeTenancyByDomain::class,
-            'tenant.token' => \App\Http\Middleware\InitializeTenancyByToken::class,
-            'tenant.locale' => \App\Http\Middleware\SetTenantLocale::class,
-            'super.admin' => \App\Http\Middleware\CheckSuperAdmin::class,
-            'super.admin.auth' => \App\Http\Middleware\SuperAdminAuth::class,
+            'tenant' => InitializeTenancyByDomain::class,
+            'tenant.token' => InitializeTenancyByToken::class,
+            'tenant.locale' => SetTenantLocale::class,
+            'super.admin' => CheckSuperAdmin::class,
+            'super.admin.auth' => SuperAdminAuth::class,
 
             // Role-based middleware
-            'role' => \App\Http\Middleware\CheckRole::class,
-            'ability' => \App\Http\Middleware\CheckTokenAbility::class,
+            'role' => CheckRole::class,
+            'ability' => CheckTokenAbility::class,
 
             // Subscription limits middleware
-            'subscription.limits' => \App\Http\Middleware\CheckSubscriptionLimits::class,
+            'subscription.limits' => CheckSubscriptionLimits::class,
 
             // Subscription validity (trial/grace/expired)
-            'subscription.valid' => \App\Http\Middleware\EnsureSubscriptionIsValid::class,
+            'subscription.valid' => EnsureSubscriptionIsValid::class,
 
             // Rate limiting
-            'throttle.api' => \App\Http\Middleware\ThrottleRequests::class,
+            'throttle.api' => ThrottleRequests::class,
 
             // Geo localization (country detection + locale + currency)
-            'geo.detect' => \App\Http\Middleware\DetectCountryAndLocale::class,
+            'geo.detect' => DetectCountryAndLocale::class,
 
             // Onboarding wizard redirect (first-login flow)
-            'onboarding.redirect' => \App\Http\Middleware\RedirectIfOnboardingIncomplete::class,
+            'onboarding.redirect' => RedirectIfOnboardingIncomplete::class,
 
             // Maintenance mode for landing/public pages
-            'maintenance' => \App\Http\Middleware\CheckMaintenanceMode::class,
+            'maintenance' => CheckMaintenanceMode::class,
         ]);
 
         // Enable session and cookies for API routes (needed for Super Admin web-based auth)
         $middleware->api(prepend: [
-            \Illuminate\Cookie\Middleware\EncryptCookies::class,
-            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
-            \Illuminate\Session\Middleware\StartSession::class,
+            EncryptCookies::class,
+            AddQueuedCookiesToResponse::class,
+            StartSession::class,
         ]);
 
         // Exclude API routes and payment webhooks from CSRF verification

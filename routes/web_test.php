@@ -1,16 +1,27 @@
 <?php
-
-use Illuminate\Support\Facades\Route;
+file_put_contents(
+    storage_path('logs/routes-test.log'),
+    "web.php loaded\n",
+    FILE_APPEND
+);
 use App\Http\Controllers\Auth\SuperAdminAuthController;
-use App\Http\Controllers\CountrySettingController;
-use App\Http\Controllers\PlanPriceController;
-use App\Http\Controllers\SuperAdminController;
-use App\Http\Controllers\LandingController;
 use App\Http\Controllers\Auth\TenantRegistrationController;
-use App\Http\Controllers\SuperAdmin\CountryPricingController;
-use App\Http\Controllers\SuperAdmin\PromoCodeController;
+use App\Http\Controllers\CountrySettingController;
+use App\Http\Controllers\LandingController;
+use App\Http\Controllers\MoyasarWebhookController;
+use App\Http\Controllers\PlanPriceController;
 use App\Http\Controllers\PricingController;
-use App\Services\PricingService;
+use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\SuperAdmin\CountryPricingController;
+use App\Http\Controllers\SuperAdmin\DashboardController;
+use App\Http\Controllers\SuperAdmin\PromoCodeController;
+use App\Http\Controllers\SuperAdminController;
+use App\Http\Middleware\SetCentralLocale;
+use App\Models\ActivityLog;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
+use Illuminate\Support\Facades\Route;
+use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
+use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
 /*
 |--------------------------------------------------------------------------
@@ -21,114 +32,117 @@ use App\Services\PricingService;
 | *.velora.com → Tenant routes (routes/tenant.php)
 */
 
+
+Route::get('/probe', function () {
+    return 'PROBE';
+});
+
+
+
+
 // ── Stripe Webhook (no CSRF, no middleware) ──────────────────────────────
-Route::post('/webhooks/stripe', [\App\Http\Controllers\StripeWebhookController::class, 'handle'])
-    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
+Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])
+    ->withoutMiddleware([VerifyCsrfToken::class])
     ->name('webhooks.stripe');
 
 // ── Moyasar Webhook (no CSRF, no middleware) ─────────────────────────────
-Route::post('/webhooks/moyasar', [\App\Http\Controllers\MoyasarWebhookController::class, 'handle'])
-    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
+Route::post('/webhooks/moyasar', [MoyasarWebhookController::class, 'handle'])
+    ->withoutMiddleware([VerifyCsrfToken::class])
     ->name('webhooks.moyasar');
 
 // ── Landing + Marketing Routes ───────────────────────────────────────────────
-Route::middleware(['web', \App\Http\Middleware\SetCentralLocale::class, 'geo.detect', 'maintenance'])
+
+// Route::middleware(['web', \App\Http\Middleware\SetCentralLocale::class, 'geo.detect', 'maintenance'])
+//     ->domain(env('APP_DOMAIN', 'velora.test'))
+//     ->group(function () {
+
+Route::middleware(['web'])
     ->domain(env('APP_DOMAIN', 'velora.test'))
     ->group(function () {
-        // Ensure tenantSubdomain default exists for any central view
-        try { \Illuminate\Support\Facades\URL::defaults(['tenantSubdomain' => 'demo']); } catch (\Throwable $_) {}
-    // Main landing page — call controller inside try/catch to avoid breaking
-    // the whole site when tenant route generation fails in a view.
-    Route::get('/', function (\Illuminate\Http\Request $request) {
-        try {
-            $controller = app()->make(\App\Http\Controllers\LandingController::class);
-            return $controller->index($request);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('Landing render failed: ' . $e->getMessage());
-            // Ensure fallback tenantSubdomain to avoid UrlGenerationException elsewhere
-            try { \Illuminate\Support\Facades\URL::defaults(['tenantSubdomain' => 'demo']); } catch (\Throwable $_) {}
-            return response('Velora landing temporarily unavailable (fallback)', 200);
-        }
-    })->name('landing');
 
-    // Dedicated pricing page
-    Route::get('/pricing', [LandingController::class, 'pricing'])->name('pricing');
+        // Main landing page
+        Route::get('/', [LandingController::class, 'index'])->name('landing');
 
-    // AJAX: set pricing country override (called by country-switcher)
-    Route::post('/pricing/set-country', [PricingController::class, 'setCountry'])
-         ->name('pricing.set-country')
-         ->middleware('throttle:30,1');
+        // Dedicated pricing page
+        Route::get('/pricing', [LandingController::class, 'pricing'])->name('pricing');
 
+        // AJAX: set pricing country override (called by country-switcher)
+        Route::post('/pricing/set-country', [PricingController::class, 'setCountry'])
+            ->name('pricing.set-country')
+            ->middleware('throttle:30,1');
 
+        // Signup page
+        Route::get('/signup', [LandingController::class, 'signup'])->name('signup');
 
-    // Signup page
-    Route::get('/signup', [LandingController::class, 'signup'])->name('signup');
+        // Subdomain availability check (AJAX)
+        Route::get('/signup/check-subdomain', [LandingController::class, 'checkSubdomain'])
+            ->name('signup.check-subdomain')
+            ->middleware('throttle:60,1');
 
-    // Subdomain availability check (AJAX)
-    Route::get('/signup/check-subdomain', [LandingController::class, 'checkSubdomain'])
-         ->name('signup.check-subdomain')
-         ->middleware('throttle:60,1');
+        // Signup form submission
+        Route::post('/signup', [TenantRegistrationController::class, 'store'])
+            ->name('signup.store')
+            ->middleware('throttle:10,1');
 
-    // Signup form submission
-    Route::post('/signup', [TenantRegistrationController::class, 'store'])
-         ->name('signup.store')
-         ->middleware('throttle:10,1');
+        // Central login: tenant owners find their salon by subdomain
+        Route::get('/login', function () {
+            return view('landing.find-account', [
+                'baseDomain' => config('app.base_domain', 'velora.com'),
+            ]);
+        })->name('central.login');
 
-    // Central login: tenant owners find their salon by subdomain
-    Route::get('/login', function () {
-        return view('landing.find-account', [
-            'baseDomain' => config('app.base_domain', 'velora.com'),
-        ]);
-    })->name('central.login');
+        // Language switcher for landing / marketing pages
+        Route::get('/lang/{locale}', function ($locale) {
+            $supported = ['en', 'ar', 'fr', 'es', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'tr', 'hi', 'ko', 'nl', 'id'];
+            if (in_array($locale, $supported)) {
+                session()->put('central_locale', $locale);
 
-    // Language switcher for landing / marketing pages
-    Route::get('/lang/{locale}', function ($locale) {
-        $supported = ['en', 'ar', 'fr', 'es', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'tr', 'hi', 'ko', 'nl', 'id'];
-        if (in_array($locale, $supported)) {
-            session()->put('central_locale', $locale);
-            return redirect()->back(302, [], route('landing'))
-                ->withCookie(cookie()->forever('velora_locale_override', $locale));
-        }
-        return redirect(route('landing'));
-    })->name('landing.lang');
+                return redirect()->back(302, [], route('landing'))
+                    ->withCookie(cookie()->forever('velora_locale_override', $locale));
+            }
 
-    // Combined region+language switcher — sets both locale + country in one server hop
-    // Hostinger-style: navigate here, cookies attach to the redirect response, browser stores them
-    Route::get('/region/{locale}/{country}', function ($locale, $country) {
-        $supported = ['en', 'ar', 'fr', 'es', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'tr', 'hi', 'ko', 'nl', 'id'];
-        $locale = in_array($locale, $supported) ? $locale : 'en';
-        $code   = strtoupper(preg_replace('/[^A-Za-z]/', '', $country));
-        if (strlen($code) < 2 || strlen($code) > 10) {
             return redirect(route('landing'));
-        }
-        session()->put('central_locale', $locale);
-        session(['pricing_country_override' => $code]);
-        return redirect()->back(302, [], route('landing'))
-            ->withCookie(cookie()->forever('velora_locale_override', $locale))
-            ->withCookie(cookie()->forever('velora_country_override', $code));
-    })->name('landing.region');
+        })->name('landing.lang');
 
-    // Currency switcher for landing / marketing pages
-    Route::get('/currency/{currency}', function ($currency) {
-        $currency = strtoupper($currency);
-        if (strlen($currency) === 3 && ctype_alpha($currency)) {
-            session()->put('current_currency', $currency);
-            cookie()->queue(cookie()->forever('velora_currency_override', $currency));
-        }
-        return redirect()->back();
-    })->name('landing.currency');
+        // Combined region+language switcher — sets both locale + country in one server hop
+        // Hostinger-style: navigate here, cookies attach to the redirect response, browser stores them
+        Route::get('/region/{locale}/{country}', function ($locale, $country) {
+            $supported = ['en', 'ar', 'fr', 'es', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'tr', 'hi', 'ko', 'nl', 'id'];
+            $locale = in_array($locale, $supported) ? $locale : 'en';
+            $code = strtoupper(preg_replace('/[^A-Za-z]/', '', $country));
+            if (strlen($code) < 2 || strlen($code) > 10) {
+                return redirect(route('landing'));
+            }
+            session()->put('central_locale', $locale);
+            session(['pricing_country_override' => $code]);
 
+            return redirect()->back(302, [], route('landing'))
+                ->withCookie(cookie()->forever('velora_locale_override', $locale))
+                ->withCookie(cookie()->forever('velora_country_override', $code));
+        })->name('landing.region');
 
-});
+        // Currency switcher for landing / marketing pages
+        Route::get('/currency/{currency}', function ($currency) {
+            $currency = strtoupper($currency);
+            if (strlen($currency) === 3 && ctype_alpha($currency)) {
+                session()->put('current_currency', $currency);
+                cookie()->queue(cookie()->forever('velora_currency_override', $currency));
+            }
+
+            return redirect()->back();
+        })->name('landing.currency');
+
+    });
 
 // Super Admin Routes (Central - No Tenant)
-Route::prefix('super-admin')->name('super-admin.')->middleware([\App\Http\Middleware\SetCentralLocale::class])->group(function () {
+Route::prefix('super-admin')->name('super-admin.')->middleware([SetCentralLocale::class])->group(function () {
 
     // Login page
     Route::get('/login', function () {
         if (auth()->guard('web')->check() && auth()->guard('web')->user()->isSuperAdmin()) {
             return redirect()->route('super-admin.dashboard');
         }
+
         return view('super-admin.login');
     })->name('login');
 
@@ -142,6 +156,7 @@ Route::prefix('super-admin')->name('super-admin.')->middleware([\App\Http\Middle
         if (in_array($locale, $supported)) {
             session()->put('central_locale', $locale);
         }
+
         return redirect()->back();
     })->name('lang');
 
@@ -158,24 +173,24 @@ Route::prefix('super-admin')->name('super-admin.')->middleware([\App\Http\Middle
         })->name('subscription-plans');
 
         Route::get('/activity-logs', function () {
-            $logs = \App\Models\ActivityLog::with('user:id,name')
+            $logs = ActivityLog::with('user:id,name')
                 ->latest()
                 ->paginate(5);
 
             $meta = [
-                'current_page'  => $logs->currentPage(),
-                'last_page'     => $logs->lastPage(),
-                'from'          => $logs->firstItem() ?? 0,
-                'to'            => $logs->lastItem() ?? 0,
-                'total'         => $logs->total(),
+                'current_page' => $logs->currentPage(),
+                'last_page' => $logs->lastPage(),
+                'from' => $logs->firstItem() ?? 0,
+                'to' => $logs->lastItem() ?? 0,
+                'total' => $logs->total(),
                 'prev_page_url' => $logs->previousPageUrl(),
                 'next_page_url' => $logs->nextPageUrl(),
             ];
 
             $stats = [
-                'today'      => \App\Models\ActivityLog::whereDate('created_at', today())->count(),
-                'this_week'  => \App\Models\ActivityLog::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
-                'this_month' => \App\Models\ActivityLog::whereMonth('created_at', now()->month)->count(),
+                'today' => ActivityLog::whereDate('created_at', today())->count(),
+                'this_week' => ActivityLog::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
+                'this_month' => ActivityLog::whereMonth('created_at', now()->month)->count(),
             ];
 
             return view('super-admin.activity-logs', compact('logs', 'meta', 'stats'));
@@ -203,7 +218,7 @@ Route::prefix('super-admin')->name('super-admin.')->middleware([\App\Http\Middle
             return redirect()->route('super-admin.analytics', ['tab' => 'kpis']);
         })->name('kpis');
 
-        Route::get('/kpis/export.csv', [\App\Http\Controllers\SuperAdmin\DashboardController::class, 'exportKpis'])->name('kpis.export');
+        Route::get('/kpis/export.csv', [DashboardController::class, 'exportKpis'])->name('kpis.export');
 
         // Upgrade Requests Management
         Route::get('/upgrade-requests', [SuperAdminController::class, 'upgradeRequests'])->name('upgrade-requests');
@@ -236,4 +251,17 @@ Route::prefix('super-admin')->name('super-admin.')->middleware([\App\Http\Middle
         Route::patch('/promo-codes/{id}/toggle', [PromoCodeController::class, 'toggle'])->name('promo-codes.toggle');
         Route::delete('/promo-codes/{id}', [PromoCodeController::class, 'destroy'])->name('promo-codes.destroy');
     });
-});
+
+// Load tenant routes LAST — guarantees central domain routes above always match first
+Route::domain('{tenantSubdomain}.' . env('APP_BASE_DOMAIN', 'velora.test'))
+    ->middleware([
+        'web',
+        \Stancl\Tenancy\Middleware\InitializeTenancyByDomain::class,
+        \Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains::class,
+    ])
+    ->group(base_path('routes/tenant.php'));
+
+
+    // @include __DIR__.'/tenant.php';
+}
+}

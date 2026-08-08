@@ -227,7 +227,7 @@
 
         <!-- Queue Status Link -->
         <div class="text-center mt-6 sm:mt-8">
-            <a href="{{ route('queue.status') }}" class="text-sm sm:text-base text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium">
+            <a href="{{ (function_exists('tenant') && tenant()) ? route('queue.status') : url('/') }}" class="text-sm sm:text-base text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium">
                 {{ __('Check Queue Status') }} →
             </a>
         </div>

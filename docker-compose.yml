@@ -1,0 +1,18 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: .
+    image: velora-app:latest
+    container_name: velora_app
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/var/www/html:delegated
+    working_dir: /var/www/html
+    environment:
+      APP_ENV: local
+      APP_DEBUG: 'true'
+      APP_URL: http://localhost:8000
+    command: >
+      bash -lc "composer install --no-interaction --prefer-dist || true; php artisan key:generate --force || true; php artisan migrate --force || true; php artisan serve --host=0.0.0.0 --port=8000"

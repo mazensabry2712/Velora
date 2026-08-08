@@ -72,7 +72,7 @@ Route::middleware([
 
     // Booking Form - Public Page
     Route::get('/', function () {
-        return redirect()->route('customer.booking');
+        return redirect('/book');
     });
 
     Route::get('/book', function () {

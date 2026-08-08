@@ -16,9 +16,23 @@ class Staff extends Model
     protected $table = 'staff';
 
     protected $fillable = [
-        'user_id', 'first_name', 'last_name', 'email', 'phone', 'phone_country',
-        'avatar', 'title', 'bio', 'color', 'sort_order', 'timezone',
-        'accepts_bookings', 'is_active', 'commission_type', 'commission_value', 'metadata',
+        'user_id',
+        'first_name',
+        'last_name',
+        'email',
+        'phone',
+        'phone_country',
+        'avatar',
+        'title',
+        'bio',
+        'color',
+        'sort_order',
+        'timezone',
+        'accepts_bookings',
+        'is_active',
+        'commission_type',
+        'commission_value',
+        'metadata',
     ];
 
     protected $casts = [
@@ -41,8 +55,8 @@ class Staff extends Model
     public function services(): BelongsToMany
     {
         return $this->belongsToMany(Service::class, 'staff_services', 'staff_id', 'service_id')
-                    ->withPivot(['override_price', 'override_duration'])
-                    ->withTimestamps();
+            ->withPivot(['override_price', 'override_duration'])
+            ->withTimestamps();
     }
 
     public function workingHours(): HasMany

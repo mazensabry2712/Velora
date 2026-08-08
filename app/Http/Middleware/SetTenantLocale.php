@@ -59,6 +59,34 @@ class SetTenantLocale
                 App::setLocale(config('app.locale', 'en'));
             }
         }
+                // Ensure URL generation receives tenant subdomain by default
+                try {
+                    $tenantSubdomain = null;
+                    if (function_exists('tenant') && tenant()) {
+                        // Prefer explicit property if present
+                        if (isset(tenant()->subdomain) && tenant()->subdomain) {
+                            $tenantSubdomain = tenant()->subdomain;
+                        }
+                    }
+
+                    // Fallback: extract subdomain from host (demo.velora.test -> demo)
+                    if (! $tenantSubdomain) {
+                        $host = $request->getHost();
+                        $base = env('APP_BASE_DOMAIN', 'velora.test');
+                        if ($base && str_ends_with($host, $base)) {
+                            $tenantSubdomain = preg_replace('/\.' . preg_quote($base, '/') . '$/i', '', $host);
+                        } else {
+                            $parts = explode('.', $host);
+                            $tenantSubdomain = $parts[0] ?? null;
+                        }
+                    }
+
+                    if ($tenantSubdomain) {
+                        \Illuminate\Support\Facades\URL::defaults(['tenantSubdomain' => $tenantSubdomain]);
+                    }
+                } catch (\Exception $e) {
+                    // ignore
+                }
 
         return $next($request);
     }

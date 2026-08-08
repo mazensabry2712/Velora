@@ -29,18 +29,47 @@ class LandingController extends Controller
         $stats        = $this->getPlatformStats();
         $maxTrialDays = $plans->max('trial_days') ?? 14;
 
-        $pricing      = $this->pricing->getPricingSummary($request);
-        $taxRecord    = CountryTax::forCountry($pricing['country_code']);
-        $taxPct       = (float) ($taxRecord?->tax_percentage ?? 0);
-        $taxName      = $taxRecord?->tax_name ?? 'VAT';
+        try {
+            $pricing = $this->pricing->getPricingSummary($request);
+            $taxRecord = CountryTax::forCountry($pricing['country_code']);
+            $taxPct = (float) ($taxRecord?->tax_percentage ?? 0);
+            $taxName = $taxRecord?->tax_name ?? 'VAT';
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('LandingController pricing/service failed early: ' . $e->getMessage());
+            $pricing = [
+                'country_code'    => 'GLOBAL',
+                'country_name'    => 'Other countries',
+                'price'           => 0,
+                'currency'        => 'USD',
+                'formatted_price' => 'USD 0',
+                'payment_methods' => [],
+                'is_global'       => true,
+            ];
+            $taxPct = 0;
+            $taxName = 'VAT';
+        }
 
-        $allPricing   = CountryPricing::active()
-            ->orderByRaw("CASE WHEN country_code = 'GLOBAL' THEN 1 ELSE 0 END")
-            ->orderBy('country_name')
-            ->get();
+        try {
+            $allPricing = CountryPricing::active()
+                ->orderByRaw("CASE WHEN country_code = 'GLOBAL' THEN 1 ELSE 0 END")
+                ->orderBy('country_name')
+                ->get();
 
-        $globalPricing       = $allPricing->firstWhere('country_code', 'GLOBAL') ?? CountryPricing::global();
-        $countriesWithPricing = $allPricing->where('country_code', '!=', 'GLOBAL')->sortBy('country_name');
+            $globalPricing = $allPricing->firstWhere('country_code', 'GLOBAL') ?? CountryPricing::global();
+            $countriesWithPricing = $allPricing->where('country_code', '!=', 'GLOBAL')->sortBy('country_name');
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('LandingController pricing load failed: ' . $e->getMessage());
+            $globalPricing = new CountryPricing([
+                'country_code' => 'GLOBAL',
+                'country_name' => 'Other countries',
+                'price'        => 0,
+                'currency'     => 'USD',
+                'payment_methods' => [],
+                'is_active'    => true,
+            ]);
+            $allPricing = collect([$globalPricing]);
+            $countriesWithPricing = collect();
+        }
 
         $allDataJson = json_encode(
             collect($allPricing)->mapWithKeys(function ($cp) {
@@ -76,6 +105,16 @@ class LandingController extends Controller
         $appName             = SystemSetting::get('app_name', config('app.name', 'Velora'));
         $registrationEnabled = (bool) SystemSetting::get('registration_enabled', true);
         $currentLocale       = session('central_locale', 'en');
+
+        // Ensure tenant route generation from the central landing doesn't
+        // throw UrlGenerationException when views call tenant routes
+        // (e.g. `route('queue.status')`). Default to the demo subdomain
+        // seeded in development so links work from the marketing site.
+        try {
+            \Illuminate\Support\Facades\URL::defaults(['tenantSubdomain' => 'demo']);
+        } catch (\Exception $_) {
+            // ignore
+        }
 
         return view('landing.index', compact(
             'plans', 'stats', 'maxTrialDays', 'countryCode',
