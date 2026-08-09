@@ -77,6 +77,13 @@ return [
     's3_desc' => 'شارك روابط الحجز وأدر الطوابير.',
     'how_cta' => 'ابدأ الآن',
 
+
+
+    'footer_back_to_top' => 'العودة للأعلى',
+
+
+    'footer_rights' => 'جميع الحقوق محفوظة.',
+    'footer_available' => 'متاح بلغة',
     // Pricing
     'pricing_badge' => 'الأسعار',
     'pricing_title' => 'أسعار بسيطة لـ',

@@ -231,7 +231,7 @@ return [
 
 
 
-// ── Sign-up card ────────────────────────────────────────────────
+    // ── Sign-up card ────────────────────────────────────────────────
     'signup_title' => 'Create your business account',
     'signup_sub' => 'Start your :days-day free trial — no credit card required.',
     'business_name' => 'Business name',
@@ -315,9 +315,12 @@ return [
     'back_to_home' => 'Back to home',
 
 
+'footer_rights' => 'All rights reserved.',
+    'footer_available' => 'Available in',
 
 
 
+    'footer_back_to_top' => 'Back to top',
 
 
 ];
