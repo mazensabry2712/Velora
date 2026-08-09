@@ -197,7 +197,7 @@
                 </div>
 
 
-                
+
                 <!-- CTA Buttons -->
                 <div class="flex items-center gap-3">
                     {{-- Toggle button --}}
