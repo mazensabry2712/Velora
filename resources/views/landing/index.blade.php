@@ -69,7 +69,7 @@ window._vInit = {!! json_encode([
 {{-- ══════════════════════════════════════════════════════════════════════
      GEO BAR — Hostinger-style sticky region banner
 ══════════════════════════════════════════════════════════════════════════ --}}
-<div class="sticky top-16 z-40 py-2.5 px-4"
+{{-- <div class="sticky top-16 z-40 py-2.5 px-4"
      style="background:rgba(108,99,255,0.09);border-bottom:1px solid rgba(108,99,255,0.18);backdrop-filter:blur(12px)">
     <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-xs sm:text-sm">
         <span class="flex items-center gap-1.5 text-gray-400">
@@ -95,7 +95,7 @@ window._vInit = {!! json_encode([
             </svg>
         </button>
     </div>
-</div>
+</div> --}}
 
 {{-- ══════════════════════════════════════════════════════════════════════
      HERO
@@ -127,6 +127,8 @@ window._vInit = {!! json_encode([
 
         {{-- CTA Buttons --}}
         <div class="flex flex-col xs:flex-row sm:flex-row gap-3 sm:gap-4 justify-center mb-10 sm:mb-16 animate-fade-up animate-delay-3 px-4 sm:px-0">
+
+
             <a href="{{ route('signup') }}"
                class="btn-primary text-white font-bold text-base sm:text-lg px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl inline-flex items-center justify-center gap-2 sm:gap-3">
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -135,6 +137,7 @@ window._vInit = {!! json_encode([
                 </svg>
                 {{ __('landing.hero_cta_start', ['days' => $trialDays ?? 14]) }}
             </a>
+
             <a href="#how-it-works"
                class="glass text-gray-300 hover:text-white font-semibold text-base sm:text-lg px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl inline-flex items-center justify-center gap-2 transition-all hover:border-brand-500/50">
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -814,16 +817,6 @@ window._vInit = {!! json_encode([
      @keydown.escape.window="open = false"
      class="fixed end-4 top-1/2 -translate-y-1/2 z-40 flex flex-col items-end gap-2">
 
-    {{-- Toggle button --}}
-    <button @click="open = !open"
-            class="w-11 h-11 rounded-full glass border border-white/10 flex items-center justify-center text-gray-300 hover:text-white hover:border-brand-500/40 transition-all shadow-lg"
-            :aria-expanded="open.toString()"
-            aria-label="{{ __('landing.switcher_lang_label') ?? 'Change language' }}">
-        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9l4.5-9 4.5 9m-.75-2h-7.5" />
-        </svg>
-    </button>
 
     {{-- Language panel --}}
     <div x-show="open"
