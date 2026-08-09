@@ -2,11 +2,97 @@
 
 @push('styles')
 <style>
+    html, body {
+        overflow-x: hidden !important;
+        max-width: 100vw !important;
+    }
+    *, *::before, *::after {
+        box-sizing: border-box;
+    }
+    html, body {
+        overflow-x: hidden !important;
+        max-width: 100vw !important;
+        width: 100vw !important;
+    }
     .hero-bg {
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+        max-width: 100vw;
         background:
             radial-gradient(ellipse 90% 60% at 50% -5%, rgba(108,99,255,0.28) 0%, transparent 65%),
             radial-gradient(ellipse 50% 40% at 80% 50%, rgba(56,189,248,0.1) 0%, transparent 60%),
             #0f0e1a;
+    }
+    .hero-blob-left {
+        position: absolute;
+        left: -20px;
+        width: 220px;
+        height: 220px;
+    }
+    .hero-blob-right {
+        position: absolute;
+        right: -20px;
+        width: 220px;
+        height: 220px;
+    }
+    .hero-preview {
+        width: 100%;
+        max-width: 100vw;
+        overflow-x: hidden;
+    }
+    .hero-preview * {
+        max-width: 100%;
+        min-width: 0;
+    }
+    .hero-bg,
+    .hero-bg > .max-w-7xl,
+    .hero-bg .glass,
+    .hero-bg .grid,
+    .hero-bg .flex,
+    .hero-bg .inline-flex,
+    .hero-bg .mx-auto {
+        min-width: 0;
+    }
+    .hero-bg {
+        overflow-x: hidden;
+    }
+    .hero-preview-mobile {
+        display: none;
+    }
+    @media (max-width: 640px) {
+        html, body {
+            overflow-x: hidden !important;
+            width: 100vw !important;
+            max-width: 100vw !important;
+        }
+        .hero-bg {
+            padding-top: 4.5rem;
+            padding-bottom: 3.5rem;
+        }
+        .hero-blob-left,
+        .hero-blob-right {
+            opacity: 0.3;
+        }
+        .hero-blob-left {
+            left: -16px;
+            width: 200px;
+            height: 200px;
+        }
+        .hero-blob-right {
+            right: -16px;
+            width: 200px;
+            height: 200px;
+        }
+        .hero-preview {
+            display: none !important;
+        }
+        .hero-preview-mobile {
+            display: block;
+            margin-top: 1.5rem;
+            max-width: 92vw;
+            padding: 0 1rem;
+        }
     }
     .feature-icon {
         background: linear-gradient(135deg, rgba(108,99,255,0.2) 0%, rgba(139,118,255,0.1) 100%);
@@ -100,11 +186,11 @@ window._vInit = {!! json_encode([
 {{-- ══════════════════════════════════════════════════════════════════════
      HERO
 ══════════════════════════════════════════════════════════════════════════ --}}
-<section class="hero-bg min-h-screen flex flex-col items-center justify-center pt-20 pb-12 sm:pb-16 relative overflow-hidden">
+<section class="hero-bg min-h-screen flex flex-col items-center justify-center pt-20 pb-12 sm:pb-16 relative">
 
     {{-- Background blobs --}}
-    <div class="absolute top-1/4 left-10 w-72 h-72 bg-brand-500/10 rounded-full blur-3xl animate-pulse-slow pointer-events-none"></div>
-    <div class="absolute bottom-1/4 right-10 w-96 h-96 bg-sky-500/8 rounded-full blur-3xl animate-pulse-slow pointer-events-none" style="animation-delay:2s"></div>
+    <div class="absolute top-1/4 hero-blob-left bg-brand-500/10 rounded-full blur-3xl animate-pulse-slow pointer-events-none"></div>
+    <div class="absolute bottom-1/4 hero-blob-right bg-sky-500/8 rounded-full blur-3xl animate-pulse-slow pointer-events-none" style="animation-delay:2s"></div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
 
@@ -169,9 +255,9 @@ window._vInit = {!! json_encode([
         </div>
 
         {{-- Dashboard Preview --}}
-        <div class="animate-fade-up animate-delay-5 relative max-w-5xl mx-auto px-2 sm:px-0">
+        <div class="animate-fade-up animate-delay-5 relative max-w-full mx-auto px-2 sm:px-0 hero-preview">
             <div class="absolute inset-0 bg-brand-500/20 blur-3xl rounded-3xl pointer-events-none"></div>
-            <div class="relative glass rounded-2xl overflow-hidden border border-white/10 animate-float shadow-2xl">
+            <div class="relative glass rounded-[1.5rem] overflow-hidden border border-white/10 animate-float shadow-2xl">
                 {{-- Fake Browser Chrome --}}
                 <div class="bg-white/5 px-3 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2 border-b border-white/5">
                     <div class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-400/70"></div>

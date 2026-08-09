@@ -96,8 +96,17 @@
     </script>
 
     <style>
+        html,
+        body {
+            overflow-x: hidden !important;
+            max-width: 100vw !important;
+            width: 100vw !important;
+        }
+
         body {
             font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+            min-width: 0;
+            overscroll-behavior-x: none;
         }
 
         [x-cloak] {
