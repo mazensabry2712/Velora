@@ -54,26 +54,24 @@ class TenantAuthController extends Controller
         // Clear rate limiter on successful login
         RateLimiter::clear($throttleKey);
 
-        // Get user role
-        $role = $user->role;
+        // Get user role (Spatie Permission - users have no `role` relation or role_id column)
+        $roleName = $user->getRoleNames()->first();
         $abilities = [];
 
         // Set token abilities based on role
-        if ($role) {
-            switch ($role->name) {
-                case 'Admin Tenant':
-                    $abilities = ['admin-tenant'];
-                    break;
-                case 'Assistant':
-                    $abilities = ['assistant'];
-                    break;
-                case 'Staff':
-                    $abilities = ['staff'];
-                    break;
-                case 'Customer':
-                    $abilities = ['customer'];
-                    break;
-            }
+        switch ($roleName) {
+            case 'Admin Tenant':
+                $abilities = ['admin-tenant'];
+                break;
+            case 'Assistant':
+                $abilities = ['assistant'];
+                break;
+            case 'Staff':
+                $abilities = ['staff'];
+                break;
+            case 'Customer':
+                $abilities = ['customer'];
+                break;
         }
 
         // Login user in session for web
@@ -83,10 +81,7 @@ class TenantAuthController extends Controller
         $token = $user->createToken('tenant-token', $abilities)->plainTextToken;
 
         // Determine redirect URL based on role
-        $redirectTo = '/admin/dashboard';
-        if ($role && $role->name === 'Customer') {
-            $redirectTo = '/my-queue';
-        }
+        $redirectTo = $roleName === 'Customer' ? '/my-queue' : '/admin/dashboard';
 
         return response()->json([
             'success' => true,
@@ -98,7 +93,7 @@ class TenantAuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'role' => $role?->name,
+                'role' => $roleName,
             ],
             'tenant' => [
                 'id' => $tenant->id,
@@ -129,15 +124,14 @@ class TenantAuthController extends Controller
             ], 400);
         }
 
-        // Create user with Customer role
-        $customerRole = \App\Models\Role::where('name', 'Customer')->first();
-
+        // Create user and assign the Customer role (Spatie Permission)
         $user = User::create([
-            'role_id' => $customerRole?->id,
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
+
+        $user->assignRole('Customer');
 
         // Create token
         $token = $user->createToken('tenant-token', ['customer'])->plainTextToken;
@@ -170,7 +164,7 @@ class TenantAuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'role' => $user->role?->name,
+                'role' => $user->getRoleNames()->first(),
                 'tenant' => [
                     'id' => $tenant->id,
                     'name' => $tenant->name,
