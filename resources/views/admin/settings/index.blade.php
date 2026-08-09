@@ -1,50 +1,22 @@
-<!DOCTYPE html>
-<html lang="{{ app()->getLocale() }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ __('Settings') }} - {{ tenant()->name }}</title>
+@extends('layouts.admin')
 
-    <!-- Prevent Flash of White Content -->
-    <script>
-        (function() {
-            if (localStorage.getItem('darkMode') === 'true' ||
-                (!('darkMode' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark');
-            }
-        })();
-    </script>
+@section('title', __('Settings'))
+@section('subtitle', __('Manage your business information and social media links'))
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        [dir="rtl"] input, [dir="rtl"] textarea {
-            text-align: right;
-        }
-        [dir="rtl"] input[type="url"], [dir="rtl"] input[type="email"], [dir="rtl"] input[type="tel"] {
-            text-align: left;
-            direction: ltr;
-        }
-    </style>
-    <script>
-        tailwind.config = {
-            darkMode: 'class'
-        }
-    </script>
-</head>
-<body class="bg-slate-50 dark:bg-slate-900 {{ app()->getLocale() === 'ar' ? 'text-right' : 'text-left' }}">
-    @include('partials.admin-nav')
+@push('styles')
+<style>
+    [dir="rtl"] input, [dir="rtl"] textarea {
+        text-align: right;
+    }
+    [dir="rtl"] input[type="url"], [dir="rtl"] input[type="email"], [dir="rtl"] input[type="tel"] {
+        text-align: left;
+        direction: ltr;
+    }
+</style>
+@endpush
 
-    <!-- Page Header -->
-    <header class="bg-white dark:bg-slate-800 shadow-sm">
-        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 {{ app()->getLocale() === 'ar' ? 'text-right' : 'text-left' }}">
-            <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100">{{ __('Settings') }}</h2>
-            <p class="text-slate-600 dark:text-slate-400 mt-1">{{ __('Manage your business information and social media links') }}</p>
-        </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+@section('content')
+<div class="max-w-4xl mx-auto space-y-6">
         <!-- Success/Error Messages -->
         @if(session('success'))
         <div class="mb-6 bg-emerald-50 dark:bg-emerald-900 border border-emerald-200 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200 rounded-lg p-4">
@@ -351,6 +323,4 @@
             }
         });
     </script>
-    <script src="/js/dark-mode.js"></script>
-</body>
-</html>
+@endpush

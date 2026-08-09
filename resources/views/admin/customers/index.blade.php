@@ -1,34 +1,18 @@
-<!DOCTYPE html>
-@php
-    $isArabic = app()->getLocale() === 'ar';
-@endphp
-<html lang="{{ app()->getLocale() }}" dir="{{ $isArabic ? 'rtl' : 'ltr' }}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $isArabic ? 'إدارة العملاء' : 'Manage Customers' }} - {{ tenant()->name }}</title>
-    <script>
-        (function() {
-            if (localStorage.getItem('darkMode') === 'true' ||
-                (!('darkMode' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark');
-            }
-        })();
-    </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>tailwind.config = { darkMode: 'class' }</script>
-    <style>
-        .stat-card { @apply bg-white rounded-xl shadow-sm border border-slate-100 p-4 hover:shadow-md transition-shadow dark:bg-slate-800 dark:border-slate-700; }
-        .filter-input { @apply px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100; }
-        .dark .filter-input { background-color: #334155 !important; color: #f1f5f9 !important; border-color: #475569 !important; }
-    </style>
-</head>
-<body class="bg-slate-50 dark:bg-slate-900 min-h-screen" x-data="customersApp()" x-init="init()">
+@extends('layouts.admin')
 
-    @include('partials.admin-nav')
+@section('title', __('Customers'))
+@section('subtitle', __('View and manage all registered customers'))
 
-    <div class="p-6 max-w-7xl mx-auto">
+@push('styles')
+<style>
+    .stat-card { @apply bg-white rounded-xl shadow-sm border border-slate-100 p-4 hover:shadow-md transition-shadow dark:bg-slate-800 dark:border-slate-700; }
+    .filter-input { @apply px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100; }
+    .dark .filter-input { background-color: #334155 !important; color: #f1f5f9 !important; border-color: #475569 !important; }
+</style>
+@endpush
+
+@section('content')
+<div class="p-6 max-w-7xl mx-auto" x-data="customersApp()" x-init="init()">
 
         {{-- Header --}}
         <div class="flex items-center justify-between mb-6">
@@ -189,7 +173,6 @@
         </div>
     </div>
 
-    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script>
         function customersApp() {
             return {

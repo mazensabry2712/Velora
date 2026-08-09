@@ -1,30 +1,9 @@
-<!DOCTYPE html>
-<html lang="{{ app()->getLocale() }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ __('Profile') }} - {{ tenant()->name }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class'
-        }
-    </script>
-</head>
-<body class="bg-slate-50 dark:bg-slate-900">
-    @include('partials.admin-nav')
+@extends('layouts.admin')
 
-    <!-- Page Header -->
-    <header class="bg-white dark:bg-slate-800 shadow-sm">
-        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-            <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100">{{ __('Profile Settings') }}</h2>
-            <p class="text-slate-600 dark:text-slate-400 mt-1">{{ __('Manage your account settings and preferences') }}</p>
-        </div>
-    </header>
+@section('title', __('Profile Settings'))
+@section('subtitle', __('Manage your account settings and preferences'))
 
-    <!-- Main Content -->
-    <main class="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+@section('content')
         <!-- Success/Error Messages -->
         <div id="alertContainer" class="hidden mb-6">
             <div id="alertMessage" class="rounded-lg p-4"></div>
@@ -164,6 +143,9 @@
         </div>
     </div>
 
+@endsection
+
+@push('scripts')
     <script>
         const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 
@@ -344,5 +326,4 @@
         });
     </script>
     <script src="/js/dark-mode.js"></script>
-</body>
-</html>
+@endpush

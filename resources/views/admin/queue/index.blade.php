@@ -1,53 +1,10 @@
-<!DOCTYPE html>
-<html lang="{{ app()->getLocale() }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ __('Manage Queue') }} - {{ tenant()->name }}</title>
+@extends('layouts.admin')
 
-    <!-- Prevent Flash of White Content -->
-    <script>
-        (function() {
-            if (localStorage.getItem('darkMode') === 'true' ||
-                (!('darkMode' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark');
-            }
-        })();
-    </script>
+@section('title', __('Manage Queue'))
+@section('subtitle', __('Track, serve, and manage queue items for your business'))
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class'
-        }
-    </script>
-</head>
-<body class="bg-slate-50 dark:bg-slate-900">
-    @include('partials.admin-nav')
+@section('content')
 
-    <!-- Page Header -->
-    <header class="bg-white dark:bg-slate-800 shadow-sm">
-        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center gap-4">
-                <a href="{{ route('admin.queue') }}" class="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                </a>
-                <div>
-                    <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100">إدارة قائمة الانتظار</h2>
-                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        {{ \Carbon\Carbon::parse($date)->locale('ar')->translatedFormat('l d M Y') }}
-                        @if($date === now()->toDateString())
-                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-300 mr-1">اليوم</span>
-                        @endif
-                    </p>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
             <div class="mb-6 flex justify-between items-center">
                 <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">قائمة الانتظار الحالية</h3>
@@ -475,6 +432,9 @@
         </div>
     </div>
 
+@endsection
+
+@push('scripts')
     <script>
         let currentViewQueueId = null;
 
@@ -1095,5 +1055,4 @@
         }
     </script>
     <script src="/js/dark-mode.js"></script>
-</body>
-</html>
+@endpush

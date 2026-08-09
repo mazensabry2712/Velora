@@ -1,29 +1,13 @@
-<!DOCTYPE html>
+@extends('layouts.admin')
+
 @php
     $isArabic = app()->getLocale() === 'ar';
 @endphp
-<html lang="{{ app()->getLocale() }}" dir="{{ $isArabic ? 'rtl' : 'ltr' }}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $isArabic ? 'إدارة المواعيد' : 'Manage Appointments' }} - {{ tenant()->name }}</title>
-    <!-- Apply dark mode IMMEDIATELY to prevent flash -->
-    <script>
-        // This runs BEFORE anything renders
-        (function() {
-            if (localStorage.getItem('darkMode') === 'true' ||
-                (!('darkMode' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark');
-            }
-        })();
-    </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class'
-        }
-    </script>
+
+@section('title', __('Manage Appointments'))
+@section('subtitle', __('View and manage all appointments'))
+
+@push('styles')
     <style>
         .status-badge { @apply px-2 py-1 text-xs font-semibold rounded-full cursor-pointer transition-all; }
         .status-pending { @apply bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900 dark:text-amber-300; }
@@ -220,9 +204,9 @@
             }
         }
     </style>
-</head>
-<body class="bg-slate-50 dark:bg-slate-900">
-    @include('partials.admin-nav')
+@endpush
+
+@section('content')
 
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="loading-overlay hidden">
@@ -3631,9 +3615,9 @@
             }, 250);
         });
     </script>
-    <script src="/js/dark-mode.js"></script>
-</body>
-</html>
+@endpush
+
+@endsection
 
 
 

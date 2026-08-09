@@ -1,39 +1,10 @@
-<!DOCTYPE html>
-<html lang="{{ app()->getLocale() }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ __('Reports') }} - {{ tenant()->name }}</title>
+@extends('layouts.admin')
 
-    <!-- Prevent Flash of White Content -->
-    <script>
-        (function() {
-            if (localStorage.getItem('darkMode') === 'true' ||
-                (!('darkMode' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark');
-            }
-        })();
-    </script>
+@section('title', __('Reports'))
+@section('subtitle', __('View business insights and appointment statistics'))
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class'
-        }
-    </script>
-</head>
-<body class="bg-slate-50 dark:bg-slate-900">
-    @include('partials.admin-nav')
+@section('content')
 
-    <!-- Page Header -->
-    <header class="bg-white dark:bg-slate-800 shadow-sm">
-        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-            <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100">التقارير والإحصائيات</h2>
-        </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <!-- Statistics Cards -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
@@ -201,5 +172,4 @@
         </div>
     </main>
     <script src="/js/dark-mode.js"></script>
-</body>
-</html>
+@endpush

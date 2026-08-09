@@ -1,40 +1,10 @@
-<!DOCTYPE html>
-<html lang="{{ app()->getLocale() }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ __('Queue Days') }} - {{ tenant()->name }}</title>
+@extends('layouts.admin')
 
-    <!-- Prevent Flash of White Content -->
-    <script>
-        (function() {
-            if (localStorage.getItem('darkMode') === 'true' ||
-                (!('darkMode' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark');
-            }
-        })();
-    </script>
+@section('title', __('Queue Days'))
+@section('subtitle', __('Review and manage queue activity by day'))
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class'
-        }
-    </script>
-</head>
-<body class="bg-slate-50 dark:bg-slate-900">
-    @include('partials.admin-nav')
+@section('content')
 
-    <!-- Page Header -->
-    <header class="bg-white dark:bg-slate-800 shadow-sm">
-        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-            <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100">إدارة قائمة الانتظار</h2>
-        </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
 
         <!-- Summary Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -195,6 +165,9 @@
         </div>
     </main>
 
+@endsection
+
+@push('scripts')
     <script>
         function moveToNextDay(date, status) {
             const statusText = status === 'waiting' ? 'المنتظرين' : 'المتخدمين';
@@ -231,5 +204,4 @@
         }
     </script>
     <script src="/js/dark-mode.js"></script>
-</body>
-</html>
+@endpush
