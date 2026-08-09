@@ -804,6 +804,86 @@ window._vInit = {!! json_encode([
 
 </div>{{-- end x-data="homePricing" --}}
 
+{{-- ══════════════════════════════════════════════════════════════════════
+     LANGUAGE SWITCHER — floating side widget (language only, no popup)
+     Default/official site language is English; visitors can pick any
+     other supported language at any time from here.
+══════════════════════════════════════════════════════════════════════════ --}}
+<div x-data="langSwitcher('{{ $currentLocale ?? 'en' }}')"
+     @click.away="open = false"
+     @keydown.escape.window="open = false"
+     class="fixed end-4 top-1/2 -translate-y-1/2 z-40 flex flex-col items-end gap-2">
+
+    {{-- Toggle button --}}
+    <button @click="open = !open"
+            class="w-11 h-11 rounded-full glass border border-white/10 flex items-center justify-center text-gray-300 hover:text-white hover:border-brand-500/40 transition-all shadow-lg"
+            :aria-expanded="open.toString()"
+            aria-label="{{ __('landing.switcher_lang_label') ?? 'Change language' }}">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9l4.5-9 4.5 9m-.75-2h-7.5" />
+        </svg>
+    </button>
+
+    {{-- Language panel --}}
+    <div x-show="open"
+         x-cloak
+         x-transition:enter="transition ease-out duration-150"
+         x-transition:enter-start="opacity-0 translate-x-2"
+         x-transition:enter-end="opacity-100 translate-x-0"
+         x-transition:leave="transition ease-in duration-100"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="w-48 max-h-80 overflow-y-auto glass rounded-2xl border border-white/10 shadow-2xl p-2">
+        <template x-for="l in languages" :key="l.code">
+            <button @click="select(l.code)"
+                    :class="l.code === current
+                        ? 'bg-brand-600/25 text-white'
+                        : 'text-gray-300 hover:bg-white/5 hover:text-white'"
+                    class="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-sm transition-all text-start">
+                <span x-text="l.name"></span>
+                <span x-show="l.code === current" x-cloak class="text-brand-400">✓</span>
+            </button>
+        </template>
+    </div>
+</div>
+
+<script>
+function langSwitcher(currentLocale) {
+    return {
+        open: false,
+        current: currentLocale || 'en',
+        languages: [
+            { code: 'en', name: 'English' },
+            { code: 'ar', name: 'العربية' },
+            { code: 'fr', name: 'Français' },
+            { code: 'es', name: 'Español' },
+            { code: 'de', name: 'Deutsch' },
+            { code: 'it', name: 'Italiano' },
+            { code: 'pt', name: 'Português' },
+            { code: 'ru', name: 'Русский' },
+            { code: 'zh', name: '中文' },
+            { code: 'ja', name: '日本語' },
+            { code: 'tr', name: 'Türkçe' },
+            { code: 'hi', name: 'हिन्दी' },
+            { code: 'ko', name: '한국어' },
+            { code: 'nl', name: 'Nederlands' },
+            { code: 'id', name: 'Indonesia' },
+        ],
+        select(code) {
+            if (code === this.current) {
+                this.open = false;
+                return;
+            }
+            this.current = code;
+            this.open = false;
+            localStorage.setItem('velora_lang', code);
+            window.location.href = '/lang/' + code;
+        },
+    };
+}
+</script>
+
 @endsection
 
 @push('scripts')
@@ -847,9 +927,9 @@ function homePricing({ countryCode, countryName, rawPrice, currency, monthlyForm
         _allData:      (() => { const d = {!! $allDataJson !!}; if (d['GLOBAL']) d['GLOBAL'].name = 'Other countries'; return d; })(),
 
         init() {
-            if (!localStorage.getItem('velora_region_set')) {
-                setTimeout(() => this.openSwitcher = true, 700);
-            }
+            // Region/language popup no longer auto-opens on first visit.
+            // Visitors can pick a language any time from the side switcher,
+            // or a region/currency from "Change region" in the geo bar.
         },
 
         filteredCountries() {
