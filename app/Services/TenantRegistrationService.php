@@ -2,16 +2,20 @@
 
 namespace App\Services;
 
-use App\Models\Tenant;
-use App\Models\SubscriptionPlan;
-use App\Models\TenantSubscription;
-use App\Models\PromoCode;
 use App\Mail\WelcomeTenantMail;
+use App\Models\PromoCode;
+use App\Models\Setting;
+use App\Models\SubscriptionPlan;
+use App\Models\Tenant;
+use App\Models\TenantSubscription;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
+use Spatie\Permission\Models\Role;
 
 class TenantRegistrationService
 {
@@ -40,8 +44,27 @@ class TenantRegistrationService
             }
         }
 
+        // ── Resolve the trial plan up front — fail fast with a clear error
+        //    instead of hitting a foreign key violation later on.
+        $trialPlan = isset($data['plan_id'])
+            ? SubscriptionPlan::where('is_active', true)->find($data['plan_id'])
+            : null;
+
+        if (! $trialPlan) {
+            $trialPlan = SubscriptionPlan::where('is_active', true)
+                ->orderBy('price', 'asc')
+                ->first();
+        }
+
+        if (! $trialPlan) {
+            Log::error('Tenant registration failed: no active subscription plan found.');
+            throw new RuntimeException(
+                'No active subscription plan is configured. Please seed the subscription_plans table.'
+            );
+        }
+
         $tenant       = null;
-        $trialDays    = 14;
+        $trialDays    = $trialPlan->trial_days ?? 14;
         $subscription = null;
 
         try {
@@ -65,19 +88,19 @@ class TenantRegistrationService
 
             // ── Step 4: Create Admin User + settings inside tenant DB ──
             $tenant->run(function () use ($data) {
-                $adminRole = \App\Models\Role::firstOrCreate(
-                    ['name' => 'Admin Tenant'],
-                    ['display_name' => 'Admin', 'description' => 'Tenant Administrator']
+                $adminRole = Role::firstOrCreate(
+                    ['name' => 'Admin Tenant', 'guard_name' => 'web']
                 );
 
-                \App\Models\User::create([
-                    'role_id'  => $adminRole->id,
+                $user = User::create([
                     'name'     => $data['business_name'],
                     'email'    => $data['email'],
                     'password' => Hash::make($data['password']),
                 ]);
 
-                \App\Models\Setting::firstOrCreate(
+                $user->assignRole($adminRole);
+
+                Setting::firstOrCreate(
                     ['id' => 1],
                     [
                         'business_name'       => $data['business_name'],
@@ -91,22 +114,11 @@ class TenantRegistrationService
             });
 
             // ── Step 5: Back on central DB — create trial subscription ──
-            $trialPlan = isset($data['plan_id'])
-                ? SubscriptionPlan::where('is_active', true)->find($data['plan_id'])
-                : null;
-
-            if (!$trialPlan) {
-                $trialPlan = SubscriptionPlan::where('is_active', true)
-                    ->orderBy('price', 'asc')
-                    ->first();
-            }
-
-            $trialDays = $trialPlan?->trial_days ?? 14;
             $graceDays = 3;
 
             $subscription = TenantSubscription::create([
                 'tenant_id'            => $tenant->id,
-                'subscription_plan_id' => $trialPlan?->id ?? 1,
+                'subscription_plan_id' => $trialPlan->id,
                 'status'               => 'trial',
                 'trial_ends_at'        => now()->addDays($trialDays),
                 'grace_ends_at'        => now()->addDays($trialDays + $graceDays),
@@ -115,18 +127,20 @@ class TenantRegistrationService
                 'amount_paid'          => 0,
                 'payment_method'       => $this->resolveGatewayForCountry($data['country'] ?? 'US'),
                 'notes'                => 'Auto-created trial subscription'
-                                         . ($promoCode ? ' | promo: ' . $promoCode->code : ''),
+                    . ($promoCode ? ' | promo: ' . $promoCode->code : ''),
             ]);
 
             // Increment promo code usage now that the subscription is committed
             if ($promoCode) {
                 $promoCode->incrementUsage();
             }
-
         } catch (\Exception $e) {
             // Cleanup: delete tenant (TenantDeleted event will drop the tenant DB automatically)
             if ($tenant) {
-                try { $tenant->delete(); } catch (\Exception $ignored) {}
+                try {
+                    $tenant->delete();
+                } catch (\Exception $ignored) {
+                }
             }
 
             Log::error('Tenant registration failed: ' . $e->getMessage(), [
@@ -168,9 +182,27 @@ class TenantRegistrationService
     {
         $subdomain = strtolower(trim($subdomain));
 
-        $reserved = ['www', 'admin', 'api', 'mail', 'cdn', 'app', 'dashboard',
-                     'support', 'help', 'billing', 'status', 'dev', 'staging',
-                     'test', 'demo', 'beta', 'secure', 'login', 'signup'];
+        $reserved = [
+            'www',
+            'admin',
+            'api',
+            'mail',
+            'cdn',
+            'app',
+            'dashboard',
+            'support',
+            'help',
+            'billing',
+            'status',
+            'dev',
+            'staging',
+            'test',
+            'demo',
+            'beta',
+            'secure',
+            'login',
+            'signup'
+        ];
 
         if (in_array($subdomain, $reserved)) {
             return ['available' => false, 'message' => 'This subdomain is reserved.'];
@@ -181,7 +213,8 @@ class TenantRegistrationService
         }
 
         $exists = \Stancl\Tenancy\Database\Models\Domain::where(
-            'domain', $this->buildSubdomain($subdomain)
+            'domain',
+            $this->buildSubdomain($subdomain)
         )->exists();
 
         if ($exists) {

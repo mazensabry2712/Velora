@@ -22,16 +22,11 @@ class CheckRole
             return redirect()->route('login');
         }
 
-        // Load user role if not loaded
-        if (!$user->relationLoaded('role')) {
-            $user->load('role');
-        }
-
         // Split roles by pipe (|) to allow multiple roles
         $allowedRoles = explode('|', $roles);
 
-        // Check if user has any of the required roles
-        $userRole = $user->role?->name;
+        // Check if user has any of the required roles using Spatie roles
+        $userRole = $user->getRoleNames()->first();
 
         if (!$userRole || !in_array($userRole, $allowedRoles)) {
             return redirect()->route('customer.booking')->with('error', 'You do not have permission to access this page.');

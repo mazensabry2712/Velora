@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
     {
         // Seed central database
         $this->call([
+            SubscriptionPlansSeeder::class,
             TenantSeeder::class,
         ]);
 
