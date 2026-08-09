@@ -124,9 +124,54 @@
         }
 
         .nav-blur {
-            background: rgba(15, 14, 26, 0.85);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+            background: rgba(15, 14, 26, 0.64);
+            backdrop-filter: blur(28px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.03);
+            transition: background 0.25s ease, transform 0.25s ease;
+        }
+
+        .nav-link,
+        .nav-item {
+            color: rgba(226, 232, 240, 0.78);
+            transition: color 0.2s ease, transform 0.2s ease;
+            font-weight: 500;
+            letter-spacing: 0.018em;
+        }
+
+        .nav-link:hover,
+        .nav-item:hover {
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+
+        .nav-action {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .nav-action:hover {
+            background: rgba(255, 255, 255, 0.16);
+            border-color: rgba(255, 255, 255, 0.22);
+            transform: translateY(-1px);
+        }
+
+        .nav-cta {
+            background: linear-gradient(135deg, #7e72ff 0%, #5b4ff7 100%);
+            box-shadow: 0 10px 30px rgba(108, 99, 255, 0.36);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 40px rgba(108, 99, 255, 0.4);
+        }
+
+        .nav-menu-panel {
+            background: rgba(15, 14, 26, 0.92);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
         }
 
         .btn-primary {
@@ -142,6 +187,19 @@
 
         .card-hover {
             transition: all 0.3s ease;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 60px rgba(108, 99, 255, 0.2);
+        }
+
+        @media (max-width: 925px) {
+            .desktop-nav-925 { display: none !important; }
+            .mobile-toggle-925 { display: inline-flex !important; }
+            .nav-container-925 { justify-content: space-between !important; }
+            .nav-actions-925 { gap: 0.75rem !important; padding: 0.35rem 0.45rem !important; }
+            .nav-logo-925 { gap: 0.65rem !important; }
         }
 
         .card-hover:hover {
@@ -166,69 +224,57 @@
     <!-- ══ NAVBAR ════════════════════════════════════════════════════════════ -->
     <nav class="nav-blur fixed top-0 left-0 right-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
+            <div class="flex items-center justify-between h-16 gap-4">
                 <!-- Logo -->
-                <a href="{{ route('landing') }}" class="flex items-center gap-2">
+                <a href="{{ route('landing') }}" class="flex items-center gap-3">
                     @if (!empty($appLogoUrl ?? ''))
                         <img src="{{ $appLogoUrl }}" alt="{{ $appName ?? 'Velora' }}" class="h-8 w-auto" />
                     @else
-                        <div class="w-8 h-8 rounded-lg btn-primary flex items-center justify-center">
+                        <div class="w-9 h-9 rounded-2xl bg-brand-500 flex items-center justify-center shadow-md shadow-brand-500/20">
                             <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                     d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                         </div>
                     @endif
-                    <span class="text-xl font-bold text-white tracking-tight">{{ $appName ?? 'Velora' }}</span>
+                    <span class="text-lg sm:text-xl font-bold tracking-tight text-white">{{ $appName ?? 'Velora' }}</span>
                 </a>
 
-                <!-- Desktop Nav -->
-                <div class="hidden md:flex items-center gap-8">
-                    <a href="{{ route('landing') }}#features"
-                        class="text-sm text-gray-400 hover:text-white transition-colors">{{ __('landing.nav_features') }}</a>
-                    <a href="{{ route('landing') }}#how-it-works"
-                        class="text-sm text-gray-400 hover:text-white transition-colors">{{ __('landing.nav_how_it_works') }}</a>
-                    <a href="#pricing"
-                        class="text-sm text-gray-400 hover:text-white transition-colors">{{ __('landing.nav_pricing') }}</a>
-                    <a href="#testimonials"
-                        class="text-sm text-gray-400 hover:text-white transition-colors">{{ __('landing.nav_testimonials') }}</a>
-                    <a href="#faq"
-                        class="text-sm text-gray-400 hover:text-white transition-colors">{{ __('landing.nav_faq') }}</a>
-                </div>
-
-
-
-                <!-- CTA Buttons -->
-                <div class="flex items-center gap-3">
-                    {{-- Toggle button --}}
-                    <button @click="open = !open"
-                        class="w-11 h-11 rounded-full glass border border-white/10 flex items-center justify-center text-gray-300 hover:text-white hover:border-brand-500/40 transition-all shadow-lg"
-                        :aria-expanded="open.toString()"
+                <div class="hidden md:flex items-center gap-3">
+                    <button type="button" onclick="window.dispatchEvent(new Event('velora:open-lang-switcher'))"
+                        class="nav-action w-10 h-10 rounded-full flex items-center justify-center text-gray-300 hover:text-white transition-all shadow-lg"
                         aria-label="{{ __('landing.switcher_lang_label') ?? 'Change language' }}">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9l4.5-9 4.5 9m-.75-2h-7.5" />
                         </svg>
                     </button>
-
-
+                    <a href="{{ route('central.login') }}"
+                        class="nav-link text-sm px-3 py-2 rounded-full bg-white/5 hover:bg-white/10 transition">{{ __('landing.nav_company_admin_sign_in') }}</a>
                     <a href="{{ route('super-admin.login') }}"
-                        class="hidden sm:inline-flex text-sm text-gray-300 hover:text-white transition-colors px-3 py-1.5">
-                        {{ __('landing.nav_sign_in') }}
-                    </a>
+                        class="nav-link text-sm px-3 py-2 rounded-full bg-white/5 hover:bg-white/10 transition">{{ __('landing.nav_super_admin_sign_in') }}</a>
                     @if ($registrationEnabled ?? true)
                         <a href="{{ route('signup') }}"
-                            class="btn-primary text-sm font-semibold text-white px-3 sm:px-5 py-2.5 rounded-xl inline-flex items-center gap-2">
-                            <span class="hidden sm:inline">{{ __('landing.nav_start_trial') }}</span>
+                            class="nav-cta text-sm font-semibold text-white px-4 py-2.5 rounded-2xl inline-flex items-center gap-2">
+                            {{ __('landing.nav_start_trial') }}
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M13 7l5 5m0 0l-5 5m5-5H6" />
                             </svg>
                         </a>
                     @endif
+                </div>
 
-                    <!-- Mobile menu toggle -->
-                    <button id="menuToggle" class="md:hidden p-2 rounded-lg text-gray-400 hover:text-white">
+                <div class="flex items-center gap-3">
+                    <button type="button" onclick="window.dispatchEvent(new Event('velora:open-lang-switcher'))"
+                        class="md:hidden nav-action w-10 h-10 rounded-full flex items-center justify-center text-gray-300 hover:text-white transition-all shadow-lg"
+                        aria-label="{{ __('landing.switcher_lang_label') ?? 'Change language' }}">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9l4.5-9 4.5 9m-.75-2h-7.5" />
+                        </svg>
+                    </button>
+                    <button id="menuToggle" class="md:hidden inline-flex p-2 rounded-full text-gray-300 hover:text-white bg-white/5 transition-all shadow-sm border border-white/10">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M4 6h16M4 12h16M4 18h16" />
@@ -237,24 +283,25 @@
                 </div>
             </div>
 
-            <!-- Mobile Nav -->
             <div id="mobileMenu" class="md:hidden hidden pb-5 border-t border-white/5 mt-2 pt-4">
-                <div class="flex flex-col gap-1">
+                <div class="flex flex-col gap-2">
                     <a href="{{ route('landing') }}#features"
-                        class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_features') }}</a>
+                        class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors">{{ __('landing.nav_features') }}</a>
                     <a href="{{ route('landing') }}#how-it-works"
-                        class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_how_it_works') }}</a>
+                        class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors">{{ __('landing.nav_how_it_works') }}</a>
                     <a href="#pricing"
-                        class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_pricing') }}</a>
+                        class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors">{{ __('landing.nav_pricing') }}</a>
                     <a href="#testimonials"
-                        class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_testimonials') }}</a>
+                        class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors">{{ __('landing.nav_testimonials') }}</a>
                     <a href="#faq"
-                        class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_faq') }}</a>
+                        class="text-sm text-gray-400 hover:text-white px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors">{{ __('landing.nav_faq') }}</a>
                     <a href="{{ route('central.login') }}"
-                        class="text-sm text-gray-300 hover:text-white px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors">{{ __('landing.nav_sign_in') }}</a>
+                        class="text-sm text-gray-300 hover:text-white px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors">{{ __('landing.nav_company_admin_sign_in') }}</a>
+                    <a href="{{ route('super-admin.login') }}"
+                        class="text-sm text-gray-300 hover:text-white px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors">{{ __('landing.nav_super_admin_sign_in') }}</a>
                     @if ($registrationEnabled ?? true)
                         <a href="{{ route('signup') }}"
-                            class="btn-primary text-sm font-semibold text-white px-5 py-3 rounded-xl text-center mt-2">
+                            class="btn-primary text-sm font-semibold text-white px-5 py-3 rounded-2xl text-center mt-2">
                             {{ __('landing.nav_start_trial') }}
                         </a>
                     @endif
@@ -375,15 +422,6 @@
     <script>
         document.getElementById('menuToggle')?.addEventListener('click', () => {
             document.getElementById('mobileMenu')?.classList.toggle('hidden');
-        });
-
-        // Close language dropdown on outside click
-        document.addEventListener('click', function(e) {
-            var wrapper = document.getElementById('landingLangWrapper');
-            var menu = document.getElementById('landingLangMenu');
-            if (wrapper && menu && !wrapper.contains(e.target)) {
-                menu.classList.add('hidden');
-            }
         });
     </script>
 

@@ -808,36 +808,50 @@ window._vInit = {!! json_encode([
 </div>{{-- end x-data="homePricing" --}}
 
 {{-- ══════════════════════════════════════════════════════════════════════
-     LANGUAGE SWITCHER — floating side widget (language only, no popup)
-     Default/official site language is English; visitors can pick any
-     other supported language at any time from here.
+     LANGUAGE SWITCHER — popup modal for all screen sizes
 ══════════════════════════════════════════════════════════════════════════ --}}
 <div x-data="langSwitcher('{{ $currentLocale ?? 'en' }}')"
-     @click.away="open = false"
+     x-init="init()"
      @keydown.escape.window="open = false"
-     class="fixed end-4 top-1/2 -translate-y-1/2 z-40 flex flex-col items-end gap-2">
-
-
-    {{-- Language panel --}}
+     class="">
     <div x-show="open"
          x-cloak
-         x-transition:enter="transition ease-out duration-150"
-         x-transition:enter-start="opacity-0 translate-x-2"
-         x-transition:enter-end="opacity-100 translate-x-0"
-         x-transition:leave="transition ease-in duration-100"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
-         class="w-48 max-h-80 overflow-y-auto glass rounded-2xl border border-white/10 shadow-2xl p-2">
-        <template x-for="l in languages" :key="l.code">
-            <button @click="select(l.code)"
-                    :class="l.code === current
-                        ? 'bg-brand-600/25 text-white'
-                        : 'text-gray-300 hover:bg-white/5 hover:text-white'"
-                    class="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-sm transition-all text-start">
-                <span x-text="l.name"></span>
-                <span x-show="l.code === current" x-cloak class="text-brand-400">✓</span>
-            </button>
-        </template>
+         class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/55 backdrop-blur-sm" @click="open = false"></div>
+        <div class="relative w-full max-w-md rounded-3xl glass border border-white/10 shadow-2xl overflow-hidden">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-white/10">
+                <div>
+                    <h2 class="text-lg font-semibold text-white">{{ __('landing.switcher_title') }}</h2>
+                    <p class="text-sm text-gray-400 mt-1">{{ __('landing.switcher_subtitle') }}</p>
+                </div>
+                <button @click="open = false" class="text-gray-400 hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="max-h-[60vh] overflow-y-auto p-4 space-y-2">
+                <template x-for="l in languages" :key="l.code">
+                    <button @click="select(l.code)"
+                            :class="l.code === current
+                                ? 'bg-brand-600/25 text-white'
+                                : 'text-gray-300 hover:bg-white/5 hover:text-white'"
+                            class="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-2xl border border-white/5 text-sm transition-all text-start">
+                        <span x-text="l.name"></span>
+                        <span x-show="l.code === current" x-cloak class="text-brand-400 font-semibold">✓</span>
+                    </button>
+                </template>
+            </div>
+            <div class="px-4 py-3 border-t border-white/10 text-center text-xs text-gray-500">
+                {{ __('landing.switcher_footer') }}
+            </div>
+        </div>
     </div>
 </div>
 
@@ -863,6 +877,11 @@ function langSwitcher(currentLocale) {
             { code: 'nl', name: 'Nederlands' },
             { code: 'id', name: 'Indonesia' },
         ],
+        init() {
+            window.addEventListener('velora:open-lang-switcher', () => {
+                this.open = true;
+            });
+        },
         select(code) {
             if (code === this.current) {
                 this.open = false;
