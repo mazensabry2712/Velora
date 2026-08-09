@@ -25,7 +25,7 @@ Thumbs.db
 
 # Development files - لا ترفع على السيرفر
 /out
-/lang
+# /lang
 *.php~
 cookies.txt
 test_*.php
