@@ -158,8 +158,7 @@ class ProfileController extends Controller
 
         // Don't allow Admin Tenant to delete their account if they are the only admin
         if ($user->isAdminTenant()) {
-            $adminRole = \App\Models\Role::where('name', 'Admin Tenant')->first();
-            $adminCount = \App\Models\User::where('role_id', $adminRole?->id)->count();
+            $adminCount = \App\Models\User::role('Admin Tenant')->count();
 
             if ($adminCount <= 1) {
                 return response()->json([

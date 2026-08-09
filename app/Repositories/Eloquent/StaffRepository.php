@@ -2,7 +2,7 @@
 
 namespace App\Repositories\Eloquent;
 
-use App\Models\Role;
+use Spatie\Permission\Models\Role;
 use App\Models\StaffSchedule;
 use App\Models\UsageLog;
 use App\Models\User;
@@ -25,9 +25,7 @@ class StaffRepository implements StaffRepositoryInterface
 
     public function all(): Collection
     {
-        $staffRole = Role::where('name', 'Staff')->first();
-
-        return User::where('role_id', $staffRole?->id)
+        return User::role('Staff')
             ->with(['services', 'activeSchedules'])
             ->get();
     }
@@ -40,13 +38,14 @@ class StaffRepository implements StaffRepositoryInterface
             $defaultPassword = explode('@', $userData['email'])[0] . '123';
 
             $user = User::create([
-                'role_id'        => $staffRole->id,
                 'name'           => $userData['name'],
                 'email'          => $userData['email'],
                 'phone'          => $userData['phone'] ?? null,
                 'password'       => Hash::make($defaultPassword),
                 'specialization' => $userData['specialization'] ?? null,
             ]);
+
+            $user->assignRole($staffRole);
 
             if (!empty($services)) {
                 $user->services()->sync($services);
@@ -115,14 +114,14 @@ class StaffRepository implements StaffRepositoryInterface
     public function getBySpecialization(string $specialization): Collection
     {
         return User::where('specialization', $specialization)
-            ->whereHas('role', fn ($q) => $q->where('name', 'Staff'))
+            ->role('Staff')
             ->get(['id', 'name', 'specialization']);
     }
 
     public function getByService(int $serviceId): Collection
     {
-        return User::whereHas('services', fn ($q) => $q->where('services.id', $serviceId))
-            ->whereHas('role', fn ($q) => $q->where('name', 'Staff'))
+        return User::whereHas('services', fn($q) => $q->where('services.id', $serviceId))
+            ->role('Staff')
             ->with(['activeSchedules'])
             ->get(['id', 'name']);
     }

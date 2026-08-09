@@ -5,7 +5,7 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\Models\User;
-use App\Models\Role;
+use Spatie\Permission\Models\Role;
 use App\Models\TenantSubscription;
 use App\Models\ActivityLog;
 use Illuminate\Http\Request;
@@ -87,10 +87,9 @@ class TenantController extends Controller
         $tenant->run(function () use ($validated, $generatedEmail, $generatedPassword) {
             // Migrations will run automatically via Stancl\Tenancy
 
-            // Get or create Admin Tenant role
+            // Get or create Admin Tenant role (normally already seeded by TenantDatabaseSeeder)
             $adminRole = Role::firstOrCreate(
-                ['name' => 'Admin Tenant'],
-                ['description' => 'Administrator with full access']
+                ['name' => 'Admin Tenant', 'guard_name' => 'web']
             );
 
             // Create admin user for this tenant (no tenant_id needed in tenant DB)
@@ -98,9 +97,10 @@ class TenantController extends Controller
                 'name' => $validated['name'] . ' Admin',
                 'email' => $generatedEmail,
                 'password' => Hash::make($generatedPassword),
-                'role_id' => $adminRole->id,
                 'email_verified_at' => now(),
             ]);
+
+            $adminUser->assignRole($adminRole);
         });
 
         ActivityLog::log('created', "Created tenant: {$tenant->name}, domain: {$validated['domain']}");
@@ -513,7 +513,7 @@ class TenantController extends Controller
 
         tenancy()->initialize($tenant);
 
-        $admin = \App\Models\User::where('role_id', 1)->first();
+        $admin = \App\Models\User::role('Admin Tenant')->first();
 
         if (!$admin) {
             tenancy()->end();

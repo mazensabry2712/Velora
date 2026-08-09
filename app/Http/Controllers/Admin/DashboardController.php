@@ -33,9 +33,9 @@ class DashboardController extends Controller
         $confirmedToday = Appointment::where('status', 'confirmed')->where('date', $today)->count();
 
         $queueCount      = Queue::whereIn('status', ['waiting', 'serving'])->count();
-        $totalCustomers  = User::whereHas('role', fn ($q) => $q->where('name', 'Customer'))->count();
-        $totalStaff      = User::whereHas('role', fn ($q) => $q->where('name', 'Staff'))->count();
-        $newCustomersThisWeek = User::whereHas('role', fn ($q) => $q->where('name', 'Customer'))
+        $totalCustomers  = User::role('Customer')->count();
+        $totalStaff      = User::role('Staff')->count();
+        $newCustomersThisWeek = User::role('Customer')
             ->whereBetween('created_at', [$thisWeekStart, $thisWeekEnd])->count();
 
         $attendanceRate   = $totalToday > 0 ? round(($completedToday / $totalToday) * 100) : 0;
@@ -91,7 +91,7 @@ class DashboardController extends Controller
             ->get()
             ->map(fn ($item) => (object) ['name' => $item->service->name ?? 'N/A', 'total' => $item->total]);
 
-        $staffPerformance = User::whereHas('role', fn ($q) => $q->where('name', 'Staff'))
+        $staffPerformance = User::role('Staff')
             ->withCount(['staffAppointments as total_appointments' => fn ($q) => $q->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])])
             ->withCount(['staffAppointments as completed_appointments' => fn ($q) => $q->where('status', 'completed')->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])])
             ->orderByDesc('total_appointments')
@@ -105,7 +105,7 @@ class DashboardController extends Controller
                 'rate'      => ($s->total_appointments ?? 0) > 0 ? round(($s->completed_appointments / $s->total_appointments) * 100) : 0,
             ]);
 
-        $recentCustomers = User::whereHas('role', fn ($q) => $q->where('name', 'Customer'))
+        $recentCustomers = User::role('Customer')
             ->withCount('appointments')
             ->orderByDesc('created_at')
             ->limit(5)

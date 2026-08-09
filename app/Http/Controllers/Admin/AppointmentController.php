@@ -7,7 +7,6 @@ use App\Http\Requests\Admin\StoreAppointmentRequest;
 use App\Http\Requests\Admin\UpdateAppointmentRequest;
 use App\Models\Appointment;
 use App\Models\Queue;
-use App\Models\Role;
 use App\Models\Service;
 use App\Models\User;
 use App\Models\UsageLog;
@@ -32,8 +31,14 @@ class AppointmentController extends Controller
     public function index(Request $request)
     {
         $filters = $request->only([
-            'date_filter', 'date_from', 'date_to',
-            'status', 'staff_id', 'search', 'sort', 'dir',
+            'date_filter',
+            'date_from',
+            'date_to',
+            'status',
+            'staff_id',
+            'search',
+            'sort',
+            'dir',
         ]);
 
         $perPage = in_array($request->get('per_page'), [5, 10, 15, 50, 75, 100])
@@ -44,9 +49,9 @@ class AppointmentController extends Controller
 
         // Build grouped-by-date view from all filtered appointments
         $all = Appointment::with(['customer', 'staff', 'service', 'queue'])
-            ->when(!empty($filters['status']) && $filters['status'] !== 'all', fn ($q) => $q->where('status', $filters['status']))
-            ->when(!empty($filters['staff_id']), fn ($q) => $q->where('staff_id', $filters['staff_id']))
-            ->when(!empty($filters['date_filter']), fn ($q) => match ($filters['date_filter']) {
+            ->when(!empty($filters['status']) && $filters['status'] !== 'all', fn($q) => $q->where('status', $filters['status']))
+            ->when(!empty($filters['staff_id']), fn($q) => $q->where('staff_id', $filters['staff_id']))
+            ->when(!empty($filters['date_filter']), fn($q) => match ($filters['date_filter']) {
                 'today'  => $q->whereDate('date', today()),
                 'week'   => $q->whereBetween('date', [now()->startOfWeek(), now()->endOfWeek()]),
                 'month'  => $q->whereMonth('date', now()->month)->whereYear('date', now()->year),
@@ -55,7 +60,7 @@ class AppointmentController extends Controller
             ->orderByDesc('date')->orderBy('time_slot')->get();
 
         $appointmentsByDate = $all
-            ->groupBy(fn ($a) => $a->date->format('Y-m-d'))
+            ->groupBy(fn($a) => $a->date->format('Y-m-d'))
             ->map(function ($day, $date) {
                 $total     = $day->count();
                 $dateCarbon = \Carbon\Carbon::parse($date);
@@ -78,7 +83,7 @@ class AppointmentController extends Controller
                     'cancelled_percent'  => $total > 0 ? round(($day->where('status', 'cancelled')->count() / $total) * 100) : 0,
                     'progress_percent'   => $total > 0 ? round(($day->whereIn('status', ['completed', 'cancelled'])->count() / $total) * 100) : 0,
                     'is_tomorrow'        => $dateCarbon->isTomorrow(),
-                    'revenue'            => $day->sum(fn ($a) => $a->service?->price ?? 0),
+                    'revenue'            => $day->sum(fn($a) => $a->service?->price ?? 0),
                 ];
             })
             ->sortKeysDesc()->values();
@@ -89,14 +94,18 @@ class AppointmentController extends Controller
         $stats['cancelled_month'] = Appointment::where('status', 'cancelled')->whereMonth('date', now()->month)->count();
         $stats['avg_daily']     = $this->avgDaily();
 
-        $staffRole   = Role::whereIn('name', ['Staff', 'Admin Tenant'])->pluck('id');
-        $staffMembers = User::whereIn('role_id', $staffRole)->get();
+        $staffMembers = User::role(['Staff', 'Admin Tenant'])->get();
         $services    = Service::where('is_active', true)->get();
 
         $appointments = $paginatedData;
 
         return view('admin.appointments.index', compact(
-            'paginatedData', 'appointments', 'appointmentsByDate', 'stats', 'services', 'staffMembers'
+            'paginatedData',
+            'appointments',
+            'appointmentsByDate',
+            'stats',
+            'services',
+            'staffMembers'
         ));
     }
 
@@ -120,12 +129,15 @@ class AppointmentController extends Controller
                 'notes'        => $data['notes'] ?? null,
             ]);
 
-            try { UsageLog::log('appointment_created', [
-                'appointment_id' => $appointment->id,
-                'customer_id'    => $customer->id,
-                'service_id'     => $appointment->service_id,
-                'date'           => $appointment->date,
-            ]); } catch (\Throwable) {}
+            try {
+                UsageLog::log('appointment_created', [
+                    'appointment_id' => $appointment->id,
+                    'customer_id'    => $customer->id,
+                    'service_id'     => $appointment->service_id,
+                    'date'           => $appointment->date,
+                ]);
+            } catch (\Throwable) {
+            }
 
             $queueData = null;
             if ($request->boolean('add_to_queue')) {
@@ -251,7 +263,10 @@ class AppointmentController extends Controller
             $a = $this->appointments->findById($id);
             $info = ['appointment_id' => $a->id, 'customer_id' => $a->customer_id, 'date' => $a->date];
             $this->appointments->delete($a);
-            try { UsageLog::log('appointment_cancelled', $info); } catch (\Throwable) {}
+            try {
+                UsageLog::log('appointment_cancelled', $info);
+            } catch (\Throwable) {
+            }
 
             return response()->json(['success' => true, 'message' => __('Appointment deleted.')]);
         } catch (\Exception $e) {
@@ -438,8 +453,7 @@ class AppointmentController extends Controller
 
     private function findOrCreateCustomer(array $data): User
     {
-        $customerRole = Role::where('name', 'Customer')->first();
-        $email        = $data['customer_email'] ?? $data['customer_phone'] . '@temp.local';
+        $email = $data['customer_email'] ?? $data['customer_phone'] . '@temp.local';
 
         $customer = User::firstOrCreate(
             ['email' => $email],
@@ -447,9 +461,12 @@ class AppointmentController extends Controller
                 'name'     => $data['customer_name'],
                 'phone'    => $data['customer_phone'],
                 'password' => bcrypt(\Illuminate\Support\Str::random(32)),
-                'role_id'  => $customerRole?->id,
             ]
         );
+
+        if (!$customer->hasRole('Customer')) {
+            $customer->assignRole('Customer');
+        }
 
         $customer->update(['name' => $data['customer_name'], 'phone' => $data['customer_phone']]);
 

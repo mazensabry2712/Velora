@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\BusinessRule;
 use App\Models\Queue;
-use App\Models\Role;
 use App\Models\Service;
 use App\Models\User;
 use App\Repositories\Contracts\QueueRepositoryInterface;
@@ -90,8 +89,7 @@ class QueueController extends Controller
                 'notes'          => 'nullable|string|max:1000',
             ]);
 
-            $customerRole = \App\Models\Role::where('name', 'Customer')->first();
-            $email        = $data['customer_email'] ?? $data['customer_phone'] . '@temp.local';
+            $email = $data['customer_email'] ?? $data['customer_phone'] . '@temp.local';
 
             $customer = User::firstOrCreate(
                 ['email' => $email],
@@ -99,9 +97,13 @@ class QueueController extends Controller
                     'name'     => $data['customer_name'],
                     'phone'    => $data['customer_phone'],
                     'password' => bcrypt(Str::random(32)),
-                    'role_id'  => $customerRole?->id,
                 ]
             );
+
+            if (!$customer->hasRole('Customer')) {
+                $customer->assignRole('Customer');
+            }
+
             $customer->update(['name' => $data['customer_name'], 'phone' => $data['customer_phone']]);
 
             $service     = Service::find($data['service_id']);

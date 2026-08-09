@@ -16,7 +16,7 @@ class ReportController extends Controller
             'total_appointments'     => Appointment::count(),
             'confirmed_appointments' => Appointment::where('status', 'confirmed')->count(),
             'pending_appointments'   => Appointment::where('status', 'pending')->count(),
-            'total_customers'        => User::whereHas('role', fn ($q) => $q->where('name', 'Customer'))->count(),
+            'total_customers'        => User::role('Customer')->count(),
         ];
 
         $appointmentsByStatus = Appointment::select('status', DB::raw('count(*) as count'))
@@ -30,8 +30,8 @@ class ReportController extends Controller
             'priority' => Queue::where('is_vip', true)->whereIn('status', ['waiting', 'serving'])->count(),
         ];
 
-        $staffPerformance = User::whereHas('role', fn ($q) => $q->whereIn('name', ['Admin Tenant', 'Staff']))
-            ->withCount(['staffAppointments' => fn ($q) => $q->where('status', 'confirmed')])
+        $staffPerformance = User::role(['Admin Tenant', 'Staff'])
+            ->withCount(['staffAppointments' => fn($q) => $q->where('status', 'confirmed')])
             ->having('staff_appointments_count', '>', 0)
             ->orderByDesc('staff_appointments_count')
             ->get();
@@ -43,7 +43,11 @@ class ReportController extends Controller
             ->get();
 
         return view('admin.reports.index', compact(
-            'stats', 'appointmentsByStatus', 'queueStats', 'staffPerformance', 'serviceTypes'
+            'stats',
+            'appointmentsByStatus',
+            'queueStats',
+            'staffPerformance',
+            'serviceTypes'
         ));
     }
 

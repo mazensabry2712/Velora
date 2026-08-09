@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\Role;
 use App\Models\Appointment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -59,20 +58,14 @@ class CustomerController extends Controller
     public function adminIndex(Request $request)
     {
         try {
-            $customerRole = Role::where('name', 'Customer')->first();
-
-            if (!$customerRole) {
-                return response()->json(['success' => true, 'data' => [], 'total' => 0]);
-            }
-
-            $query = User::where('role_id', $customerRole->id);
+            $query = User::role('Customer');
 
             // Search
             if ($search = $request->input('search')) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%")
-                      ->orWhere('phone', 'like', "%{$search}%");
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%");
                 });
             }
 
@@ -185,8 +178,7 @@ class CustomerController extends Controller
             $customer = User::findOrFail($id);
 
             // Safety: only delete customer-role users
-            $customerRole = Role::where('name', 'Customer')->first();
-            if (!$customerRole || $customer->role_id !== $customerRole->id) {
+            if (!$customer->hasRole('Customer')) {
                 return response()->json(['success' => false, 'message' => 'لا يمكن حذف هذا المستخدم'], 403);
             }
 

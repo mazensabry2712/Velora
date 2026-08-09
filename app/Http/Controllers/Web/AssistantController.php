@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use App\Models\User;
-use App\Models\Role;
+use Spatie\Permission\Models\Role;
 use App\Mail\WelcomeAssistantMail;
 
 class AssistantController extends Controller
@@ -62,9 +62,7 @@ class AssistantController extends Controller
 
     public function index()
     {
-        $assistantRole = Role::where('name', 'Assistant')->first();
-
-        $assistants = User::where('role_id', $assistantRole?->id)
+        $assistants = User::role('Assistant')
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -88,22 +86,22 @@ class AssistantController extends Controller
             'permissions.*' => 'string|in:' . implode(',', array_keys(self::getAvailablePermissions())),
         ]);
 
-        // Get or create Assistant role
+        // Get or create Assistant role (guard_name required by Spatie's Role model)
         $assistantRole = Role::firstOrCreate(
-            ['name' => 'Assistant'],
-            ['permissions' => []]
+            ['name' => 'Assistant', 'guard_name' => 'web']
         );
 
         $plainPassword = $request->password;
 
         $assistant = User::create([
-            'role_id' => $assistantRole->id,
             'name' => $request->name,
             'email' => $request->email,
             'phone' => $request->phone,
             'password' => Hash::make($plainPassword),
             'permissions' => $request->permissions,
         ]);
+
+        $assistant->assignRole($assistantRole);
 
         // Send welcome email with credentials
         try {
