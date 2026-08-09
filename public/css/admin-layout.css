@@ -1,0 +1,71 @@
+[x-cloak] { display: none !important; }
+*, body { font-family: 'Tajawal', sans-serif; }
+
+/* Scroll progress */
+#admin-scroll-progress {
+    position: fixed; top: 0; inset-inline: 0; height: 3px; z-index: 9999;
+    background: linear-gradient(to left, #6366f1, #8b5cf6, #06b6d4);
+    transform-origin: right;
+    transition: transform 0.1s linear;
+}
+/* Page enter */
+@keyframes pageIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.admin-page-enter { animation: pageIn 0.4s ease-out both; }
+
+/* Card animate */
+@keyframes cardIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.card-animate { animation: cardIn 0.5s ease-out both; }
+.card-delay-1 { animation-delay: .05s; }
+.card-delay-2 { animation-delay: .1s; }
+.card-delay-3 { animation-delay: .15s; }
+.card-delay-4 { animation-delay: .2s; }
+
+/* Toast */
+@keyframes toastIn  { from { opacity:0; transform: translateY(20px) scale(.95); } to { opacity:1; transform:none; } }
+@keyframes toastOut { from { opacity:1; } to { opacity:0; transform: translateY(10px) scale(.95); } }
+.toast-enter { animation: toastIn  .3s ease-out both; }
+.toast-exit  { animation: toastOut .25s ease-in  both; }
+
+/* Mobile menu slide */
+@keyframes menuSlide {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.mobile-menu-open { animation: menuSlide .2s ease-out both; }
+
+/* Back-to-top ring */
+@keyframes ripple {
+    0%   { transform: scale(1); opacity: .6; }
+    100% { transform: scale(1.7); opacity: 0; }
+}
+.back-top-ring::before {
+    content: ''; position: absolute; inset: 0;
+    border-radius: 9999px; border: 2px solid #6366f1;
+    animation: ripple 1.5s infinite;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #6366f1; }
+.dark ::-webkit-scrollbar-thumb { background: #475569; }
+
+/* Focus rings */
+*:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; border-radius: 6px; }
+
+/* Smooth table hover */
+tbody tr { transition: background 0.15s ease; }
+
+/* Counter */
+@keyframes countUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.count-animate { animation: countUp .6s ease-out both; }
