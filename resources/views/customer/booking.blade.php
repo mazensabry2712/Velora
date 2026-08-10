@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="{{ app()->getLocale() }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -27,7 +28,8 @@
         // يتم تنفيذ هذا الكود فوراً قبل عرض الصفحة - خاص بصفحة الحجز
         (function() {
             const savedMode = localStorage.getItem('bookingDarkMode');
-            if (savedMode === 'true' || (savedMode === null && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            if (savedMode === 'true' || (savedMode === null && window.matchMedia('(prefers-color-scheme: dark)')
+                    .matches)) {
                 document.documentElement.classList.add('dark');
             } else if (savedMode === 'false') {
                 document.documentElement.classList.remove('dark');
@@ -35,6 +37,7 @@
         })();
     </script>
 </head>
+
 <body class="bg-gradient-to-br from-slate-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800 min-h-screen">
     <div class="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
         <!-- Header with Language Switcher -->
@@ -49,51 +52,57 @@
                 </button>
 
                 <!-- Language Switcher -->
-                @if(isset($availableLanguages) && is_array($availableLanguages) && count($availableLanguages) > 1)
-                @php
-                    $languageLabels = [
-                        'en' => 'EN',
-                        'ar' => 'عربي',
-                        'fr' => 'FR',
-                        'es' => 'ES',
-                        'de' => 'DE',
-                        'it' => 'IT',
-                        'pt' => 'PT',
-                        'ru' => 'RU',
-                        'zh' => '中文',
-                        'ja' => '日本語',
-                    ];
-                @endphp
-                <div class="inline-flex rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 p-1 shadow-sm {{ count($availableLanguages) > 4 ? 'flex-wrap' : '' }}">
-                    @foreach($availableLanguages as $langCode)
-                        @if(isset($languageLabels[$langCode]))
-                        <button onclick="changeLanguage('{{ $langCode }}')"
-                            class="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 {{ app()->getLocale() === $langCode ? 'bg-indigo-600 dark:bg-indigo-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white' }}">
-                            {{ $languageLabels[$langCode] }}
-                        </button>
-                        @endif
-                    @endforeach
-                </div>
+                @if (isset($availableLanguages) && is_array($availableLanguages) && count($availableLanguages) > 1)
+                    @php
+                        $languageLabels = [
+                            'en' => 'EN',
+                            'ar' => 'عربي',
+                            'fr' => 'FR',
+                            'es' => 'ES',
+                            'de' => 'DE',
+                            'it' => 'IT',
+                            'pt' => 'PT',
+                            'ru' => 'RU',
+                            'zh' => '中文',
+                            'ja' => '日本語',
+                        ];
+                    @endphp
+                    <div
+                        class="inline-flex rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 p-1 shadow-sm {{ count($availableLanguages) > 4 ? 'flex-wrap' : '' }}">
+                        @foreach ($availableLanguages as $langCode)
+                            @if (isset($languageLabels[$langCode]))
+                                <button onclick="changeLanguage('{{ $langCode }}')"
+                                    class="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 {{ app()->getLocale() === $langCode ? 'bg-indigo-600 dark:bg-indigo-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white' }}">
+                                    {{ $languageLabels[$langCode] }}
+                                </button>
+                            @endif
+                        @endforeach
+                    </div>
                 @endif
             </div>
 
             <div class="text-center">
-                @if($businessLogo)
-                    <img src="{{ asset('storage/' . $businessLogo) }}" alt="{{ $businessName }}" class="h-16 sm:h-20 w-auto mx-auto mb-3 sm:mb-4">
+                @if ($businessLogo)
+                    <img src="{{ asset('storage/' . $businessLogo) }}" alt="{{ $businessName }}"
+                        class="h-16 sm:h-20 w-auto mx-auto mb-3 sm:mb-4">
                 @endif
-                <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-800 dark:text-white mb-1 sm:mb-2">{{ $businessName }}</h1>
-                <p class="text-sm sm:text-base text-slate-600 dark:text-slate-300">{{ __('Book your appointment online') }}</p>
+                <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-800 dark:text-white mb-1 sm:mb-2">
+                    {{ $businessName }}</h1>
+                <p class="text-sm sm:text-base text-slate-600 dark:text-slate-300">
+                    {{ __('Book your appointment online') }}</p>
             </div>
         </div>
 
         <!-- Booking Form -->
-        <div class="max-w-2xl mx-auto bg-white dark:bg-slate-800/90 rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-4 sm:p-6 md:p-8 dark:shadow-slate-900/50">
+        <div
+            class="max-w-2xl mx-auto bg-white dark:bg-slate-800/90 rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-4 sm:p-6 md:p-8 dark:shadow-slate-900/50">
             <form id="bookingForm" class="space-y-4 sm:space-y-6">
                 @csrf
 
                 <!-- Customer Name -->
                 <div>
-                    <label for="name" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5 sm:mb-2">
+                    <label for="name"
+                        class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5 sm:mb-2">
                         {{ __('Full Name') }} <span class="text-red-500 dark:text-red-400">*</span>
                     </label>
                     <input type="text" id="name" name="name" required
@@ -103,7 +112,8 @@
 
                 <!-- Email -->
                 <div>
-                    <label for="email" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5 sm:mb-2">
+                    <label for="email"
+                        class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5 sm:mb-2">
                         {{ __('Email') }} <span class="text-red-500 dark:text-red-400">*</span>
                     </label>
                     <input type="email" id="email" name="email" required
@@ -113,7 +123,8 @@
 
                 <!-- Phone -->
                 <div>
-                    <label for="phone" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5 sm:mb-2">
+                    <label for="phone"
+                        class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5 sm:mb-2">
                         {{ __('Phone Number') }} <span class="text-red-500 dark:text-red-400">*</span>
                     </label>
                     <input type="tel" id="phone" name="phone" required
@@ -123,7 +134,8 @@
 
                 <!-- Step 1: Service Type -->
                 <div>
-                    <label for="service_id" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5 sm:mb-2">
+                    <label for="service_id"
+                        class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5 sm:mb-2">
                         {{ __('Service Type') }} <span class="text-red-500 dark:text-red-400">*</span>
                     </label>
                     <select id="service_id" name="service_id" required
@@ -135,7 +147,8 @@
 
                 <!-- Step 2: Staff (appears after selecting service) -->
                 <div id="staffSection" class="hidden">
-                    <label for="staff_id" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5 sm:mb-2">
+                    <label for="staff_id"
+                        class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5 sm:mb-2">
                         {{ __('Select Staff') }} <span class="text-red-500 dark:text-red-400">*</span>
                     </label>
                     <select id="staff_id" name="staff_id" required
@@ -147,7 +160,8 @@
 
                 <!-- Step 3: Date (appears after selecting staff) -->
                 <div id="dateSection" class="hidden">
-                    <label for="appointment_date" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5 sm:mb-2">
+                    <label for="appointment_date"
+                        class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5 sm:mb-2">
                         {{ __('Appointment Date') }} <span class="text-red-500 dark:text-red-400">*</span>
                     </label>
                     <input type="date" id="appointment_date" name="appointment_date" required
@@ -158,7 +172,8 @@
 
                 <!-- Step 4: Time (appears after selecting date) -->
                 <div id="timeSection" class="hidden">
-                    <label for="appointment_time" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5 sm:mb-2">
+                    <label for="appointment_time"
+                        class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5 sm:mb-2">
                         {{ __('Appointment Time') }} <span class="text-red-500 dark:text-red-400">*</span>
                     </label>
                     <select id="appointment_time" name="appointment_time" required
@@ -170,7 +185,8 @@
 
                 <!-- Notes -->
                 <div id="notesSection" class="hidden">
-                    <label for="notes" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5 sm:mb-2">
+                    <label for="notes"
+                        class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5 sm:mb-2">
                         {{ __('Additional Notes') }}
                     </label>
                     <textarea id="notes" name="notes" rows="3"
@@ -189,22 +205,31 @@
             </form>
 
             <!-- Success Message -->
-            <div id="successMessage" class="hidden mt-4 sm:mt-6 p-3 sm:p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
+            <div id="successMessage"
+                class="hidden mt-4 sm:mt-6 p-3 sm:p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
                 <div class="flex items-start">
-                    <svg class="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500 dark:text-emerald-400 flex-shrink-0 {{ app()->getLocale() === 'ar' ? 'ml-2 sm:ml-3' : 'mr-2 sm:mr-3' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500 dark:text-emerald-400 flex-shrink-0 {{ app()->getLocale() === 'ar' ? 'ml-2 sm:ml-3' : 'mr-2 sm:mr-3' }}"
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7">
+                        </path>
                     </svg>
                     <div class="flex-1">
-                        <p class="font-semibold text-emerald-800 dark:text-emerald-300 text-sm sm:text-base">{{ __('Appointment Booked Successfully!') }}</p>
-                        <p class="text-xs sm:text-sm text-emerald-700 dark:text-emerald-400 mt-1">{{ __('You will receive a confirmation email shortly.') }}</p>
+                        <p class="font-semibold text-emerald-800 dark:text-emerald-300 text-sm sm:text-base">
+                            {{ __('Appointment Booked Successfully!') }}</p>
+                        <p class="text-xs sm:text-sm text-emerald-700 dark:text-emerald-400 mt-1">
+                            {{ __('You will receive a confirmation email shortly.') }}</p>
 
                         <!-- Queue Number Display -->
-                        <div id="queueNumberDisplay" class="hidden mt-3 p-3 bg-white dark:bg-slate-800 rounded-lg border border-emerald-200 dark:border-emerald-700">
-                            <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mb-1">{{ __('Your Queue Number') }}:</p>
-                            <p class="text-2xl sm:text-3xl font-bold text-indigo-600 dark:text-indigo-400" id="queueNumberText"></p>
+                        <div id="queueNumberDisplay"
+                            class="hidden mt-3 p-3 bg-white dark:bg-slate-800 rounded-lg border border-emerald-200 dark:border-emerald-700">
+                            <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mb-1">
+                                {{ __('Your Queue Number') }}:</p>
+                            <p class="text-2xl sm:text-3xl font-bold text-indigo-600 dark:text-indigo-400"
+                                id="queueNumberText"></p>
                             <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">
                                 {{ __('Save this number to check your queue status') }}
-                                <a href="/queue/status" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">{{ __('here') }}</a>
+                                <a href="/queue/status"
+                                    class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">{{ __('here') }}</a>
                             </p>
                         </div>
                     </div>
@@ -212,13 +237,17 @@
             </div>
 
             <!-- Error Message -->
-            <div id="errorMessage" class="hidden mt-4 sm:mt-6 p-3 sm:p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <div id="errorMessage"
+                class="hidden mt-4 sm:mt-6 p-3 sm:p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
                 <div class="flex items-center">
-                    <svg class="w-5 h-5 sm:w-6 sm:h-6 text-red-500 dark:text-red-400 flex-shrink-0 {{ app()->getLocale() === 'ar' ? 'ml-2 sm:ml-3' : 'mr-2 sm:mr-3' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6 text-red-500 dark:text-red-400 flex-shrink-0 {{ app()->getLocale() === 'ar' ? 'ml-2 sm:ml-3' : 'mr-2 sm:mr-3' }}"
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                     <div>
-                        <p class="font-semibold text-red-800 dark:text-red-300 text-sm sm:text-base">{{ __('Booking Failed') }}</p>
+                        <p class="font-semibold text-red-800 dark:text-red-300 text-sm sm:text-base">
+                            {{ __('Booking Failed') }}</p>
                         <p class="text-xs sm:text-sm text-red-700 dark:text-red-400" id="errorText"></p>
                     </div>
                 </div>
@@ -227,7 +256,8 @@
 
         <!-- Queue Status Link -->
         <div class="text-center mt-6 sm:mt-8">
-            <a href="{{ (function_exists('tenant') && tenant()) ? route('queue.status') : url('/') }}" class="text-sm sm:text-base text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium">
+            <a href="{{ function_exists('tenant') && tenant() ? route('queue.status') : url('/') }}"
+                class="text-sm sm:text-base text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium">
                 {{ __('Check Queue Status') }} →
             </a>
         </div>
@@ -250,7 +280,8 @@
                     data.data.forEach(service => {
                         const option = document.createElement('option');
                         option.value = service.id;
-                        option.textContent = currentLang === 'ar' && service.name_ar ? service.name_ar : service.name;
+                        option.textContent = currentLang === 'ar' && service.name_ar ? service.name_ar : service
+                            .name;
                         if (service.duration) {
                             option.textContent += ` (${service.duration} {{ __('min') }})`;
                         }
@@ -375,7 +406,11 @@
 
             while (current < end) {
                 const timeValue = current.toTimeString().substring(0, 5);
-                const timeDisplay = current.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                const timeDisplay = current.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                });
 
                 const option = document.createElement('option');
                 option.value = timeValue;
@@ -467,14 +502,39 @@
                     document.getElementById('submitBtn').classList.add('hidden');
 
                     // Scroll to success message
-                    successMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    successMsg.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
                 } else {
                     errorMsg.classList.remove('hidden');
-                    document.getElementById('errorText').textContent = data.message || '{{ __('An error occurred. Please try again.') }}';
+
+                    let errorMessage = data.message || '{{ __('An error occurred. Please try again.') }}';
+
+                    if (data.errors) {
+                        const validationErrors = Object.values(data.errors)
+                            .flat()
+                            .join(' ');
+
+                        if (validationErrors) {
+                            errorMessage = validationErrors;
+                        }
+                    }
+
+                    if (data.reason) {
+                        errorMessage += ' ' + data.reason;
+                    }
+
+                    document.getElementById('errorText').textContent = errorMessage;
                 }
+
+
+
+
             } catch (error) {
                 errorMsg.classList.remove('hidden');
-                document.getElementById('errorText').textContent = '{{ __('An error occurred. Please try again.') }}';
+                document.getElementById('errorText').textContent =
+                    '{{ __('An error occurred. Please try again.') }}';
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = '{{ __('Book Appointment') }}';
@@ -491,4 +551,5 @@
     </script>
     <script src="/js/dark-mode-booking.js"></script>
 </body>
+
 </html>

@@ -12,6 +12,7 @@ use App\Models\Queue;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class AppointmentController extends Controller
 {
@@ -30,103 +31,185 @@ class AppointmentController extends Controller
     {
         try {
             $validated = $request->validate([
-                'customer_name'    => 'required|string|max:255|regex:/^[\p{L}\p{N}\s\-\.]+$/u',
-                'customer_email'   => 'required|email|max:255',
-                'customer_phone'   => 'required|string|max:20|regex:/^[\d\+\-\(\)\s]+$/',
-                'appointment_date' => 'required|date|after_or_equal:today',
-                'service_id'       => 'required|exists:services,id',
-                'staff_id'         => 'required|exists:staff,id',
-                'resource_id'      => 'nullable|exists:resources,id',
-                'timezone'         => 'nullable|timezone',
-                'notes'            => 'nullable|string|max:1000',
+                'customer_name' => [
+                    'required',
+                    'string',
+                    'max:255',
+                    'regex:/^[\p{L}\p{N}\s\-\.]+$/u',
+                ],
+
+                'customer_email' => [
+                    'required',
+                    'email',
+                    'max:255',
+                ],
+
+                'customer_phone' => [
+                    'required',
+                    'string',
+                    'max:20',
+                    'regex:/^[\d\+\-\(\)\s]+$/',
+                ],
+
+                'appointment_date' => [
+                    'required',
+                    'date',
+                    'after_or_equal:today',
+                ],
+
+                'appointment_time' => [
+                    'required',
+                    'date_format:H:i',
+                ],
+
+                'service_id' => [
+                    'required',
+                    'exists:services,id',
+                ],
+
+                // Staff members are users with Staff role.
+                'staff_id' => [
+                    'required',
+                    'exists:users,id',
+                ],
+
+                'resource_id' => [
+                    'nullable',
+                    'exists:resources,id',
+                ],
+
+                'timezone' => [
+                    'nullable',
+                    'timezone',
+                ],
+
+                'notes' => [
+                    'nullable',
+                    'string',
+                    'max:1000',
+                ],
             ]);
 
-            // ── Sanitize text inputs ──────────────────────────────────────
-            $validated['customer_name']  = strip_tags(trim($validated['customer_name']));
-            $validated['customer_phone'] = preg_replace('/[^\d\+\-\(\)\s]/', '', $validated['customer_phone']);
-            if (! empty($validated['notes'])) {
-                $validated['notes'] = strip_tags(trim($validated['notes']));
+            // Sanitize text inputs
+            $validated['customer_name'] = strip_tags(
+                trim($validated['customer_name'])
+            );
+
+            $validated['customer_phone'] = preg_replace(
+                '/[^\d\+\-\(\)\s]/',
+                '',
+                $validated['customer_phone']
+            );
+
+            if (!empty($validated['notes'])) {
+                $validated['notes'] = strip_tags(
+                    trim($validated['notes'])
+                );
             }
 
-            // ── Find or upsert Customer V2 ────────────────────────────────
-            [$firstName, $lastName] = $this->splitName($validated['customer_name']);
+            // Find or create customer
+            [$firstName, $lastName] = $this->splitName(
+                $validated['customer_name']
+            );
 
             $customer = Customer::firstOrNew([
                 'email' => $validated['customer_email'],
             ]);
 
-            // Always keep phone & name fresh
             $customer->fill([
-                'first_name'         => $firstName,
-                'last_name'          => $lastName,
-                'phone'              => $validated['customer_phone'],
-                'acquisition_source' => $customer->exists ? $customer->acquisition_source : 'online',
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'phone' => $validated['customer_phone'],
+                'acquisition_source' => $customer->exists
+                    ? $customer->acquisition_source
+                    : 'online',
             ]);
+
             $customer->save();
 
-            // ── Build DTO & create appointment via V2 engine ─────────────
-            $tz       = $validated['timezone'] ?? config('app.timezone');
-            $startsAt = Carbon::parse($validated['appointment_date'], $tz);
+            // Build the REAL appointment date + time
+            $tz = $validated['timezone'] ?? config('app.timezone');
 
+            $startsAt = Carbon::createFromFormat(
+                'Y-m-d H:i',
+                $validated['appointment_date']
+                    . ' '
+                    . $validated['appointment_time'],
+                $tz
+            );
+
+            // Build booking DTO
             $data = new CreateBookingData(
-                serviceId:  (int) $validated['service_id'],
-                staffId:    (int) $validated['staff_id'],
-                startsAt:   $startsAt,
-                timezone:   $tz,
+                serviceId: (int) $validated['service_id'],
+                staffId: (int) $validated['staff_id'],
+                startsAt: $startsAt,
+                timezone: $tz,
                 customerId: $customer->id,
-                resourceId: isset($validated['resource_id']) ? (int) $validated['resource_id'] : null,
-                source:     'online',
-                notes:      $validated['notes'] ?? null,
+                resourceId: isset($validated['resource_id'])
+                    ? (int) $validated['resource_id']
+                    : null,
+                source: 'online',
+                notes: $validated['notes'] ?? null,
             );
 
             $appointment = $this->bookingService->create($data);
 
-            // ── Auto-enqueue as walk-in ───────────────────────────────────
+            // Add appointment to queue
             $queue = Queue::create([
                 'appointment_id' => $appointment->id,
-                'queue_number'   => Queue::generateQueueNumber(),
-                'status'         => 'waiting',
-                'is_vip'         => false,
-                'notes'          => $validated['notes'] ?? null,
+                'queue_number' => Queue::generateQueueNumber(),
+                'status' => 'waiting',
+                'is_vip' => false,
+                'notes' => $validated['notes'] ?? null,
             ]);
 
             return response()->json([
-                'success'      => true,
-                'message'      => 'Appointment booked successfully',
-                'data'         => [
-                    'appointment'  => $appointment,
+                'success' => true,
+                'message' => 'Appointment booked successfully',
+
+                'data' => [
+                    'appointment' => $appointment,
+
                     'queue_number' => $queue->queue_number,
-                    'customer'     => [
-                        'id'    => $customer->id,
-                        'name'  => $customer->first_name . ' ' . $customer->last_name,
+
+                    'queue' => $queue,
+
+                    'customer' => [
+                        'id' => $customer->id,
+                        'name' => $customer->first_name . ' ' . $customer->last_name,
                         'email' => $customer->email,
                     ],
                 ],
             ], 201);
-
         } catch (\Illuminate\Validation\ValidationException $e) {
+
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors'  => $e->errors(),
+                'errors' => $e->errors(),
             ], 422);
-
         } catch (SlotUnavailableException $e) {
+
             return response()->json([
                 'success' => false,
                 'message' => 'Slot not available',
-                'reason'  => $e->getMessage(),
+                'reason' => $e->getMessage(),
             ], 409);
-
         } catch (\Exception $e) {
-            \Log::error('Public booking error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+
+            Log::error(
+                'Public booking error: ' . $e->getMessage(),
+                [
+                    'trace' => $e->getTraceAsString(),
+                ]
+            );
+
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while booking the appointment',
             ], 500);
         }
     }
-
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private function splitName(string $fullName): array

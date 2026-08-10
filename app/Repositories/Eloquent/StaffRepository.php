@@ -11,6 +11,9 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
+use App\Models\Staff;
+use App\Models\StaffWorkingHours;
+
 class StaffRepository implements StaffRepositoryInterface
 {
     public function findById(int $id): ?User
@@ -30,13 +33,62 @@ class StaffRepository implements StaffRepositoryInterface
             ->get();
     }
 
-    public function create(array $userData, array $services = [], array $schedule = []): User
-    {
+    // public function create(array $userData, array $services = [], array $schedule = []): User
+    // {
+    //     $staffRole = Role::where('name', 'Staff')->firstOrFail();
+
+    //     return DB::transaction(function () use ($userData, $services, $schedule, $staffRole) {
+    //         $defaultPassword = explode('@', $userData['email'])[0] . '123';
+
+    //         $user = User::create([
+    //             'name'           => $userData['name'],
+    //             'email'          => $userData['email'],
+    //             'phone'          => $userData['phone'] ?? null,
+    //             'password'       => Hash::make($defaultPassword),
+    //             'specialization' => $userData['specialization'] ?? null,
+    //         ]);
+
+    //         $user->assignRole($staffRole);
+
+    //         if (!empty($services)) {
+    //             $user->services()->sync($services);
+    //         }
+
+    //         if (!empty($schedule)) {
+    //             $this->syncSchedule($user->id, $schedule);
+    //         }
+
+    //         try {
+    //             UsageLog::log('user_created', [
+    //                 'user_id'   => $user->id,
+    //                 'user_type' => 'staff',
+    //                 'name'      => $user->name,
+    //                 'email'     => $user->email,
+    //             ]);
+    //         } catch (\Throwable) {
+    //             // Logging failure must never roll back the main transaction.
+    //         }
+
+    //         return $user->load(['services', 'schedules']);
+    //     });
+    // }
+
+    public function create(
+        array $userData,
+        array $services = [],
+        array $schedule = []
+    ): User {
         $staffRole = Role::where('name', 'Staff')->firstOrFail();
 
-        return DB::transaction(function () use ($userData, $services, $schedule, $staffRole) {
+        return DB::transaction(function () use (
+            $userData,
+            $services,
+            $schedule,
+            $staffRole
+        ) {
             $defaultPassword = explode('@', $userData['email'])[0] . '123';
 
+            // Create User
             $user = User::create([
                 'name'           => $userData['name'],
                 'email'          => $userData['email'],
@@ -45,12 +97,91 @@ class StaffRepository implements StaffRepositoryInterface
                 'specialization' => $userData['specialization'] ?? null,
             ]);
 
+            // Give Staff role
             $user->assignRole($staffRole);
 
+            /*
+         * IMPORTANT:
+         * Create the real Staff record used by
+         * the Booking Engine.
+         */
+            $nameParts = preg_split(
+                '/\s+/',
+                trim($userData['name']),
+                2
+            );
+
+            $firstName = $nameParts[0] ?? '';
+            $lastName  = $nameParts[1] ?? '';
+
+            $staff = Staff::create([
+                'user_id'         => $user->id,
+                'first_name'      => $firstName,
+                'last_name'       => $lastName,
+                'email'           => $user->email,
+                'phone'           => $user->phone,
+                'title'           => !empty($userData['specialization'])
+                    ? ['en' => $userData['specialization']]
+                    : null,
+                'is_active'       => true,
+                'accepts_bookings' => true,
+                'sort_order'      => 0,
+            ]);
+
+            /*
+         * Sync services to the REAL staff_services pivot.
+         *
+         * Booking Engine uses:
+         * staff -> services
+         */
             if (!empty($services)) {
+                $staff->services()->sync($services);
+
+                /*
+             * Keep the old User <-> Service relation too,
+             * because the existing Staff Management UI uses it.
+             */
                 $user->services()->sync($services);
             }
 
+            /*
+         * Save working schedule to the REAL
+         * staff_working_hours table.
+         */
+            if (!empty($schedule)) {
+                foreach ($schedule as $day => $hours) {
+                    if (is_array($hours)) {
+                        $dayOfWeek = isset($hours['day_of_week'])
+                            ? (int) $hours['day_of_week']
+                            : (int) $day;
+
+                        $isWorking = filter_var(
+                            $hours['is_working']
+                                ?? $hours['working']
+                                ?? true,
+                            FILTER_VALIDATE_BOOLEAN
+                        );
+
+                        StaffWorkingHours::updateOrCreate(
+                            [
+                                'staff_id'    => $staff->id,
+                                'day_of_week' => $dayOfWeek,
+                            ],
+                            [
+                                'start_time' => $hours['start_time'] ?? '09:00',
+                                'end_time'   => $hours['end_time'] ?? '17:00',
+                                'is_working' => $isWorking,
+                            ]
+                        );
+                    }
+                }
+            }
+
+            /*
+         * Existing schedule system.
+         * Keep this because the current Staff Management
+         * page may still depend on it.
+         */
             if (!empty($schedule)) {
                 $this->syncSchedule($user->id, $schedule);
             }
@@ -66,7 +197,10 @@ class StaffRepository implements StaffRepositoryInterface
                 // Logging failure must never roll back the main transaction.
             }
 
-            return $user->load(['services', 'schedules']);
+            return $user->load([
+                'services',
+                'schedules',
+            ]);
         });
     }
 
