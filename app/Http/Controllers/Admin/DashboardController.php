@@ -18,19 +18,60 @@ class DashboardController extends Controller
         $lastWeekStart = now()->subWeek()->startOfWeek();
         $lastWeekEnd   = now()->subWeek()->endOfWeek();
 
-        $totalAppointments     = Appointment::count();
-        $lastWeekAppointments  = Appointment::whereBetween('created_at', [$lastWeekStart, $lastWeekEnd])->count();
-        $thisWeekAppointments  = Appointment::whereBetween('created_at', [$thisWeekStart, $thisWeekEnd])->count();
-        $cancelledThisWeek     = Appointment::where('status', 'cancelled')->whereBetween('created_at', [$thisWeekStart, $thisWeekEnd])->count();
+        $today = today()->format('Y-m-d');
+
+        // Single aggregate query instead of 11 separate COUNT() queries on the
+        // same appointments table.
+        $agg = Appointment::selectRaw(
+            'COUNT(*) as total,
+             SUM(CASE WHEN created_at BETWEEN ? AND ? THEN 1 ELSE 0 END) as this_week,
+             SUM(CASE WHEN created_at BETWEEN ? AND ? THEN 1 ELSE 0 END) as last_week,
+             SUM(CASE WHEN status = ? AND created_at BETWEEN ? AND ? THEN 1 ELSE 0 END) as cancelled_this_week,
+             SUM(CASE WHEN date = ? THEN 1 ELSE 0 END) as total_today,
+             SUM(CASE WHEN date = ? AND status = ? THEN 1 ELSE 0 END) as completed_today,
+             SUM(CASE WHEN date = ? AND status = ? THEN 1 ELSE 0 END) as confirmed_today,
+             SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as pending_total,
+             SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as confirmed_total,
+             SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as completed_total,
+             SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as cancelled_total',
+            [
+                $thisWeekStart,
+                $thisWeekEnd,
+                $lastWeekStart,
+                $lastWeekEnd,
+                'cancelled',
+                $thisWeekStart,
+                $thisWeekEnd,
+                $today,
+                $today,
+                'completed',
+                $today,
+                'confirmed',
+                'pending',
+                'confirmed',
+                'completed',
+                'cancelled',
+            ]
+        )->first();
+
+        $totalAppointments    = (int) $agg->total;
+        $thisWeekAppointments = (int) $agg->this_week;
+        $lastWeekAppointments = (int) $agg->last_week;
+        $cancelledThisWeek    = (int) $agg->cancelled_this_week;
+        $totalToday           = (int) $agg->total_today;
+        $completedToday       = (int) $agg->completed_today;
+        $confirmedToday       = (int) $agg->confirmed_today;
+
+        $statusDistribution = [
+            'pending'   => (int) $agg->pending_total,
+            'confirmed' => (int) $agg->confirmed_total,
+            'completed' => (int) $agg->completed_total,
+            'cancelled' => (int) $agg->cancelled_total,
+        ];
 
         $appointmentsChange = $lastWeekAppointments > 0
             ? round((($thisWeekAppointments - $lastWeekAppointments) / $lastWeekAppointments) * 100)
             : ($thisWeekAppointments > 0 ? 100 : 0);
-
-        $today          = today()->format('Y-m-d');
-        $completedToday = Appointment::where('status', 'completed')->where('date', $today)->count();
-        $totalToday     = Appointment::where('date', $today)->count();
-        $confirmedToday = Appointment::where('status', 'confirmed')->where('date', $today)->count();
 
         $queueCount      = Queue::whereIn('status', ['waiting', 'serving'])->count();
         $totalCustomers  = User::role('Customer')->count();
@@ -89,15 +130,15 @@ class DashboardController extends Controller
             ->limit(5)
             ->with('service')
             ->get()
-            ->map(fn ($item) => (object) ['name' => $item->service->name ?? 'N/A', 'total' => $item->total]);
+            ->map(fn($item) => (object) ['name' => $item->service->name ?? 'N/A', 'total' => $item->total]);
 
         $staffPerformance = User::role('Staff')
-            ->withCount(['staffAppointments as total_appointments' => fn ($q) => $q->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])])
-            ->withCount(['staffAppointments as completed_appointments' => fn ($q) => $q->where('status', 'completed')->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])])
+            ->withCount(['staffAppointments as total_appointments' => fn($q) => $q->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])])
+            ->withCount(['staffAppointments as completed_appointments' => fn($q) => $q->where('status', 'completed')->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])])
             ->orderByDesc('total_appointments')
             ->limit(5)
             ->get()
-            ->map(fn ($s) => [
+            ->map(fn($s) => [
                 'name'      => $s->name,
                 'avatar'    => $s->avatar_url ?? null,
                 'total'     => $s->total_appointments  ?? 0,
@@ -110,7 +151,7 @@ class DashboardController extends Controller
             ->orderByDesc('created_at')
             ->limit(5)
             ->get()
-            ->map(fn ($c) => [
+            ->map(fn($c) => [
                 'name'               => $c->name,
                 'email'              => $c->email,
                 'avatar'             => $c->avatar_url ?? null,
@@ -122,7 +163,7 @@ class DashboardController extends Controller
             ->orderByDesc('updated_at')
             ->limit(10)
             ->get()
-            ->map(fn ($a) => [
+            ->map(fn($a) => [
                 'type'        => $a->status,
                 'customer'    => $a->customer?->name ?? 'Unknown',
                 'staff'       => $a->staff?->name ?? 'N/A',
@@ -130,20 +171,19 @@ class DashboardController extends Controller
                 'description' => $this->activityDescription($a->status),
             ]);
 
-        $statusDistribution = [
-            'pending'   => Appointment::where('status', 'pending')->count(),
-            'confirmed' => Appointment::where('status', 'confirmed')->count(),
-            'completed' => Appointment::where('status', 'completed')->count(),
-            'cancelled' => Appointment::where('status', 'cancelled')->count(),
-        ];
-
         $subscriptionInfo = $this->subscriptionInfo();
 
         return view('admin.dashboard.index', compact(
-            'stats', 'todayAppointments', 'currentQueue',
-            'chartData', 'topServices', 'staffPerformance',
-            'recentCustomers', 'recentActivities',
-            'subscriptionInfo', 'statusDistribution'
+            'stats',
+            'todayAppointments',
+            'currentQueue',
+            'chartData',
+            'topServices',
+            'staffPerformance',
+            'recentCustomers',
+            'recentActivities',
+            'subscriptionInfo',
+            'statusDistribution'
         ));
     }
 
