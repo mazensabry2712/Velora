@@ -35,14 +35,13 @@
                 <div class="hidden lg:flex items-center gap-1">
                     @foreach ($adminNavLinks as $index => $link)
                         @if (($link['type'] ?? 'link') === 'link')
-                            @php $isActive = request()->is(...$link['match']); @endphp
+                            @php $isActive = request()->is($link['match']); @endphp
                             <a href="{{ $link['url'] }}"
                                 class="relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150
                                       {{ $isActive
                                           ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
                                           : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white' }}">
-                                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
+                                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="{{ $link['icon'] }}" />
                                 </svg>
@@ -82,7 +81,8 @@
                                     x-transition:enter-start="opacity-0 scale-95 translate-y-1"
                                     x-transition:enter-end="opacity-100 scale-100 translate-y-0"
                                     x-transition:leave="transition ease-in duration-100"
-                                    x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0 scale-95"
+                                    x-transition:leave-start="opacity-100"
+                                    x-transition:leave-end="opacity-0 scale-95"
                                     class="absolute start-0 mt-2 w-64 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden z-50 p-1.5">
                                     @foreach ($link['children'] as $child)
                                         @php $childActive = request()->is(...$child['match']); @endphp
@@ -172,8 +172,7 @@
                             class="text-slate-700 dark:text-slate-200 font-medium hidden md:block">{{ auth()->user()->name }}</span>
                         <svg class="w-4 h-4 text-slate-400 transition-transform" :class="open && 'rotate-180'"
                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M19 9l-7 7-7-7" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
 
@@ -311,7 +310,7 @@
         <div class="px-4 pt-3 space-y-1">
             @foreach ($adminNavLinks as $link)
                 @if (($link['type'] ?? 'link') === 'link')
-                    @php $isActive = request()->is(...$link['match']); @endphp
+                    @php $isActive = request()->is($link['match']); @endphp
                     <a href="{{ $link['url'] }}"
                         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition
                               {{ $isActive
@@ -338,8 +337,7 @@
                                   {{ $groupActive
                                       ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
                                       : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700' }}">
-                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
+                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="{{ $link['icon'] }}" />
                             </svg>
