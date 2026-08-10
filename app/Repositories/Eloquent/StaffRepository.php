@@ -136,6 +136,22 @@ class StaffRepository implements StaffRepositoryInterface
 
     // ── Private helpers ──────────────────────────────────────────────────
 
+    // private function syncSchedule(int $staffId, array $schedule): void
+    // {
+    //     StaffSchedule::where('user_id', $staffId)->delete();
+
+    //     foreach ($schedule as $row) {
+    //         StaffSchedule::create([
+    //             'user_id'     => $staffId,
+    //             'day_of_week' => $row['day_of_week'],
+    //             'start_time'  => $row['start_time'],
+    //             'end_time'    => $row['end_time'],
+    //             'is_active'   => $row['is_active'] ?? true,
+    //         ]);
+    //     }
+    // }
+
+
     private function syncSchedule(int $staffId, array $schedule): void
     {
         StaffSchedule::where('user_id', $staffId)->delete();

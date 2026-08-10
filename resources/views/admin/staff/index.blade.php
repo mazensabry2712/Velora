@@ -431,6 +431,46 @@
         }
 
         // Staff Form Submit
+
+
+function normalizeTime(value) {
+    if (!value) {
+        return '';
+    }
+
+    value = value.trim();
+
+    // Already in 24-hour H:i format
+    if (/^\d{2}:\d{2}$/.test(value)) {
+        return value;
+    }
+
+    // Convert 12-hour format: 09:00 AM / 05:00 PM
+    const match = value.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+
+    if (!match) {
+        return value;
+    }
+
+    let hours = parseInt(match[1], 10);
+    const minutes = match[2];
+    const period = match[3].toUpperCase();
+
+    if (period === 'AM' && hours === 12) {
+        hours = 0;
+    }
+
+    if (period === 'PM' && hours !== 12) {
+        hours += 12;
+    }
+
+    return `${String(hours).padStart(2, '0')}:${minutes}`;
+}
+
+
+
+
+
         document.getElementById('staffForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -458,17 +498,37 @@
             });
 
             // Get schedule
-            document.querySelectorAll('.day-checkbox').forEach(cb => {
-                const day = parseInt(cb.dataset.day);
-                if (cb.checked) {
-                    formData.schedule.push({
-                        day_of_week: day,
-                        start_time: document.getElementById(`start_${day}`).value,
-                        end_time: document.getElementById(`end_${day}`).value,
-                        is_active: true
-                    });
-                }
-            });
+            // document.querySelectorAll('.day-checkbox').forEach(cb => {
+            //     const day = parseInt(cb.dataset.day);
+            //     if (cb.checked) {
+            //         formData.schedule.push({
+            //             day_of_week: day,
+            //             start_time: document.getElementById(`start_${day}`).value,
+            //             end_time: document.getElementById(`end_${day}`).value,
+            //             is_active: true
+            //         });
+            //     }
+            // });
+
+document.querySelectorAll('.day-checkbox').forEach(cb => {
+    const day = parseInt(cb.dataset.day);
+
+    if (cb.checked) {
+        const startTime = document.getElementById(`start_${day}`).value;
+        const endTime = document.getElementById(`end_${day}`).value;
+
+        formData.schedule.push({
+            day_of_week: day,
+            start_time: normalizeTime(startTime),
+            end_time: normalizeTime(endTime),
+            is_active: true
+        });
+    }
+});
+
+
+
+
 
             try {
                 const url = isEdit ? `/admin/api/staff/${staffId}` : '/admin/api/staff';
