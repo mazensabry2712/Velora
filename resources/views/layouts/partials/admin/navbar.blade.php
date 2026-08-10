@@ -32,20 +32,85 @@
                 </a>
 
                 <!-- Desktop Nav Links -->
-                <div class="hidden lg:flex items-center gap-0.5">
-                    @foreach ($adminNavLinks as $link)
-                        @php $isActive = request()->is($link['match']); @endphp
-                        <a href="{{ $link['url'] }}"
-                            class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150
-                                  {{ $isActive
-                                      ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
-                                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white' }}">
-                            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="{{ $link['icon'] }}" />
-                            </svg>
-                            {{ $link['label'] }}
-                        </a>
+                <div class="hidden lg:flex items-center gap-1">
+                    @foreach ($adminNavLinks as $index => $link)
+                        @if (($link['type'] ?? 'link') === 'link')
+                            @php $isActive = request()->is(...$link['match']); @endphp
+                            <a href="{{ $link['url'] }}"
+                                class="relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150
+                                      {{ $isActive
+                                          ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white' }}">
+                                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="{{ $link['icon'] }}" />
+                                </svg>
+                                {{ $link['label'] }}
+                                @if (!empty($link['badge']))
+                                    <span
+                                        class="ms-0.5 text-[10px] font-bold leading-none px-1.5 py-0.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
+                                        {{ $link['badge'] }}
+                                    </span>
+                                @endif
+                            </a>
+                        @else
+                            {{-- Dropdown group: bundles related, lower-frequency links behind one trigger --}}
+                            @php $groupActive = request()->is(...$link['match']); @endphp
+                            <div class="relative" x-data="{ groupOpen: false }">
+                                <button @click="groupOpen = !groupOpen"
+                                    class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150
+                                          {{ $groupActive
+                                              ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                                              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white' }}">
+                                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="{{ $link['icon'] }}" />
+                                    </svg>
+                                    {{ $link['label'] }}
+                                    <svg class="w-3.5 h-3.5 text-slate-400 transition-transform"
+                                        :class="groupOpen && 'rotate-180'" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+
+                                <div x-show="groupOpen" @click.away="groupOpen = false" x-cloak
+                                    x-transition:enter="transition ease-out duration-150"
+                                    x-transition:enter-start="opacity-0 scale-95 translate-y-1"
+                                    x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                                    x-transition:leave="transition ease-in duration-100"
+                                    x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0 scale-95"
+                                    class="absolute start-0 mt-2 w-64 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden z-50 p-1.5">
+                                    @foreach ($link['children'] as $child)
+                                        @php $childActive = request()->is(...$child['match']); @endphp
+                                        <a href="{{ $child['url'] }}"
+                                            class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all
+                                                  {{ $childActive
+                                                      ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                                                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700' }}">
+                                            <div
+                                                class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="{{ $child['icon'] }}" />
+                                                </svg>
+                                            </div>
+                                            <div class="min-w-0">
+                                                <p class="font-semibold leading-tight">{{ $child['label'] }}</p>
+                                                @if (!empty($child['description']))
+                                                    <p class="text-xs text-slate-400 dark:text-slate-500 truncate">
+                                                        {{ $child['description'] }}</p>
+                                                @endif
+                                            </div>
+                                        </a>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
                     @endforeach
                 </div>
             </div>
@@ -107,7 +172,8 @@
                             class="text-slate-700 dark:text-slate-200 font-medium hidden md:block">{{ auth()->user()->name }}</span>
                         <svg class="w-4 h-4 text-slate-400 transition-transform" :class="open && 'rotate-180'"
                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
 
@@ -244,18 +310,65 @@
         class="lg:hidden border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 pb-4">
         <div class="px-4 pt-3 space-y-1">
             @foreach ($adminNavLinks as $link)
-                @php $isActive = request()->is($link['match']); @endphp
-                <a href="{{ $link['url'] }}"
-                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition
-                          {{ $isActive
-                              ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
-                              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700' }}">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="{{ $link['icon'] }}" />
-                    </svg>
-                    {{ $link['label'] }}
-                </a>
+                @if (($link['type'] ?? 'link') === 'link')
+                    @php $isActive = request()->is(...$link['match']); @endphp
+                    <a href="{{ $link['url'] }}"
+                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition
+                              {{ $isActive
+                                  ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700' }}">
+                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="{{ $link['icon'] }}" />
+                        </svg>
+                        {{ $link['label'] }}
+                        @if (!empty($link['badge']))
+                            <span
+                                class="ms-1 text-[10px] font-bold leading-none px-1.5 py-0.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
+                                {{ $link['badge'] }}
+                            </span>
+                        @endif
+                    </a>
+                @else
+                    {{-- Dropdown group rendered as a collapsible accordion on mobile --}}
+                    @php $groupActive = request()->is(...$link['match']); @endphp
+                    <div x-data="{ groupOpen: {{ $groupActive ? 'true' : 'false' }} }" class="rounded-lg overflow-hidden">
+                        <button @click="groupOpen = !groupOpen"
+                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition
+                                  {{ $groupActive
+                                      ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700' }}">
+                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="{{ $link['icon'] }}" />
+                            </svg>
+                            <span class="flex-1 text-start">{{ $link['label'] }}</span>
+                            <svg class="w-4 h-4 text-slate-400 transition-transform" :class="groupOpen && 'rotate-180'"
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div x-show="groupOpen" x-cloak x-transition class="ps-6 py-1 space-y-1">
+                            @foreach ($link['children'] as $child)
+                                @php $childActive = request()->is(...$child['match']); @endphp
+                                <a href="{{ $child['url'] }}"
+                                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition
+                                          {{ $childActive
+                                              ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                                              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700' }}">
+                                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="{{ $child['icon'] }}" />
+                                    </svg>
+                                    {{ $child['label'] }}
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
             @endforeach
         </div>
     </div>
