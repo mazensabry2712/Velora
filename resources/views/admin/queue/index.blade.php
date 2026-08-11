@@ -150,7 +150,6 @@
                 </div>
             @endif
         </div>
-    </main>
 
     <!-- Add to Queue Modal -->
     <div id="addQueueModal" class="hidden fixed inset-0 bg-black/50 dark:bg-black/70 overflow-y-auto h-full w-full z-50">
@@ -1054,5 +1053,4 @@
             window.location.href = '{{ route('admin.queue.export.excel') }}';
         }
     </script>
-    <script src="/js/dark-mode.js"></script>
 @endpush

@@ -24,6 +24,18 @@
             darkMode: 'class'
         }
     </script>
+    <style>
+        /* .btn-brand is referenced on the submit button below but was never
+           defined for this page (it only existed in super-admin/login.blade.php),
+           leaving the white-on-white button invisible. Defining it here. */
+        .btn-brand {
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            box-shadow: 0 12px 30px rgba(79, 70, 229, 0.35);
+        }
+        .btn-brand:hover {
+            box-shadow: 0 16px 36px rgba(79, 70, 229, 0.45);
+        }
+    </style>
     <!-- Dark Mode Prevention Script - يمنع وميض الوضع الفاتح -->
     <script>
         // يتم تنفيذ هذا الكود فوراً قبل عرض الصفحة

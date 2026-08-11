@@ -149,7 +149,6 @@
                 @endif
             </div>
         </div>
-    </main>
 
     <!-- Add/Edit Staff Modal -->
     <div id="staffModal" class="hidden fixed inset-0 bg-slate-600 dark:bg-slate-900 bg-opacity-50 dark:bg-opacity-70 overflow-y-auto h-full w-full z-50">
@@ -683,5 +682,4 @@ document.querySelectorAll('.day-checkbox').forEach(cb => {
             }
         }
     </script>
-    <script src="/js/dark-mode.js"></script>
 @endpush

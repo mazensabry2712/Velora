@@ -163,7 +163,6 @@
                 </div>
             @endif
         </div>
-    </main>
 
 @endsection
 
@@ -203,5 +202,4 @@
             });
         }
     </script>
-    <script src="/js/dark-mode.js"></script>
 @endpush

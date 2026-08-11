@@ -116,7 +116,6 @@
                 </button>
             </div>
         </div>
-    </main>
 
     <!-- Delete Account Modal -->
     <div id="deleteModal" class="fixed inset-0 bg-black dark:bg-slate-900 bg-opacity-50 dark:bg-opacity-70 hidden items-center justify-center z-50">
@@ -325,5 +324,4 @@
             }
         });
     </script>
-    <script src="/js/dark-mode.js"></script>
 @endpush
