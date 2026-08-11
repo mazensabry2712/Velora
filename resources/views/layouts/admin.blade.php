@@ -24,12 +24,22 @@
 
     @include('layouts.partials.admin.dark-mode-init')
 
-    <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
+        // Must run BEFORE the Tailwind CDN script below. Tailwind's Play CDN
+        // compiles its stylesheet the instant it loads, using whatever
+        // window.tailwind.config it finds at that moment. Setting the config
+        // in a script tag AFTER the CDN <script src> (as this used to do) is
+        // too late — Tailwind had already locked in darkMode:'media' (its
+        // default) by then, so dark: utilities followed the OS color-scheme
+        // preference instead of the .dark class, and the in-app toggle could
+        // turn dark mode on (if it happened to match the OS setting) but
+        // could never turn it back off.
+        window.tailwind = window.tailwind || {};
+        window.tailwind.config = {
             darkMode: 'class'
-        }
+        };
     </script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap"

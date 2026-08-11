@@ -3,55 +3,32 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Appointment;
-use App\Models\Queue;
-use App\Models\User;
-use Illuminate\Support\Facades\DB;
+use App\Services\ReportService;
+use Illuminate\Http\Request;
 
 class ReportController extends Controller
 {
-    public function index()
+    public function __construct(protected ReportService $reports)
     {
-        $stats = [
-            'total_appointments'     => Appointment::count(),
-            'confirmed_appointments' => Appointment::where('status', 'confirmed')->count(),
-            'pending_appointments'   => Appointment::where('status', 'pending')->count(),
-            'total_customers'        => User::role('Customer')->count(),
-        ];
-
-        $appointmentsByStatus = Appointment::select('status', DB::raw('count(*) as count'))
-            ->groupBy('status')
-            ->get();
-
-        $queueStats = [
-            'waiting'  => Queue::where('status', 'waiting')->count(),
-            'serving'  => Queue::where('status', 'serving')->count(),
-            'completed' => Queue::where('status', 'completed')->count(),
-            'priority' => Queue::where('is_vip', true)->whereIn('status', ['waiting', 'serving'])->count(),
-        ];
-
-        $staffPerformance = User::role(['Admin Tenant', 'Staff'])
-            ->withCount(['staffAppointments' => fn($q) => $q->where('status', 'confirmed')])
-            ->having('staff_appointments_count', '>', 0)
-            ->orderByDesc('staff_appointments_count')
-            ->get();
-
-        $serviceTypes = Appointment::whereNotNull('service_type')
-            ->select('service_type', DB::raw('count(*) as count'))
-            ->groupBy('service_type')
-            ->orderByDesc('count')
-            ->get();
-
-        return view('admin.reports.index', compact(
-            'stats',
-            'appointmentsByStatus',
-            'queueStats',
-            'staffPerformance',
-            'serviceTypes'
-        ));
     }
 
-    public function exportAppointments(\Illuminate\Http\Request $request): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    /**
+     * Reports dashboard. Accepts an optional ?period= (today|week|month|
+     * year|all|custom) plus ?start_date=&end_date= when period=custom,
+     * and scopes every activity-based metric to that range.
+     */
+    public function index(Request $request)
+    {
+        $data = $this->reports->getDashboardData(
+            $request->get('period', 'month'),
+            $request->get('start_date'),
+            $request->get('end_date'),
+        );
+
+        return view('admin.reports.index', $data);
+    }
+
+    public function exportAppointments(Request $request): \Symfony\Component\HttpFoundation\BinaryFileResponse
     {
         $period    = $request->get('period', 'month');
         $startDate = $request->get('start_date');
