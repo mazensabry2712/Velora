@@ -60,52 +60,6 @@ class BillingController extends Controller
     }
 
     /**
-     * Show billing dashboard (inside tenant admin).
-     * Route: GET /admin/subscription
-     */
-    public function index()
-    {
-        $tenantId = tenant('id');
-
-        $subscription = DB::connection('mysql')
-            ->table('tenant_subscriptions')
-            ->join('subscription_plans', 'tenant_subscriptions.subscription_plan_id', '=', 'subscription_plans.id')
-            ->where('tenant_subscriptions.tenant_id', $tenantId)
-            ->orderByDesc('tenant_subscriptions.created_at')
-            ->select(
-                'tenant_subscriptions.*',
-                'subscription_plans.name as plan_name',
-                'subscription_plans.max_users',
-                'subscription_plans.max_appointments',
-                'subscription_plans.storage_limit',
-                'subscription_plans.features',
-                'subscription_plans.price',
-                'subscription_plans.billing_cycle',
-            )
-            ->first();
-
-        $plans = SubscriptionPlan::where('is_active', true)
-            ->orderBy('price', 'asc')
-            ->get();
-
-        $invoices = DB::connection('mysql')
-            ->table('tenant_subscriptions')
-            ->where('tenant_id', $tenantId)
-            ->orderByDesc('created_at')
-            ->limit(20)
-            ->get();
-
-        // Usage from tenant DB
-        $usersCount        = \App\Models\User::count();
-        $appointmentsCount = \App\Models\Appointment::whereMonth('created_at', now()->month)->count();
-
-        return view('billing.index', compact(
-            'subscription', 'plans', 'invoices',
-            'usersCount', 'appointmentsCount'
-        ));
-    }
-
-    /**
      * Create Stripe Checkout Session and redirect.
      * Route: POST /billing/checkout
      */

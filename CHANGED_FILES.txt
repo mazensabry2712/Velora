@@ -1,0 +1,12 @@
+app/Http/Controllers/BillingController.php
+app/Http/Controllers/Web/SubscriptionController.php
+app/Services/SubscriptionService.php
+resources/views/admin/settings/index.blade.php
+resources/views/admin/settings/partials/business-info.blade.php
+resources/views/admin/settings/partials/languages.blade.php
+resources/views/admin/settings/partials/logo.blade.php
+resources/views/admin/settings/partials/social-media.blade.php
+resources/views/admin/subscription/index.blade.php
+resources/views/admin/subscription/upgrade.blade.php
+resources/views/billing/index.blade.php
+routes/tenant.php

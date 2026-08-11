@@ -21,15 +21,23 @@ class SubscriptionController extends Controller
     }
 
     /**
-     * Show subscription details
+     * Show subscription details.
+     * Single source of truth for the "/admin/subscription" dashboard —
+     * combines plan info, usage, invoices, and available upgrades.
      */
     public function index()
     {
         $subscriptionInfo = $this->subscriptionService->getSubscriptionInfo();
         $availableUpgrades = $this->subscriptionService->getAvailableUpgrades();
         $usage = $this->subscriptionService->calculateUsage();
+        $invoices = $this->subscriptionService->getInvoices(10);
 
-        return view('admin.subscription.index', compact('subscriptionInfo', 'availableUpgrades', 'usage'));
+        return view('admin.subscription.index', compact(
+            'subscriptionInfo',
+            'availableUpgrades',
+            'usage',
+            'invoices'
+        ));
     }
 
     /**
@@ -89,10 +97,10 @@ class SubscriptionController extends Controller
             try {
                 Mail::to(auth()->user()->email)
                     ->queue(new UpgradeRequestedMail(
-                        tenantName:          auth()->user()->name,
-                        currentPlanName:     $subscriptionInfo['plan_name'] ?? 'N/A',
-                        requestedPlanName:   $plan->name,
-                        requestedPlanPrice:  number_format($plan->price, 2),
+                        tenantName: auth()->user()->name,
+                        currentPlanName: $subscriptionInfo['plan_name'] ?? 'N/A',
+                        requestedPlanName: $plan->name,
+                        requestedPlanPrice: number_format($plan->price, 2),
                     ));
             } catch (\Exception $e) {
                 Log::warning('Failed to send upgrade confirmation email: ' . $e->getMessage());
@@ -104,9 +112,9 @@ class SubscriptionController extends Controller
                 if ($adminEmail) {
                     Mail::to($adminEmail)
                         ->queue(new FounderAlertMail(
-                            tenantId:     $tenantId,
+                            tenantId: $tenantId,
                             businessName: $subscriptionInfo['plan_name'] ?? $tenantId,
-                            ownerEmail:   auth()->user()->email,
+                            ownerEmail: auth()->user()->email,
                             triggerReason: 'New upgrade request: ' . ($subscriptionInfo['plan_name'] ?? 'N/A') . ' → ' . $plan->name,
                             trialDaysLeft: 0,
                         ));
@@ -117,7 +125,6 @@ class SubscriptionController extends Controller
 
             return redirect()->route('admin.subscription.index')
                 ->with('success', __('Upgrade request submitted successfully. Our team will contact you shortly.'));
-
         } catch (\Exception $e) {
             \Log::error('Upgrade request failed: ' . $e->getMessage());
             return back()->with('error', __('Failed to submit upgrade request. Please try again.'));

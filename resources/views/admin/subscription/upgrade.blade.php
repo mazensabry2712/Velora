@@ -75,11 +75,26 @@
                     @endforeach
                 </ul>
 
-                <!-- Upgrade Button -->
+                <!-- Upgrade Action -->
+                @if(!empty($plan['stripe_price_id']))
+                <form action="{{ route('billing.checkout') }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="plan_id" value="{{ $plan['id'] }}">
+                    <button type="submit"
+                            class="w-full py-3 px-6 rounded-lg font-semibold transition {{ $plan['is_popular'] ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600' : 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-600' }}">
+                        {{ __('Subscribe Now') }}
+                    </button>
+                </form>
+                <button onclick="openUpgradeModal({{ json_encode($plan) }})"
+                        class="w-full mt-2 py-2 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition">
+                    {{ __('Or request via our sales team') }}
+                </button>
+                @else
                 <button onclick="openUpgradeModal({{ json_encode($plan) }})"
                         class="w-full py-3 px-6 rounded-lg font-semibold transition {{ $plan['is_popular'] ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600' : 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-600' }}">
                     {{ __('Select This Plan') }}
                 </button>
+                @endif
             </div>
         </div>
         @endforeach

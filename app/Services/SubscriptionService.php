@@ -36,7 +36,10 @@ class SubscriptionService
                     'tenant_subscriptions.starts_at',
                     'tenant_subscriptions.ends_at',
                     'tenant_subscriptions.trial_ends_at',
-                    'tenant_subscriptions.subscription_plan_id'
+                    'tenant_subscriptions.grace_ends_at',
+                    'tenant_subscriptions.subscription_plan_id',
+                    'tenant_subscriptions.stripe_customer_id',
+                    'tenant_subscriptions.trial_extended'
                 )
                 ->orderByRaw("FIELD(tenant_subscriptions.status, 'active', 'trial')")
                 ->orderByDesc('tenant_subscriptions.created_at')
@@ -66,7 +69,10 @@ class SubscriptionService
                 'starts_at' => $subscription->starts_at,
                 'ends_at' => $subscription->ends_at,
                 'trial_ends_at' => $subscription->trial_ends_at,
+                'grace_ends_at' => $subscription->grace_ends_at,
                 'days_remaining' => (int) $daysRemaining,
+                'stripe_customer_id' => $subscription->stripe_customer_id,
+                'trial_extended' => (bool) $subscription->trial_extended,
                 'limits' => [
                     'users' => [
                         'max' => $subscription->max_users == -1 ? __('Unlimited') : $subscription->max_users,
@@ -233,12 +239,43 @@ class SubscriptionService
                     'max_users' => $plan->max_users,
                     'max_appointments' => $plan->max_appointments,
                     'features' => json_decode($plan->features ?? '[]', true),
-                    'is_popular' => $plan->is_popular
+                    'is_popular' => $plan->is_popular,
+                    // Presence of a Stripe price enables instant self-service checkout;
+                    // plans without one fall back to the sales-assisted request flow.
+                    'stripe_price_id' => $plan->stripe_price_id ?? null,
                 ];
             })->toArray();
         } catch (\Exception $e) {
             \Log::error('Failed to get available upgrades: ' . $e->getMessage());
             return [];
+        }
+    }
+
+    /**
+     * Get billing / subscription history for the current tenant, most recent first.
+     */
+    public function getInvoices(int $limit = 20)
+    {
+        $tenantId = tenant('id');
+
+        if (!$tenantId) {
+            return collect();
+        }
+
+        try {
+            return DB::connection('mysql')->table('tenant_subscriptions')
+                ->join('subscription_plans', 'tenant_subscriptions.subscription_plan_id', '=', 'subscription_plans.id')
+                ->where('tenant_subscriptions.tenant_id', $tenantId)
+                ->select(
+                    'tenant_subscriptions.*',
+                    'subscription_plans.name as plan_name'
+                )
+                ->orderByDesc('tenant_subscriptions.created_at')
+                ->limit($limit)
+                ->get();
+        } catch (\Exception $e) {
+            \Log::error('Failed to get invoices: ' . $e->getMessage());
+            return collect();
         }
     }
 
