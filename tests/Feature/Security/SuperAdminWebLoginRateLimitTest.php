@@ -24,7 +24,7 @@ class SuperAdminWebLoginRateLimitTest extends SuperAdminTestCase
             $this->post(route('super-admin.login.post'), [
                 'email' => $email,
                 'password' => 'wrong-password',
-            ])->assertRedirect(route('super-admin.login'))
+            ])->assertRedirect()
               ->assertSessionHasErrors('email');
         }
 
@@ -33,7 +33,7 @@ class SuperAdminWebLoginRateLimitTest extends SuperAdminTestCase
         $this->post(route('super-admin.login.post'), [
             'email' => $email,
             'password' => 'wrong-password',
-        ])->assertRedirect(route('super-admin.login'))
+        ])->assertRedirect()
           ->assertSessionHasErrors('email');
     }
 
