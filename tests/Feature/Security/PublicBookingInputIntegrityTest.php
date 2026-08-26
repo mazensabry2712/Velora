@@ -5,7 +5,6 @@ namespace Tests\Feature\Security;
 use App\Models\Resource;
 use App\Models\Service;
 use App\Models\Staff;
-use Illuminate\Validation\ValidationException;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TenantTestCase;
 
@@ -32,7 +31,7 @@ class PublicBookingInputIntegrityTest extends TenantTestCase
             'appointment_date' => now()->addDay()->toDateString(),
             'appointment_time' => '10:00',
             'service_id' => $service->id,
-            'staff_id' => $staff->id,
+            'staff_id' => $staff->user_id,
         ]);
 
         $response->assertStatus(422)
@@ -59,7 +58,7 @@ class PublicBookingInputIntegrityTest extends TenantTestCase
             'appointment_date' => now()->addDay()->toDateString(),
             'appointment_time' => '10:00',
             'service_id' => $service->id,
-            'staff_id' => $staff->id,
+            'staff_id' => $staff->user_id,
         ]);
 
         $response->assertStatus(422)
@@ -86,7 +85,7 @@ class PublicBookingInputIntegrityTest extends TenantTestCase
             'appointment_date' => now()->addDay()->toDateString(),
             'appointment_time' => '10:00',
             'service_id' => $service->id,
-            'staff_id' => $staff->id,
+            'staff_id' => $staff->user_id,
         ]);
 
         $response->assertStatus(422)
@@ -121,7 +120,7 @@ class PublicBookingInputIntegrityTest extends TenantTestCase
             'appointment_date' => now()->addDay()->toDateString(),
             'appointment_time' => '10:00',
             'service_id' => $service->id,
-            'staff_id' => $staff->id,
+            'staff_id' => $staff->user_id,
             'resource_id' => $resource->id,
         ]);
 
