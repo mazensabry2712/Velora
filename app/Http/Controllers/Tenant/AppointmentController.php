@@ -63,8 +63,6 @@ class AppointmentController extends Controller
                         ->where('is_active', true)
                         ->where('is_online_bookable', true)),
                 ],
-                // The existing public staff API returns the User ID. Resolve
-                // that ID to the dedicated Staff record before booking.
                 'staff_id' => ['required', 'integer', Rule::exists('users', 'id')],
                 'resource_id' => [
                     'nullable',
@@ -147,12 +145,9 @@ class AppointmentController extends Controller
 
                 $appointment = $this->bookingService->create($data);
 
-                // Keep the queue row in the same transaction as the appointment.
-                // A queue failure must never leave a successfully booked appointment
-                // without its customer-facing queue number.
                 $queue = Queue::create([
                     'appointment_id' => $appointment->id,
-                    'queue_number' => Queue::generateQueueNumber(),
+                    'queue_number' => Queue::generateQueueNumber($startsAt),
                     'queue_date' => $startsAt->toDateString(),
                     'status' => 'waiting',
                     'is_vip' => false,
