@@ -139,7 +139,6 @@ abstract class TenantTestCase extends TestCase
             'name' => 'Admin User',
             'email' => 'admin@test.com',
             'password' => Hash::make('password'),
-            'role_id' => $this->adminRole->id,
         ]);
         $this->admin->assignRole($this->adminRole);
 
@@ -147,7 +146,6 @@ abstract class TenantTestCase extends TestCase
             'name' => 'Staff Member',
             'email' => 'staff@test.com',
             'password' => Hash::make('password'),
-            'role_id' => $this->staffRole->id,
             'specialization' => 'General',
         ]);
         $this->staffMember->assignRole($this->staffRole);
@@ -157,7 +155,6 @@ abstract class TenantTestCase extends TestCase
             'email' => 'customer@test.com',
             'phone' => '0501234567',
             'password' => Hash::make('password'),
-            'role_id' => $this->customerRole->id,
         ]);
         $this->customer->assignRole($this->customerRole);
 
