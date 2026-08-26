@@ -93,6 +93,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Staff profile corresponding to this user account.
+     */
+    public function staffProfile()
+    {
+        return $this->hasOne(Staff::class, 'user_id');
+    }
+
+    /**
      * Services assigned to this user when the user is acting as staff.
      * The pivot also contains staff_id for the Staff profile, so the user_id
      * key is declared explicitly to avoid Eloquent guessing the wrong key.
