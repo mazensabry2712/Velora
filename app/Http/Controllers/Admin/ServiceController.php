@@ -22,7 +22,7 @@ class ServiceController extends Controller
 
     public function index(): JsonResponse
     {
-        return response()->json(['success' => true, 'data' => Service::active()->get()]);
+        return response()->json(['success' => true, 'data' => Service::onlineBookable()->orderBy('sort_order')->get()]);
     }
 
     public function show(int $id): JsonResponse
