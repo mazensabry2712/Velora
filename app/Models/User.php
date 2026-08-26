@@ -23,7 +23,6 @@ class User extends Authenticatable
         'password',
         'is_vip',
         'avatar',
-        'role_id',
     ];
 
     protected $hidden = [
@@ -71,11 +70,6 @@ class User extends Authenticatable
     public function tenant()
     {
         return $this->belongsTo(Tenant::class);
-    }
-
-    public function role()
-    {
-        return $this->belongsTo(Role::class, 'role_id');
     }
 
     public function appointments()
