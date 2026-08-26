@@ -179,7 +179,13 @@ abstract class TenantTestCase extends TestCase
             'is_active' => true,
         ]);
 
-        $this->staff->services()->syncWithoutDetaching([$this->service->id]);
+        DB::table('staff_services')->insert([
+            'user_id' => $this->staffMember->id,
+            'staff_id' => $this->staff->id,
+            'service_id' => $this->service->id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
         self::$fixtureIds = [
             'adminRole' => $this->adminRole->id,
