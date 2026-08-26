@@ -23,7 +23,7 @@ class AuthorizationMatrixTest extends TenantTestCase
     {
         $this->actingAs($this->customer)
             ->get(route('admin.dashboard'))
-            ->assertForbidden();
+            ->assertRedirect(route('customer.booking'));
     }
 
     #[Test]
@@ -35,19 +35,19 @@ class AuthorizationMatrixTest extends TenantTestCase
     }
 
     #[Test]
-    public function staff_cannot_access_admin_only_assistants_page(): void
+    public function staff_is_rejected_from_admin_only_assistants_page(): void
     {
         $this->actingAs($this->staffMember)
             ->get(route('admin.assistants'))
-            ->assertForbidden();
+            ->assertRedirect(route('customer.booking'));
     }
 
     #[Test]
-    public function staff_cannot_access_admin_only_subscription_page(): void
+    public function staff_is_rejected_from_admin_only_subscription_page(): void
     {
         $this->actingAs($this->staffMember)
             ->get(route('admin.subscription.index'))
-            ->assertForbidden();
+            ->assertRedirect(route('customer.booking'));
     }
 
     #[Test]
@@ -55,7 +55,7 @@ class AuthorizationMatrixTest extends TenantTestCase
     {
         $this->actingAs($this->customer)
             ->postJson(route('admin.api.appointments.store'), [])
-            ->assertForbidden();
+            ->assertRedirect(route('customer.booking'));
     }
 
     #[Test]
@@ -63,6 +63,6 @@ class AuthorizationMatrixTest extends TenantTestCase
     {
         $this->actingAs($this->customer)
             ->getJson(route('admin.api.staff.show', $this->staffMember->id))
-            ->assertForbidden();
+            ->assertRedirect(route('customer.booking'));
     }
 }
