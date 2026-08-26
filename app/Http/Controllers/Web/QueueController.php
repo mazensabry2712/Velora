@@ -77,7 +77,13 @@ class QueueController extends Controller
 
         try {
             $queue = Queue::where('queue_number', $queueNumber)
-                ->with(['appointment.customer', 'appointment.service', 'appointment.staff'])
+                ->with([
+                    'appointment.customer',
+                    'appointment.newCustomer',
+                    'appointment.service',
+                    'appointment.staff',
+                    'appointment.newStaff',
+                ])
                 ->first();
 
             if (!$queue) {
@@ -87,13 +93,21 @@ class QueueController extends Controller
                 ], 404);
             }
 
+            $appointment = $queue->appointment;
+            $customerName = $appointment?->newCustomer?->full_name
+                ?: $appointment?->customer?->name
+                ?: 'N/A';
+            $staffName = $appointment?->newStaff?->full_name
+                ?: $appointment?->staff?->name
+                ?: 'N/A';
+
             return response()->json([
                 'success' => true,
                 'data' => [
                     'queue_number' => $queue->queue_number,
-                    'customer_name' => $queue->appointment?->customer?->name ?? 'N/A',
-                    'service' => $queue->appointment?->service?->name ?? 'N/A',
-                    'staff_name' => $queue->appointment?->staff?->name ?? 'N/A',
+                    'customer_name' => $customerName,
+                    'service' => $appointment?->service?->name ?? 'N/A',
+                    'staff_name' => $staffName,
                     'status' => $queue->status,
                     'is_vip' => $queue->is_vip,
                     'notes' => $queue->notes,
