@@ -11,6 +11,7 @@ use App\Models\Service;
 use App\Models\Staff;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 
 /**
@@ -56,13 +57,13 @@ class SlotEngine
         $bufferAfter     = $service->buffer_after_minutes;
 
         $slots  = collect();
-        $cursor = $windowStart->copy()->addMinutes($bufferBefore);
+        $cursor = $windowStart->addMinutes($bufferBefore);
 
-        while ($cursor->copy()->addMinutes($serviceDuration)->lte($windowEnd)) {
-            $slotStart         = $cursor->copy();
-            $slotEnd           = $cursor->copy()->addMinutes($serviceDuration);
-            $slotEndWithBuffer = $slotEnd->copy()->addMinutes($bufferAfter);
-            $blockStart        = $slotStart->copy()->subMinutes($bufferBefore);
+        while ($cursor->addMinutes($serviceDuration)->lte($windowEnd)) {
+            $slotStart         = $cursor;
+            $slotEnd           = $cursor->addMinutes($serviceDuration);
+            $slotEndWithBuffer = $slotEnd->addMinutes($bufferAfter);
+            $blockStart        = $slotStart->subMinutes($bufferBefore);
 
             if (! $this->overlapsAny($blockStart, $slotEndWithBuffer, $blocked)) {
                 // TimeSlot's public DTO contract uses mutable Carbon instances.
@@ -76,7 +77,7 @@ class SlotEngine
                 ));
             }
 
-            $cursor->addMinutes($this->slotIntervalMinutes);
+            $cursor = $cursor->addMinutes($this->slotIntervalMinutes);
         }
 
         return $slots;
@@ -169,8 +170,8 @@ class SlotEngine
 
         $baseDay = ($date ?: CarbonImmutable::now($tz)->startOfDay())->setTimezone($tz)->startOfDay();
 
-        $start = $baseDay->copy()->setTimeFromTimeString($hours->start_time);
-        $end   = $baseDay->copy()->setTimeFromTimeString($hours->end_time);
+        $start = $baseDay->setTimeFromTimeString($hours->start_time);
+        $end   = $baseDay->setTimeFromTimeString($hours->end_time);
 
         return [$start, $end];
     }
@@ -246,9 +247,9 @@ class SlotEngine
     }
 
     /**
-     * @param array<array{Carbon, Carbon}> $blocked
+     * @param array<array{CarbonInterface, CarbonInterface}> $blocked
      */
-    private function overlapsAny(Carbon $start, Carbon $end, array $blocked): bool
+    private function overlapsAny(CarbonInterface $start, CarbonInterface $end, array $blocked): bool
     {
         foreach ($blocked as [$bStart, $bEnd]) {
             if ($start->lt($bEnd) && $end->gt($bStart)) {
