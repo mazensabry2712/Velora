@@ -10,15 +10,9 @@ use App\Http\Controllers\SuperAdmin\SystemNotificationController;
 use App\Http\Controllers\Auth\SuperAdminAuthController;
 use App\Http\Controllers\Auth\TenantAuthController;
 
-/*
-|--------------------------------------------------------------------------
-| Authentication Routes
-|--------------------------------------------------------------------------
-*/
-
+/* Authentication */
 Route::prefix('super-admin/auth')->group(function () {
     Route::post('/login', [SuperAdminAuthController::class, 'login']);
-
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/profile', [SuperAdminAuthController::class, 'profile']);
         Route::post('/logout', [SuperAdminAuthController::class, 'logout']);
@@ -28,7 +22,6 @@ Route::prefix('super-admin/auth')->group(function () {
 Route::middleware(['tenant', 'tenant.locale'])->prefix('auth')->group(function () {
     Route::post('/login', [TenantAuthController::class, 'login']);
     Route::post('/register', [TenantAuthController::class, 'register']);
-
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/profile', [TenantAuthController::class, 'profile']);
         Route::post('/logout', [TenantAuthController::class, 'logout']);
@@ -38,7 +31,6 @@ Route::middleware(['tenant', 'tenant.locale'])->prefix('auth')->group(function (
 Route::prefix('v1/auth')->middleware(['tenant.token', 'tenant.locale'])->group(function () {
     Route::post('/login', [TenantAuthController::class, 'login']);
     Route::post('/register', [TenantAuthController::class, 'register']);
-
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/profile', [TenantAuthController::class, 'profile']);
         Route::post('/logout', [TenantAuthController::class, 'logout']);
@@ -54,7 +46,6 @@ Route::prefix('super-admin')->middleware(['auth:web', 'super.admin'])->group(fun
     Route::get('/dashboard/activity-summary', [DashboardController::class, 'activitySummary']);
     Route::get('/dashboard/growth-metrics', [DashboardController::class, 'growthMetrics']);
     Route::get('/dashboard/revenue-metrics', [DashboardController::class, 'revenueMetrics']);
-
     Route::get('/tenants/trash', [TenantController::class, 'trash']);
     Route::get('/tenants/export-excel', [TenantController::class, 'exportExcel']);
     Route::post('/tenants/restore-all', [TenantController::class, 'restoreAll']);
@@ -69,20 +60,16 @@ Route::prefix('super-admin')->middleware(['auth:web', 'super.admin'])->group(fun
     Route::get('/tenants/{id}/users', [TenantController::class, 'users']);
     Route::post('/tenants/{id}/reset-admin-password', [TenantController::class, 'resetAdminPassword']);
     Route::get('/tenants/{id}/subscription', [TenantController::class, 'subscription']);
-
     Route::apiResource('subscription-plans', SubscriptionPlanController::class);
     Route::post('/subscription-plans/{id}/toggle-status', [SubscriptionPlanController::class, 'toggleStatus']);
-
     Route::get('/activity-logs', [ActivityLogController::class, 'index']);
     Route::get('/activity-logs/statistics', [ActivityLogController::class, 'statistics']);
     Route::post('/activity-logs/clear-old', [ActivityLogController::class, 'clearOld']);
-
     Route::get('/settings', [SystemSettingController::class, 'index']);
     Route::get('/settings/{key}', [SystemSettingController::class, 'show']);
     Route::post('/settings', [SystemSettingController::class, 'store']);
     Route::put('/settings', [SystemSettingController::class, 'update']);
     Route::delete('/settings/{key}', [SystemSettingController::class, 'destroy']);
-
     Route::apiResource('notifications', SystemNotificationController::class)->except(['update']);
     Route::post('/notifications/{id}/send', [SystemNotificationController::class, 'send']);
 });
@@ -92,22 +79,15 @@ Route::middleware(['tenant', 'tenant.locale'])->group(function () {
     Route::get('staff', function () {
         return \App\Models\User::role('Staff')->select('id', 'name')->get();
     });
-
     Route::post('appointments', [\App\Http\Controllers\Tenant\AppointmentController::class, 'store']);
     Route::get('queue/status/{queueNumber}', [\App\Http\Controllers\Tenant\QueueController::class, 'getQueueStatus']);
 });
 
 Route::middleware(['tenant', 'tenant.locale', 'auth:sanctum'])->group(function () {
     Route::middleware(['role:Admin Tenant|Staff'])->group(function () {
-        Route::apiResource('appointments', \App\Http\Controllers\Tenant\AppointmentController::class)
-            ->except(['store'])
-            ->names([
-                'index' => 'api.appointments.index',
-                'show' => 'api.appointments.show',
-                'update' => 'api.appointments.update',
-                'destroy' => 'api.appointments.destroy',
-            ]);
-
+        Route::apiResource('appointments', \App\Http\Controllers\Tenant\AppointmentController::class)->except(['store'])->names([
+            'index' => 'api.appointments.index', 'show' => 'api.appointments.show', 'update' => 'api.appointments.update', 'destroy' => 'api.appointments.destroy',
+        ]);
         Route::get('queue', [\App\Http\Controllers\Tenant\QueueController::class, 'index']);
         Route::post('queue/add', [\App\Http\Controllers\Tenant\QueueController::class, 'add']);
         Route::post('queue/next', [\App\Http\Controllers\Tenant\QueueController::class, 'next']);
@@ -146,26 +126,21 @@ Route::middleware(['tenant', 'tenant.locale', 'auth:sanctum'])->group(function (
 /* Tenant APIs by token */
 Route::prefix('v1')->middleware(['tenant.token', 'tenant.locale', 'auth:sanctum'])->group(function () {
     Route::middleware(['role:Admin Tenant|Staff'])->group(function () {
-        Route::apiResource('appointments', \App\Http\Controllers\Tenant\AppointmentController::class)
-            ->names([
-                'index' => 'api.v1.appointments.index',
-                'store' => 'api.v1.appointments.store',
-                'show' => 'api.v1.appointments.show',
-                'update' => 'api.v1.appointments.update',
-                'destroy' => 'api.v1.appointments.destroy',
-            ]);
-
-        Route::apiResource('queues', \App\Http\Controllers\Tenant\QueueController::class)
-            ->names('api.v1.queues');
+        Route::apiResource('appointments', \App\Http\Controllers\Tenant\AppointmentController::class)->names([
+            'index' => 'api.v1.appointments.index', 'store' => 'api.v1.appointments.store', 'show' => 'api.v1.appointments.show', 'update' => 'api.v1.appointments.update', 'destroy' => 'api.v1.appointments.destroy',
+        ]);
+        Route::apiResource('queues', \App\Http\Controllers\Tenant\QueueController::class)->names('api.v1.queues');
     });
 
-    Route::apiResource('notifications', \App\Http\Controllers\Tenant\NotificationController::class)
-        ->names('api.v1.notifications');
+    Route::get('notifications', [\App\Http\Controllers\Tenant\NotificationController::class, 'index'])->name('api.v1.notifications.index');
+    Route::get('notifications/unread-count', [\App\Http\Controllers\Tenant\NotificationController::class, 'unreadCount'])->name('api.v1.notifications.unread-count');
+    Route::get('notifications/{id}', [\App\Http\Controllers\Tenant\NotificationController::class, 'show'])->name('api.v1.notifications.show');
+    Route::post('notifications/{id}/read', [\App\Http\Controllers\Tenant\NotificationController::class, 'markAsRead'])->name('api.v1.notifications.read');
+    Route::post('notifications/mark-all-read', [\App\Http\Controllers\Tenant\NotificationController::class, 'markAllAsRead'])->name('api.v1.notifications.mark-all-read');
+    Route::delete('notifications/{id}', [\App\Http\Controllers\Tenant\NotificationController::class, 'destroy'])->name('api.v1.notifications.destroy');
 
     Route::middleware(['role:Admin Tenant'])->group(function () {
-        Route::apiResource('invoices', \App\Http\Controllers\Tenant\InvoiceController::class)
-            ->names('api.v1.invoices');
-
+        Route::apiResource('invoices', \App\Http\Controllers\Tenant\InvoiceController::class)->names('api.v1.invoices');
         Route::get('analytics/summary', [\App\Http\Controllers\Tenant\AnalyticsController::class, 'summary'])->name('api.v1.analytics.summary');
         Route::get('analytics/daily', [\App\Http\Controllers\Tenant\AnalyticsController::class, 'daily'])->name('api.v1.analytics.daily');
     });
