@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 
 class SuperAdminAuthController extends Controller
@@ -20,10 +21,22 @@ class SuperAdminAuthController extends Controller
             'password' => 'required',
         ]);
 
+        $throttleKey = 'super-admin-login:' . $request->ip() . ':' . strtolower($request->input('email'));
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+
+            throw ValidationException::withMessages([
+                'email' => ["Too many login attempts. Please try again in {$seconds} seconds."],
+            ]);
+        }
+
         // Find Super Admin
         $user = User::where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
+            RateLimiter::hit($throttleKey, 60);
+
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
@@ -31,10 +44,14 @@ class SuperAdminAuthController extends Controller
 
         // Check if user has Super Admin role
         if (!$user->isSuperAdmin()) {
+            RateLimiter::hit($throttleKey, 60);
+
             throw ValidationException::withMessages([
                 'email' => ['You do not have Super Admin access.'],
             ]);
         }
+
+        RateLimiter::clear($throttleKey);
 
         // Create token
         $token = $user->createToken('super-admin-token', ['super-admin'])->plainTextToken;
