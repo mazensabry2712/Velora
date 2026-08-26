@@ -34,4 +34,11 @@ jobs:
           php artisan optimize:clear
 
       - name: Run test suite
+        env:
+          APP_URL: http://bookora.test
+          APP_DOMAIN: bookora.test
+          APP_BASE_DOMAIN: bookora.test
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ':memory:'
+          TENANCY_CENTRAL_CONNECTION: sqlite
         run: php artisan test --compact
