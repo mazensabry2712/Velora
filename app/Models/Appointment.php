@@ -51,7 +51,7 @@ class Appointment extends Model
         'confirmed_at'       => 'datetime',
         'completed_at'       => 'datetime',
         'cancelled_at'       => 'datetime',
-        'no_show_at'          => 'datetime',
+        'no_show_at'         => 'datetime',
         'reminder_sent_at'    => 'datetime',
         'price'               => 'decimal:2',
         'deposit_paid'        => 'decimal:2',
@@ -115,63 +115,72 @@ class Appointment extends Model
             }
         });
 
-        // After status changes, auto-create in-app notifications for the customer
+        // After status changes, auto-create in-app notifications for legacy authenticated customers
+        // and auto-generate invoices for both legacy and new booking-engine customers.
         static::updated(function ($appointment) {
-            if (!$appointment->wasChanged('status') || !$appointment->customer_id) {
+            if (!$appointment->wasChanged('status')) {
                 return;
             }
 
             $newStatus = $appointment->status;
 
-            $messages = [
-                'confirmed' => [
-                    'ar' => 'تم تأكيد موعدك بتاريخ ' . \Carbon\Carbon::parse($appointment->date)->format('Y-m-d') . ' الساعة ' . $appointment->time_slot,
-                    'en' => 'Your appointment on ' . \Carbon\Carbon::parse($appointment->date)->format('Y-m-d') . ' at ' . $appointment->time_slot . ' has been confirmed.',
-                ],
-                'cancelled' => [
-                    'ar' => 'تم إلغاء موعدك بتاريخ ' . \Carbon\Carbon::parse($appointment->date)->format('Y-m-d'),
-                    'en' => 'Your appointment on ' . \Carbon\Carbon::parse($appointment->date)->format('Y-m-d') . ' has been cancelled.',
-                ],
-                'completed' => [
-                    'ar' => 'تمت خدمتك بنجاح، شكراً لزيارتك!',
-                    'en' => 'Your appointment has been completed. Thank you for your visit!',
-                ],
-            ];
+            // Legacy notifications are stored against the users table, so only create them
+            // when this appointment still has the legacy customer_id populated.
+            if ($appointment->customer_id) {
+                $messages = [
+                    'confirmed' => [
+                        'ar' => 'تم تأكيد موعدك بتاريخ ' . \Carbon\Carbon::parse($appointment->date)->format('Y-m-d') . ' الساعة ' . $appointment->time_slot,
+                        'en' => 'Your appointment on ' . \Carbon\Carbon::parse($appointment->date)->format('Y-m-d') . ' at ' . $appointment->time_slot . ' has been confirmed.',
+                    ],
+                    'cancelled' => [
+                        'ar' => 'تم إلغاء موعدك بتاريخ ' . \Carbon\Carbon::parse($appointment->date)->format('Y-m-d'),
+                        'en' => 'Your appointment on ' . \Carbon\Carbon::parse($appointment->date)->format('Y-m-d') . ' has been cancelled.',
+                    ],
+                    'completed' => [
+                        'ar' => 'تمت خدمتك بنجاح، شكراً لزيارتك!',
+                        'en' => 'Your appointment has been completed. Thank you for your visit!',
+                    ],
+                ];
 
-            if (!isset($messages[$newStatus])) {
-                return;
-            }
+                if (isset($messages[$newStatus])) {
+                    $locale  = app()->getLocale();
+                    $message = $messages[$newStatus][$locale] ?? $messages[$newStatus]['en'];
 
-            $locale  = app()->getLocale();
-            $message = $messages[$newStatus][$locale] ?? $messages[$newStatus]['en'];
-
-            try {
-                \App\Models\Notification::create([
-                    'user_id'        => $appointment->customer_id,
-                    'appointment_id' => $appointment->id,
-                    'type'           => 'status_change',
-                    'message'        => $message,
-                    'is_read'        => false,
-                ]);
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning('Auto-notification failed for appointment ' . $appointment->id . ': ' . $e->getMessage());
-            }
-
-            // Auto-generate invoice when appointment is completed and service has a price
-            if ($newStatus === 'completed') {
-                try {
-                    $service = $appointment->service;
-                    $price   = $service?->price ?? 0;
-
-                    if ($price > 0) {
-                        \App\Models\Invoice::create([
-                            'customer_id' => $appointment->customer_id,
-                            'amount'      => $price,
-                            'status'      => 'pending',
+                    try {
+                        \App\Models\Notification::create([
+                            'user_id'        => $appointment->customer_id,
+                            'appointment_id' => $appointment->id,
+                            'type'           => 'status_change',
+                            'message'        => $message,
+                            'is_read'        => false,
                         ]);
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::warning('Auto-notification failed for appointment ' . $appointment->id . ': ' . $e->getMessage());
                     }
-                } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::warning('Auto-invoice failed for appointment ' . $appointment->id . ': ' . $e->getMessage());
+                }
+            }
+
+            // Auto-generate invoice when appointment is completed and service has a price.
+            // New public bookings use customer_id_new; legacy appointments use customer_id.
+            if ($newStatus === 'completed') {
+                $invoiceCustomerId = $appointment->customer_id ?: $appointment->customer_id_new;
+
+                if ($invoiceCustomerId) {
+                    try {
+                        $service = $appointment->service;
+                        $price   = $service?->price ?? 0;
+
+                        if ($price > 0) {
+                            \App\Models\Invoice::create([
+                                'customer_id'    => $invoiceCustomerId,
+                                'appointment_id' => $appointment->id,
+                                'amount'         => $price,
+                                'status'         => 'pending',
+                            ]);
+                        }
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::warning('Auto-invoice failed for appointment ' . $appointment->id . ': ' . $e->getMessage());
+                    }
                 }
             }
         });
