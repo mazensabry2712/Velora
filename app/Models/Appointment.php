@@ -48,9 +48,9 @@ class Appointment extends Model
         'starts_at'           => 'datetime',
         'ends_at'             => 'datetime',
         'ends_at_with_buffer' => 'datetime',
-        'confirmed_at'        => 'datetime',
-        'completed_at'        => 'datetime',
-        'cancelled_at'        => 'datetime',
+        'confirmed_at'       => 'datetime',
+        'completed_at'       => 'datetime',
+        'cancelled_at'       => 'datetime',
         'no_show_at'          => 'datetime',
         'reminder_sent_at'    => 'datetime',
         'price'               => 'decimal:2',
@@ -196,6 +196,12 @@ class Appointment extends Model
         return $this->belongsTo(Customer::class, 'customer_id_new');
     }
 
+    /** Backward-compatible alias used by API consumers/controllers. */
+    public function customerNew(): BelongsTo
+    {
+        return $this->newCustomer();
+    }
+
     /** Legacy: staff via users table */
     public function staff(): BelongsTo
     {
@@ -206,6 +212,12 @@ class Appointment extends Model
     public function newStaff(): BelongsTo
     {
         return $this->belongsTo(Staff::class, 'staff_id_new');
+    }
+
+    /** Backward-compatible alias used by API consumers/controllers. */
+    public function staffNew(): BelongsTo
+    {
+        return $this->newStaff();
     }
 
     public function service(): BelongsTo
