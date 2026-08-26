@@ -118,7 +118,8 @@ class CustomerBookingJourneyTest extends TenantTestCase
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.queue_number', $queue->queue_number)
             ->assertJsonPath('data.status', 'waiting')
-            ->assertJsonPath('data.customer_name', 'Queue Customer')
+            ->assertJsonMissingPath('data.customer_name')
+            ->assertJsonMissingPath('data.notes')
             ->assertJsonPath('data.service', $this->service->name)
             ->assertJsonPath('data.staff_name', $this->staffMember->name);
 
