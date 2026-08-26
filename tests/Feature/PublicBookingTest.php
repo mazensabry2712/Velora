@@ -8,6 +8,7 @@ use App\Models\Setting;
 use App\Models\Service;
 use App\Models\TimeSlot;
 use App\Models\WorkingDay;
+use Illuminate\Support\Facades\RateLimiter;
 
 /**
  * Tests for public booking page and booking API endpoints.
@@ -73,7 +74,7 @@ class PublicBookingTest extends TenantTestCase
     public function staff_by_service_api_returns_correct_staff(): void
     {
         $service = Service::create([
-            'name'      => 'Massage',
+            'name' => 'Massage',
             'is_active' => true,
         ]);
 
@@ -126,6 +127,26 @@ class PublicBookingTest extends TenantTestCase
 
         $activeDays = collect($response->json('data'))->where('is_active', true);
         $this->assertCount(1, $activeDays);
+    }
+
+    #[Test]
+    public function public_booking_is_rate_limited_per_tenant_and_ip(): void
+    {
+        $key = 'public-booking:' . $this->tenant->getTenantKey() . ':' . $this->app->make('request')->ip();
+        RateLimiter::clear($key);
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->postJson('/api/appointments', [])->assertStatus(422);
+        }
+
+        $this->postJson('/api/appointments', [])
+             ->assertStatus(429)
+             ->assertJson([
+                 'success' => false,
+                 'message' => 'Too many booking attempts. Please try again later.',
+             ]);
+
+        $this->assertTrue(RateLimiter::tooManyAttempts($key, 5));
     }
 
     #[Test]
