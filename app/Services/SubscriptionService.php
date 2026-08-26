@@ -41,7 +41,8 @@ class SubscriptionService
                     'tenant_subscriptions.stripe_customer_id',
                     'tenant_subscriptions.trial_extended'
                 )
-                ->orderByRaw("FIELD(tenant_subscriptions.status, 'active', 'trial')")
+                // CASE is supported by both MySQL and SQLite; FIELD() is MySQL-only.
+                ->orderByRaw("CASE WHEN tenant_subscriptions.status = 'active' THEN 0 WHEN tenant_subscriptions.status = 'trial' THEN 1 ELSE 2 END")
                 ->orderByDesc('tenant_subscriptions.created_at')
                 ->first();
 
@@ -104,11 +105,16 @@ class SubscriptionService
      */
     public function calculateUsage()
     {
-        $currentMonth = now()->format('Y-m');
+        $startOfMonth = now()->startOfMonth();
+        $startOfNextMonth = now()->startOfMonth()->addMonth();
 
         return [
             'users' => User::count(),
-            'appointments' => Appointment::whereRaw("DATE_FORMAT(created_at, '%Y-%m') = ?", [$currentMonth])->count(),
+            // Use a date range instead of DATE_FORMAT() so the query works on
+            // both MySQL and SQLite (used by the automated test suite).
+            'appointments' => Appointment::where('created_at', '>=', $startOfMonth)
+                ->where('created_at', '<', $startOfNextMonth)
+                ->count(),
             'appointments_total' => Appointment::count(),
             'storage' => 0 // Implement storage calculation later
         ];
