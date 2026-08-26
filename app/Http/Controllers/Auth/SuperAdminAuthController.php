@@ -114,10 +114,22 @@ class SuperAdminAuthController extends Controller
             'password' => 'required',
         ]);
 
+        $throttleKey = 'super-admin-web-login:' . $request->ip() . ':' . strtolower($request->input('email'));
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+
+            return back()->withErrors([
+                'email' => "Too many login attempts. Please try again in {$seconds} seconds.",
+            ])->withInput();
+        }
+
         // Find Super Admin
         $user = User::where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
+            RateLimiter::hit($throttleKey, 60);
+
             return back()->withErrors([
                 'email' => 'البيانات المدخلة غير صحيحة.',
             ])->withInput();
@@ -125,10 +137,14 @@ class SuperAdminAuthController extends Controller
 
         // Check if user has Super Admin role
         if (!$user->isSuperAdmin()) {
+            RateLimiter::hit($throttleKey, 60);
+
             return back()->withErrors([
                 'email' => 'ليس لديك صلاحية Super Admin.',
             ])->withInput();
         }
+
+        RateLimiter::clear($throttleKey);
 
         // Login user
         auth()->guard('web')->login($user, $request->filled('remember'));
