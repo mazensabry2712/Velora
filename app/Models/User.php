@@ -92,9 +92,14 @@ class User extends Authenticatable
         return $this->hasMany(Invoice::class, 'customer_id');
     }
 
+    /**
+     * Services assigned to this user when the user is acting as staff.
+     * The pivot also contains staff_id for the Staff profile, so the user_id
+     * key is declared explicitly to avoid Eloquent guessing the wrong key.
+     */
     public function services()
     {
-        return $this->belongsToMany(Service::class, 'staff_services');
+        return $this->belongsToMany(Service::class, 'staff_services', 'user_id', 'service_id');
     }
 
     public function schedules()
