@@ -16,14 +16,6 @@ use Illuminate\Support\Collection;
 
 /**
  * SlotEngine — core availability engine for the Velora booking system.
- *
- * Responsibilities:
- *   - Generate available time slots for a service+staff on a given date
- *   - Validate whether a specific datetime slot is bookable
- *   - Account for: working hours, breaks, time-off, holidays, existing bookings
- *
- * All times are handled in the staff member's timezone (or business timezone)
- * and returned in the requested timezone.
  */
 class SlotEngine
 {
@@ -31,12 +23,8 @@ class SlotEngine
         private readonly int $slotIntervalMinutes = 15,
     ) {}
 
-    public function getAvailableSlots(
-        Service $service,
-        Staff   $staff,
-        Carbon  $date,
-        string  $timezone = 'UTC',
-    ): Collection {
+    public function getAvailableSlots(Service $service, Staff $staff, Carbon $date, string $timezone = 'UTC'): Collection
+    {
         $date = CarbonImmutable::instance($date)->startOfDay()->setTimezone($staff->timezone ?: 'UTC');
 
         if ($this->isHoliday($date, $staff)) {
@@ -44,7 +32,6 @@ class SlotEngine
         }
 
         $workingWindow = $this->getWorkingWindow($staff, (int) $date->dayOfWeek, $date);
-
         if ($workingWindow === null) {
             return collect();
         }
@@ -53,22 +40,19 @@ class SlotEngine
         $blocked = $this->getBlockedIntervals($staff, $date);
 
         $serviceDuration = $service->duration_minutes ?: (int) $service->duration;
-        $bufferBefore    = $service->buffer_before_minutes;
-        $bufferAfter     = $service->buffer_after_minutes;
+        $bufferBefore = $service->buffer_before_minutes;
+        $bufferAfter = $service->buffer_after_minutes;
 
-        $slots  = collect();
+        $slots = collect();
         $cursor = $windowStart->addMinutes($bufferBefore);
 
         while ($cursor->addMinutes($serviceDuration)->lte($windowEnd)) {
-            $slotStart         = $cursor;
-            $slotEnd           = $cursor->addMinutes($serviceDuration);
+            $slotStart = $cursor;
+            $slotEnd = $cursor->addMinutes($serviceDuration);
             $slotEndWithBuffer = $slotEnd->addMinutes($bufferAfter);
-            $blockStart        = $slotStart->subMinutes($bufferBefore);
+            $blockStart = $slotStart->subMinutes($bufferBefore);
 
             if (! $this->overlapsAny($blockStart, $slotEndWithBuffer, $blocked)) {
-                // TimeSlot's public DTO contract uses mutable Carbon instances.
-                // Convert explicitly after timezone conversion so CarbonImmutable
-                // from the availability engine never leaks into the DTO boundary.
                 $slots->push(new TimeSlot(
                     startsAt: Carbon::instance($slotStart->setTimezone($timezone)),
                     endsAt: Carbon::instance($slotEnd->setTimezone($timezone)),
@@ -83,16 +67,11 @@ class SlotEngine
         return $slots;
     }
 
-    public function validateSlot(
-        Service $service,
-        Staff   $staff,
-        Carbon  $startsAt,
-        ?int    $excludeId  = null,
-        ?int    $resourceId = null,
-    ): SlotValidationResult {
-        $tz         = $staff->timezone ?: 'UTC';
+    public function validateSlot(Service $service, Staff $staff, Carbon $startsAt, ?int $excludeId = null, ?int $resourceId = null): SlotValidationResult
+    {
+        $tz = $staff->timezone ?: 'UTC';
         $startLocal = $startsAt->clone()->setTimezone($tz);
-        $date       = CarbonImmutable::instance($startLocal)->startOfDay();
+        $date = CarbonImmutable::instance($startLocal)->startOfDay();
 
         if ($startLocal->isPast()) {
             return SlotValidationResult::unavailable('slot_in_the_past');
@@ -123,21 +102,19 @@ class SlotEngine
         }
 
         [$windowStart, $windowEnd] = $workingWindow;
-
         $serviceDuration = $service->duration_minutes ?: (int) $service->duration;
-        $bufferAfter     = $service->buffer_after_minutes;
-        $bufferBefore    = $service->buffer_before_minutes;
+        $bufferAfter = $service->buffer_after_minutes;
+        $bufferBefore = $service->buffer_before_minutes;
 
-        $slotEnd           = $startLocal->copy()->addMinutes($serviceDuration);
+        $slotEnd = $startLocal->copy()->addMinutes($serviceDuration);
         $slotEndWithBuffer = $slotEnd->copy()->addMinutes($bufferAfter);
-        $blockStart        = $startLocal->copy()->subMinutes($bufferBefore);
+        $blockStart = $startLocal->copy()->subMinutes($bufferBefore);
 
         if ($startLocal->lt($windowStart) || $slotEndWithBuffer->gt($windowEnd)) {
             return SlotValidationResult::unavailable('outside_working_hours');
         }
 
         $blocked = $this->getBlockedIntervals($staff, $date, $excludeId);
-
         if ($this->overlapsAny($blockStart, $slotEndWithBuffer, $blocked)) {
             return SlotValidationResult::unavailable('slot_not_available');
         }
@@ -163,15 +140,13 @@ class SlotEngine
     {
         $tz = $staff->timezone ?: 'UTC';
         $hours = $staff->workingHours->firstWhere('day_of_week', $dayOfWeek);
-
         if (! $hours || ! $hours->is_working) {
             return null;
         }
 
         $baseDay = ($date ?: CarbonImmutable::now($tz)->startOfDay())->setTimezone($tz)->startOfDay();
-
         $start = $baseDay->setTimeFromTimeString($hours->start_time);
-        $end   = $baseDay->setTimeFromTimeString($hours->end_time);
+        $end = $baseDay->setTimeFromTimeString($hours->end_time);
 
         return [$start, $end];
     }
@@ -182,20 +157,20 @@ class SlotEngine
             ->where('date', $date->toDateString())
             ->where(function ($q) use ($staff) {
                 $q->where('applies_to_all', true)
-                  ->orWhereHas('staff', fn($s) => $s->where('staff_id', $staff->id));
+                    ->orWhereHas('staff', fn($s) => $s->where('staff_id', $staff->id));
             })
             ->exists();
     }
 
     /**
-     * @return array<array{Carbon, Carbon}>
+     * @return array<array{CarbonInterface, CarbonInterface}>
      */
     private function getBlockedIntervals(Staff $staff, CarbonImmutable $date, ?int $excludeAppointmentId = null): array
     {
-        $tz       = $staff->timezone ?: 'UTC';
-        $day      = (int) $date->dayOfWeek;
-        $baseDay  = Carbon::parse($date->toDateString(), $tz)->startOfDay();
-        $blocked  = [];
+        $tz = $staff->timezone ?: 'UTC';
+        $day = (int) $date->dayOfWeek;
+        $baseDay = Carbon::parse($date->toDateString(), $tz)->startOfDay();
+        $blocked = [];
 
         foreach ($staff->breaks->filter(fn($b) => $b->day_of_week === $day) as $break) {
             $blocked[] = [
@@ -210,10 +185,7 @@ class SlotEngine
             }
 
             if ($off->all_day) {
-                $blocked[] = [
-                    $baseDay->copy()->startOfDay(),
-                    $baseDay->copy()->endOfDay(),
-                ];
+                $blocked[] = [$baseDay->copy()->startOfDay(), $baseDay->copy()->endOfDay()];
             } else {
                 $blocked[] = [
                     $baseDay->copy()->setTimeFromTimeString($off->start_time),
@@ -222,18 +194,17 @@ class SlotEngine
             }
         }
 
-        // Appointment timestamps are persisted in UTC. Query the complete local
-        // business day by UTC overlap rather than comparing the UTC date string.
-        // This keeps conflict detection correct for non-UTC staff timezones.
-        $dayStartUtc = $baseDay->copy()->utc();
-        $dayEndUtc   = $baseDay->copy()->endOfDay()->utc();
+        // Appointment timestamps are stored in UTC. Convert the complete local
+        // calendar day to UTC before querying so existing bookings are never missed.
+        $dayStartUtc = $baseDay->copy()->startOfDay()->utc();
+        $dayEndUtc = $baseDay->copy()->endOfDay()->utc();
 
         $query = Appointment::query()
             ->where('staff_id_new', $staff->id)
             ->where('starts_at', '<=', $dayEndUtc)
             ->where(function ($q) use ($dayStartUtc) {
                 $q->where('ends_at_with_buffer', '>=', $dayStartUtc)
-                  ->orWhere('ends_at', '>=', $dayStartUtc);
+                    ->orWhere('ends_at', '>=', $dayStartUtc);
             })
             ->whereNotIn('status', [Appointment::STATUS_CANCELLED, Appointment::STATUS_NO_SHOW]);
 
@@ -243,7 +214,6 @@ class SlotEngine
 
         foreach ($query->get(['starts_at', 'ends_at_with_buffer', 'ends_at']) as $appt) {
             $end = $appt->ends_at_with_buffer ?? $appt->ends_at;
-
             if ($appt->starts_at && $end) {
                 $blocked[] = [
                     Carbon::instance($appt->starts_at)->setTimezone($tz),
