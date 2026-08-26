@@ -59,8 +59,8 @@ class QueueController extends Controller
     }
 
     /**
-     * Get specific queue status by queue number
-     * Public endpoint for customers to check their queue status
+     * Get specific queue status by queue number.
+     * Public endpoint: intentionally excludes customer PII and private notes.
      */
     public function getQueueStatus($queueNumber)
     {
@@ -78,8 +78,6 @@ class QueueController extends Controller
         try {
             $queue = Queue::where('queue_number', $queueNumber)
                 ->with([
-                    'appointment.customer',
-                    'appointment.newCustomer',
                     'appointment.service',
                     'appointment.staff',
                     'appointment.newStaff',
@@ -94,9 +92,6 @@ class QueueController extends Controller
             }
 
             $appointment = $queue->appointment;
-            $customerName = $appointment?->newCustomer?->full_name
-                ?: $appointment?->customer?->name
-                ?: 'N/A';
             $staffName = $appointment?->newStaff?->full_name
                 ?: $appointment?->staff?->name
                 ?: 'N/A';
@@ -105,12 +100,10 @@ class QueueController extends Controller
                 'success' => true,
                 'data' => [
                     'queue_number' => $queue->queue_number,
-                    'customer_name' => $customerName,
                     'service' => $appointment?->service?->name ?? 'N/A',
                     'staff_name' => $staffName,
                     'status' => $queue->status,
                     'is_vip' => $queue->is_vip,
-                    'notes' => $queue->notes,
                     'queue_date' => $queue->queue_date?->format('Y-m-d') ?? null,
                 ]
             ]);
