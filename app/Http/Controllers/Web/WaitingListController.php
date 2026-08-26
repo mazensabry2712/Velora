@@ -8,8 +8,9 @@ use App\Models\Service;
 use App\Models\WaitingList;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
 
 /**
  * WaitingListController — handles public & admin waiting list operations.
@@ -34,6 +35,10 @@ class WaitingListController extends Controller
      */
     public function join(Request $request): JsonResponse
     {
+        if ($response = $this->rateLimitPublicRequest($request, 'join', 10)) {
+            return $response;
+        }
+
         $data = $request->validate([
             'name'               => 'required|string|max:100',
             'email'              => 'nullable|email|max:160',
@@ -100,6 +105,10 @@ class WaitingListController extends Controller
      */
     public function status(Request $request): JsonResponse
     {
+        if ($response = $this->rateLimitPublicRequest($request, 'status', 30)) {
+            return $response;
+        }
+
         $request->validate(['email' => 'required|email']);
 
         $customer = Customer::where('email', $request->input('email'))->first();
@@ -130,6 +139,10 @@ class WaitingListController extends Controller
      */
     public function cancel(Request $request, int $id): JsonResponse
     {
+        if ($response = $this->rateLimitPublicRequest($request, 'cancel', 10)) {
+            return $response;
+        }
+
         $request->validate(['email' => 'required|email']);
 
         $customer = Customer::where('email', $request->input('email'))->first();
@@ -284,5 +297,22 @@ class WaitingListController extends Controller
             'email'      => $data['email'] ?? null,
             'phone'      => $data['phone'] ?? null,
         ]);
+    }
+
+    private function rateLimitPublicRequest(Request $request, string $action, int $maxAttempts): ?JsonResponse
+    {
+        $tenantId = (string) tenant()->getTenantKey();
+        $key = 'public-waiting-list:' . $action . ':' . $tenantId . ':' . $request->ip();
+
+        if (RateLimiter::tooManyAttempts($key, $maxAttempts)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Too many requests. Please try again later.',
+            ], 429);
+        }
+
+        RateLimiter::hit($key, 60);
+
+        return null;
     }
 }
