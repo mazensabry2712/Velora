@@ -77,6 +77,8 @@ class CustomerBookingJourneyTest extends TenantTestCase
 
         $this->assertSame($this->service->id, $appointment->service_id);
         $this->assertSame($this->staff->id, $appointment->staff_id_new);
+        $this->assertNotNull($appointment->customer_id_new);
+        $this->assertNull($appointment->customer_id);
         $this->assertSame('pending', $appointment->status);
         $this->assertSame('waiting', $queue->status);
         $this->assertNotSame('', (string) $queue->queue_number);
@@ -116,6 +118,7 @@ class CustomerBookingJourneyTest extends TenantTestCase
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.queue_number', $queue->queue_number)
             ->assertJsonPath('data.status', 'waiting')
+            ->assertJsonPath('data.customer_name', 'Queue Customer')
             ->assertJsonPath('data.service', $this->service->name)
             ->assertJsonPath('data.staff_name', $this->staffMember->name);
 
