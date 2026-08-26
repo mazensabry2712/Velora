@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Appointment;
 use App\Models\Customer;
+use App\Models\Invoice;
 use App\Models\Queue;
 use App\Models\StaffWorkingHours;
 use Illuminate\Support\Facades\RateLimiter;
@@ -96,6 +97,39 @@ class CustomerBookingJourneyTest extends TenantTestCase
 
         $times = collect($availability->json('data'))->pluck('start_time')->all();
         $this->assertNotContains('09:00', $times);
+    }
+
+    #[Test]
+    public function completed_new_booking_generates_invoice_for_the_new_customer(): void
+    {
+        [, $appointment] = $this->book($this->bookingPayloadForJourney());
+
+        $this->assertSame(0, Invoice::query()->where('appointment_id', $appointment->id)->count());
+
+        $appointment->update(['status' => Appointment::STATUS_COMPLETED]);
+
+        $invoice = Invoice::query()->where('appointment_id', $appointment->id)->first();
+
+        $this->assertNotNull($invoice);
+        $this->assertSame($appointment->customer_id_new, $invoice->customer_id);
+        $this->assertSame('100.00', (string) $invoice->amount);
+        $this->assertSame('pending', $invoice->status);
+    }
+
+    private function bookingPayloadForJourney(): array
+    {
+        [$date, $timezone] = $this->prepareBookableSlot();
+
+        return [
+            'customer_name' => 'Invoice Journey Customer',
+            'customer_email' => 'invoice-journey@example.com',
+            'customer_phone' => '+201000000003',
+            'appointment_date' => $date->toDateString(),
+            'appointment_time' => '09:00',
+            'staff_id' => $this->staffMember->id,
+            'service_id' => $this->service->id,
+            'timezone' => $timezone,
+        ];
     }
 
     #[Test]
