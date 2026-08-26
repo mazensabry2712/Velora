@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -13,15 +12,8 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    // use HasApiTokens, HasFactory, HasRoles , Notifiable;
-
     use HasApiTokens, HasFactory, HasRoles, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
         'name',
         'email',
@@ -31,85 +23,59 @@ class User extends Authenticatable
         'password',
         'is_vip',
         'avatar',
+        'role_id',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-
         ];
     }
 
-    /**
-     * Get the avatar URL
-     */
     public function getAvatarUrlAttribute(): string
     {
         if ($this->avatar) {
-            // Check if image exists in new structure
             $image = Image::where('filename', $this->avatar)->first();
             if ($image) {
                 return $image->url;
             }
 
-            // Fallback to direct path in project_img/avatars
             return asset('project_img/avatars/'.$this->avatar);
         }
 
         return '';
     }
 
-    /**
-     * Get user's avatar image model
-     */
     public function avatarImage()
     {
         return $this->morphOne(Image::class, 'imageable')->where('folder', 'avatars');
     }
 
-    /**
-     * Get all user's images
-     */
     public function images()
     {
         return $this->morphMany(Image::class, 'imageable');
     }
 
-    /**
-     * Check if user has specific permission
-     */
-
-    /**
-     * Check if user is an Assistant
-     */
-   public function isAssistant(): bool
-{
-    return $this->hasRole('Assistant');
-}
-
-    // Relationships
-
+    public function isAssistant(): bool
+    {
+        return $this->hasRole('Assistant');
+    }
 
     public function tenant()
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    public function role()
+    {
+        return $this->belongsTo(Role::class, 'role_id');
     }
 
     public function appointments()
@@ -150,28 +116,22 @@ class User extends Authenticatable
     public function isSuperAdmin(): bool
     {
         return $this->hasRole('Super Admin');
-
     }
 
     public function isAdminTenant(): bool
     {
         return $this->hasRole('Admin Tenant');
-
-
     }
 
     public function isStaff(): bool
     {
         return $this->hasRole('Staff');
-
     }
 
     public function isCustomer(): bool
     {
         return $this->hasRole('Customer');
-
     }
-
 
     public function getRoleName(): ?string
     {
