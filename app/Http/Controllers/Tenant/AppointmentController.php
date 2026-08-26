@@ -127,6 +127,14 @@ class AppointmentController extends Controller
                 [$firstName, $lastName] = $this->splitName($validated['customer_name']);
 
                 $customer = Customer::firstOrNew(['email' => $validated['customer_email']]);
+
+                // A blocked customer must not be able to create new public bookings.
+                if ($customer->exists && $customer->is_blocked) {
+                    throw Validator::make([], [])->after(function ($validator) {
+                        $validator->errors()->add('customer_email', 'This customer is not allowed to book appointments.');
+                    })->validate();
+                }
+
                 $customer->fill([
                     'first_name' => $firstName,
                     'last_name' => $lastName,
