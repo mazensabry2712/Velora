@@ -57,7 +57,7 @@ class SlotEngine
         }
 
         // 2. Get working window for this day-of-week
-        $workingWindow = $this->getWorkingWindow($staff, (int) $date->dayOfWeek);
+        $workingWindow = $this->getWorkingWindow($staff, (int) $date->dayOfWeek, $date);
 
         if ($workingWindow === null) {
             return collect(); // staff doesn't work this day
@@ -72,7 +72,6 @@ class SlotEngine
         $serviceDuration = $service->duration_minutes ?: (int) $service->duration;
         $bufferBefore    = $service->buffer_before_minutes;
         $bufferAfter     = $service->buffer_after_minutes;
-        $totalDuration   = $serviceDuration + $bufferBefore + $bufferAfter;
 
         // 5. Walk through the window in `slotIntervalMinutes` steps
         $slots  = collect();
@@ -89,10 +88,10 @@ class SlotEngine
             if (! $this->overlapsAny($blockStart, $slotEndWithBuffer, $blocked)) {
                 // Convert to requested timezone for the response
                 $slots->push(new TimeSlot(
-                    startsAt:           $slotStart->setTimezone($timezone),
-                    endsAt:             $slotEnd->setTimezone($timezone),
-                    endsAtWithBuffer:   $slotEndWithBuffer->setTimezone($timezone),
-                    isAvailable:        true,
+                    startsAt:         $slotStart->setTimezone($timezone),
+                    endsAt:           $slotEnd->setTimezone($timezone),
+                    endsAtWithBuffer: $slotEndWithBuffer->setTimezone($timezone),
+                    isAvailable:      true,
                 ));
             }
 
@@ -118,7 +117,7 @@ class SlotEngine
         ?int    $resourceId = null,
     ): SlotValidationResult {
 
-        $tz       = $staff->timezone ?: 'UTC';
+        $tz        = $staff->timezone ?: 'UTC';
         $startLocal = $startsAt->clone()->setTimezone($tz);
         $date        = CarbonImmutable::instance($startLocal)->startOfDay();
 
@@ -151,7 +150,10 @@ class SlotEngine
         }
 
         // 3. Working hours check
-        $workingWindow = $this->getWorkingWindow($staff, (int) $date->dayOfWeek);
+        // Use the requested appointment date, not today's date, when constructing
+        // the working-hours bounds. Using today here incorrectly made all future
+        // dates compare against a window anchored to the current day.
+        $workingWindow = $this->getWorkingWindow($staff, (int) $date->dayOfWeek, $date);
 
         if ($workingWindow === null) {
             return SlotValidationResult::unavailable('staff_not_working_this_day');
@@ -203,7 +205,7 @@ class SlotEngine
     /**
      * Returns [Carbon $start, Carbon $end] in staff timezone, or null if not working.
      */
-    private function getWorkingWindow(Staff $staff, int $dayOfWeek): ?array
+    private function getWorkingWindow(Staff $staff, int $dayOfWeek, ?CarbonImmutable $date = null): ?array
     {
         $tz = $staff->timezone ?: 'UTC';
 
@@ -214,11 +216,12 @@ class SlotEngine
             return null;
         }
 
-        // We need a date to attach the time to — use today at staff TZ
-        $today = Carbon::now($tz)->startOfDay();
+        // Anchor the window to the date being evaluated. Falling back to today
+        // keeps this helper safe for any existing internal callers.
+        $baseDay = ($date ?: CarbonImmutable::now($tz)->startOfDay())->setTimezone($tz)->startOfDay();
 
-        $start = $today->copy()->setTimeFromTimeString($hours->start_time);
-        $end   = $today->copy()->setTimeFromTimeString($hours->end_time);
+        $start = $baseDay->copy()->setTimeFromTimeString($hours->start_time);
+        $end   = $baseDay->copy()->setTimeFromTimeString($hours->end_time);
 
         return [$start, $end];
     }
@@ -240,7 +243,7 @@ class SlotEngine
     /**
      * Build a list of [start, end] Carbon pairs that are blocked for this staff/date.
      *
-     * Blocked = recurring breaks + approved time-off + confirmed appointments (with buffers).
+     * Blocked = recurring breaks + approved time-off + confirmed/pending appointments (with buffers).
      *
      * @return array<array{Carbon, Carbon}>
      */
