@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
 class Queue extends Model
@@ -22,16 +23,13 @@ class Queue extends Model
         'queue_date' => 'date',
     ];
 
-    // Model Events
     protected static function booted()
     {
-        // When queue status changes, sync with appointment
         static::updating(function ($queue) {
             if ($queue->isDirty('status') && $queue->appointment) {
                 $newStatus = $queue->status;
-
-                // Use withoutEvents to prevent circular update loop between Queue and Appointment observers
                 $appointment = $queue->appointment;
+
                 if ($newStatus === 'completed') {
                     \Illuminate\Database\Eloquent\Model::withoutEvents(fn () =>
                         $appointment->update(['status' => 'completed'])
@@ -52,13 +50,19 @@ class Queue extends Model
     }
 
     /**
-     * Generate next queue number for today
-     * Format: Simple sequential number (1, 2, 3...)
+     * Generate the next queue number for a specific queue date.
+     * Existing callers without a date continue to generate today's number.
      */
-    public static function generateQueueNumber(): string
+    public static function generateQueueNumber(?Carbon $date = null): string
     {
-        // Get the last queue number for today
-        $lastQueue = self::whereDate('created_at', now()->toDateString())
+        $queueDate = ($date ?: now())->toDateString();
+
+        $lastQueue = self::where(function ($query) use ($queueDate) {
+                $query->whereDate('queue_date', $queueDate)
+                    ->orWhere(function ($fallback) use ($queueDate) {
+                        $fallback->whereNull('queue_date')->whereDate('created_at', $queueDate);
+                    });
+            })
             ->orderByRaw("CAST(SUBSTRING(queue_number, 2) AS UNSIGNED) DESC")
             ->first();
 
@@ -71,22 +75,20 @@ class Queue extends Model
         return 'A' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
     }
 
-    // Relationships
     public function appointment()
     {
         return $this->belongsTo(Appointment::class);
     }
 
-    // Get customer through appointment
     public function customer()
     {
         return $this->hasOneThrough(
             User::class,
             Appointment::class,
-            'id', // Foreign key on appointments table
-            'id', // Foreign key on users table
-            'appointment_id', // Local key on queues table
-            'customer_id' // Local key on appointments table
+            'id',
+            'id',
+            'appointment_id',
+            'customer_id'
         );
     }
 }
