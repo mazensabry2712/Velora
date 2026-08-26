@@ -9,11 +9,16 @@ use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\Customer;
 use App\Models\Queue;
+use App\Models\Resource;
+use App\Models\Service;
+use App\Models\Staff;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class AppointmentController extends Controller
 {
@@ -77,18 +82,21 @@ class AppointmentController extends Controller
 
                 'service_id' => [
                     'required',
-                    'exists:services,id',
+                    Rule::exists('services', 'id')->where(fn ($q) => $q
+                        ->where('is_active', true)
+                        ->where('is_online_bookable', true)),
                 ],
 
-                // Staff members are users with Staff role.
                 'staff_id' => [
                     'required',
-                    'exists:users,id',
+                    Rule::exists('staff', 'id')->where(fn ($q) => $q
+                        ->where('is_active', true)
+                        ->where('accepts_bookings', true)),
                 ],
 
                 'resource_id' => [
                     'nullable',
-                    'exists:resources,id',
+                    Rule::exists('resources', 'id')->where(fn ($q) => $q->where('is_active', true)),
                 ],
 
                 'timezone' => [
@@ -102,6 +110,38 @@ class AppointmentController extends Controller
                     'max:1000',
                 ],
             ]);
+
+            // A public booking is only valid when the selected staff member
+            // is explicitly assigned to the selected service.
+            if (! Staff::query()
+                ->whereKey($validated['staff_id'])
+                ->whereHas('services', fn ($q) => $q->whereKey($validated['service_id']))
+                ->exists()) {
+                throw Validator::make([], [
+                    'staff_id' => 'required',
+                ])->after(function ($validator) {
+                    $validator->errors()->add('staff_id', 'The selected staff member cannot provide this service.');
+                })->validate();
+            }
+
+            // A supplied resource must be active and explicitly assigned to
+            // the selected service. This prevents clients from booking an
+            // arbitrary resource that the service does not use.
+            if (! empty($validated['resource_id'])) {
+                $resourceValid = Resource::query()
+                    ->whereKey($validated['resource_id'])
+                    ->where('is_active', true)
+                    ->whereHas('services', fn ($q) => $q->whereKey($validated['service_id']))
+                    ->exists();
+
+                if (! $resourceValid) {
+                    throw Validator::make([], [
+                        'resource_id' => 'required',
+                    ])->after(function ($validator) {
+                        $validator->errors()->add('resource_id', 'The selected resource is not available for this service.');
+                    })->validate();
+                }
+            }
 
             // Sanitize text inputs
             $validated['customer_name'] = strip_tags(
@@ -120,7 +160,19 @@ class AppointmentController extends Controller
                 );
             }
 
-            // Find or create customer
+            // Build the REAL appointment date + time
+            $tz = $validated['timezone'] ?? config('app.timezone');
+
+            $startsAt = Carbon::createFromFormat(
+                'Y-m-d H:i',
+                $validated['appointment_date']
+                    . ' '
+                    . $validated['appointment_time'],
+                $tz
+            );
+
+            // Find or create customer after booking inputs are fully validated,
+            // so malformed booking requests cannot mutate customer records.
             [$firstName, $lastName] = $this->splitName(
                 $validated['customer_name']
             );
@@ -139,17 +191,6 @@ class AppointmentController extends Controller
             ]);
 
             $customer->save();
-
-            // Build the REAL appointment date + time
-            $tz = $validated['timezone'] ?? config('app.timezone');
-
-            $startsAt = Carbon::createFromFormat(
-                'Y-m-d H:i',
-                $validated['appointment_date']
-                    . ' '
-                    . $validated['appointment_time'],
-                $tz
-            );
 
             // Build booking DTO
             $data = new CreateBookingData(
@@ -179,14 +220,10 @@ class AppointmentController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Appointment booked successfully',
-
                 'data' => [
                     'appointment' => $appointment,
-
                     'queue_number' => $queue->queue_number,
-
                     'queue' => $queue,
-
                     'customer' => [
                         'id' => $customer->id,
                         'name' => $customer->first_name . ' ' . $customer->last_name,
@@ -195,26 +232,21 @@ class AppointmentController extends Controller
                 ],
             ], 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
-
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
                 'errors' => $e->errors(),
             ], 422);
         } catch (SlotUnavailableException $e) {
-
             return response()->json([
                 'success' => false,
                 'message' => 'Slot not available',
                 'reason' => $e->getMessage(),
             ], 409);
         } catch (\Exception $e) {
-
             Log::error(
                 'Public booking error: ' . $e->getMessage(),
-                [
-                    'trace' => $e->getTraceAsString(),
-                ]
+                ['trace' => $e->getTraceAsString()]
             );
 
             return response()->json([
@@ -223,7 +255,6 @@ class AppointmentController extends Controller
             ], 500);
         }
     }
-    // ── Helpers ──────────────────────────────────────────────────────────────
 
     private function splitName(string $fullName): array
     {
@@ -232,8 +263,6 @@ class AppointmentController extends Controller
         $lastName  = $parts[1] ?? '';
         return [$firstName, $lastName];
     }
-
-
 
     /**
      * List appointments (authenticated users) — ordered by starts_at desc.
