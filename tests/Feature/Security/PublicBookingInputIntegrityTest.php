@@ -104,7 +104,7 @@ class PublicBookingInputIntegrityTest extends TenantTestCase
         ]);
 
         $staff = Staff::where('user_id', $this->staffMember->id)->firstOrFail();
-        $staff->services()->attach($service->id);
+        $staff->services()->attach($service->id, ['user_id' => $staff->user_id]);
 
         $resource = Resource::create([
             'name' => ['en' => 'Unassigned Room'],
