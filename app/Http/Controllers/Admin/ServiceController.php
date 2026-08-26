@@ -4,11 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreServiceRequest;
+use App\Domain\Booking\Services\SlotEngine;
 use App\Models\Service;
+use App\Models\Staff;
 use App\Models\StaffSchedule;
 use App\Models\TimeSlot;
 use App\Models\User;
 use App\Models\WorkingDay;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -126,6 +129,56 @@ class ServiceController extends Controller
     public function availableTimeSlots(Request $request): JsonResponse
     {
         try {
+            // New public booking flow: use the same SlotEngine used by final booking
+            // validation so the UI and server cannot disagree about availability.
+            if ($request->filled(['date', 'staff_id', 'service_id'])) {
+                $validated = $request->validate([
+                    'date'       => ['required', 'date_format:Y-m-d'],
+                    'staff_id'   => ['required', 'integer'],
+                    'service_id' => ['required', 'integer'],
+                    'timezone'   => ['nullable', 'timezone'],
+                ]);
+
+                $service = Service::query()
+                    ->whereKey((int) $validated['service_id'])
+                    ->where('is_active', true)
+                    ->where('is_online_bookable', true)
+                    ->first();
+
+                $staff = Staff::query()
+                    ->where('user_id', (int) $validated['staff_id'])
+                    ->bookable()
+                    ->with(['workingHours', 'breaks', 'timeOff'])
+                    ->first();
+
+                if (! $service || ! $staff || ! $staff->services()->whereKey($service->id)->exists()) {
+                    return response()->json([
+                        'success' => true,
+                        'data' => [],
+                        'reason' => 'invalid_booking_selection',
+                    ]);
+                }
+
+                $timezone = $validated['timezone'] ?? ($staff->timezone ?: config('app.timezone'));
+                $slots = app(SlotEngine::class)->getAvailableSlots(
+                    $service,
+                    $staff,
+                    Carbon::createFromFormat('Y-m-d', $validated['date'], $timezone),
+                    $timezone,
+                );
+
+                return response()->json([
+                    'success' => true,
+                    'data' => $slots->map(fn ($slot) => [
+                        'start_time' => $slot->startsAt->format('H:i'),
+                        'end_time' => $slot->endsAt->format('H:i'),
+                        'label' => $slot->startsAt->format('g:i A'),
+                    ])->values(),
+                ]);
+            }
+
+            // Legacy/admin compatibility: preserve the old endpoint contract when
+            // called without the new booking parameters.
             $date    = $request->input('date');
             $staffId = $request->input('staff_id');
             $exclude = $request->input('exclude_appointment_id');
@@ -161,6 +214,8 @@ class ServiceController extends Controller
             })->values();
 
             return response()->json(['success' => true, 'data' => $available]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             Log::error('availableTimeSlots: ' . $e->getMessage());
             return response()->json(['success' => false, 'data' => [], 'message' => $e->getMessage()], 500);
