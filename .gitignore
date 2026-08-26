@@ -51,3 +51,6 @@ add_*.php
 # Bootstrap cache
 /bootstrap/cache/*
 !/bootstrap/cache/.gitignore
+
+database/tenanttest-tenant-*
+storage/tenanttest-tenant-*/

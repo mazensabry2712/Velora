@@ -1928,6 +1928,7 @@
         </div>
     </div>
 
+@push('scripts')
     <script>
         console.log('Appointments script starting...');
         const isArabic = {{ $isArabic ? 'true' : 'false' }};

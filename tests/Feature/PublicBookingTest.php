@@ -114,6 +114,8 @@ class PublicBookingTest extends TenantTestCase
     #[Test]
     public function workingdays_api_returns_active_days(): void
     {
+        WorkingDay::query()->delete();
+
         WorkingDay::create(['day_of_week' => 1, 'day_name' => 'Monday', 'day_name_ar' => 'الاثنين', 'is_active' => true]);
         WorkingDay::create(['day_of_week' => 6, 'day_name' => 'Saturday', 'day_name_ar' => 'السبت', 'is_active' => false]);
 

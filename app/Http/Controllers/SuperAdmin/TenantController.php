@@ -124,7 +124,7 @@ class TenantController extends Controller
      */
     public function show(string $id)
     {
-        $tenant = Tenant::with(['domains', 'settings', 'users'])->findOrFail($id);
+        $tenant = Tenant::with(['domains', 'settings'])->findOrFail($id);
 
         return response()->json([
             'success' => true,
