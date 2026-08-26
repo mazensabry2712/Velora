@@ -256,14 +256,25 @@ class AppointmentController extends Controller
 
     public function myAppointments(Request $request): JsonResponse
     {
-        /** @var \App\Models\Customer $customer */
-        $customer = $request->user();
+        $user = $request->user();
+        $customer = Customer::query()->where('email', $user->email)->first();
 
-        $appointments = Appointment::where('customer_id_new', $customer->id)
+        if (! $customer) {
+            return response()->json([
+                'success' => true,
+                'data' => [],
+            ]);
+        }
+
+        $appointments = Appointment::query()
+            ->where('customer_id_new', $customer->id)
             ->with('staffNew:id,name')
-            ->orderBy('starts_at', 'desc')
+            ->orderByDesc('starts_at')
             ->get();
 
-        return response()->json($appointments);
+        return response()->json([
+            'success' => true,
+            'data' => $appointments,
+        ]);
     }
 }
