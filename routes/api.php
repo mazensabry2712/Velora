@@ -143,7 +143,7 @@ Route::prefix('v1')->middleware(['tenant.token', 'tenant.locale', 'auth:sanctum'
     Route::get('notifications/unread-count', [\App\Http\Controllers\Tenant\NotificationController::class, 'unreadCount'])->name('api.v1.notifications.unread-count');
     Route::get('notifications/{id}', [\App\Http\Controllers\Tenant\NotificationController::class, 'show'])->name('api.v1.notifications.show');
     Route::post('notifications/{id}/read', [\App\Http\Controllers\Tenant\NotificationController::class, 'markAsRead'])->name('api.v1.notifications.read');
-    Route::post('notifications/mark-all-read', [\App\Http\Controllers\Tenant\NotificationController::class, 'mark-all-read');
+    Route::post('notifications/mark-all-read', [\App\Http\Controllers\Tenant\NotificationController::class, 'markAllAsRead'])->name('api.v1.notifications.mark-all-read');
     Route::delete('notifications/{id}', [\App\Http\Controllers\Tenant\NotificationController::class, 'destroy'])->name('api.v1.notifications.destroy');
 
     Route::middleware(['role:Admin Tenant'])->group(function () {
