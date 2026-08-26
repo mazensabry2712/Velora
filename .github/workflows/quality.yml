@@ -49,9 +49,9 @@ jobs:
 
       - name: Run migrations sanity check
         env:
-          APP_URL: http://bookora.test
-          APP_DOMAIN: bookora.test
-          APP_BASE_DOMAIN: bookora.test
+          APP_URL: http://velora.test
+          APP_DOMAIN: velora.test
+          APP_BASE_DOMAIN: velora.test
           DB_CONNECTION: sqlite
           DB_DATABASE: ':memory:'
           TENANCY_CENTRAL_CONNECTION: sqlite
@@ -59,9 +59,9 @@ jobs:
 
       - name: Run full PHPUnit suite
         env:
-          APP_URL: http://bookora.test
-          APP_DOMAIN: bookora.test
-          APP_BASE_DOMAIN: bookora.test
+          APP_URL: http://velora.test
+          APP_DOMAIN: velora.test
+          APP_BASE_DOMAIN: velora.test
           DB_CONNECTION: sqlite
           DB_DATABASE: ':memory:'
           TENANCY_CENTRAL_CONNECTION: sqlite
