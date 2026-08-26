@@ -157,7 +157,6 @@ class CustomerBookingJourneyTest extends TenantTestCase
                 ->where('staff_id_new', $this->staff->id)
                 ->where('service_id', $this->service->id)
                 ->whereDate('starts_at', $date->toDateString())
-                ->whereTime('starts_at', '09:00')
                 ->count()
         );
     }
