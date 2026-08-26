@@ -12,7 +12,8 @@ use App\Http\Controllers\Auth\TenantAuthController;
 
 /* Authentication */
 Route::prefix('super-admin/auth')->group(function () {
-    Route::post('/login', [SuperAdminAuthController::class, 'login']);
+    Route::post('/login', [SuperAdminAuthController::class, 'login'])
+        ->middleware('throttle:5,1');
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/profile', [SuperAdminAuthController::class, 'profile']);
         Route::post('/logout', [SuperAdminAuthController::class, 'logout']);
@@ -20,8 +21,10 @@ Route::prefix('super-admin/auth')->group(function () {
 });
 
 Route::middleware(['tenant', 'tenant.locale'])->prefix('auth')->group(function () {
-    Route::post('/login', [TenantAuthController::class, 'login']);
-    Route::post('/register', [TenantAuthController::class, 'register']);
+    Route::post('/login', [TenantAuthController::class, 'login'])
+        ->middleware('throttle:10,1');
+    Route::post('/register', [TenantAuthController::class, 'register'])
+        ->middleware('throttle:5,1');
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/profile', [TenantAuthController::class, 'profile']);
         Route::post('/logout', [TenantAuthController::class, 'logout']);
@@ -29,8 +32,10 @@ Route::middleware(['tenant', 'tenant.locale'])->prefix('auth')->group(function (
 });
 
 Route::prefix('v1/auth')->middleware(['tenant.token', 'tenant.locale'])->group(function () {
-    Route::post('/login', [TenantAuthController::class, 'login']);
-    Route::post('/register', [TenantAuthController::class, 'register']);
+    Route::post('/login', [TenantAuthController::class, 'login'])
+        ->middleware('throttle:10,1');
+    Route::post('/register', [TenantAuthController::class, 'register'])
+        ->middleware('throttle:5,1');
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/profile', [TenantAuthController::class, 'profile']);
         Route::post('/logout', [TenantAuthController::class, 'logout']);
@@ -78,9 +83,11 @@ Route::prefix('super-admin')->middleware(['auth:web', 'super.admin'])->group(fun
 Route::middleware(['tenant', 'tenant.locale'])->group(function () {
     Route::get('staff', function () {
         return \App\Models\User::role('Staff')->select('id', 'name')->get();
-    });
-    Route::post('appointments', [\App\Http\Controllers\Tenant\AppointmentController::class, 'store']);
-    Route::get('queue/status/{queueNumber}', [\App\Http\Controllers\Tenant\QueueController::class, 'getQueueStatus']);
+    })->middleware('throttle:60,1');
+    Route::post('appointments', [\App\Http\Controllers\Tenant\AppointmentController::class, 'store'])
+        ->middleware('throttle:30,1');
+    Route::get('queue/status/{queueNumber}', [\App\Http\Controllers\Tenant\QueueController::class, 'getQueueStatus'])
+        ->middleware('throttle:60,1');
 });
 
 Route::middleware(['tenant', 'tenant.locale', 'auth:sanctum'])->group(function () {
@@ -136,7 +143,7 @@ Route::prefix('v1')->middleware(['tenant.token', 'tenant.locale', 'auth:sanctum'
     Route::get('notifications/unread-count', [\App\Http\Controllers\Tenant\NotificationController::class, 'unreadCount'])->name('api.v1.notifications.unread-count');
     Route::get('notifications/{id}', [\App\Http\Controllers\Tenant\NotificationController::class, 'show'])->name('api.v1.notifications.show');
     Route::post('notifications/{id}/read', [\App\Http\Controllers\Tenant\NotificationController::class, 'markAsRead'])->name('api.v1.notifications.read');
-    Route::post('notifications/mark-all-read', [\App\Http\Controllers\Tenant\NotificationController::class, 'markAllAsRead'])->name('api.v1.notifications.mark-all-read');
+    Route::post('notifications/mark-all-read', [\App\Http\Controllers\Tenant\NotificationController::class, 'mark-all-read');
     Route::delete('notifications/{id}', [\App\Http\Controllers\Tenant\NotificationController::class, 'destroy'])->name('api.v1.notifications.destroy');
 
     Route::middleware(['role:Admin Tenant'])->group(function () {
