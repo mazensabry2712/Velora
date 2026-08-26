@@ -3,9 +3,12 @@
 namespace Tests\Feature\Security;
 
 use App\Models\Appointment;
+use App\Models\Role;
+use App\Models\Service;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
@@ -40,17 +43,25 @@ class TenantIsolationTest extends TenantTestCase
                 '--force' => true,
             ]);
 
+            $secondRole = Role::firstOrCreate(['name' => 'Admin Tenant']);
+            $secondService = Service::create([
+                'name' => 'Second Tenant Service',
+                'duration' => 30,
+                'price' => 100,
+                'is_active' => true,
+            ]);
+
             $foreignUser = User::create([
                 'name' => 'Foreign Tenant User',
                 'email' => 'foreign-' . Str::lower(Str::random(8)) . '@test.com',
-                'password' => 'password',
-                'role_id' => $this->adminRole->id,
+                'password' => Hash::make('password'),
+                'role_id' => $secondRole->id,
             ]);
 
             $foreignAppointment = Appointment::create([
                 'customer_id' => $foreignUser->id,
                 'staff_id' => $foreignUser->id,
-                'service_id' => $this->service->id,
+                'service_id' => $secondService->id,
                 'date' => today()->addDay()->format('Y-m-d'),
                 'time_slot' => '15:00',
                 'status' => 'pending',
