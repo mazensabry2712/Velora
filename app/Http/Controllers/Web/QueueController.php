@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\Queue;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 
 class QueueController extends Controller
 {
@@ -63,6 +64,17 @@ class QueueController extends Controller
      */
     public function getQueueStatus($queueNumber)
     {
+        $rateLimitKey = 'public-queue-status:' . tenant()?->getTenantKey() . ':' . request()->ip();
+
+        if (RateLimiter::tooManyAttempts($rateLimitKey, 60)) {
+            return response()->json([
+                'success' => false,
+                'message' => __('Too many requests. Please try again later.'),
+            ], 429);
+        }
+
+        RateLimiter::hit($rateLimitKey, 60);
+
         try {
             $queue = Queue::where('queue_number', $queueNumber)
                 ->with(['appointment.customer', 'appointment.service', 'appointment.staff'])
