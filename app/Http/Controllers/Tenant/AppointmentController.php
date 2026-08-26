@@ -14,6 +14,7 @@ use App\Models\Staff;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Validator;
@@ -121,37 +122,45 @@ class AppointmentController extends Controller
                 $tz
             );
 
-            [$firstName, $lastName] = $this->splitName($validated['customer_name']);
+            [$appointment, $queue, $customer] = DB::transaction(function () use ($validated, $tz, $startsAt, $staffRecord) {
+                [$firstName, $lastName] = $this->splitName($validated['customer_name']);
 
-            $customer = Customer::firstOrNew(['email' => $validated['customer_email']]);
-            $customer->fill([
-                'first_name' => $firstName,
-                'last_name' => $lastName,
-                'phone' => $validated['customer_phone'],
-                'acquisition_source' => $customer->exists ? $customer->acquisition_source : 'online',
-            ]);
-            $customer->save();
+                $customer = Customer::firstOrNew(['email' => $validated['customer_email']]);
+                $customer->fill([
+                    'first_name' => $firstName,
+                    'last_name' => $lastName,
+                    'phone' => $validated['customer_phone'],
+                    'acquisition_source' => $customer->exists ? $customer->acquisition_source : 'online',
+                ]);
+                $customer->save();
 
-            $data = new CreateBookingData(
-                serviceId: (int) $validated['service_id'],
-                staffId: $staffRecord->id,
-                startsAt: $startsAt,
-                timezone: $tz,
-                customerId: $customer->id,
-                resourceId: isset($validated['resource_id']) ? (int) $validated['resource_id'] : null,
-                source: 'online',
-                notes: $validated['notes'] ?? null,
-            );
+                $data = new CreateBookingData(
+                    serviceId: (int) $validated['service_id'],
+                    staffId: $staffRecord->id,
+                    startsAt: $startsAt,
+                    timezone: $tz,
+                    customerId: $customer->id,
+                    resourceId: isset($validated['resource_id']) ? (int) $validated['resource_id'] : null,
+                    source: 'online',
+                    notes: $validated['notes'] ?? null,
+                );
 
-            $appointment = $this->bookingService->create($data);
+                $appointment = $this->bookingService->create($data);
 
-            $queue = Queue::create([
-                'appointment_id' => $appointment->id,
-                'queue_number' => Queue::generateQueueNumber(),
-                'status' => 'waiting',
-                'is_vip' => false,
-                'notes' => $validated['notes'] ?? null,
-            ]);
+                // Keep the queue row in the same transaction as the appointment.
+                // A queue failure must never leave a successfully booked appointment
+                // without its customer-facing queue number.
+                $queue = Queue::create([
+                    'appointment_id' => $appointment->id,
+                    'queue_number' => Queue::generateQueueNumber(),
+                    'queue_date' => $startsAt->toDateString(),
+                    'status' => 'waiting',
+                    'is_vip' => false,
+                    'notes' => $validated['notes'] ?? null,
+                ]);
+
+                return [$appointment, $queue, $customer];
+            });
 
             return response()->json([
                 'success' => true,
