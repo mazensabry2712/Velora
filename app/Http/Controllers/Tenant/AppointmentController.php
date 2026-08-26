@@ -10,7 +10,6 @@ use App\Models\Appointment;
 use App\Models\Customer;
 use App\Models\Queue;
 use App\Models\Resource;
-use App\Models\Service;
 use App\Models\Staff;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -26,13 +25,6 @@ class AppointmentController extends Controller
         private readonly BookingCreationService $bookingService,
     ) {}
 
-    /**
-     * Public booking endpoint — V2 engine.
-     *
-     * Creates or upserts a Customer V2 record, then delegates to
-     * BookingCreationService which handles slot validation, pessimistic
-     * locking, and business-rule checks.
-     */
     public function store(Request $request): JsonResponse
     {
         $tenantId = (string) tenant()->getTenantKey();
@@ -55,160 +47,104 @@ class AppointmentController extends Controller
                     'max:255',
                     'regex:/^[\p{L}\p{N}\s\-\.]+$/u',
                 ],
-
-                'customer_email' => [
-                    'required',
-                    'email',
-                    'max:255',
-                ],
-
+                'customer_email' => ['required', 'email', 'max:255'],
                 'customer_phone' => [
                     'required',
                     'string',
                     'max:20',
                     'regex:/^[\d\+\-\(\)\s]+$/',
                 ],
-
-                'appointment_date' => [
-                    'required',
-                    'date',
-                    'after_or_equal:today',
-                ],
-
-                'appointment_time' => [
-                    'required',
-                    'date_format:H:i',
-                ],
-
+                'appointment_date' => ['required', 'date', 'after_or_equal:today'],
+                'appointment_time' => ['required', 'date_format:H:i'],
                 'service_id' => [
                     'required',
                     Rule::exists('services', 'id')->where(fn ($q) => $q
                         ->where('is_active', true)
                         ->where('is_online_bookable', true)),
                 ],
-
-                'staff_id' => [
-                    'required',
-                    Rule::exists('staff', 'id')->where(fn ($q) => $q
-                        ->where('is_active', true)
-                        ->where('accepts_bookings', true)),
-                ],
-
+                // The existing public staff API returns the User ID. Resolve
+                // that ID to the dedicated Staff record before booking.
+                'staff_id' => ['required', 'integer', Rule::exists('users', 'id')],
                 'resource_id' => [
                     'nullable',
                     Rule::exists('resources', 'id')->where(fn ($q) => $q->where('is_active', true)),
                 ],
-
-                'timezone' => [
-                    'nullable',
-                    'timezone',
-                ],
-
-                'notes' => [
-                    'nullable',
-                    'string',
-                    'max:1000',
-                ],
+                'timezone' => ['nullable', 'timezone'],
+                'notes' => ['nullable', 'string', 'max:1000'],
             ]);
 
-            // A public booking is only valid when the selected staff member
-            // is explicitly assigned to the selected service.
-            if (! Staff::query()
-                ->whereKey($validated['staff_id'])
-                ->whereHas('services', fn ($q) => $q->whereKey($validated['service_id']))
+            $staffRecord = Staff::query()
+                ->where('user_id', (int) $validated['staff_id'])
+                ->where('is_active', true)
+                ->where('accepts_bookings', true)
+                ->first();
+
+            if (! $staffRecord) {
+                throw Validator::make([], [])->after(function ($validator) {
+                    $validator->errors()->add('staff_id', 'The selected staff member is not available for booking.');
+                })->validate();
+            }
+
+            if (! $staffRecord->services()
+                ->where('services.id', (int) $validated['service_id'])
                 ->exists()) {
-                throw Validator::make([], [
-                    'staff_id' => 'required',
-                ])->after(function ($validator) {
+                throw Validator::make([], [])->after(function ($validator) {
                     $validator->errors()->add('staff_id', 'The selected staff member cannot provide this service.');
                 })->validate();
             }
 
-            // A supplied resource must be active and explicitly assigned to
-            // the selected service. This prevents clients from booking an
-            // arbitrary resource that the service does not use.
             if (! empty($validated['resource_id'])) {
                 $resourceValid = Resource::query()
-                    ->whereKey($validated['resource_id'])
+                    ->whereKey((int) $validated['resource_id'])
                     ->where('is_active', true)
-                    ->whereHas('services', fn ($q) => $q->whereKey($validated['service_id']))
+                    ->whereHas('services', fn ($q) => $q->whereKey((int) $validated['service_id']))
                     ->exists();
 
                 if (! $resourceValid) {
-                    throw Validator::make([], [
-                        'resource_id' => 'required',
-                    ])->after(function ($validator) {
+                    throw Validator::make([], [])->after(function ($validator) {
                         $validator->errors()->add('resource_id', 'The selected resource is not available for this service.');
                     })->validate();
                 }
             }
 
-            // Sanitize text inputs
-            $validated['customer_name'] = strip_tags(
-                trim($validated['customer_name'])
-            );
+            $validated['customer_name'] = strip_tags(trim($validated['customer_name']));
+            $validated['customer_phone'] = preg_replace('/[^\d\+\-\(\)\s]/', '', $validated['customer_phone']);
 
-            $validated['customer_phone'] = preg_replace(
-                '/[^\d\+\-\(\)\s]/',
-                '',
-                $validated['customer_phone']
-            );
-
-            if (!empty($validated['notes'])) {
-                $validated['notes'] = strip_tags(
-                    trim($validated['notes'])
-                );
+            if (! empty($validated['notes'])) {
+                $validated['notes'] = strip_tags(trim($validated['notes']));
             }
 
-            // Build the REAL appointment date + time
             $tz = $validated['timezone'] ?? config('app.timezone');
-
             $startsAt = Carbon::createFromFormat(
                 'Y-m-d H:i',
-                $validated['appointment_date']
-                    . ' '
-                    . $validated['appointment_time'],
+                $validated['appointment_date'] . ' ' . $validated['appointment_time'],
                 $tz
             );
 
-            // Find or create customer after booking inputs are fully validated,
-            // so malformed booking requests cannot mutate customer records.
-            [$firstName, $lastName] = $this->splitName(
-                $validated['customer_name']
-            );
+            [$firstName, $lastName] = $this->splitName($validated['customer_name']);
 
-            $customer = Customer::firstOrNew([
-                'email' => $validated['customer_email'],
-            ]);
-
+            $customer = Customer::firstOrNew(['email' => $validated['customer_email']]);
             $customer->fill([
                 'first_name' => $firstName,
                 'last_name' => $lastName,
                 'phone' => $validated['customer_phone'],
-                'acquisition_source' => $customer->exists
-                    ? $customer->acquisition_source
-                    : 'online',
+                'acquisition_source' => $customer->exists ? $customer->acquisition_source : 'online',
             ]);
-
             $customer->save();
 
-            // Build booking DTO
             $data = new CreateBookingData(
                 serviceId: (int) $validated['service_id'],
-                staffId: (int) $validated['staff_id'],
+                staffId: $staffRecord->id,
                 startsAt: $startsAt,
                 timezone: $tz,
                 customerId: $customer->id,
-                resourceId: isset($validated['resource_id'])
-                    ? (int) $validated['resource_id']
-                    : null,
+                resourceId: isset($validated['resource_id']) ? (int) $validated['resource_id'] : null,
                 source: 'online',
                 notes: $validated['notes'] ?? null,
             );
 
             $appointment = $this->bookingService->create($data);
 
-            // Add appointment to queue
             $queue = Queue::create([
                 'appointment_id' => $appointment->id,
                 'queue_number' => Queue::generateQueueNumber(),
@@ -244,10 +180,7 @@ class AppointmentController extends Controller
                 'reason' => $e->getMessage(),
             ], 409);
         } catch (\Exception $e) {
-            Log::error(
-                'Public booking error: ' . $e->getMessage(),
-                ['trace' => $e->getTraceAsString()]
-            );
+            Log::error('Public booking error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
 
             return response()->json([
                 'success' => false,
@@ -258,15 +191,10 @@ class AppointmentController extends Controller
 
     private function splitName(string $fullName): array
     {
-        $parts     = explode(' ', trim($fullName), 2);
-        $firstName = $parts[0];
-        $lastName  = $parts[1] ?? '';
-        return [$firstName, $lastName];
+        $parts = explode(' ', trim($fullName), 2);
+        return [$parts[0], $parts[1] ?? ''];
     }
 
-    /**
-     * List appointments (authenticated users) — ordered by starts_at desc.
-     */
     public function index(Request $request): JsonResponse
     {
         $appointments = Appointment::with(['customerNew:id,first_name,last_name,email', 'staffNew:id,name'])
@@ -276,25 +204,19 @@ class AppointmentController extends Controller
         return response()->json($appointments);
     }
 
-    /**
-     * Show a specific appointment.
-     */
     public function show(int $id): JsonResponse
     {
         $appointment = Appointment::with(['customerNew', 'staffNew'])->findOrFail($id);
         return response()->json($appointment);
     }
 
-    /**
-     * Update an appointment (status / notes only — staff and time via admin panel).
-     */
     public function update(Request $request, int $id): JsonResponse
     {
         $appointment = Appointment::findOrFail($id);
 
         $validated = $request->validate([
             'status' => 'sometimes|in:pending,confirmed,completed,cancelled,no_show',
-            'notes'  => 'nullable|string|max:1000',
+            'notes' => 'nullable|string|max:1000',
         ]);
 
         $appointment->update($validated);
@@ -302,13 +224,10 @@ class AppointmentController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Appointment updated successfully',
-            'data'    => $appointment,
+            'data' => $appointment,
         ]);
     }
 
-    /**
-     * Cancel / delete an appointment.
-     */
     public function destroy(int $id): JsonResponse
     {
         $appointment = Appointment::findOrFail($id);
@@ -320,9 +239,6 @@ class AppointmentController extends Controller
         ]);
     }
 
-    /**
-     * Get the authenticated customer's own appointments (V2).
-     */
     public function myAppointments(Request $request): JsonResponse
     {
         /** @var \App\Models\Customer $customer */
