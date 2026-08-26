@@ -18,8 +18,6 @@ use Illuminate\Support\Facades\Log;
 
 class ServiceController extends Controller
 {
-    // ── Services CRUD ────────────────────────────────────────────────────
-
     public function index(): JsonResponse
     {
         return response()->json(['success' => true, 'data' => Service::onlineBookable()->orderBy('sort_order')->get()]);
@@ -63,8 +61,6 @@ class ServiceController extends Controller
         }
     }
 
-    // ── Time Slots ───────────────────────────────────────────────────────
-
     public function timeSlots(): JsonResponse
     {
         return response()->json(['success' => true, 'data' => TimeSlot::active()->orderBy('start_time')->get()]);
@@ -107,8 +103,6 @@ class ServiceController extends Controller
         }
     }
 
-    // ── Working Days ─────────────────────────────────────────────────────
-
     public function workingDays(): JsonResponse
     {
         return response()->json(['success' => true, 'data' => WorkingDay::active()->orderBy('day_of_week')->get()]);
@@ -124,13 +118,9 @@ class ServiceController extends Controller
         }
     }
 
-    // ── Available Slots (Booking Form) ───────────────────────────────────
-
     public function availableTimeSlots(Request $request): JsonResponse
     {
         try {
-            // New public booking flow: use the same SlotEngine used by final booking
-            // validation so the UI and server cannot disagree about availability.
             if ($request->filled(['date', 'staff_id', 'service_id'])) {
                 $validated = $request->validate([
                     'date'       => ['required', 'date_format:Y-m-d'],
@@ -159,7 +149,9 @@ class ServiceController extends Controller
                     ]);
                 }
 
-                $timezone = $validated['timezone'] ?? ($staff->timezone ?: config('app.timezone'));
+                // The business/staff calendar is authoritative. The browser timezone
+                // is metadata only and cannot shift the date selected by the customer.
+                $timezone = $staff->timezone ?: config('app.timezone');
                 $slots = app(SlotEngine::class)->getAvailableSlots(
                     $service,
                     $staff,
@@ -169,6 +161,7 @@ class ServiceController extends Controller
 
                 return response()->json([
                     'success' => true,
+                    'timezone' => $timezone,
                     'data' => $slots->map(fn ($slot) => [
                         'start_time' => $slot->startsAt->format('H:i'),
                         'end_time' => $slot->endsAt->format('H:i'),
@@ -177,8 +170,7 @@ class ServiceController extends Controller
                 ]);
             }
 
-            // Legacy/admin compatibility: preserve the old endpoint contract when
-            // called without the new booking parameters.
+            // Legacy compatibility for existing internal consumers.
             $date    = $request->input('date');
             $staffId = $request->input('staff_id');
             $exclude = $request->input('exclude_appointment_id');
@@ -221,8 +213,6 @@ class ServiceController extends Controller
             return response()->json(['success' => false, 'data' => [], 'message' => $e->getMessage()], 500);
         }
     }
-
-    // ── Staff-Service Assignment ─────────────────────────────────────────
 
     public function toggleStaffService(Request $request): JsonResponse
     {
