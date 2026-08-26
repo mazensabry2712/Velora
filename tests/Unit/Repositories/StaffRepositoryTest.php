@@ -21,8 +21,6 @@ class StaffRepositoryTest extends TenantTestCase
         $this->repo = new StaffRepository();
     }
 
-    // ── findById ─────────────────────────────────────────────────────────
-
     #[Test]
     public function find_by_id_returns_user(): void
     {
@@ -38,8 +36,6 @@ class StaffRepositoryTest extends TenantTestCase
         $this->assertNull($this->repo->findById(99999));
     }
 
-    // ── findWithRelations ─────────────────────────────────────────────────
-
     #[Test]
     public function find_with_relations_eager_loads_services(): void
     {
@@ -48,16 +44,13 @@ class StaffRepositoryTest extends TenantTestCase
         $this->assertTrue($result->relationLoaded('services'));
     }
 
-    // ── all ───────────────────────────────────────────────────────────────
-
     #[Test]
     public function all_returns_only_staff_role_users(): void
     {
-        // admin and customer exist in setUp, should not be returned
         $results = $this->repo->all();
 
         foreach ($results as $user) {
-            $this->assertEquals($this->staffRole->id, $user->role_id);
+            $this->assertTrue($user->hasRole($this->staffRole));
         }
     }
 
@@ -68,8 +61,6 @@ class StaffRepositoryTest extends TenantTestCase
 
         $this->assertGreaterThanOrEqual(1, $results->count());
     }
-
-    // ── create ───────────────────────────────────────────────────────────
 
     #[Test]
     public function create_persists_new_staff_user(): void
@@ -99,7 +90,7 @@ class StaffRepositoryTest extends TenantTestCase
             'specialization' => 'Cardiology',
         ]);
 
-        $this->assertEquals($this->staffRole->id, $user->role_id);
+        $this->assertTrue($user->fresh()->hasRole($this->staffRole));
     }
 
     #[Test]
@@ -127,8 +118,6 @@ class StaffRepositoryTest extends TenantTestCase
         $expectedPassword = explode('@', $email)[0] . '123';
         $this->assertTrue(\Illuminate\Support\Facades\Hash::check($expectedPassword, $user->password));
     }
-
-    // ── update ───────────────────────────────────────────────────────────
 
     #[Test]
     public function update_changes_staff_fields(): void
@@ -161,8 +150,6 @@ class StaffRepositoryTest extends TenantTestCase
         $this->assertTrue($this->staffMember->services->contains($this->service->id));
     }
 
-    // ── delete ───────────────────────────────────────────────────────────
-
     #[Test]
     public function delete_removes_staff_member(): void
     {
@@ -176,8 +163,6 @@ class StaffRepositoryTest extends TenantTestCase
 
         $this->assertDatabaseMissing('users', ['id' => $user->id, 'deleted_at' => null]);
     }
-
-    // ── getBySpecialization ───────────────────────────────────────────────
 
     #[Test]
     public function get_by_specialization_filters_correctly(): void
@@ -193,6 +178,7 @@ class StaffRepositoryTest extends TenantTestCase
         $this->assertGreaterThanOrEqual(1, $results->count());
         foreach ($results as $r) {
             $this->assertEquals('Cardiology', $r->specialization);
+            $this->assertTrue($r->hasRole($this->staffRole));
         }
     }
 }
