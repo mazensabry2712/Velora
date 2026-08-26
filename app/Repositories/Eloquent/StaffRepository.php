@@ -192,7 +192,8 @@ class StaffRepository implements StaffRepositoryInterface
     public function getByService(int $serviceId): Collection
     {
         return User::whereHas('services', fn ($q) => $q->where('services.id', $serviceId))
-            ->role('Staff')
+            ->whereHas('roles', fn ($q) => $q->where('name', 'Staff'))
+            ->whereHas('staffProfile', fn ($q) => $q->where('is_active', true)->where('accepts_bookings', true))
             ->with(['activeSchedules'])
             ->get(['id', 'name']);
     }
