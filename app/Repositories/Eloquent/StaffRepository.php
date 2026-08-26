@@ -118,17 +118,34 @@ class StaffRepository implements StaffRepositoryInterface
             }
 
             $staffRecord = Staff::where('user_id', $staff->id)->first();
-            if ($staffRecord) {
+
+            if (!$staffRecord) {
+                $parts = preg_split('/\s+/', trim($staff->name), 2);
+                $staffRecord = Staff::create([
+                    'user_id'          => $staff->id,
+                    'first_name'       => $parts[0] ?? '',
+                    'last_name'        => $parts[1] ?? '',
+                    'email'            => $staff->email,
+                    'phone'            => $staff->phone,
+                    'title'            => !empty($staff->specialization) ? ['en' => $staff->specialization] : null,
+                    'is_active'        => true,
+                    'accepts_bookings' => true,
+                    'sort_order'       => 0,
+                ]);
+            } else {
                 $parts = preg_split('/\s+/', trim($staff->name), 2);
                 $staffRecord->update([
                     'first_name' => $parts[0] ?? '',
                     'last_name'  => $parts[1] ?? '',
                     'email'      => $staff->email,
                     'phone'      => $staff->phone,
+                    'title'      => !empty($staff->specialization) ? ['en' => $staff->specialization] : $staffRecord->title,
                 ]);
-                $this->syncServices($staff->id, $staffRecord->id, $services);
             }
 
+            // Keep both sides of the staff-service pivot consistent.
+            // User::services() reads the user_id side while Staff::services() reads staff_id.
+            $this->syncServices($staff->id, $staffRecord->id, $services);
             $this->syncSchedule($staff->id, $schedule);
 
             return true;
