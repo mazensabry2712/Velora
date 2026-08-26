@@ -193,9 +193,8 @@ class SlotEngine
     private function getBlockedIntervals(Staff $staff, CarbonImmutable $date, ?int $excludeAppointmentId = null): array
     {
         $tz       = $staff->timezone ?: 'UTC';
-        $dayDate  = $date->toDateString();
         $day      = (int) $date->dayOfWeek;
-        $baseDay  = Carbon::parse($dayDate, $tz)->startOfDay();
+        $baseDay  = Carbon::parse($date->toDateString(), $tz)->startOfDay();
         $blocked  = [];
 
         foreach ($staff->breaks->filter(fn($b) => $b->day_of_week === $day) as $break) {
@@ -223,9 +222,19 @@ class SlotEngine
             }
         }
 
+        // Appointment timestamps are persisted in UTC. Query the complete local
+        // business day by UTC overlap rather than comparing the UTC date string.
+        // This keeps conflict detection correct for non-UTC staff timezones.
+        $dayStartUtc = $baseDay->copy()->utc();
+        $dayEndUtc   = $baseDay->copy()->endOfDay()->utc();
+
         $query = Appointment::query()
             ->where('staff_id_new', $staff->id)
-            ->whereDate('starts_at', $dayDate)
+            ->where('starts_at', '<=', $dayEndUtc)
+            ->where(function ($q) use ($dayStartUtc) {
+                $q->where('ends_at_with_buffer', '>=', $dayStartUtc)
+                  ->orWhere('ends_at', '>=', $dayStartUtc);
+            })
             ->whereNotIn('status', [Appointment::STATUS_CANCELLED, Appointment::STATUS_NO_SHOW]);
 
         if ($excludeAppointmentId) {
