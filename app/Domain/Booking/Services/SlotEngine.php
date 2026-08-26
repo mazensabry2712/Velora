@@ -65,11 +65,14 @@ class SlotEngine
             $blockStart        = $slotStart->copy()->subMinutes($bufferBefore);
 
             if (! $this->overlapsAny($blockStart, $slotEndWithBuffer, $blocked)) {
+                // TimeSlot's public DTO contract uses mutable Carbon instances.
+                // Convert explicitly after timezone conversion so CarbonImmutable
+                // from the availability engine never leaks into the DTO boundary.
                 $slots->push(new TimeSlot(
-                    startsAt:         $slotStart->setTimezone($timezone),
-                    endsAt:           $slotEnd->setTimezone($timezone),
-                    endsAtWithBuffer: $slotEndWithBuffer->setTimezone($timezone),
-                    isAvailable:      true,
+                    startsAt: Carbon::instance($slotStart->setTimezone($timezone)),
+                    endsAt: Carbon::instance($slotEnd->setTimezone($timezone)),
+                    endsAtWithBuffer: Carbon::instance($slotEndWithBuffer->setTimezone($timezone)),
+                    isAvailable: true,
                 ));
             }
 
@@ -133,6 +136,7 @@ class SlotEngine
         }
 
         $blocked = $this->getBlockedIntervals($staff, $date, $excludeId);
+
         if ($this->overlapsAny($blockStart, $slotEndWithBuffer, $blocked)) {
             return SlotValidationResult::unavailable('slot_not_available');
         }
@@ -164,6 +168,7 @@ class SlotEngine
         }
 
         $baseDay = ($date ?: CarbonImmutable::now($tz)->startOfDay())->setTimezone($tz)->startOfDay();
+
         $start = $baseDay->copy()->setTimeFromTimeString($hours->start_time);
         $end   = $baseDay->copy()->setTimeFromTimeString($hours->end_time);
 
@@ -181,14 +186,16 @@ class SlotEngine
             ->exists();
     }
 
+    /**
+     * @return array<array{Carbon, Carbon}>
+     */
     private function getBlockedIntervals(Staff $staff, CarbonImmutable $date, ?int $excludeAppointmentId = null): array
     {
-        $tz      = $staff->timezone ?: 'UTC';
-        $dayDate = $date->toDateString();
-        $day     = (int) $date->dayOfWeek;
-        $baseDay = Carbon::parse($dayDate, $tz)->startOfDay();
-
-        $blocked = [];
+        $tz       = $staff->timezone ?: 'UTC';
+        $dayDate  = $date->toDateString();
+        $day      = (int) $date->dayOfWeek;
+        $baseDay  = Carbon::parse($dayDate, $tz)->startOfDay();
+        $blocked  = [];
 
         foreach ($staff->breaks->filter(fn($b) => $b->day_of_week === $day) as $break) {
             $blocked[] = [
@@ -203,7 +210,10 @@ class SlotEngine
             }
 
             if ($off->all_day) {
-                $blocked[] = [$baseDay->copy()->startOfDay(), $baseDay->copy()->endOfDay()];
+                $blocked[] = [
+                    $baseDay->copy()->startOfDay(),
+                    $baseDay->copy()->endOfDay(),
+                ];
             } else {
                 $blocked[] = [
                     $baseDay->copy()->setTimeFromTimeString($off->start_time),
@@ -223,6 +233,7 @@ class SlotEngine
 
         foreach ($query->get(['starts_at', 'ends_at_with_buffer', 'ends_at']) as $appt) {
             $end = $appt->ends_at_with_buffer ?? $appt->ends_at;
+
             if ($appt->starts_at && $end) {
                 $blocked[] = [
                     Carbon::instance($appt->starts_at)->setTimezone($tz),
@@ -235,10 +246,9 @@ class SlotEngine
     }
 
     /**
-     * Returns true if [proposedStart, proposedEnd) overlaps any blocked interval.
-     * Accept Carbon and CarbonImmutable since the engine intentionally uses both.
+     * @param array<array{Carbon, Carbon}> $blocked
      */
-    private function overlapsAny(Carbon|CarbonImmutable $start, Carbon|CarbonImmutable $end, array $blocked): bool
+    private function overlapsAny(Carbon $start, Carbon $end, array $blocked): bool
     {
         foreach ($blocked as [$bStart, $bEnd]) {
             if ($start->lt($bEnd) && $end->gt($bStart)) {
