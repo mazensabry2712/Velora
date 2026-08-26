@@ -194,8 +194,9 @@ class SlotEngine
             }
         }
 
-        // Appointment timestamps are stored in UTC. Convert the complete local
-        // calendar day to UTC before querying so existing bookings are never missed.
+        // Appointment timestamps are stored in UTC. Work with the raw database
+        // values here so the application's display timezone cannot shift a booking
+        // before conflict detection.
         $dayStartUtc = $baseDay->copy()->startOfDay()->utc();
         $dayEndUtc = $baseDay->copy()->endOfDay()->utc();
 
@@ -212,12 +213,14 @@ class SlotEngine
             $query->where('id', '!=', $excludeAppointmentId);
         }
 
-        foreach ($query->get(['starts_at', 'ends_at_with_buffer', 'ends_at']) as $appt) {
-            $end = $appt->ends_at_with_buffer ?? $appt->ends_at;
-            if ($appt->starts_at && $end) {
+        foreach ($query->get(['id', 'starts_at', 'ends_at_with_buffer', 'ends_at']) as $appt) {
+            $rawStart = $appt->getRawOriginal('starts_at');
+            $rawEnd = $appt->getRawOriginal('ends_at_with_buffer') ?: $appt->getRawOriginal('ends_at');
+
+            if ($rawStart && $rawEnd) {
                 $blocked[] = [
-                    Carbon::instance($appt->starts_at)->setTimezone($tz),
-                    Carbon::instance($end)->setTimezone($tz),
+                    Carbon::parse($rawStart, 'UTC')->setTimezone($tz),
+                    Carbon::parse($rawEnd, 'UTC')->setTimezone($tz),
                 ];
             }
         }
