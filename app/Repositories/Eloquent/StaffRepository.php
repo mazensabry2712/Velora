@@ -45,7 +45,6 @@ class StaffRepository implements StaffRepositoryInterface
                 'phone'          => $userData['phone'] ?? null,
                 'password'       => Hash::make($defaultPassword),
                 'specialization' => $userData['specialization'] ?? null,
-                'role_id'        => $staffRole->id,
             ]);
 
             $user->assignRole($staffRole);
