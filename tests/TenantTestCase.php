@@ -4,6 +4,7 @@ namespace Tests;
 
 use App\Models\Role;
 use App\Models\Service;
+use App\Models\Staff;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
@@ -24,6 +25,7 @@ abstract class TenantTestCase extends TestCase
     protected Tenant  $tenant;
     protected User    $admin;
     protected User    $staffMember;
+    protected Staff   $staff;
     protected User    $customer;
     protected Service $service;
     protected Role    $adminRole;
@@ -93,6 +95,7 @@ abstract class TenantTestCase extends TestCase
         $this->customerRole = Role::findOrFail($ids['customerRole']);
         $this->admin = User::findOrFail($ids['admin']);
         $this->staffMember = User::findOrFail($ids['staffMember']);
+        $this->staff = Staff::findOrFail($ids['staff']);
         $this->customer = User::findOrFail($ids['customer']);
         $this->service = Service::findOrFail($ids['service']);
 
@@ -150,6 +153,16 @@ abstract class TenantTestCase extends TestCase
         ]);
         $this->staffMember->assignRole($this->staffRole);
 
+        $this->staff = Staff::create([
+            'user_id' => $this->staffMember->id,
+            'first_name' => 'Staff',
+            'last_name' => 'Member',
+            'email' => $this->staffMember->email,
+            'phone' => '0501234567',
+            'accepts_bookings' => true,
+            'is_active' => true,
+        ]);
+
         $this->customer = User::create([
             'name' => 'Test Customer',
             'email' => 'customer@test.com',
@@ -166,12 +179,15 @@ abstract class TenantTestCase extends TestCase
             'is_active' => true,
         ]);
 
+        $this->staff->services()->syncWithoutDetaching([$this->service->id]);
+
         self::$fixtureIds = [
             'adminRole' => $this->adminRole->id,
             'staffRole' => $this->staffRole->id,
             'customerRole' => $this->customerRole->id,
             'admin' => $this->admin->id,
             'staffMember' => $this->staffMember->id,
+            'staff' => $this->staff->id,
             'customer' => $this->customer->id,
             'service' => $this->service->id,
         ];
