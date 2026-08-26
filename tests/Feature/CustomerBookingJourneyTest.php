@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Appointment;
+use App\Models\Customer;
 use App\Models\Queue;
 use App\Models\StaffWorkingHours;
 use Illuminate\Support\Facades\RateLimiter;
@@ -160,5 +161,42 @@ class CustomerBookingJourneyTest extends TenantTestCase
                 ->whereDate('starts_at', $date->toDateString())
                 ->count()
         );
+    }
+
+    #[Test]
+    public function blocked_customer_cannot_create_a_public_booking(): void
+    {
+        [$date, $timezone] = $this->prepareBookableSlot();
+
+        $blockedEmail = 'blocked@example.com';
+
+        Customer::create([
+            'first_name' => 'Blocked',
+            'last_name' => 'Customer',
+            'email' => $blockedEmail,
+            'phone' => '+201000000099',
+            'is_blocked' => true,
+            'block_reason' => 'Repeated no-shows',
+            'acquisition_source' => 'online',
+        ]);
+
+        $response = $this->postJson('/api/appointments', [
+            'customer_name' => 'Blocked Customer',
+            'customer_email' => $blockedEmail,
+            'customer_phone' => '+201000000099',
+            'appointment_date' => $date->toDateString(),
+            'appointment_time' => '09:00',
+            'staff_id' => $this->staffMember->id,
+            'service_id' => $this->service->id,
+            'timezone' => $timezone,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'Validation error')
+            ->assertJsonPath('errors.customer_email.0', 'This customer is not allowed to book appointments.');
+
+        $this->assertSame(0, Appointment::query()->where('service_id', $this->service->id)->count());
+        $this->assertSame(1, Customer::query()->where('email', $blockedEmail)->count());
     }
 }
