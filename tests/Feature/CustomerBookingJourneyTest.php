@@ -82,7 +82,7 @@ class CustomerBookingJourneyTest extends TenantTestCase
         $this->assertSame('pending', $appointment->status);
         $this->assertSame('waiting', $queue->status);
         $this->assertNotSame('', (string) $queue->queue_number);
-        $this->assertSame($date->toDateString(), $queue->queue_date);
+        $this->assertSame($date->toDateString(), $queue->queue_date->toDateString());
 
         $availability = $this->getJson('/api/booking/available-timeslots?' . http_build_query([
             'date' => $date->toDateString(),
