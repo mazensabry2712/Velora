@@ -38,6 +38,17 @@ class CustomerBookingJourneyTest extends TenantTestCase
         return [$date, $timezone];
     }
 
+    private function book(array $payload): array
+    {
+        $response = $this->postJson('/api/appointments', $payload);
+        $response->assertCreated();
+
+        $appointment = Appointment::query()->latest('id')->firstOrFail();
+        $queue = Queue::query()->where('appointment_id', $appointment->id)->firstOrFail();
+
+        return [$response, $appointment, $queue];
+    }
+
     #[Test]
     public function customer_can_complete_booking_and_booked_slot_disappears(): void
     {
@@ -82,6 +93,33 @@ class CustomerBookingJourneyTest extends TenantTestCase
 
         $times = collect($availability->json('data'))->pluck('start_time')->all();
         $this->assertNotContains('09:00', $times);
+    }
+
+    #[Test]
+    public function customer_can_check_the_queue_status_after_booking(): void
+    {
+        [$date, $timezone] = $this->prepareBookableSlot();
+
+        [, $appointment, $queue] = $this->book([
+            'customer_name' => 'Queue Customer',
+            'customer_email' => 'queue@example.com',
+            'customer_phone' => '+201000000002',
+            'appointment_date' => $date->toDateString(),
+            'appointment_time' => '09:00',
+            'staff_id' => $this->staffMember->id,
+            'service_id' => $this->service->id,
+            'timezone' => $timezone,
+        ]);
+
+        $this->getJson('/api/queue/status/' . rawurlencode((string) $queue->queue_number))
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.queue_number', $queue->queue_number)
+            ->assertJsonPath('data.status', 'waiting')
+            ->assertJsonPath('data.service', $this->service->name)
+            ->assertJsonPath('data.staff_name', $this->staffMember->name);
+
+        $this->assertSame($queue->id, Queue::query()->where('appointment_id', $appointment->id)->value('id'));
     }
 
     #[Test]
