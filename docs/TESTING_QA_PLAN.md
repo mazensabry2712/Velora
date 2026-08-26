@@ -23,15 +23,15 @@ Every core business rule should be protected by automated tests and then verifie
 - [ ] Customer booking.
 - [ ] Appointment lifecycle.
 - [ ] Queue lifecycle.
-- [Service CRUD.
-- [Staff CRUD.
-- [Settings updates.
-- [Subscription lifecycle.
-- [Billing checkout.
-- [Billing callbacks/webhooks.
-- [Trial extension.
-- [Exports.
-- [Locale switching.
+- [ ] Service CRUD.
+- [ ] Staff CRUD.
+- [ ] Settings updates.
+- [ ] Subscription lifecycle.
+- [ ] Billing checkout.
+- [ ] Billing callbacks/webhooks.
+- [ ] Trial extension.
+- [ ] Exports.
+- [ ] Locale switching.
 
 ### Integration
 
