@@ -143,8 +143,6 @@ class StaffRepository implements StaffRepositoryInterface
                 ]);
             }
 
-            // Keep both sides of the staff-service pivot consistent.
-            // User::services() reads the user_id side while Staff::services() reads staff_id.
             $this->syncServices($staff->id, $staffRecord->id, $services);
             $this->syncSchedule($staff->id, $schedule);
 
@@ -194,7 +192,7 @@ class StaffRepository implements StaffRepositoryInterface
         return User::whereHas('services', fn ($q) => $q->where('services.id', $serviceId))
             ->whereHas('roles', fn ($q) => $q->where('name', 'Staff'))
             ->whereHas('staffProfile', fn ($q) => $q->where('is_active', true)->where('accepts_bookings', true))
-            ->with(['activeSchedules'])
+            ->with(['activeSchedules', 'staffProfile'])
             ->get(['id', 'name']);
     }
 
