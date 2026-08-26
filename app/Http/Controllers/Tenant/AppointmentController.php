@@ -113,7 +113,10 @@ class AppointmentController extends Controller
                 $validated['notes'] = strip_tags(trim($validated['notes']));
             }
 
-            $tz = $validated['timezone'] ?? config('app.timezone');
+            // The appointment date/time represents the business schedule. Use the
+            // staff member's timezone as the authoritative timezone rather than
+            // trusting the customer's device timezone.
+            $tz = $staffRecord->timezone ?: config('app.timezone');
             $startsAt = Carbon::createFromFormat(
                 'Y-m-d H:i',
                 $validated['appointment_date'] . ' ' . $validated['appointment_time'],
