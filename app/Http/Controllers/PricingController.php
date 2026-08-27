@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
 use App\Services\PricingService;
@@ -27,13 +29,18 @@ class PricingController extends Controller
         $code    = strtoupper($validated['country_code']);
         $pricing = $this->pricing->setCountryOverride($code);
 
-        // Persist the language in session so refreshing the page keeps the right locale
-        $supported = ['en','ar','fr','es','de','it','pt','ru','zh','ja','tr','hi','ko','nl','id'];
+        // Keep Velora's explicit locale selection synchronized with the
+        // Laravel Localizer's own persistence keys. Without this, the POST
+        // can set `central_locale=ar` while Localizer still sees a stale
+        // `locale=en` value on the next GET and renders English on `/`.
+        $supported = ['en', 'ar', 'fr', 'es', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'tr', 'hi', 'ko', 'nl', 'id'];
         $lang = $validated['lang'] ?? 'en';
-        if (in_array($lang, $supported)) {
+        if (in_array($lang, $supported, true)) {
             session()->put('central_locale', $lang);
-            // Queue a permanent cookie so geo-detection doesn't override on next request
+            session()->put('locale', $lang);
+
             cookie()->queue(cookie()->forever('velora_locale_override', $lang));
+            cookie()->queue(cookie()->forever('locale', $lang));
         }
 
         return response()->json([
