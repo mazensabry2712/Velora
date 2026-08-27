@@ -7,12 +7,12 @@ namespace App\Application\Booking\Actions;
 use App\Application\Booking\DTOs\PublicBookingData;
 use App\Application\Shared\Contracts\TransactionManager;
 use App\Domain\Booking\DTOs\CreateBookingData;
-use App\Domain\Booking\Exceptions\SlotUnavailableException;
 use App\Domain\Booking\Services\BookingCreationService;
 use App\Models\Customer;
 use App\Models\Queue;
 use App\Models\Resource;
 use App\Models\Staff;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Validator;
 
 final class CreatePublicBooking
@@ -51,7 +51,14 @@ final class CreatePublicBooking
             }
         }
 
-        return $this->transactions->transaction(function () use ($data, $staff): array {
+        $timezone = $staff->timezone ?: config('app.timezone');
+        $startsAt = Carbon::createFromFormat(
+            'Y-m-d H:i',
+            $data->appointmentDate . ' ' . $data->appointmentTime,
+            $timezone,
+        );
+
+        return $this->transactions->transaction(function () use ($data, $staff, $timezone, $startsAt): array {
             [$firstName, $lastName] = $this->splitName($data->customerName);
 
             $customer = Customer::firstOrNew(['email' => $data->customerEmail]);
@@ -68,25 +75,21 @@ final class CreatePublicBooking
             ]);
             $customer->save();
 
-            try {
-                $appointment = $this->bookingService->create(new CreateBookingData(
-                    serviceId: $data->serviceId,
-                    staffId: $staff->id,
-                    startsAt: $data->startsAt,
-                    timezone: $data->timezone,
-                    customerId: $customer->id,
-                    resourceId: $data->resourceId,
-                    source: 'online',
-                    notes: $data->notes,
-                ));
-            } catch (SlotUnavailableException $exception) {
-                throw $exception;
-            }
+            $appointment = $this->bookingService->create(new CreateBookingData(
+                serviceId: $data->serviceId,
+                staffId: $staff->id,
+                startsAt: $startsAt,
+                timezone: $timezone,
+                customerId: $customer->id,
+                resourceId: $data->resourceId,
+                source: 'online',
+                notes: $data->notes,
+            ));
 
             $queue = Queue::create([
                 'appointment_id' => $appointment->id,
-                'queue_number' => Queue::generateQueueNumber($data->startsAt),
-                'queue_date' => $data->startsAt->toDateString(),
+                'queue_number' => Queue::generateQueueNumber($startsAt),
+                'queue_date' => $startsAt->toDateString(),
                 'status' => 'waiting',
                 'is_vip' => false,
                 'notes' => $data->notes,
