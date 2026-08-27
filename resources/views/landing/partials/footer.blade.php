@@ -45,23 +45,22 @@ $footerColumns = [
         ],
     ];
 
-    // ── Availability flags (fixed the corrupted 🇬🇧 entry from the old markup) ──
+    // ── Availability flags ──
     $availabilityFlags = ['🇬🇧', '🇸🇦', '🇫🇷', '🇪🇸', '🇩🇪', '🇧🇷', '🇯🇵', '🇨🇳', '🇹🇷', '🇮🇳', '🇰🇷', '🇳🇱', '🇮🇩'];
 @endphp
 
+{{-- Load the Velora brand layer after the landing-page palette so brand variables/utilities win without a global response middleware. --}}
+<link rel="stylesheet" href="{{ asset('css/velora-brand.css') }}">
+
 <footer class="relative bg-surface overflow-hidden">
-    {{-- Accent hairline instead of a flat border — matches the divider style used elsewhere on the page --}}
     <div class="h-px w-full bg-gradient-to-r from-transparent via-brand-500/40 to-transparent"></div>
 
-    {{-- Soft ambient glow behind the brand column for depth, consistent with the hero glow --}}
     <div
         class="pointer-events-none absolute -top-24 ltr:-left-24 rtl:-right-24 w-96 h-96 rounded-full bg-brand-500/10 blur-3xl">
     </div>
 
     <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-10">
         <div class="grid grid-cols-2 lg:grid-cols-6 gap-x-8 gap-y-12 mb-14">
-
-            {{-- Brand column --}}
             <div class="col-span-2 lg:col-span-3">
                 <a href="{{ route('landing') }}" class="inline-flex items-center gap-2.5 mb-5">
                     @if (!empty($appLogoUrl ?? ''))
@@ -69,7 +68,7 @@ $footerColumns = [
                     @else
                         <div class="w-9 h-9 rounded-xl btn-primary flex items-center justify-center">
                             <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                     d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                         </div>
@@ -96,7 +95,6 @@ $footerColumns = [
                 </div>
             </div>
 
-            {{-- Link columns --}}
             @foreach ($footerColumns as $column)
                 <div class="col-span-1 lg:col-span-1">
                     <h4 class="text-xs font-semibold text-white uppercase tracking-wider mb-4">
@@ -116,14 +114,12 @@ $footerColumns = [
             @endforeach
         </div>
 
-        {{-- Bottom bar --}}
         <div class="pt-8 border-t border-white/10 flex flex-col-reverse sm:flex-row items-center justify-between gap-5">
             <p class="text-gray-500 text-sm text-center sm:text-start">
                 &copy; {{ date('Y') }} {{ $appName ?? 'Velora' }}. {{ __('landing.footer_rights') }}
             </p>
 
             <div class="flex items-center gap-4">
-                {{-- Availability badge — shows the markets/languages the platform supports --}}
                 <div class="hidden sm:flex items-center gap-2.5 glass rounded-full pl-3.5 pr-3 py-2">
                     <span class="text-xs text-gray-400 whitespace-nowrap">{{ __('landing.footer_available') }}</span>
                     <div class="flex items-center gap-1 flex-wrap max-w-[180px]">
@@ -133,7 +129,6 @@ $footerColumns = [
                     </div>
                 </div>
 
-                {{-- Back to top --}}
                 <button type="button" onclick="window.scrollTo({top: 0, behavior: 'smooth'})"
                     aria-label="{{ __('landing.footer_back_to_top') }}"
                     class="w-9 h-9 rounded-full glass flex items-center justify-center text-gray-400 hover:text-white hover:border-brand-500/50 hover:-translate-y-0.5 transition-all duration-200">
