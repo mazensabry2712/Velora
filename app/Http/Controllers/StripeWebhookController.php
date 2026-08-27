@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Mail\PaymentFailedMail;
 use App\Models\Tenant;
 use App\Services\StripeService;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -42,36 +43,68 @@ class StripeWebhookController extends Controller
 
         Log::info('Stripe webhook received: ' . $event->type, ['event_id' => $event->id]);
 
+        if ($this->isDuplicateWebhook('stripe', $event->id, $event->type)) {
+            return response()->json(['status' => 'ok', 'duplicate' => true], 200);
+        }
+
         try {
             match ($event->type) {
-                // Subscription becomes active (new or renewal)
                 'customer.subscription.created',
                 'customer.subscription.updated'  => $this->handleSubscriptionUpdated($event),
-
-                // Subscription cancelled
                 'customer.subscription.deleted'  => $this->handleSubscriptionDeleted($event),
-
-                // Invoice paid (renewal)
                 'invoice.paid'                   => $this->handleInvoicePaid($event),
-
-                // Invoice payment failed
                 'invoice.payment_failed'         => $this->handlePaymentFailed($event),
-
-                // Checkout completed
                 'checkout.session.completed'     => $this->handleCheckoutCompleted($event),
-
                 default => null,
             };
-        } catch (\Exception $e) {
+
+            DB::table('webhook_events')
+                ->where('provider', 'stripe')
+                ->where('event_id', $event->id)
+                ->update(['processed_at' => now()]);
+        } catch (\Throwable $e) {
+            DB::table('webhook_events')
+                ->where('provider', 'stripe')
+                ->where('event_id', $event->id)
+                ->delete();
+
             Log::error('Stripe webhook handler error: ' . $e->getMessage(), [
                 'event_type' => $event->type,
                 'event_id'   => $event->id,
             ]);
-            // Return 200 to prevent Stripe from retrying on business logic errors
-            return response()->json(['status' => 'error_logged'], 200);
+
+            // Non-2xx tells Stripe to retry a transient/internal failure.
+            return response()->json(['error' => 'Webhook processing failed'], 500);
         }
 
         return response()->json(['status' => 'ok'], 200);
+    }
+
+    private function isDuplicateWebhook(string $provider, string $eventId, ?string $eventType = null): bool
+    {
+        try {
+            DB::table('webhook_events')->insert([
+                'provider'    => $provider,
+                'event_id'    => $eventId,
+                'event_type'  => $eventType,
+                'created_at'  => now(),
+                'updated_at'  => now(),
+            ]);
+
+            return false;
+        } catch (QueryException $e) {
+            if (str_contains(strtolower($e->getMessage()), 'unique')) {
+                Log::info('Duplicate webhook ignored', [
+                    'provider' => $provider,
+                    'event_id' => $eventId,
+                    'event_type' => $eventType,
+                ]);
+
+                return true;
+            }
+
+            throw $e;
+        }
     }
 
     private function handleSubscriptionUpdated(\Stripe\Event $event): void
@@ -100,7 +133,7 @@ class StripeWebhookController extends Controller
         $invoice  = $event->data->object;
         $tenantId = $invoice->subscription_details?->metadata['tenant_id'] ?? null;
 
-        if (! $tenantId) {
+        if (!$tenantId) {
             Log::warning('Stripe payment_failed: no tenant_id in metadata', ['invoice' => $invoice->id]);
             return;
         }
@@ -109,21 +142,18 @@ class StripeWebhookController extends Controller
 
         $centralConn = config('tenancy.database.central_connection', 'mysql');
 
-        // Access name/email from tenants.data JSON column (stancl/tenancy stores custom attrs there)
         $tenantRow    = DB::connection($centralConn)->table('tenants')->where('id', $tenantId)->first();
         $tenantData   = json_decode($tenantRow?->data ?? '{}', true);
         $ownerEmail   = $tenantData['email'] ?? null;
         $businessName = $tenantData['name'] ?? $tenantId;
 
-        if (! $ownerEmail) {
+        if (!$ownerEmail) {
             Log::warning("Stripe payment_failed: no email for tenant {$tenantId}");
             return;
         }
 
-        // Build billing portal URL (best effort — may not have stripe_customer_id yet)
         $billingPortalUrl = 'https://' . (DB::connection($centralConn)->table('domains')->where('tenant_id', $tenantId)->value('domain') ?? 'app.velora.sa') . '/billing/expired';
 
-        // Set grace period (3 days) on the subscription
         DB::connection($centralConn)
             ->table('tenant_subscriptions')
             ->where('tenant_id', $tenantId)
@@ -153,7 +183,6 @@ class StripeWebhookController extends Controller
 
         if ($tenantId) {
             $centralConn = config('tenancy.database.central_connection', 'mysql');
-            // Mark trial as converted
             DB::connection($centralConn)
                 ->table('tenant_subscriptions')
                 ->where('tenant_id', $tenantId)
