@@ -8,6 +8,7 @@ use App\Application\Customer\Actions\CreateCustomer;
 use App\Application\Customer\Actions\DeleteCustomer;
 use App\Application\Customer\Actions\GetCustomer;
 use App\Application\Customer\Actions\GetCustomerAppointments;
+use App\Application\Customer\Actions\GetCustomerStatistics;
 use App\Application\Customer\Actions\GetCustomers;
 use App\Application\Customer\Actions\SetCustomerBlockedState;
 use App\Application\Customer\Actions\UpdateCustomer;
@@ -23,6 +24,7 @@ final class CustomerController extends Controller
     public function __construct(
         private readonly GetCustomers $getCustomers,
         private readonly GetCustomer $getCustomer,
+        private readonly GetCustomerStatistics $getCustomerStatistics,
         private readonly GetCustomerAppointments $getCustomerAppointments,
         private readonly CreateCustomer $createCustomer,
         private readonly UpdateCustomer $updateCustomer,
@@ -81,18 +83,10 @@ final class CustomerController extends Controller
     {
         $customer = $this->getCustomer->execute($id);
 
-        $stats = [
-            'total_appointments' => $customer->appointments()->count(),
-            'completed' => $customer->appointments()->where('status', 'completed')->count(),
-            'cancelled' => $customer->appointments()->where('status', 'cancelled')->count(),
-            'no_show' => $customer->appointments()->where('status', 'no_show')->count(),
-            'avg_rating' => round((float) $customer->appointments()->whereNotNull('rating')->avg('rating'), 1),
-            'total_spent' => $customer->total_spent,
-            'last_visit_at' => $customer->last_visit_at,
-            'ltv_tier' => $customer->ltv_tier,
-        ];
-
-        return response()->json(['data' => $customer, 'stats' => $stats]);
+        return response()->json([
+            'data' => $customer,
+            'stats' => $this->getCustomerStatistics->execute($id),
+        ]);
     }
 
     public function update(Request $request, int $id): JsonResponse
