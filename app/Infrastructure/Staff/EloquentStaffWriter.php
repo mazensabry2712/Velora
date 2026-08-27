@@ -101,6 +101,8 @@ final class EloquentStaffWriter implements StaffWriter
         }
 
         $this->syncServices($staff->id, $staffRecord->id, $services);
+        // Preserve the legacy update contract: an empty schedule clears the
+        // existing staff schedule as part of a full update.
         $this->syncSchedule($staff->id, $schedule);
 
         return true;
@@ -180,10 +182,6 @@ final class EloquentStaffWriter implements StaffWriter
 
     private function syncSchedule(int $staffId, array $schedule): void
     {
-        if ($schedule === []) {
-            return;
-        }
-
         StaffSchedule::where('user_id', $staffId)->delete();
 
         foreach ($schedule as $row) {
