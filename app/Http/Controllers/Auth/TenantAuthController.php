@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
@@ -31,56 +33,44 @@ class TenantAuthController extends Controller
             'password' => 'required',
         ]);
 
-        // Get current tenant
         $tenant = tenant();
 
         if (!$tenant) {
             return response()->json([
                 'error' => 'Tenant not initialized',
-                'message' => 'Please access via valid tenant domain or provide tenant identifier'
+                'message' => 'Please access via valid tenant domain or provide tenant identifier',
             ], 400);
         }
 
-        // Find user in current tenant database
         $user = User::where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
-            RateLimiter::hit($throttleKey, 60); // 1 minute decay
+            RateLimiter::hit($throttleKey, 60);
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
         }
 
-        // Clear rate limiter on successful login
         RateLimiter::clear($throttleKey);
 
-        // Get user role (Spatie Permission - users have no `role` relation or role_id column)
         $roleName = $user->getRoleNames()->first();
-        $abilities = [];
+        $abilities = match ($roleName) {
+            'Admin Tenant' => ['admin-tenant'],
+            'Assistant' => ['assistant'],
+            'Staff' => ['staff'],
+            'Customer' => ['customer'],
+            default => [],
+        };
 
-        // Set token abilities based on role
-        switch ($roleName) {
-            case 'Admin Tenant':
-                $abilities = ['admin-tenant'];
-                break;
-            case 'Assistant':
-                $abilities = ['assistant'];
-                break;
-            case 'Staff':
-                $abilities = ['staff'];
-                break;
-            case 'Customer':
-                $abilities = ['customer'];
-                break;
-        }
+        // Bind the token cryptographically to the tenant context. The tenant
+        // middleware uses this scope before Sanctum resolves the user so a
+        // token issued for tenant A can never initialize tenant B first.
+        $abilities[] = 'tenant:' . $tenant->id;
 
-        // Login user in session for web
         auth()->login($user, $request->filled('remember'));
 
-        // Create token with abilities for API
         $token = $user->createToken('tenant-token', $abilities)->plainTextToken;
 
-        // Determine redirect URL based on role
         $redirectTo = $roleName === 'Customer' ? '/my-queue' : '/admin/dashboard';
 
         return response()->json([
@@ -114,17 +104,15 @@ class TenantAuthController extends Controller
             'password' => 'required|string|min:8|confirmed',
         ]);
 
-        // Get current tenant
         $tenant = tenant();
 
         if (!$tenant) {
             return response()->json([
                 'error' => 'Tenant not initialized',
-                'message' => 'Please access via valid tenant domain or provide tenant identifier'
+                'message' => 'Please access via valid tenant domain or provide tenant identifier',
             ], 400);
         }
 
-        // Create user and assign the Customer role (Spatie Permission)
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -133,8 +121,10 @@ class TenantAuthController extends Controller
 
         $user->assignRole('Customer');
 
-        // Create token
-        $token = $user->createToken('tenant-token', ['customer'])->plainTextToken;
+        $token = $user->createToken('tenant-token', [
+            'customer',
+            'tenant:' . $tenant->id,
+        ])->plainTextToken;
 
         return response()->json([
             'success' => true,
@@ -146,6 +136,11 @@ class TenantAuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => 'Customer',
+            ],
+            'tenant' => [
+                'id' => $tenant->id,
+                'name' => $tenant->name,
+                'domain' => $tenant->domains->first()?->domain ?? '',
             ],
         ], 201);
     }
@@ -179,12 +174,10 @@ class TenantAuthController extends Controller
      */
     public function logout(Request $request)
     {
-        // Delete current access token if exists
         if ($request->user() && $request->user()->currentAccessToken()) {
             $request->user()->currentAccessToken()->delete();
         }
 
-        // Logout from session
         auth()->logout();
 
         $request->session()->invalidate();
@@ -192,7 +185,7 @@ class TenantAuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Logged out successfully'
+            'message' => 'Logged out successfully',
         ]);
     }
 }
