@@ -7,12 +7,11 @@ use App\Models\Service;
 use App\Models\Setting;
 use App\Models\Staff;
 use App\Models\StaffWorkingHours;
-use App\Services\UsageLog;
+use App\Models\UsageLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * Four-step first-run setup for a new Velora tenant.
@@ -35,11 +34,8 @@ class OnboardingController extends Controller
         $currentStep = $settings?->onboarding_step ?? 0;
         $subdomain   = tenant('id');
         $domain      = config('app.base_domain', config('app.domain', 'velora.test'));
-        $bookingUrl  = 'http://' . $subdomain . '.' . $domain . '/book';
-
-        if (request()->secure()) {
-            $bookingUrl = 'https://' . $subdomain . '.' . $domain . '/book';
-        }
+        $scheme      = request()->secure() ? 'https' : 'http';
+        $bookingUrl  = "{$scheme}://{$subdomain}.{$domain}/book";
 
         return view('admin.onboarding.wizard', compact('currentStep', 'bookingUrl', 'subdomain', 'domain'));
     }
@@ -149,7 +145,6 @@ class OnboardingController extends Controller
                         'service_id' => $service->id,
                     ],
                     [
-                        // Keep the pivot compatible with the current tenant schema.
                         'user_id'    => auth()->id(),
                         'updated_at' => now(),
                         'created_at' => now(),
@@ -199,8 +194,8 @@ class OnboardingController extends Controller
             Setting::updateOrCreate(['id' => 1], [
                 'onboarding_step'      => 4,
                 'onboarding_completed' => true,
-                'booking_enabled'     => true,
-                'queue_enabled'      => true,
+                'booking_enabled'      => true,
+                'queue_enabled'       => true,
             ]);
 
             $this->markTrialActivated();
@@ -218,25 +213,15 @@ class OnboardingController extends Controller
 
     private function ensureDefaultWorkingHours(Staff $staff): void
     {
-        $defaults = [
-            ['day_of_week' => 0, 'start_time' => '09:00', 'end_time' => '17:00'],
-            ['day_of_week' => 1, 'start_time' => '09:00', 'end_time' => '17:00'],
-            ['day_of_week' => 2, 'start_time' => '09:00', 'end_time' => '17:00'],
-            ['day_of_week' => 3, 'start_time' => '09:00', 'end_time' => '17:00'],
-            ['day_of_week' => 4, 'start_time' => '09:00', 'end_time' => '17:00'],
-            ['day_of_week' => 5, 'start_time' => '09:00', 'end_time' => '17:00'],
-            ['day_of_week' => 6, 'start_time' => '09:00', 'end_time' => '17:00'],
-        ];
-
-        foreach ($defaults as $hours) {
+        foreach (range(0, 6) as $dayOfWeek) {
             StaffWorkingHours::updateOrCreate(
                 [
                     'staff_id'    => $staff->id,
-                    'day_of_week' => $hours['day_of_week'],
+                    'day_of_week' => $dayOfWeek,
                 ],
                 [
-                    'start_time' => $hours['start_time'],
-                    'end_time'   => $hours['end_time'],
+                    'start_time' => '09:00',
+                    'end_time'   => '17:00',
                     'is_working' => true,
                 ]
             );
