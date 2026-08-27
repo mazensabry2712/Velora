@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Reporting;
 
+use App\Domain\Reporting\Contracts\ReportReader;
 use App\Services\ReportService;
 
-final class LegacyReportReader
+final class LegacyReportReader implements ReportReader
 {
     public function __construct(
         private readonly ReportService $reports,
