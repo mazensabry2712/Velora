@@ -28,6 +28,7 @@ use App\Domain\Tenant\Contracts\TenantRegistrar;
 use App\Infrastructure\Administration\LegacySystemNotificationReader;
 use App\Infrastructure\Billing\EloquentBillingReader;
 use App\Infrastructure\Billing\EloquentSubscriptionReader;
+use App\Infrastructure\Billing\EloquentTrialExtender;
 use App\Infrastructure\Billing\EloquentUpgradeRequestWriter;
 use App\Infrastructure\Billing\LegacyBillingReader;
 use App\Infrastructure\Billing\LegacySubscriptionAccessReader;
@@ -66,7 +67,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(SystemNotificationReader::class, LegacySystemNotificationReader::class);
         $this->app->bind(BillingReader::class, EloquentBillingReader::class);
         $this->app->bind(CheckoutSessionCreator::class, PaymentGatewayCheckoutSessionCreator::class);
-        $this->app->bind(TrialExtender::class, LegacyTrialExtender::class);
+        $this->app->bind(TrialExtender::class, EloquentTrialExtender::class);
         $this->app->bind(CustomerReader::class, EloquentCustomerReader::class);
         $this->app->bind(StaffWriter::class, EloquentStaffWriter::class);
         $this->app->bind(QueueReader::class, EloquentQueueReader::class);
