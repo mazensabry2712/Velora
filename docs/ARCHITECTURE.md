@@ -1,6 +1,6 @@
 # Velora — Architecture Guide
 
-Velora is a modular monolith Laravel SaaS. The current refactor follows a pragmatic Domain-Driven Design approach without introducing microservices prematurely.
+Velora is a modular monolith Laravel SaaS. The refactor follows pragmatic Domain-Driven Design and explicit application boundaries without introducing microservices prematurely.
 
 ## 1. Target dependency direction
 
@@ -23,15 +23,18 @@ Interfaces (HTTP / Console / Webhooks)
 
 Dependencies must point inward. Domain code must not depend on controllers, Blade views, HTTP requests, vendor SDKs, or concrete infrastructure implementations.
 
-## 2. Application structure
+## 2. Bounded modules
 
 ```text
 app/
 ├── Application/
-│   ├── Booking/Actions/
-│   ├── Pricing/Actions/
-│   ├── Tenant/Actions/
-│   └── Shared/Contracts/
+│   ├── Booking/Actions + DTOs
+│   ├── Pricing/Actions
+│   ├── Queue/Actions + DTOs
+│   ├── Reporting/Actions
+│   ├── Subscription/Actions + Events
+│   ├── Tenant/Actions
+│   └── Shared/Contracts
 │
 ├── Domain/
 │   ├── Booking/
@@ -39,10 +42,22 @@ app/
 │   │   ├── Events/
 │   │   ├── Exceptions/
 │   │   └── Services/
+│   ├── Pricing/Contracts/
+│   ├── Queue/Contracts/
+│   ├── Reporting/Contracts/
+│   ├── Subscription/Contracts/
+│   ├── Tenant/Contracts/
 │   └── Shared/Contracts/
 │
 ├── Infrastructure/
-│   └── Persistence/
+│   ├── Billing/
+│   ├── Persistence/
+│   ├── Pricing/
+│   ├── Queue/
+│   ├── Reporting/
+│   ├── Subscription/
+│   ├── Tenancy/
+│   └── View/Composers/
 │
 ├── Interfaces/
 │   └── Http/...
@@ -58,17 +73,26 @@ app/
     └── legacy/integration services being migrated
 ```
 
-The existing `Services`, `Repositories`, and `Payments` folders remain during migration so production behavior is not rewritten unnecessarily. New use cases should enter through `Application/*/Actions` and concrete integration work should move behind `Domain/*/Contracts` or `Infrastructure/*` boundaries.
+Legacy `Services`, `Repositories`, and `Payments` folders remain only where needed for backward-compatible migration. New use cases should enter through `Application/*` and concrete integrations should sit behind `Domain/*/Contracts` and `Infrastructure/*`.
 
 ## 3. Application Actions
 
 Application Actions represent one business use case. Controllers should coordinate HTTP concerns only.
 
-Examples already introduced:
+Representative actions now include:
 
 - `Application\Tenant\Actions\RegisterTenant`
 - `Application\Pricing\Actions\SetCountryOverride`
 - `Application\Booking\Actions\CreateBooking`
+- `Application\Booking\Actions\CreateAdminAppointment`
+- `Application\Queue\Actions\AddDirectQueueEntry`
+- `Application\Queue\Actions\CallNextQueueEntry`
+- `Application\Queue\Actions\TransitionQueueEntry`
+- `Application\Reporting\Actions\GetReport`
+- `Application\Subscription\Actions\GetSubscriptionOverview`
+- `Application\Subscription\Actions\GetSubscriptionUsage`
+- `Application\Subscription\Actions\CheckSubscriptionLimit`
+- `Application\Subscription\Actions\RequestSubscriptionUpgrade`
 
 The action owns orchestration; validation/serialization belongs to Interfaces and business rules belong to Domain.
 
@@ -131,34 +155,66 @@ Rules:
 4. Tenant-aware jobs must preserve tenant context.
 5. Tenant uploads/cache keys should carry tenant scope where applicable.
 
-## 6. Booking domain
+## 6. Booking and appointment lifecycle
 
-The booking engine already contains explicit DTOs, events, exceptions, slot validation and concurrency protection.
+The booking engine contains DTOs, events, exceptions, slot validation and concurrency protection.
 
 ```text
-Create booking request
-    -> Application\Booking\Actions\CreateBooking
-    -> Domain\Booking\Services\BookingCreationService
-    -> SlotEngine
-    -> transactional write
-    -> AppointmentCreated event
+Request
+  -> Application use case
+  -> Domain booking rules
+  -> transactional persistence
+  -> domain/application event
+  -> deferred side effects
 ```
+
+Admin appointment creation follows the same orchestration boundary. Customer creation, appointment creation and optional queue admission are treated as one transactional application operation.
 
 Concurrent booking protection must remain inside the write transaction. Availability should be revalidated while the relevant records are locked.
 
-## 7. Payment architecture
+## 7. Queue domain
 
-Payment gateway selection is separated into two concepts:
+Queue transitions are centralized in explicit Application Actions and backed by repository contracts.
 
-### Gateway capability contract
+```text
+HTTP request
+    -> FormRequest
+    -> Queue Application Action
+    -> Queue repository / domain rules
+    -> Tenant DB
+```
+
+Direct admission is transactional so customer, appointment and queue creation either succeed together or roll back together.
+
+A controller should not implement queue-state rules or bypass the transition use case.
+
+## 8. Subscription and Billing
+
+Subscription reads and upgrade requests are Application use cases backed by contracts and Infrastructure adapters.
+
+```text
+Controller
+   -> Subscription Action
+   -> Domain contract
+   -> Infrastructure adapter
+   -> Central billing data
+```
+
+Upgrade side effects are emitted as an application event and handled asynchronously by infrastructure listeners. Email/SMS/provider integrations must not be required for the primary database write to succeed.
+
+Payment status must be driven by verified provider events, not browser redirects.
+
+## 9. Payment architecture
+
+Payment gateway selection is separated into a capability contract and provider implementation.
+
+### Gateway contract
 
 `Domain\Shared\Contracts\PaymentGatewayResolver`
 
 ### Provider implementation
 
 `Services\PaymentGatewayRouter`
-
-The application/domain layer can depend on the contract while cache, settings and Eloquent remain implementation details.
 
 Actual payment execution continues through:
 
@@ -175,34 +231,47 @@ PaymentGatewayManager
 Stripe Moyasar Paymob ...
 ```
 
-Payment status must be driven by verified provider events, not browser redirects.
+Webhook processing must verify signatures, normalize provider payloads, be idempotent, and apply tenant-safe billing state transitions.
 
-## 8. Repository boundary
+## 10. Repository boundary
 
 Repositories expose persistence capabilities through contracts.
 
 ```text
-Domain/Application
-      |
-      v
+Application / Domain
+        |
+        v
 Repository contract
-      |
-      v
-Eloquent repository
-      |
-      v
+        |
+        v
+Infrastructure / Eloquent repository
+        |
+        v
 Central or tenant database
 ```
 
 A repository should not contain business rules. It should load, persist and query data required by a use case.
 
-## 9. Transactions
+## 11. Transactions
 
-Application code should depend on `Application\Shared\Contracts\TransactionManager` instead of calling `DB::transaction()` directly when transaction orchestration itself is part of the use case boundary.
+Application code should depend on `Application\Shared\Contracts\TransactionManager` rather than calling `DB::transaction()` directly when transaction orchestration is part of the use-case boundary.
 
 Laravel's implementation is `Infrastructure\Persistence\LaravelTransactionManager`.
 
-## 10. Controllers
+## 12. View composition
+
+`AppServiceProvider` is reserved for dependency wiring and event registration. Database reads needed by Blade layouts belong in dedicated contracts, adapters and view composers.
+
+For example:
+
+```text
+Infrastructure\View\Composers\LandingLayoutComposer
+Infrastructure\View\Composers\AdminLayoutComposer
+```
+
+This keeps presentation data access out of the global service provider.
+
+## 13. Controllers
 
 Controllers should follow this shape:
 
@@ -221,9 +290,10 @@ Controllers should not:
 - contain provider-specific payment code;
 - query multiple unrelated models to implement a use case;
 - decide tenant identity from arbitrary request values;
-- duplicate state-transition rules.
+- duplicate state-transition rules;
+- perform queued notification side effects synchronously when the primary write can succeed independently.
 
-## 11. State transitions
+## 14. State transitions
 
 Appointment, queue, subscription and payment lifecycles should have explicit allowed transitions. State changes must be centralized so an endpoint cannot bypass invariants.
 
@@ -233,6 +303,14 @@ Appointment, queue, subscription and payment lifecycles should have explicit all
 pending -> confirmed -> checked_in -> in_service -> completed
    |            |
    +----------> cancelled / no_show
+```
+
+### Queue
+
+```text
+waiting -> serving -> completed
+    |         |
+    +-------> skipped
 ```
 
 ### Subscription
@@ -253,9 +331,7 @@ pending -> processing -> paid
 paid -> refunded
 ```
 
-The exact product rules remain authoritative in the billing hardening documentation.
-
-## 12. Authorization
+## 15. Authorization
 
 Authorization is layered:
 
@@ -269,47 +345,41 @@ Authentication
 
 A role alone is not sufficient when a resource can cross tenant or user boundaries.
 
-## 13. Events and jobs
+## 16. Events and jobs
 
-Events describe facts:
+Events describe facts; jobs perform deferred work.
+
+Examples:
 
 - `AppointmentCreated`
 - `AppointmentStatusChanged`
+- `SubscriptionUpgradeRequested`
 - `PaymentSucceeded`
 - `SubscriptionActivated`
 - `TenantCreated`
 
-Jobs perform deferred work:
+Jobs handle reminders, exports, reports, email/SMS, reconciliation and cleanup.
 
-- reminders
-- exports
-- reports
-- email/SMS
-- reconciliation
-- cleanup
-
-Event listeners should not silently change authorization or tenant scope.
-
-## 14. Localization
+## 17. Localization
 
 Locale resolution is infrastructure/application behavior. Views should only consume translation keys.
 
-Every landing/signup key used by Blade must exist in the supported locale files. Translation-key contract tests should protect against schema drift between Blade and `lang/*` files.
+Every landing/signup key used by Blade must exist in the supported locale files. Translation-key contract checks should protect against schema drift between Blade and `lang/*` files.
 
-## 15. Migration strategy
+## 18. Migration strategy
 
-The project should be migrated incrementally:
+The refactor is intentionally incremental:
 
-1. Keep existing behavior stable.
-2. Introduce an Application Action for one use case.
+1. Keep externally observable behavior stable.
+2. Introduce one Application Action per use case.
 3. Move transport-independent rules into Domain.
 4. Introduce contracts only where a dependency crosses a boundary.
 5. Move concrete integrations into Infrastructure.
-6. Retire the old service/controller path after tests prove equivalence.
+6. Retire legacy service/controller paths after equivalence is proven by tests.
 
 Do not rewrite the whole project in a single change.
 
-## 16. Quality gates
+## 19. Quality gates
 
 Before production:
 
