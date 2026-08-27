@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Tenant;
 use App\Application\Queue\Actions\GetCustomerQueue;
 use App\Application\Queue\Actions\GetQueueOverview;
 use App\Application\Queue\Actions\GetQueueStatus;
+use App\Domain\Queue\Contracts\QueueReader;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,7 @@ final class QueueReadController extends Controller
         private readonly GetQueueOverview $getQueueOverview,
         private readonly GetCustomerQueue $getCustomerQueue,
         private readonly GetQueueStatus $getQueueStatus,
+        private readonly QueueReader $queues,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -28,6 +30,14 @@ final class QueueReadController extends Controller
         return response()->json([
             'success' => true,
             'data' => $result,
+        ]);
+    }
+
+    public function byStatus(string $status): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $this->queues->forDate(now()->toDateString(), $status),
         ]);
     }
 
