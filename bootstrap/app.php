@@ -25,7 +25,7 @@ use NielsNumbers\LaravelLocalizer\Middleware\RedirectLocale;
 use NielsNumbers\LaravelLocalizer\Middleware\SetLocale;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 
-return Application::configure(basePath: dirname(__DIR__))
+$app = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
@@ -76,4 +76,12 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
-    })->create();
+    })
+    ->create();
+
+// The project stores application translations in /lang rather than Laravel's
+// default /resources/lang location. Set this before service providers register
+// the translator so all groups such as landing.php are discovered normally.
+$app->useLangPath(base_path('lang'));
+
+return $app;
