@@ -8,7 +8,6 @@ use App\Http\Middleware\CheckTokenAbility;
 use App\Http\Middleware\DetectCountryAndLocale;
 use App\Http\Middleware\EnsureSubscriptionIsValid;
 use App\Http\Middleware\InitializeTenancyByToken;
-use App\Http\Middleware\InjectVeloraBrandStyles;
 use App\Http\Middleware\RedirectIfOnboardingIncomplete;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetTenantLocale;
@@ -31,9 +30,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Global middleware - security headers and Velora brand system for HTML responses
+        // Global middleware - security headers for all requests
         $middleware->append(SecurityHeaders::class);
-        $middleware->append(InjectVeloraBrandStyles::class);
 
         // Register tenancy middleware
         $middleware->alias([
