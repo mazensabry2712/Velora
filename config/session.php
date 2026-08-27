@@ -29,10 +29,10 @@ return [
 
     'path' => env('SESSION_PATH', '/'),
 
-    // Signup happens on the central domain and immediately redirects to the
-    // newly-created tenant subdomain. The session cookie therefore needs to
-    // be shared by the central host and tenant subdomains.
-    'domain' => env('SESSION_DOMAIN', '.' . env('APP_DOMAIN', 'velora.com')),
+    // Signup starts on the central host and redirects to a tenant subdomain.
+    // When SESSION_DOMAIN is omitted or explicitly set to null, share the
+    // session cookie across the configured Velora domain automatically.
+    'domain' => env('SESSION_DOMAIN') ?: '.' . env('APP_DOMAIN', 'velora.com'),
 
     'secure' => env('SESSION_SECURE_COOKIE'),
 
