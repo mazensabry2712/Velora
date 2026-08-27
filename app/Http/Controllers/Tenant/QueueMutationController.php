@@ -7,7 +7,7 @@ namespace App\Http\Controllers\Tenant;
 use App\Application\Queue\Actions\AddExistingAppointmentToQueue;
 use App\Application\Queue\Actions\SkipQueueEntry;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\Admin\QueueAddExistingAppointmentRequest;
 use Illuminate\Validation\ValidationException;
 
 final class QueueMutationController extends Controller
@@ -17,14 +17,10 @@ final class QueueMutationController extends Controller
         private readonly SkipQueueEntry $skipQueueEntry,
     ) {}
 
-    public function add(Request $request)
+    public function add(QueueAddExistingAppointmentRequest $request)
     {
-        $request->validate([
-            'appointment_id' => 'required|exists:appointments,id',
-        ]);
-
         try {
-            $result = $this->addExistingAppointmentToQueue->execute((int) $request->input('appointment_id'));
+            $result = $this->addExistingAppointmentToQueue->execute((int) $request->integer('appointment_id'));
         } catch (ValidationException $e) {
             return response()->json([
                 'error' => 'Invalid operation',
@@ -49,7 +45,7 @@ final class QueueMutationController extends Controller
         ], 201);
     }
 
-    public function skip(Request $request, int $id)
+    public function skip(int $id)
     {
         try {
             $queue = $this->skipQueueEntry->execute($id);
