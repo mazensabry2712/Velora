@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Collection;
 
 interface QueueRepository
 {
+    public function findById(int $id): ?Queue;
+
     /** @return Collection<int, Queue> */
     public function getByDate(string $date): Collection;
 
