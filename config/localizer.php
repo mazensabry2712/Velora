@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\LocaleSignalDetector;
 use NielsNumbers\LaravelLocalizer\Detectors\BrowserDetector;
 use NielsNumbers\LaravelLocalizer\Detectors\UserDetector;
 
@@ -19,6 +20,7 @@ return [
     ],
 
     'detectors' => [
+        LocaleSignalDetector::class,
         UserDetector::class,
         BrowserDetector::class,
     ],
