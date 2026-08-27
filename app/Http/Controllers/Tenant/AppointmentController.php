@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers\Tenant;
 
-use App\Application\Booking\Actions\DeleteAppointment;
-use App\Application\Booking\Actions\UpdateAppointment;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Tenant\PublicBookingRequest;
 use App\Models\Appointment;
 use App\Models\Customer;
+use App\Application\Booking\Actions\DeleteAppointment;
+use App\Application\Booking\Actions\UpdateAppointment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -16,6 +17,21 @@ class AppointmentController extends Controller
         private readonly UpdateAppointment $updateAppointment,
         private readonly DeleteAppointment $deleteAppointment,
     ) {}
+
+    /**
+     * Temporary compatibility adapter for any legacy route still targeting
+     * AppointmentController@store. All booking business logic remains in the
+     * dedicated PublicBookingController/CreatePublicBooking flow.
+     */
+    public function store(Request $request): JsonResponse
+    {
+        $formRequest = PublicBookingRequest::createFrom($request);
+        $formRequest->setContainer(app());
+        $formRequest->setRedirector(app('redirect'));
+        $formRequest->validateResolved();
+
+        return app(PublicBookingController::class)->store($formRequest);
+    }
 
     public function index(Request $request): JsonResponse
     {
