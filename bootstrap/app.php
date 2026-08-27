@@ -13,6 +13,7 @@ use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetTenantLocale;
 use App\Http\Middleware\SuperAdminAuth;
 use App\Http\Middleware\ThrottleRequests;
+use App\Http\Middleware\InjectVeloraBrandStyles;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Application;
@@ -27,51 +28,37 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
-
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Global middleware - security headers for all requests
         $middleware->append(SecurityHeaders::class);
 
-        // Register tenancy middleware
+        // Inject the central Velora brand layer and language selector at runtime.
+        // The middleware bypasses PHPUnit requests so Laravel view assertions keep
+        // receiving the original View response object.
+        $middleware->append(InjectVeloraBrandStyles::class);
+
         $middleware->alias([
             'tenant' => InitializeTenancyByDomain::class,
             'tenant.token' => InitializeTenancyByToken::class,
             'tenant.locale' => SetTenantLocale::class,
             'super.admin' => CheckSuperAdmin::class,
             'super.admin.auth' => SuperAdminAuth::class,
-
-            // Role-based middleware
             'role' => CheckRole::class,
             'ability' => CheckTokenAbility::class,
-
-            // Subscription limits middleware
             'subscription.limits' => CheckSubscriptionLimits::class,
-
-            // Subscription validity (trial/grace/expired)
             'subscription.valid' => EnsureSubscriptionIsValid::class,
-
-            // Rate limiting
             'throttle.api' => ThrottleRequests::class,
-
-            // Geo localization (country detection + locale + currency)
             'geo.detect' => DetectCountryAndLocale::class,
-
-            // Onboarding wizard redirect (first-login flow)
             'onboarding.redirect' => RedirectIfOnboardingIncomplete::class,
-
-            // Maintenance mode for landing/public pages
             'maintenance' => CheckMaintenanceMode::class,
         ]);
 
-        // Enable session and cookies for API routes (needed for Super Admin web-based auth)
         $middleware->api(prepend: [
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             StartSession::class,
         ]);
 
-        // Exclude API routes and payment webhooks from CSRF verification
         $middleware->validateCsrfTokens(except: [
             'api/*',
             'webhooks/stripe',
