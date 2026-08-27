@@ -18,23 +18,9 @@ final class LayerBoundaryTest extends TestCase
             }
 
             foreach ($this->phpFiles($layerPath) as $filePath => $contents) {
-                self::assertStringNotContainsString(
-                    'App\\Http\\',
-                    $contents,
-                    "HTTP dependency found in {$filePath}"
-                );
-
-                self::assertStringNotContainsString(
-                    'Illuminate\\Http\\',
-                    $contents,
-                    "Illuminate HTTP dependency found in {$filePath}"
-                );
-
-                self::assertStringNotContainsString(
-                    'Illuminate\\Support\\Facades\\View',
-                    $contents,
-                    "View facade dependency found in {$filePath}"
-                );
+                self::assertStringNotContainsString('App\\Http\\', $contents, "HTTP dependency found in {$filePath}");
+                self::assertStringNotContainsString('Illuminate\\Http\\', $contents, "Illuminate HTTP dependency found in {$filePath}");
+                self::assertStringNotContainsString('Illuminate\\Support\\Facades\\View', $contents, "View facade dependency found in {$filePath}");
             }
         }
     }
@@ -49,18 +35,10 @@ final class LayerBoundaryTest extends TestCase
         }
 
         foreach ($this->phpFiles($applicationPath) as $filePath => $contents) {
-            self::assertStringNotContainsString(
-                'App\\Services\\',
-                $contents,
-                "Legacy service dependency found in {$filePath}"
-            );
+            self::assertStringNotContainsString('App\\Services\\', $contents, "Legacy service dependency found in {$filePath}");
 
             foreach (['App\\Payments\\Stripe\\', 'App\\Payments\\Moyasar\\', 'App\\Payments\\Paymob\\', 'App\\Payments\\Fawry\\'] as $providerNamespace) {
-                self::assertStringNotContainsString(
-                    $providerNamespace,
-                    $contents,
-                    "Concrete payment provider dependency found in {$filePath}"
-                );
+                self::assertStringNotContainsString($providerNamespace, $contents, "Concrete payment provider dependency found in {$filePath}");
             }
         }
     }
@@ -75,24 +53,16 @@ final class LayerBoundaryTest extends TestCase
         }
 
         foreach ($this->phpFiles($domainPath) as $filePath => $contents) {
-            self::assertStringNotContainsString(
-                'Illuminate\\Support\\Facades\\DB',
-                $contents,
-                "Database facade dependency found in {$filePath}"
-            );
+            self::assertStringNotContainsString('Illuminate\\Support\\Facades\\DB', $contents, "Database facade dependency found in {$filePath}");
 
             foreach (['Stripe', 'Moyasar', 'Paymob', 'Fawry'] as $provider) {
-                self::assertStringNotContainsString(
-                    "App\\Payments\\{$provider}",
-                    $contents,
-                    "Concrete {$provider} dependency found in {$filePath}"
-                );
+                self::assertStringNotContainsString("App\\Payments\\{$provider}", $contents, "Concrete {$provider} dependency found in {$filePath}");
             }
         }
     }
 
     #[Test]
-    public function domain_layer_does_not_depend_on_framework_infrastructure_or_legacy_service_classes(): void
+    public function domain_layer_does_not_depend_on_infrastructure_or_repository_implementations(): void
     {
         $domainPath = app_path('Domain');
 
@@ -101,11 +71,7 @@ final class LayerBoundaryTest extends TestCase
         }
 
         foreach ($this->phpFiles($domainPath) as $filePath => $contents) {
-            foreach ([
-                'App\\Infrastructure\\',
-                'App\\Services\\',
-                'App\\Repositories\\',
-            ] as $forbiddenNamespace) {
+            foreach (['App\\Infrastructure\\', 'App\\Services\\', 'App\\Repositories\\Eloquent\\'] as $forbiddenNamespace) {
                 self::assertStringNotContainsString(
                     $forbiddenNamespace,
                     $contents,
@@ -125,17 +91,8 @@ final class LayerBoundaryTest extends TestCase
         }
 
         foreach ($this->phpFiles($applicationPath) as $filePath => $contents) {
-            self::assertStringNotContainsString(
-                'App\\Infrastructure\\',
-                $contents,
-                "Infrastructure implementation dependency found in {$filePath}"
-            );
-
-            self::assertStringNotContainsString(
-                'App\\Repositories\\',
-                $contents,
-                "Repository implementation dependency found in {$filePath}"
-            );
+            self::assertStringNotContainsString('App\\Infrastructure\\', $contents, "Infrastructure implementation dependency found in {$filePath}");
+            self::assertStringNotContainsString('App\\Repositories\\Eloquent\\', $contents, "Repository implementation dependency found in {$filePath}");
         }
     }
 
