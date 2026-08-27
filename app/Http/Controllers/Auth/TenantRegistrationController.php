@@ -34,7 +34,6 @@ final class TenantRegistrationController extends Controller
             'language'      => 'nullable|string|in:en,ar,fr,es,de,it,pt,ru,zh,ja,tr,hi,ko,nl,id',
             'terms'         => 'required|accepted',
             'plan_id'       => 'nullable|integer|exists:subscription_plans,id',
-            'promo_code'    => 'nullable|string|max:32',
         ], [
             'subdomain.regex'     => 'Subdomain must be lowercase letters, numbers, or hyphens only.',
             'terms.accepted'      => 'You must accept the Terms of Service.',
