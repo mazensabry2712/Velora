@@ -37,20 +37,17 @@ Route::post('/webhooks/moyasar', [\App\Http\Controllers\MoyasarWebhookController
 Route::middleware(['web', \App\Http\Middleware\SetCentralLocale::class, 'geo.detect', 'maintenance'])
     ->domain(env('APP_DOMAIN', 'velora.test'))
     ->group(function () {
-        // Ensure tenantSubdomain default exists for any central view
         try {
             \Illuminate\Support\Facades\URL::defaults(['tenantSubdomain' => 'demo']);
         } catch (\Throwable $_) {
         }
-        // Main landing page — call controller inside try/catch to avoid breaking
-        // the whole site when tenant route generation fails in a view.
+
         Route::get('/', function (\Illuminate\Http\Request $request) {
             try {
                 $controller = app()->make(\App\Http\Controllers\LandingController::class);
                 return $controller->index($request);
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::error('Landing render failed: ' . $e->getMessage());
-                // Ensure fallback tenantSubdomain to avoid UrlGenerationException elsewhere
                 try {
                     \Illuminate\Support\Facades\URL::defaults(['tenantSubdomain' => 'demo']);
                 } catch (\Throwable $_) {
@@ -59,64 +56,64 @@ Route::middleware(['web', \App\Http\Middleware\SetCentralLocale::class, 'geo.det
             }
         })->name('landing');
 
-        // Dedicated pricing page
         Route::get('/pricing', [LandingController::class, 'pricing'])->name('pricing');
 
-        // AJAX: set pricing country override (called by country-switcher)
         Route::post('/pricing/set-country', [PricingController::class, 'setCountry'])
             ->name('pricing.set-country')
             ->middleware('throttle:30,1');
 
-
-
-        // Signup page
         Route::get('/signup', [LandingController::class, 'signup'])->name('signup');
 
-        // Subdomain availability check (AJAX)
         Route::get('/signup/check-subdomain', [LandingController::class, 'checkSubdomain'])
             ->name('signup.check-subdomain')
             ->middleware('throttle:60,1');
 
-        // Signup form submission
         Route::post('/signup', [TenantRegistrationController::class, 'store'])
             ->name('signup.store')
             ->middleware('throttle:10,1');
 
-        // Central login: tenant owners find their salon by subdomain
         Route::get('/login', function () {
             return view('landing.find-account', [
                 'baseDomain' => config('app.base_domain', 'velora.com'),
             ]);
         })->name('central.login');
 
-        // Language switcher for landing / marketing pages
+        // Language switcher for landing / marketing pages.
+        // Persist both session and long-lived cookie, then redirect to the landing
+        // route explicitly so the next request is guaranteed to run SetCentralLocale.
         Route::get('/lang/{locale}', function ($locale) {
-            $supported = ['en', 'ar', 'fr', 'es', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'tr', 'hi', 'ko', 'nl', 'id'];
-            if (in_array($locale, $supported)) {
-                session()->put('central_locale', $locale);
-                return redirect()->back(302, [], route('landing'))
-                    ->withCookie(cookie()->forever('velora_locale_override', $locale));
-            }
-            return redirect(route('landing'));
-        })->name('landing.lang');
+            $supported = array_keys(config('locales.languages', []));
+            $default = config('locales.default', 'ar');
 
-        // Combined region+language switcher — sets both locale + country in one server hop
-        // Hostinger-style: navigate here, cookies attach to the redirect response, browser stores them
+            if (! in_array($locale, $supported, true)) {
+                return redirect()->route('landing');
+            }
+
+            session()->put('central_locale', $locale);
+
+            return redirect()
+                ->route('landing')
+                ->withCookie(cookie()->forever('velora_locale_override', $locale));
+        })->whereIn('locale', array_keys(config('locales.languages', [])))
+            ->name('landing.lang');
+
         Route::get('/region/{locale}/{country}', function ($locale, $country) {
-            $supported = ['en', 'ar', 'fr', 'es', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'tr', 'hi', 'ko', 'nl', 'id'];
-            $locale = in_array($locale, $supported) ? $locale : 'en';
-            $code   = strtoupper(preg_replace('/[^A-Za-z]/', '', $country));
+            $supported = array_keys(config('locales.languages', []));
+            $locale = in_array($locale, $supported, true) ? $locale : config('locales.default', 'ar');
+            $code = strtoupper(preg_replace('/[^A-Za-z]/', '', $country));
             if (strlen($code) < 2 || strlen($code) > 10) {
-                return redirect(route('landing'));
+                return redirect()->route('landing');
             }
             session()->put('central_locale', $locale);
             session(['pricing_country_override' => $code]);
-            return redirect()->back(302, [], route('landing'))
+
+            return redirect()
+                ->route('landing')
                 ->withCookie(cookie()->forever('velora_locale_override', $locale))
                 ->withCookie(cookie()->forever('velora_country_override', $code));
-        })->name('landing.region');
+        })->whereIn('locale', array_keys(config('locales.languages', [])))
+            ->name('landing.region');
 
-        // Currency switcher for landing / marketing pages
         Route::get('/currency/{currency}', function ($currency) {
             $currency = strtoupper($currency);
             if (strlen($currency) === 3 && ctype_alpha($currency)) {
@@ -128,10 +125,6 @@ Route::middleware(['web', \App\Http\Middleware\SetCentralLocale::class, 'geo.det
     });
 
 // Super Admin Routes (Central - No Tenant)
-// Route::prefix('super-admin')->name('super-admin.')
-// ->middleware([SetCentralLocale::class])
-// ->group(function () {
-
 Route::prefix('super-admin')
     ->name('super-admin.')
     ->middleware([
@@ -139,9 +132,6 @@ Route::prefix('super-admin')
         SetCentralLocale::class,
     ])
     ->group(function () {
-
-
-        // Login page
         Route::get('/login', function () {
             if (auth()->guard('web')->check() && auth()->guard('web')->user()->isSuperAdmin()) {
                 return redirect()->route('super-admin.dashboard');
@@ -149,22 +139,17 @@ Route::prefix('super-admin')
             return view('super-admin.login');
         })->name('login');
 
-        // Auth actions
         Route::post('/login', [SuperAdminAuthController::class, 'webLogin'])->name('login.post');
         Route::post('/logout', [SuperAdminAuthController::class, 'webLogout'])->name('logout');
 
-        // Language switcher for super-admin panel
-        // Only these locales are selectable right now; others are disabled in the UI
-        // and rejected here too, so the restriction can't be bypassed via direct URL.
         Route::get('/lang/{locale}', function ($locale) {
             $supported = ['en', 'ar'];
-            if (in_array($locale, $supported)) {
+            if (in_array($locale, $supported, true)) {
                 session()->put('central_locale', $locale);
             }
             return redirect()->back();
         })->name('lang');
 
-        // Protected Super Admin routes
         Route::middleware(['super.admin.auth'])->group(function () {
             Route::get('/dashboard', [SuperAdminController::class, 'dashboard'])->name('dashboard');
 
@@ -208,12 +193,10 @@ Route::prefix('super-admin')
                 return view('super-admin.notifications');
             })->name('notifications');
 
-            // ── Analytics (merged Reports + KPIs) ───────────────────────────────
             Route::get('/analytics', function () {
                 return view('super-admin.analytics');
             })->name('analytics');
 
-            // Legacy redirects – keep old URLs working
             Route::get('/reports', function () {
                 return redirect()->route('super-admin.analytics', ['tab' => 'reports']);
             })->name('reports');
@@ -224,16 +207,13 @@ Route::prefix('super-admin')
 
             Route::get('/kpis/export.csv', [\App\Http\Controllers\SuperAdmin\DashboardController::class, 'exportKpis'])->name('kpis.export');
 
-            // Upgrade Requests Management
             Route::get('/upgrade-requests', [SuperAdminController::class, 'upgradeRequests'])->name('upgrade-requests');
             Route::get('/upgrade-requests/{id}', [SuperAdminController::class, 'showUpgradeRequest'])->name('upgrade-requests.show');
             Route::post('/upgrade-requests/{id}/approve', [SuperAdminController::class, 'approveUpgrade'])->name('upgrade-requests.approve');
             Route::post('/upgrade-requests/{id}/reject', [SuperAdminController::class, 'rejectUpgrade'])->name('upgrade-requests.reject');
 
-            // ── Geo / Country Management ────────────────────────────────────────
             Route::resource('countries', CountrySettingController::class);
 
-            // ── Plan Geo Pricing ────────────────────────────────────────────────
             Route::get('/subscription-plans/{plan}/prices', [PlanPriceController::class, 'index'])
                 ->name('plan-prices.index');
             Route::post('/subscription-plans/{plan}/prices', [PlanPriceController::class, 'store'])
@@ -243,13 +223,11 @@ Route::prefix('super-admin')
             Route::delete('/subscription-plans/{plan}/prices/{planPrice}', [PlanPriceController::class, 'destroy'])
                 ->name('plan-prices.destroy');
 
-            // ── Country Pricing ─────────────────────────────────────────────────
             Route::resource('country-pricing', CountryPricingController::class)
                 ->names('country-pricing');
             Route::post('country-pricing/{countryPricing}/toggle', [CountryPricingController::class, 'toggleActive'])
                 ->name('country-pricing.toggle');
 
-            // ── Promo Codes ─────────────────────────────────────────────────────
             Route::get('/promo-codes', [PromoCodeController::class, 'index'])->name('promo-codes.index');
             Route::post('/promo-codes', [PromoCodeController::class, 'store'])->name('promo-codes.store');
             Route::patch('/promo-codes/{id}/toggle', [PromoCodeController::class, 'toggle'])->name('promo-codes.toggle');
