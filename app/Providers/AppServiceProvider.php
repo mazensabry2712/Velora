@@ -10,6 +10,7 @@ use App\Domain\Administration\Contracts\SystemNotificationReader;
 use App\Domain\Billing\Contracts\BillingReader;
 use App\Domain\Billing\Contracts\MoyasarWebhookProcessor as MoyasarWebhookProcessorContract;
 use App\Domain\Billing\Contracts\StripeWebhookProcessor;
+use App\Domain\Billing\Contracts\TrialExtender;
 use App\Domain\Landing\Contracts\LandingSettingsReader;
 use App\Domain\Pricing\Contracts\CountryPriceSelector;
 use App\Domain\Queue\Contracts\QueueRepository as DomainQueueRepository;
@@ -23,6 +24,7 @@ use App\Infrastructure\Administration\LegacySystemNotificationReader;
 use App\Infrastructure\Billing\EloquentUpgradeRequestWriter;
 use App\Infrastructure\Billing\LegacyBillingReader;
 use App\Infrastructure\Billing\LegacySubscriptionReader;
+use App\Infrastructure\Billing\LegacyTrialExtender;
 use App\Infrastructure\Landing\LegacyLandingSettingsReader;
 use App\Infrastructure\Payments\Moyasar\MoyasarWebhookProcessor;
 use App\Infrastructure\Payments\Stripe\StripeWebhookProcessor as StripeWebhookProcessorImplementation;
@@ -62,6 +64,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(MoyasarWebhookProcessorContract::class, MoyasarWebhookProcessor::class);
         $this->app->bind(StaffWriter::class, EloquentStaffWriter::class);
         $this->app->bind(BillingReader::class, LegacyBillingReader::class);
+        $this->app->bind(TrialExtender::class, LegacyTrialExtender::class);
     }
 
     public function boot(): void
