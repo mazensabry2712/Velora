@@ -1,28 +1,32 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Tenant;
 
+use App\Application\Booking\Actions\DeleteAppointment;
+use App\Application\Booking\Actions\UpdateAppointment;
+use App\Domain\Booking\Contracts\AppointmentReader;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\PublicBookingRequest;
 use App\Models\Appointment;
 use App\Models\Customer;
-use App\Application\Booking\Actions\DeleteAppointment;
-use App\Application\Booking\Actions\UpdateAppointment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 
-class AppointmentController extends Controller
+final class AppointmentController extends Controller
 {
     public function __construct(
         private readonly UpdateAppointment $updateAppointment,
         private readonly DeleteAppointment $deleteAppointment,
+        private readonly AppointmentReader $appointmentReader,
     ) {}
 
     /**
-     * Temporary compatibility adapter for any legacy route still targeting
-     * AppointmentController@store. All booking business logic remains in the
-     * dedicated PublicBookingController/CreatePublicBooking flow.
+     * Compatibility adapter for any legacy route still targeting
+     * AppointmentController@store. Booking business logic remains centralized
+     * in PublicBookingController/CreatePublicBooking.
      */
     public function store(Request $request): JsonResponse
     {
@@ -48,17 +52,33 @@ class AppointmentController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $appointments = Appointment::with(['customerNew:id,first_name,last_name,email', 'staffNew:id,name'])
-            ->orderBy('starts_at', 'desc')
-            ->paginate(20);
+        $appointments = Appointment::with([
+            'customerNew:id,first_name,last_name,email',
+            'staffNew:id,name',
+        ])->orderByDesc('starts_at')->paginate(20);
 
         return response()->json($appointments);
     }
 
     public function show(int $id): JsonResponse
     {
-        $appointment = Appointment::with(['customerNew', 'staffNew'])->findOrFail($id);
-        return response()->json($appointment);
+        try {
+            $appointment = $this->appointmentReader->find($id, ['customerNew', 'staffNew']);
+
+            if (! $appointment) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Not found',
+                ], 404);
+            }
+
+            return response()->json($appointment);
+        } catch (\Throwable $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => __('Not found'),
+            ], 404);
+        }
     }
 
     public function update(Request $request, int $id): JsonResponse
@@ -99,15 +119,9 @@ class AppointmentController extends Controller
             ]);
         }
 
-        $appointments = Appointment::query()
-            ->where('customer_id_new', $customer->id)
-            ->with('staffNew:id,name')
-            ->orderByDesc('starts_at')
-            ->get();
-
         return response()->json([
             'success' => true,
-            'data' => $appointments,
+            'data' => $this->appointmentReader->forCustomer($customer->id),
         ]);
     }
 }
