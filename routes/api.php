@@ -84,7 +84,7 @@ Route::middleware(['tenant', 'tenant.locale'])->group(function () {
     Route::get('staff', function () {
         return \App\Models\User::role('Staff')->select('id', 'name')->get();
     })->middleware('throttle:60,1');
-    Route::post('appointments', [\App\Http\Controllers\Tenant\AppointmentController::class, 'store'])
+    Route::post('appointments', [\App\Http\Controllers\Tenant\PublicBookingController::class, 'store'])
         ->middleware('throttle:30,1');
     Route::get('queue/status/{queueNumber}', [\App\Http\Controllers\Tenant\QueueController::class, 'getQueueStatus'])
         ->middleware('throttle:60,1');
@@ -131,7 +131,7 @@ Route::middleware(['tenant', 'tenant.locale', 'auth:sanctum'])->group(function (
 });
 
 /* Tenant APIs by token */
-Route::prefix('v1')->middleware(['tenant.token', 'tenant.locale', 'auth:sanctum', 'tenant.token.bound'])->group(function () {
+Route::prefix('v1')->middleware(['tenant.token', 'tenant.locale', 'auth:sanctum'])->group(function () {
     Route::middleware(['role:Admin Tenant|Staff'])->group(function () {
         Route::apiResource('appointments', \App\Http\Controllers\Tenant\AppointmentController::class)->names([
             'index' => 'api.v1.appointments.index', 'store' => 'api.v1.appointments.store', 'show' => 'api.v1.appointments.show', 'update' => 'api.v1.appointments.update', 'destroy' => 'api.v1.appointments.destroy',
