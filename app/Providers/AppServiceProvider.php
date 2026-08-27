@@ -8,6 +8,7 @@ use App\Application\Shared\Contracts\TransactionManager;
 use App\Application\Subscription\Events\SubscriptionUpgradeRequested;
 use App\Domain\Administration\Contracts\SystemNotificationReader;
 use App\Domain\Billing\Contracts\BillingReader;
+use App\Domain\Billing\Contracts\CheckoutSessionCreator;
 use App\Domain\Billing\Contracts\MoyasarWebhookProcessor as MoyasarWebhookProcessorContract;
 use App\Domain\Billing\Contracts\StripeWebhookProcessor;
 use App\Domain\Billing\Contracts\TrialExtender;
@@ -25,6 +26,7 @@ use App\Infrastructure\Billing\EloquentUpgradeRequestWriter;
 use App\Infrastructure\Billing\LegacyBillingReader;
 use App\Infrastructure\Billing\LegacySubscriptionReader;
 use App\Infrastructure\Billing\LegacyTrialExtender;
+use App\Infrastructure\Billing\PaymentGatewayCheckoutSessionCreator;
 use App\Infrastructure\Landing\LegacyLandingSettingsReader;
 use App\Infrastructure\Payments\Moyasar\MoyasarWebhookProcessor;
 use App\Infrastructure\Payments\Stripe\StripeWebhookProcessor as StripeWebhookProcessorImplementation;
@@ -65,6 +67,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(StaffWriter::class, EloquentStaffWriter::class);
         $this->app->bind(BillingReader::class, LegacyBillingReader::class);
         $this->app->bind(TrialExtender::class, LegacyTrialExtender::class);
+        $this->app->bind(CheckoutSessionCreator::class, PaymentGatewayCheckoutSessionCreator::class);
     }
 
     public function boot(): void
