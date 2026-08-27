@@ -16,27 +16,26 @@ use Symfony\Component\HttpFoundation\Response;
  * Skips the redirect if:
  *   - The request is already on the onboarding route (prevents redirect loop)
  *   - The request is an AJAX/API call
- *   - The user is not an Admin (Staff/Assistant skip onboarding)
+ *   - The user is not an Admin Tenant (Staff/Assistant skip onboarding)
  *   - Onboarding is already marked completed in settings
  */
 class RedirectIfOnboardingIncomplete
 {
     public function handle(Request $request, Closure $next): Response
     {
-        // Only affect authenticated, non-AJAX requests
         if (! auth()->check() || $request->expectsJson()) {
             return $next($request);
         }
 
-        // Only affect admin-role users
         $user = auth()->user();
-        if (! $user || strtolower($user->role ?? '') !== 'admin tenant') {
+
+        // Spatie Permission is the source of truth for tenant roles.
+        if (! $user || ! $user->hasRole('Admin Tenant')) {
             return $next($request);
         }
 
-        // Avoid redirect loop — pass through if already on onboarding or logout
         $currentRoute = $request->route()?->getName() ?? '';
-        $passThrough  = [
+        $passThrough = [
             'admin.onboarding',
             'admin.onboarding.step1',
             'admin.onboarding.step2',
@@ -52,7 +51,6 @@ class RedirectIfOnboardingIncomplete
             return $next($request);
         }
 
-        // Check settings in the current tenant DB
         $settings = Setting::first();
 
         if ($settings && ! $settings->onboarding_completed) {
