@@ -9,6 +9,8 @@ use App\Http\Controllers\SuperAdmin\SystemSettingController;
 use App\Http\Controllers\SuperAdmin\SystemNotificationController;
 use App\Http\Controllers\Auth\SuperAdminAuthController;
 use App\Http\Controllers\Auth\TenantAuthController;
+use App\Http\Controllers\Tenant\AdvanceQueueController;
+use App\Http\Controllers\Tenant\QueueMutationController;
 
 /* Authentication */
 Route::prefix('super-admin/auth')->group(function () {
@@ -96,12 +98,12 @@ Route::middleware(['tenant', 'tenant.locale', 'auth:sanctum'])->group(function (
             'index' => 'api.appointments.index', 'show' => 'api.appointments.show', 'update' => 'api.appointments.update', 'destroy' => 'api.appointments.destroy',
         ]);
         Route::get('queue', [\App\Http\Controllers\Tenant\QueueController::class, 'index']);
-        Route::post('queue/add', [\App\Http\Controllers\Tenant\QueueController::class, 'add']);
-        Route::post('queue/next', \App\Http\Controllers\Tenant\AdvanceQueueController::class);
+        Route::post('queue/add', [QueueMutationController::class, 'add']);
+        Route::post('queue/next', AdvanceQueueController::class);
         Route::post('queue/priority', [\App\Http\Controllers\Tenant\QueueController::class, 'priority']);
         Route::apiResource('queues', \App\Http\Controllers\Tenant\QueueController::class);
         Route::get('queues/status/{status}', [\App\Http\Controllers\Tenant\QueueController::class, 'byStatus']);
-        Route::post('queues/{id}/skip', [\App\Http\Controllers\Tenant\QueueController::class, 'skip']);
+        Route::post('queues/{id}/skip', [QueueMutationController::class, 'skip']);
     });
 
     Route::middleware(['role:Customer'])->group(function () {
