@@ -6,6 +6,7 @@ namespace App\Application\Queue\Actions;
 
 use App\Application\Shared\Contracts\TransactionManager;
 use App\Domain\Queue\Contracts\QueueRepository;
+use App\Jobs\SendQueueNotification;
 use App\Models\Appointment;
 use App\Models\Queue;
 use Illuminate\Validation\ValidationException;
@@ -31,8 +32,14 @@ final class SkipQueueEntry
             }
 
             $this->queues->update($queue, ['status' => 'cancelled']);
-            $queue->loadMissing('appointment');
+            $queue->loadMissing('appointment.customer');
             $queue->appointment?->update(['status' => Appointment::STATUS_CANCELLED]);
+
+            $customer = $queue->appointment?->customer;
+            if ($customer) {
+                $locale = tenant()?->settings?->language ?? 'en';
+                SendQueueNotification::dispatch($queue->refresh(), $customer, 'cancelled', $locale);
+            }
 
             return $queue->refresh();
         });
