@@ -93,5 +93,13 @@ class AppServiceProvider extends ServiceProvider
 
         View::composer('layouts.landing', LandingLayoutComposer::class);
         View::composer('layouts.admin', AdminLayoutComposer::class);
+
+        View::composer('admin.appointments.index', function (View $view): void {
+            $data = $view->getData();
+
+            if (! array_key_exists('appointments', $data) && array_key_exists('paginatedData', $data)) {
+                $view->with('appointments', $data['paginatedData']);
+            }
+        });
     }
 }
