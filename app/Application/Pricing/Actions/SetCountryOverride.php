@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Application\Pricing\Actions;
 
+use App\Domain\Pricing\Contracts\CountryPriceSelector;
 use App\Models\CountryPricing;
-use App\Services\PricingService;
 
 final class SetCountryOverride
 {
     public function __construct(
-        private readonly PricingService $pricing,
+        private readonly CountryPriceSelector $pricing,
     ) {}
 
     public function execute(string $countryCode): CountryPricing

@@ -1,26 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Admin;
 
+use App\Application\Reporting\Actions\GetDashboardReport;
 use App\Http\Controllers\Controller;
-use App\Services\ReportService;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
-class ReportController extends Controller
+final class ReportController extends Controller
 {
-    public function __construct(protected ReportService $reports)
-    {
-    }
+    public function __construct(
+        private readonly GetDashboardReport $dashboardReport,
+    ) {}
 
-    /**
-     * Reports dashboard. Accepts an optional ?period= (today|week|month|
-     * year|all|custom) plus ?start_date=&end_date= when period=custom,
-     * and scopes every activity-based metric to that range.
-     */
     public function index(Request $request)
     {
-        $data = $this->reports->getDashboardData(
-            $request->get('period', 'month'),
+        $data = $this->dashboardReport->execute(
+            (string) $request->get('period', 'month'),
             $request->get('start_date'),
             $request->get('end_date'),
         );
@@ -28,12 +26,12 @@ class ReportController extends Controller
         return view('admin.reports.index', $data);
     }
 
-    public function exportAppointments(Request $request): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    public function exportAppointments(Request $request): BinaryFileResponse
     {
-        $period    = $request->get('period', 'month');
+        $period = (string) $request->get('period', 'month');
         $startDate = $request->get('start_date');
-        $endDate   = $request->get('end_date');
-        $fileName  = 'appointments-' . $period . '-' . now()->format('Y-m-d') . '.xlsx';
+        $endDate = $request->get('end_date');
+        $fileName = 'appointments-' . $period . '-' . now()->format('Y-m-d') . '.xlsx';
 
         return \Maatwebsite\Excel\Facades\Excel::download(
             new \App\Exports\AppointmentsExport(tenant(), $period, $startDate, $endDate),

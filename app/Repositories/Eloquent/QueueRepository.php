@@ -1,13 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repositories\Eloquent;
 
+use App\Domain\Queue\Contracts\QueueRepository as QueueRepositoryContract;
 use App\Models\Queue;
 use App\Repositories\Contracts\QueueRepositoryInterface;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 
-class QueueRepository implements QueueRepositoryInterface
+final class QueueRepository implements QueueRepositoryInterface, QueueRepositoryContract
 {
     public function findById(int $id): ?Queue
     {
