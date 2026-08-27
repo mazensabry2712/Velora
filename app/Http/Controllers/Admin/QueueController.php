@@ -4,32 +4,29 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Application\Queue\Actions\AddDirectQueueEntry;
 use App\Application\Queue\Actions\CallNextQueueEntry;
 use App\Application\Queue\Actions\TransitionQueueEntry;
 use App\Http\Controllers\Controller;
-use App\Models\Appointment;
-use App\Models\BusinessRule;
-use App\Models\Service;
-use App\Models\User;
-use App\Models\Queue;
+use App\Http\Requests\Admin\AddDirectQueueEntryRequest;
 use App\Repositories\Contracts\QueueRepositoryInterface;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
+use Throwable;
 
 final class QueueController extends Controller
 {
     public function __construct(
         private readonly QueueRepositoryInterface $queues,
+        private readonly AddDirectQueueEntry $addDirectQueueEntry,
         private readonly CallNextQueueEntry $callNextQueueEntry,
         private readonly TransitionQueueEntry $transitionQueueEntry,
     ) {}
 
     public function days()
     {
-        $days = Queue::selectRaw("
+        $days = \App\Models\Queue::selectRaw("
                 DATE(created_at) as date,
                 MAX(created_at) as last_activity,
                 COUNT(*) as total,
@@ -43,32 +40,42 @@ final class QueueController extends Controller
             ->get();
 
         $today = now()->toDateString();
-        if (!$days->first(fn ($d) => $d->date === $today)) {
+        if (! $days->first(fn ($day) => $day->date === $today)) {
             $days->prepend((object) [
-                'date' => $today, 'last_activity' => null,
-                'total' => 0, 'waiting' => 0, 'serving' => 0, 'completed' => 0, 'vip' => 0,
+                'date' => $today,
+                'last_activity' => null,
+                'total' => 0,
+                'waiting' => 0,
+                'serving' => 0,
+                'completed' => 0,
+                'vip' => 0,
             ]);
         }
 
-        $overallStats = $this->queues->getOverallStats();
-
-        return view('admin.queue.days', compact('days', 'overallStats'));
+        return view('admin.queue.days', [
+            'days' => $days,
+            'overallStats' => $this->queues->getOverallStats(),
+        ]);
     }
 
     public function show(?string $date = null)
     {
         $date = $date ?? now()->toDateString();
-        $queues = $this->queues->getByDate($date);
 
-        return view('admin.queue.index', compact('queues', 'date'));
+        return view('admin.queue.index', [
+            'queues' => $this->queues->getByDate($date),
+            'date' => $date,
+        ]);
     }
 
     public function print(?string $date = null)
     {
         $date = $date ?? now()->toDateString();
-        $queues = $this->queues->getByDate($date);
 
-        return view('admin.queue.print', compact('queues', 'date'));
+        return view('admin.queue.print', [
+            'queues' => $this->queues->getByDate($date),
+            'date' => $date,
+        ]);
     }
 
     public function exportExcel()
@@ -79,78 +86,21 @@ final class QueueController extends Controller
         );
     }
 
-    public function addDirect(Request $request): JsonResponse
+    public function addDirect(AddDirectQueueEntryRequest $request): JsonResponse
     {
         try {
-            $data = $request->validate([
-                'customer_name'  => 'required|string|max:255',
-                'customer_phone' => 'required|string|max:20',
-                'customer_email' => 'nullable|email',
-                'staff_id'       => 'required|exists:users,id',
-                'service_id'     => 'required|exists:services,id',
-                'is_priority'    => 'nullable|boolean',
-                'notes'          => 'nullable|string|max:1000',
-            ]);
-
-            $email = $data['customer_email'] ?? $data['customer_phone'] . '@temp.local';
-
-            $customer = User::firstOrCreate(
-                ['email' => $email],
-                [
-                    'name' => $data['customer_name'],
-                    'phone' => $data['customer_phone'],
-                    'password' => bcrypt(Str::random(32)),
-                ]
-            );
-
-            if (!$customer->hasRole('Customer')) {
-                $customer->assignRole('Customer');
-            }
-
-            $customer->update(['name' => $data['customer_name'], 'phone' => $data['customer_phone']]);
-
-            $service = Service::find($data['service_id']);
-            $maxSize = (int) BusinessRule::getValue(BusinessRule::QUEUE_MAX_SIZE, 0);
-            if ($maxSize > 0) {
-                $currentSize = Queue::whereDate('created_at', today())
-                    ->whereIn('status', ['waiting', 'serving'])
-                    ->count();
-                if ($currentSize >= $maxSize) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => __('Queue is full. Maximum size of :max has been reached.', ['max' => $maxSize]),
-                    ], 422);
-                }
-            }
-
-            $appointment = Appointment::create([
-                'customer_id' => $customer->id,
-                'staff_id' => $data['staff_id'],
-                'service_id' => $data['service_id'],
-                'date' => now()->toDateString(),
-                'time_slot' => now()->format('H:i'),
-                'status' => 'pending',
-                'service_type' => $service?->name,
-            ]);
-
-            $queue = $this->queues->create([
-                'appointment_id' => $appointment->id,
-                'queue_number' => Queue::generateQueueNumber(),
-                'status' => 'waiting',
-                'is_vip' => $data['is_priority'] ?? false,
-                'notes' => $data['notes'] ?? null,
-            ]);
+            $queue = $this->addDirectQueueEntry->execute($request->validated());
 
             return response()->json([
                 'success' => true,
                 'message' => __('Added to queue. Number: #') . $queue->queue_number,
                 'data' => $queue->load(['appointment.customer', 'appointment.staff']),
             ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            throw $e;
-        } catch (\Throwable $e) {
-            Log::error('addDirect queue: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        } catch (Throwable $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ], 422);
         }
     }
 
@@ -159,7 +109,7 @@ final class QueueController extends Controller
         try {
             $next = $this->callNextQueueEntry->execute();
 
-            if (!$next) {
+            if (! $next) {
                 return response()->json(['success' => false, 'message' => __('No one waiting.')]);
             }
 
@@ -168,17 +118,22 @@ final class QueueController extends Controller
                 'message' => '#' . $next->queue_number . ' - ' . ($next->appointment?->customer?->name ?? '-'),
                 'data' => $next->load(['appointment.customer']),
             ]);
-        } catch (\Throwable $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        } catch (Throwable $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
         }
     }
 
     public function get(int $id): JsonResponse
     {
         try {
-            $queue = Queue::with(['appointment.customer', 'appointment.staff', 'appointment.service'])->findOrFail($id);
+            $queue = \App\Models\Queue::with([
+                'appointment.customer',
+                'appointment.staff',
+                'appointment.service',
+            ])->findOrFail($id);
+
             return response()->json(['success' => true, 'data' => $queue]);
-        } catch (\Throwable $e) {
+        } catch (Throwable) {
             return response()->json(['success' => false, 'message' => __('Not found')], 404);
         }
     }
@@ -186,7 +141,7 @@ final class QueueController extends Controller
     public function updateEntry(Request $request, int $id): JsonResponse
     {
         try {
-            $queue = Queue::with('appointment.customer')->findOrFail($id);
+            $queue = \App\Models\Queue::with('appointment.customer')->findOrFail($id);
 
             if ($queue->appointment?->customer) {
                 $queue->appointment->customer->update([
@@ -202,8 +157,8 @@ final class QueueController extends Controller
             ]);
 
             return response()->json(['success' => true, 'message' => __('Updated.')]);
-        } catch (\Throwable $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        } catch (Throwable $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
         }
     }
 
@@ -227,27 +182,27 @@ final class QueueController extends Controller
         $request->validate(['priority' => 'required|boolean']);
 
         try {
-            $queue = Queue::findOrFail($id);
+            $queue = \App\Models\Queue::findOrFail($id);
             $this->queues->update($queue, ['is_vip' => $request->boolean('priority')]);
 
             return response()->json([
                 'success' => true,
                 'message' => $request->boolean('priority') ? __('Priority set.') : __('Priority removed.'),
             ]);
-        } catch (\Throwable $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        } catch (Throwable $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
         }
     }
 
     public function remove(int $id): JsonResponse
     {
         try {
-            $queue = Queue::findOrFail($id);
+            $queue = \App\Models\Queue::findOrFail($id);
             $this->queues->delete($queue);
 
             return response()->json(['success' => true, 'message' => __('Removed from queue.')]);
-        } catch (\Throwable $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        } catch (Throwable $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
         }
     }
 
@@ -270,15 +225,15 @@ final class QueueController extends Controller
                 'success' => true,
                 'message' => "{$count} items moved to {$nextDay}",
             ]);
-        } catch (\Throwable $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        } catch (Throwable $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
         }
     }
 
     private function transition(int $id, string $status, string $message): JsonResponse
     {
         try {
-            $queue = Queue::findOrFail($id);
+            $queue = \App\Models\Queue::findOrFail($id);
             $queue = $this->transitionQueueEntry->execute($queue, $status);
 
             return response()->json([
@@ -286,8 +241,8 @@ final class QueueController extends Controller
                 'message' => $message,
                 'data' => $queue,
             ]);
-        } catch (\Throwable $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        } catch (Throwable $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
         }
     }
 }
