@@ -92,7 +92,9 @@ class LocaleSwitchTest extends TestCase
         $response->assertSee('Features', false);
         $response->assertSee('How it works', false);
         $response->assertSee('Pricing', false);
-        $response->assertSee('Velora — Smart Booking & Queue Management', false);
+        // The ampersand is HTML-escaped inside the <title> element.
+        $response->assertSee('Velora — Smart Booking &amp; Queue Management', false);
+        $response->assertSee('Smart appointment booking and queue management for small businesses', false);
         $response->assertDontSee('landing.', false);
     }
 
