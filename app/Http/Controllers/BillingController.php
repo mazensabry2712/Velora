@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
+use App\Application\Billing\Actions\GetExpiredBillingOverview;
 use App\Domain\Shared\Contracts\PaymentGatewayResolver;
 use App\Models\SubscriptionPlan;
 use App\Payments\PaymentGatewayManager;
@@ -13,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
-class BillingController extends Controller
+final class BillingController extends Controller
 {
     public function __construct(
         protected PaymentGatewayManager $paymentManager,
@@ -21,37 +24,14 @@ class BillingController extends Controller
         protected GeoService $geoService,
         protected StripeService $stripeService,
         protected MoyasarService $moyasarService,
+        private readonly GetExpiredBillingOverview $getExpiredBillingOverview,
     ) {}
 
     public function expired()
     {
-        $tenantId = tenant('id');
+        $overview = $this->getExpiredBillingOverview->execute(tenant('id'));
 
-        $subscription = DB::connection('mysql')
-            ->table('tenant_subscriptions')
-            ->join('subscription_plans', 'tenant_subscriptions.subscription_plan_id', '=', 'subscription_plans.id')
-            ->where('tenant_subscriptions.tenant_id', $tenantId)
-            ->orderByDesc('tenant_subscriptions.created_at')
-            ->select(
-                'tenant_subscriptions.*',
-                'subscription_plans.name as plan_name',
-                'subscription_plans.price',
-                'subscription_plans.billing_cycle',
-            )
-            ->first();
-
-        $plans = SubscriptionPlan::where('is_active', true)
-            ->orderBy('price', 'asc')
-            ->get();
-
-        $invoices = DB::connection('mysql')
-            ->table('tenant_subscriptions')
-            ->where('tenant_id', $tenantId)
-            ->where('amount_paid', '>', 0)
-            ->orderByDesc('created_at')
-            ->get();
-
-        return view('billing.expired', compact('subscription', 'plans', 'invoices'));
+        return view('billing.expired', $overview);
     }
 
     public function checkout(Request $request)
