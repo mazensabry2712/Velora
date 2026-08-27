@@ -2,17 +2,15 @@
 
 declare(strict_types=1);
 
-use NielsNumbers\LaravelLocalizer\Detectors\BrowserDetector;
-use NielsNumbers\LaravelLocalizer\Detectors\UserDetector;
-
 return [
     'supported_locales' => [
         'ar', 'en', 'fr', 'es', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'tr', 'hi', 'ko', 'nl', 'id',
     ],
 
     'hide_default_locale' => true,
-    // Keep the central landing canonical at / (Arabic) and let explicit
-    // localized URLs such as /en or /fr determine the language.
+    // Arabic is the canonical locale for the unprefixed landing URL (/).
+    // Every other locale uses its explicit /{locale} URL.
+    'omitted_locale' => 'ar',
     'redirect_enabled' => false,
 
     'persist_locale' => [
@@ -20,8 +18,7 @@ return [
         'cookie' => true,
     ],
 
-    // The landing should not auto-switch from browser language. The URL is
-    // authoritative: / is Arabic, /en is English, /fr is French, etc.
+    // Let Localizer use its built-in URL and omitted-locale detectors.
     'detectors' => [],
 
     'locale_directions' => [
