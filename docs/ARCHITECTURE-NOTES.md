@@ -1,0 +1,1 @@
+The current migration uses a modular monolith with explicit Application, Domain, Infrastructure, and Interfaces boundaries. Legacy services remain only as compatibility adapters until tests prove their replacements equivalent.
