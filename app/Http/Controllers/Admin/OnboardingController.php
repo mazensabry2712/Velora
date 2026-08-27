@@ -88,8 +88,13 @@ class OnboardingController extends Controller
             if (! $staff) {
                 $nameParts = explode(' ', trim($data['name']), 2);
                 $staff = Staff::create([
+                    // The first staff member is the tenant owner completing onboarding.
+                    // Keep the Staff profile attached to the authenticated User so all
+                    // booking APIs can resolve the same identity consistently.
+                    'user_id'          => auth()->id(),
                     'first_name'       => $nameParts[0],
                     'last_name'        => $nameParts[1] ?? '',
+                    'email'            => auth()->user()?->email,
                     'title'            => $title,
                     'accepts_bookings' => true,
                     'is_active'        => true,
@@ -99,9 +104,15 @@ class OnboardingController extends Controller
                     'accepts_bookings' => true,
                     'is_active'        => true,
                 ];
+
+                if ($staff->user_id === null && auth()->id()) {
+                    $updates['user_id'] = auth()->id();
+                }
+
                 if ($title !== null) {
                     $updates['title'] = $title;
                 }
+
                 $staff->update($updates);
             }
 
