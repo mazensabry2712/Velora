@@ -14,6 +14,7 @@ use App\Domain\Pricing\Contracts\CountryPriceSelector;
 use App\Domain\Queue\Contracts\QueueRepository as DomainQueueRepository;
 use App\Domain\Reporting\Contracts\ReportReader;
 use App\Domain\Shared\Contracts\PaymentGatewayResolver;
+use App\Domain\Staff\Contracts\StaffWriter;
 use App\Domain\Subscription\Contracts\SubscriptionReader;
 use App\Domain\Subscription\Contracts\UpgradeRequestWriter;
 use App\Domain\Tenant\Contracts\TenantRegistrar;
@@ -26,6 +27,7 @@ use App\Infrastructure\Payments\Stripe\StripeWebhookProcessor as StripeWebhookPr
 use App\Infrastructure\Persistence\LaravelTransactionManager;
 use App\Infrastructure\Pricing\LegacyCountryPriceSelector;
 use App\Infrastructure\Reporting\LegacyReportReader;
+use App\Infrastructure\Staff\EloquentStaffWriter;
 use App\Infrastructure\Subscription\Listeners\SendUpgradeRequestNotifications;
 use App\Infrastructure\Tenancy\LegacyTenantRegistrar;
 use App\Models\Appointment;
@@ -56,6 +58,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(LandingSettingsReader::class, LegacyLandingSettingsReader::class);
         $this->app->bind(StripeWebhookProcessor::class, StripeWebhookProcessorImplementation::class);
         $this->app->bind(MoyasarWebhookProcessorContract::class, MoyasarWebhookProcessor::class);
+        $this->app->bind(StaffWriter::class, EloquentStaffWriter::class);
     }
 
     public function boot(): void
