@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Models\Tenant;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Symfony\Component\HttpFoundation\Response;
 use Stancl\Tenancy\Tenancy;
-use App\Models\Tenant;
+use Symfony\Component\HttpFoundation\Response;
 
 class InitializeTenancyByToken
 {
@@ -20,39 +19,17 @@ class InitializeTenancyByToken
     /**
      * Initialize the tenant before Sanctum authenticates the tenant user.
      *
-     * For authenticated API requests the tenant is derived from the central
-     * Sanctum token record, never from a user-controlled tenant id/header.
-     * Login/register may provide an explicit tenant id because no bearer token
-     * exists yet.
+     * Tenant selection and authentication are deliberately separate concerns:
+     * the explicit tenant identifier only selects the tenant database, while
+     * auth:sanctum authenticates the bearer token inside that database.
+     * A following middleware validates the token's tenant scope.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * Login/register may provide the tenant id because no bearer token exists
+     * yet. Authenticated API requests must provide it explicitly as well.
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $bearerToken = $request->bearerToken();
-
-        if ($bearerToken) {
-            $tenantId = $this->tenantIdFromBearerToken($bearerToken);
-
-            if (!$tenantId) {
-                return response()->json([
-                    'error' => 'Invalid tenant token',
-                    'message' => 'The access token is missing a valid tenant scope.',
-                ], 401);
-            }
-
-            $requestedTenantId = $request->header('X-Tenant-ID') ?? $request->input('tenant_id');
-
-            if ($requestedTenantId !== null && (string) $requestedTenantId !== (string) $tenantId) {
-                return response()->json([
-                    'error' => 'Tenant mismatch',
-                    'message' => 'The requested tenant does not match the access token tenant.',
-                ], 403);
-            }
-        } else {
-            $tenantId = $request->header('X-Tenant-ID')
-                ?? $request->input('tenant_id');
-        }
+        $tenantId = $request->header('X-Tenant-ID') ?? $request->input('tenant_id');
 
         if (!$tenantId) {
             return response()->json([
@@ -80,40 +57,5 @@ class InitializeTenancyByToken
         $this->tenancy->initialize($tenant);
 
         return $next($request);
-    }
-
-    private function tenantIdFromBearerToken(string $bearerToken): ?string
-    {
-        [$tokenId] = explode('|', $bearerToken, 2);
-
-        if ($tokenId === '' || !ctype_digit($tokenId)) {
-            return null;
-        }
-
-        $token = DB::connection('mysql')
-            ->table('personal_access_tokens')
-            ->where('id', (int) $tokenId)
-            ->where('token', hash('sha256', $bearerToken))
-            ->first(['abilities']);
-
-        if (!$token) {
-            return null;
-        }
-
-        $abilities = json_decode($token->abilities ?? '[]', true);
-
-        if (!is_array($abilities)) {
-            return null;
-        }
-
-        foreach ($abilities as $ability) {
-            if (is_string($ability) && str_starts_with($ability, 'tenant:')) {
-                $tenantId = substr($ability, strlen('tenant:'));
-
-                return $tenantId !== '' ? $tenantId : null;
-            }
-        }
-
-        return null;
     }
 }

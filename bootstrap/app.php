@@ -7,6 +7,7 @@ use App\Http\Middleware\CheckSuperAdmin;
 use App\Http\Middleware\CheckTokenAbility;
 use App\Http\Middleware\DetectCountryAndLocale;
 use App\Http\Middleware\EnsureSubscriptionIsValid;
+use App\Http\Middleware\EnsureTokenBelongsToTenant;
 use App\Http\Middleware\InitializeTenancyByToken;
 use App\Http\Middleware\RedirectIfOnboardingIncomplete;
 use App\Http\Middleware\SecurityHeaders;
@@ -58,6 +59,7 @@ return (new ApplicationBuilder($app))
         $middleware->alias([
             'tenant' => InitializeTenancyByDomain::class,
             'tenant.token' => InitializeTenancyByToken::class,
+            'tenant.token.bound' => EnsureTokenBelongsToTenant::class,
             'tenant.locale' => SetTenantLocale::class,
             'super.admin' => CheckSuperAdmin::class,
             'super.admin.auth' => SuperAdminAuth::class,

@@ -36,7 +36,7 @@ Route::prefix('v1/auth')->middleware(['tenant.token', 'tenant.locale'])->group(f
         ->middleware('throttle:10,1');
     Route::post('/register', [TenantAuthController::class, 'register'])
         ->middleware('throttle:5,1');
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'tenant.token.bound'])->group(function () {
         Route::get('/profile', [TenantAuthController::class, 'profile']);
         Route::post('/logout', [TenantAuthController::class, 'logout']);
     });
@@ -131,7 +131,7 @@ Route::middleware(['tenant', 'tenant.locale', 'auth:sanctum'])->group(function (
 });
 
 /* Tenant APIs by token */
-Route::prefix('v1')->middleware(['tenant.token', 'tenant.locale', 'auth:sanctum'])->group(function () {
+Route::prefix('v1')->middleware(['tenant.token', 'tenant.locale', 'auth:sanctum', 'tenant.token.bound'])->group(function () {
     Route::middleware(['role:Admin Tenant|Staff'])->group(function () {
         Route::apiResource('appointments', \App\Http\Controllers\Tenant\AppointmentController::class)->names([
             'index' => 'api.v1.appointments.index', 'store' => 'api.v1.appointments.store', 'show' => 'api.v1.appointments.show', 'update' => 'api.v1.appointments.update', 'destroy' => 'api.v1.appointments.destroy',
