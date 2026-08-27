@@ -1,97 +1,106 @@
 @extends('layouts.landing')
 @section('content')
-    {{-- ── Full-page ambient lighting ─────────────────────────────────────── --}}
-    <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div class="absolute -top-32 left-1/4 w-[700px] h-[500px] rounded-full blur-3xl"
-            style="background:radial-gradient(ellipse,rgba(108,99,255,0.22) 0%,transparent 70%)"></div>
-        <div class="absolute top-1/2 -right-48 w-[500px] h-[500px] rounded-full blur-3xl"
-            style="background:rgba(56,189,248,0.06)"></div>
-        <div class="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full blur-3xl"
-            style="background:rgba(108,99,255,0.08)"></div>
-    </div>
+@php
+    $types = [
+        'salon' => '✂️', 'barber' => '💈', 'clinic' => '🏥', 'spa' => '🧖', 'gym' => '🏋️',
+        'restaurant' => '🍽️', 'studio' => '🎨', 'school' => '🎓', 'other' => '✏️',
+    ];
+    $benefits = [
+        ['icon' => '◷', 'title' => __('landing.signup_benefit_1')],
+        ['icon' => '↗', 'title' => __('landing.signup_benefit_2')],
+        ['icon' => '◎', 'title' => __('landing.signup_benefit_3')],
+        ['icon' => '⌘', 'title' => __('landing.signup_benefit_4')],
+    ];
+@endphp
 
-    <div class="relative z-10 min-h-screen flex pt-16 bg-surface">
-        <div class="hidden lg:flex lg:w-[54%] flex-col justify-center px-12 xl:px-20 py-16 relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-[500px] h-[400px] rounded-full blur-3xl pointer-events-none"
-                style="background:radial-gradient(ellipse,rgba(108,99,255,0.18) 0%,transparent 65%)"></div>
-            <div class="absolute bottom-10 right-0 w-72 h-72 rounded-full blur-3xl pointer-events-none"
-                style="background:rgba(56,189,248,0.07)"></div>
-            <div class="relative z-10 max-w-lg">
-                <a href="{{ route('landing') }}" class="inline-flex items-center gap-3 mb-10 group">
-                    <div class="w-10 h-10 rounded-xl btn-primary flex items-center justify-center text-lg flex-shrink-0 group-hover:scale-105 transition-transform">✦</div>
-                    <span class="text-2xl font-extrabold text-white tracking-tight">{{ config('app.name', 'Velora') }}</span>
-                </a>
-                <h1 class="text-4xl xl:text-5xl font-extrabold text-white leading-tight mb-4">
-                    {{ __('landing.signup_hero_line1') }}<br>
-                    <span class="gradient-text">{{ __('landing.signup_hero_line2', ['days' => $maxTrialDays]) }}</span>
-                </h1>
-                <p class="text-gray-400 text-lg leading-relaxed mb-10">{{ __('landing.signup_hero_sub') }}</p>
-                <div class="flex flex-wrap gap-3 mb-10">
-                    @foreach (['trust_no_card','trust_setup','trust_cancel'] as $trust)
-                        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-green-400" style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25)">
-                            <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" /></svg>
-                            {{ __('landing.' . $trust) }}
-                        </span>
-                    @endforeach
-                </div>
-                @php
-                    $benefits = [
-                        ['icon' => '🗓️', 'text' => __('landing.signup_benefit_1')],
-                        ['icon' => '📲', 'text' => __('landing.signup_benefit_2')],
-                        ['icon' => '💬', 'text' => __('landing.signup_benefit_3')],
-                        ['icon' => '📊', 'text' => __('landing.signup_benefit_4')],
-                        ['icon' => '🌐', 'text' => __('landing.signup_benefit_5')],
-                        ['icon' => '🔒', 'text' => __('landing.signup_benefit_6')],
-                    ];
-                @endphp
-                <div class="grid grid-cols-2 gap-3 mb-10">
-                    @foreach ($benefits as $benefit)
-                        <div class="flex items-center gap-3 p-3 rounded-xl border border-white/5 bg-white/[0.025]"><span class="text-xl">{{ $benefit['icon'] }}</span><span class="text-gray-300 text-sm">{{ $benefit['text'] }}</span></div>
-                    @endforeach
-                </div>
-                <div class="pt-8 border-t border-white/5">
-                    <h3 class="text-white font-bold mb-4">{{ __('landing.signup_what_happens_title') }}</h3>
-                    <div class="space-y-5">
+<style>
+    .velora-signup-page{position:relative;min-height:calc(100dvh - 112px);padding:58px 0 82px;overflow:hidden;background:var(--v-canvas)}
+    .velora-signup-page::before{content:"";position:absolute;width:560px;height:560px;top:-250px;right:-140px;border-radius:50%;background:radial-gradient(circle,rgba(109,70,255,.14),rgba(0,184,255,0) 68%);pointer-events:none}
+    .velora-signup-page::after{content:"";position:absolute;width:460px;height:460px;bottom:-240px;left:-180px;border-radius:50%;background:radial-gradient(circle,rgba(0,184,255,.11),rgba(109,70,255,0) 68%);pointer-events:none}
+    .vs-wrap{position:relative;z-index:1;width:min(1160px,calc(100% - 40px));margin-inline:auto}
+    .vs-intro{text-align:center;max-width:760px;margin:0 auto}
+    .vs-kicker{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid rgba(109,70,255,.16);border-radius:999px;background:color-mix(in srgb,var(--v-surface) 90%,transparent);color:var(--v-primary-blue);font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+    .vs-kicker i{width:7px;height:7px;border-radius:50%;background:var(--v-gradient)}
+    .vs-title{margin:18px 0 0;font-size:clamp(40px,5vw,62px);line-height:1.02;letter-spacing:-.055em;font-weight:800;color:var(--v-ink)}
+    .vs-title span{background:var(--v-gradient);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+    .vs-copy{max-width:640px;margin:16px auto 0;color:var(--v-muted);font-size:16px;line-height:1.8}
+    .vs-trust{display:flex;justify-content:center;flex-wrap:wrap;gap:8px 18px;margin-top:20px;color:#667085;font-size:11px;font-weight:700}
+    .vs-layout{display:grid;grid-template-columns:minmax(0,.78fr) minmax(520px,1.22fr);gap:28px;align-items:start;margin-top:42px}
+    .vs-side{position:sticky;top:132px}
+    .vs-side-card{padding:28px;border:1px solid var(--v-line);border-radius:24px;background:var(--v-surface);box-shadow:0 18px 52px rgba(13,18,38,.06)}
+    .vs-brand{display:flex;align-items:center;gap:12px}.vs-brand img{width:44px;height:44px;object-fit:contain;border-radius:12px}.vs-brand strong{display:block;color:var(--v-ink);font-size:16px;font-weight:800}.vs-brand span{display:block;color:var(--v-muted);font-size:10px;margin-top:3px}
+    .vs-side h2{margin-top:24px;color:var(--v-ink);font-size:28px;line-height:1.1;letter-spacing:-.04em;font-weight:800}.vs-side h2 span{background:var(--v-gradient);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+    .vs-side-copy{margin-top:10px;color:var(--v-muted);font-size:13px;line-height:1.75}
+    .vs-benefits{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px}.vs-benefit{display:flex;align-items:flex-start;gap:10px;padding:13px;border:1px solid var(--v-line);border-radius:15px;background:color-mix(in srgb,var(--v-surface) 92%,var(--v-canvas))}.vs-benefit i{width:30px;height:30px;display:grid;place-items:center;flex:0 0 auto;border-radius:10px;background:var(--v-gradient);color:#fff;font-style:normal;font-size:13px;font-weight:900}.vs-benefit span{color:var(--v-ink-soft);font-size:11px;font-weight:700;line-height:1.45}
+    .vs-steps{margin-top:24px;padding-top:20px;border-top:1px solid var(--v-line)}.vs-step{display:flex;gap:12px;align-items:flex-start;padding:9px 0}.vs-step-no{width:28px;height:28px;display:grid;place-items:center;flex:0 0 auto;border-radius:50%;background:var(--v-gradient);color:#fff;font-size:10px;font-weight:900}.vs-step strong{display:block;color:var(--v-ink);font-size:12px;font-weight:800}.vs-step p{margin-top:3px;color:var(--v-muted);font-size:10px;line-height:1.55}
+    .vs-form-wrap{min-width:0}.vs-form-card{border:1px solid var(--v-line);border-radius:26px;background:var(--v-surface);box-shadow:0 24px 70px rgba(13,18,38,.09);overflow:hidden}.vs-form-head{padding:28px 30px 22px;border-bottom:1px solid var(--v-line)}.vs-form-head h2{color:var(--v-ink);font-size:25px;letter-spacing:-.03em;font-weight:800}.vs-form-head p{margin-top:6px;color:var(--v-muted);font-size:12px;line-height:1.6}.vs-form-body{padding:26px 30px 30px}
+    .vs-label{display:block;margin-bottom:8px;color:var(--v-ink-soft);font-size:11px;font-weight:800}.vs-input,.vs-select{width:100%;height:48px;padding:0 14px;border:1px solid var(--v-line);border-radius:13px;background:color-mix(in srgb,var(--v-surface) 94%,var(--v-canvas));color:var(--v-ink);font-size:13px;outline:none;transition:border-color .18s,box-shadow .18s,background .18s}.vs-input::placeholder{color:#98A2B3}.vs-input:focus,.vs-select:focus{border-color:rgba(0,108,255,.55);box-shadow:0 0 0 4px rgba(0,108,255,.08);background:var(--v-surface)}
+    .vs-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.vs-full{grid-column:1/-1}.vs-types{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.vs-type{position:relative;cursor:pointer}.vs-type input{position:absolute;opacity:0;pointer-events:none}.vs-type-box{min-height:68px;padding:8px 5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:1px solid var(--v-line);border-radius:13px;background:color-mix(in srgb,var(--v-surface) 92%,var(--v-canvas));color:var(--v-muted);transition:transform .16s,border-color .16s,background .16s,color .16s,box-shadow .16s}.vs-type:hover .vs-type-box{transform:translateY(-1px);border-color:#D2D8E3}.vs-type input:checked + .vs-type-box{border-color:rgba(0,108,255,.55);background:linear-gradient(180deg,rgba(109,70,255,.08),rgba(0,184,255,.05));color:var(--v-ink);box-shadow:0 8px 22px rgba(0,108,255,.08)}.vs-type-box b{font-size:18px;font-weight:500}.vs-type-box span{font-size:9px;font-weight:800;text-align:center;line-height:1.15}
+    .vs-help{margin-top:7px;color:#8A95A8;font-size:10px;line-height:1.5}.vs-slug{display:flex;align-items:stretch}.vs-slug .vs-input{border-start-end-radius:0;border-end-end-radius:0}.vs-domain{display:flex;align-items:center;padding:0 12px;border:1px solid var(--v-line);border-inline-start:0;border-start-end-radius:13px;border-end-end-radius:13px;background:color-mix(in srgb,var(--v-surface) 90%,var(--v-canvas));color:#7B8798;font-size:10px;white-space:nowrap}
+    .vs-check{display:flex;align-items:flex-start;gap:10px;padding:16px;border:1px solid var(--v-line);border-radius:14px;background:color-mix(in srgb,var(--v-surface) 88%,var(--v-canvas))}.vs-check input{margin-top:2px;accent-color:#006CFF}.vs-check span{color:var(--v-muted);font-size:10px;line-height:1.6}.vs-check a{color:var(--v-primary-blue);font-weight:800;text-decoration:underline}
+    .vs-coupon{padding:16px 0;border-top:1px solid var(--v-line);border-bottom:1px solid var(--v-line)}.vs-coupon-btn{border:0;background:none;padding:0;color:var(--v-muted);font-size:11px;font-weight:800;cursor:pointer}.vs-coupon-row{margin-top:10px}.vs-submit{width:100%;min-height:52px;border:0;border-radius:14px;background:var(--v-gradient);color:#fff;font-size:13px;font-weight:900;box-shadow:0 14px 30px rgba(0,108,255,.18);cursor:pointer;transition:transform .18s,box-shadow .18s}.vs-submit:hover{transform:translateY(-1px);box-shadow:0 18px 36px rgba(0,108,255,.24)}.vs-existing{margin-top:16px;text-align:center;color:var(--v-muted);font-size:10px}.vs-existing a{color:var(--v-primary-blue);font-weight:800}.vs-secure{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:16px;padding-top:16px;border-top:1px solid var(--v-line);color:#8A95A8;font-size:9px}.vs-errors{margin:16px 0 0;padding:14px 16px;border:1px solid rgba(239,68,68,.18);border-radius:14px;background:rgba(239,68,68,.05);color:#B42318;font-size:11px}
+    html[data-theme="dark"] .vs-side-card,html[data-theme="dark"] .vs-form-card{box-shadow:0 28px 78px rgba(0,0,0,.24)}html[data-theme="dark"] .vs-input,html[data-theme="dark"] .vs-select,html[data-theme="dark"] .vs-type-box,html[data-theme="dark"] .vs-domain,html[data-theme="dark"] .vs-check{background:#10172A}html[data-theme="dark"] .vs-type input:checked + .vs-type-box{background:linear-gradient(180deg,rgba(109,70,255,.16),rgba(0,184,255,.08))}html[data-theme="dark"] .vs-trust{color:#A7B0C0}
+    @media(max-width:1020px){.vs-layout{grid-template-columns:1fr}.vs-side{position:static}.vs-side-card{max-width:820px;margin-inline:auto}.vs-form-wrap{max-width:820px;margin-inline:auto;width:100%}}
+    @media(max-width:760px){.velora-signup-page{padding:38px 0 60px;min-height:calc(100dvh - 84px)}.vs-wrap{width:calc(100% - 24px)}.vs-title{font-size:clamp(36px,11vw,52px)}.vs-copy{font-size:14px}.vs-layout{margin-top:30px}.vs-side-card{padding:22px}.vs-benefits{grid-template-columns:1fr 1fr}.vs-form-head{padding:22px 20px 18px}.vs-form-body{padding:20px}.vs-grid{grid-template-columns:1fr}.vs-full{grid-column:auto}.vs-types{grid-template-columns:repeat(3,minmax(0,1fr))}.vs-trust{gap:7px 12px}.vs-form-card{border-radius:22px}}
+    @media(max-width:460px){.vs-benefits{grid-template-columns:1fr}.vs-types{grid-template-columns:repeat(3,1fr);gap:7px}.vs-type-box{min-height:64px}.vs-domain{padding:0 9px;font-size:9px}.vs-submit{min-height:50px}}
+</style>
+
+<section class="velora-signup-page">
+    <div class="vs-wrap">
+        <div class="vs-intro">
+            <div class="vs-kicker"><i></i>{{ __('landing.signup_badge') }}</div>
+            <h1 class="vs-title">{{ __('landing.signup_hero_line1') }} <span>{{ __('landing.signup_hero_line2', ['days' => $maxTrialDays]) }}</span></h1>
+            <p class="vs-copy">{{ __('landing.signup_hero_sub') }}</p>
+            <div class="vs-trust"><span>✓ {{ __('landing.trust_no_card') }}</span><span>✓ {{ __('landing.trust_setup') }}</span><span>✓ {{ __('landing.trust_cancel') }}</span></div>
+        </div>
+
+        <div class="vs-layout">
+            <aside class="vs-side">
+                <div class="vs-side-card">
+                    <div class="vs-brand"><img src="{{ asset('logo-bais.png') }}" alt="Velora"><div><strong>{{ config('app.name', 'Velora') }}</strong><span>{{ __('landing.signup_side_label') }}</span></div></div>
+                    <h2>{{ __('landing.signup_what_happens_title') }} <span>{{ __('landing.signup_what_happens_highlight') }}</span></h2>
+                    <p class="vs-side-copy">{{ __('landing.signup_form_sub', ['days' => $maxTrialDays]) }}</p>
+                    <div class="vs-benefits">@foreach ($benefits as $benefit)<div class="vs-benefit"><i>{{ $benefit['icon'] }}</i><span>{{ $benefit['title'] }}</span></div>@endforeach</div>
+                    <div class="vs-steps">
                         @foreach ([1,2,3] as $step)
-                            <div class="flex items-start gap-3"><div class="w-8 h-8 rounded-full bg-brand-500 text-white flex items-center justify-center text-xs font-extrabold flex-shrink-0">{{ $step }}</div><div><div class="text-white font-semibold text-sm">{{ __('landing.signup_step'.$step.'_title', ['days' => $maxTrialDays, 'grace_start' => $maxTrialDays + 1, 'grace_end' => $maxTrialDays + 3, 'readonly_start' => $maxTrialDays + 4]) }}</div><p class="text-gray-500 text-xs mt-1">{{ __('landing.signup_step'.$step.'_desc', ['days' => $maxTrialDays]) }}</p></div></div>
+                            <div class="vs-step"><div class="vs-step-no">{{ $step }}</div><div><strong>{{ __('landing.signup_step'.$step.'_title', ['days' => $maxTrialDays, 'grace_start' => $maxTrialDays + 1, 'grace_end' => $maxTrialDays + 3, 'readonly_start' => $maxTrialDays + 4]) }}</strong><p>{{ __('landing.signup_step'.$step.'_desc', ['days' => $maxTrialDays]) }}</p></div></div>
                         @endforeach
                     </div>
                 </div>
-                <div class="flex items-center gap-3 mt-8"><div class="flex -space-x-2 rtl:space-x-reverse">@foreach (['S','M','A','J','L'] as $i => $letter)<div class="w-8 h-8 rounded-full border-2 border-[#0D1226] flex items-center justify-center text-[10px] font-bold text-white" style="background:{{ ['#6D46FF','#006CFF','#00B8FF','#00D4A3','#F97316'][$i] }}">{{ $letter }}</div>@endforeach<div class="w-8 h-8 rounded-full border-2 border-[#0D1226] bg-white/10 flex items-center justify-center text-[9px] font-bold text-white">+2</div></div><span class="text-gray-500 text-xs">{{ __('landing.signup_social_proof') }}</span></div>
-            </div>
-        </div>
+            </aside>
 
-        <div class="w-full lg:w-[46%] flex flex-col justify-start px-6 sm:px-10 xl:px-16 py-10 lg:py-16 border-l rtl:border-l-0 rtl:border-r border-white/5">
-            <div class="lg:hidden mb-8"><a href="{{ route('landing') }}" class="inline-flex items-center gap-2 text-gray-400 hover:text-white text-sm">← {{ __('landing.signup_back') }}</a></div>
-            <div class="w-full max-w-xl mx-auto">
-                <div class="mb-8 lg:mb-10"><h2 class="text-3xl font-extrabold text-white tracking-tight">{{ __('landing.signup_form_title') }}</h2><p class="text-gray-400 text-sm mt-2">{{ __('landing.signup_form_sub', ['days' => $maxTrialDays]) }}</p></div>
-                <form id="signupForm" method="POST" action="{{ route('signup') }}" class="glass rounded-2xl overflow-hidden">
-                    @csrf
-                    <div class="px-7 pt-7 pb-6 border-b border-white/5">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="col-span-2"><label class="block text-xs font-semibold text-gray-300 mb-2" for="business_name">{{ __('landing.signup_business_name') }} *</label><input id="business_name" name="business_name" type="text" value="{{ old('business_name') }}" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-400 transition" required></div>
-                            <div class="col-span-2"><label class="block text-xs font-semibold text-gray-300 mb-2">{{ __('landing.signup_business_type') }}</label><div class="grid grid-cols-4 gap-2">@php $types=['salon'=> '✂️','barber'=>'💈','clinic'=>'🏥','spa'=>'🧖','gym'=>'🏋️','restaurant'=>'🍽️','studio'=>'🎨','school'=>'🎓','other'=>'✏️']; @endphp @foreach($types as $type => $icon)<label class="cursor-pointer"><input type="radio" name="business_type" value="{{ $type }}" class="sr-only peer" {{ old('business_type','salon')===$type?'checked':'' }}><span class="min-h-[72px] h-full flex flex-col items-center justify-center gap-1 rounded-xl border border-white/10 bg-white/[0.03] text-gray-400 peer-checked:border-brand-400 peer-checked:bg-brand-500/10 peer-checked:text-white transition"><span class="text-xl">{{ $icon }}</span><span class="text-[10px]">{{ __('landing.signup_type_'.$type) }}</span></span></label>@endforeach</div></div>
-                            <div><label class="block text-xs font-semibold text-gray-300 mb-2" for="slug">{{ __('landing.signup_booking_slug') }} *</label><div class="flex"><input id="slug" name="slug" type="text" value="{{ old('slug') }}" class="w-full bg-white/5 border border-white/10 rounded-l-xl rtl:rounded-l-none rtl:rounded-r-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-400 transition" required><span class="px-3 flex items-center bg-white/5 border border-l-0 rtl:border-l rtl:border-r-0 border-white/10 rounded-r-xl rtl:rounded-r-none rtl:rounded-l-xl text-gray-500 text-xs">.velora.com</span></div><p class="text-[10px] text-gray-600 mt-2">{{ __('landing.signup_booking_slug_hint') }}</p></div>
-                            <div><label class="block text-xs font-semibold text-gray-300 mb-2" for="email">{{ __('landing.signup_email') }} *</label><input id="email" name="email" type="email" value="{{ old('email') }}" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-400 transition" required></div>
-                            <div><label class="block text-xs font-semibold text-gray-300 mb-2" for="password">{{ __('landing.signup_password') }} *</label><div class="relative"><input id="password" name="password" type="password" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-12 rtl:pr-4 rtl:pl-12 text-sm text-white outline-none focus:border-brand-400 transition" required minlength="8"><button type="button" onclick="togglePassword('password','passwordIcon')" class="absolute right-0 rtl:right-auto rtl:left-0 top-0 h-full w-11 text-gray-500 hover:text-white"><span id="passwordIcon">◎</span></button></div><p class="text-[10px] text-gray-600 mt-2">{{ __('landing.signup_password_hint') }}</p></div>
-                            <div><label class="block text-xs font-semibold text-gray-300 mb-2" for="password_confirmation">{{ __('landing.signup_password_confirmation') }} *</label><input id="password_confirmation" name="password_confirmation" type="password" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-400 transition" required minlength="8"></div>
-                            <div><label class="block text-xs font-semibold text-gray-300 mb-2" for="country">{{ __('landing.signup_country') }}</label><select id="country" name="country" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-400 transition">@foreach(config('localizer.countries', []) as $code => $country)<option value="{{ $code }}" {{ old('country')===$code?'selected':'' }}>{{ $country['flag'] ?? '' }} {{ $country['name'] ?? $code }}</option>@endforeach</select></div>
-                            <div><label class="block text-xs font-semibold text-gray-300 mb-2" for="admin_locale">{{ __('landing.signup_admin_locale') }}</label><select id="admin_locale" name="admin_locale" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-400 transition">@foreach(config('localizer.supported_locales', ['en','ar']) as $loc)<option value="{{ $loc }}" {{ old('admin_locale', $landingLocale)===$loc?'selected':'' }}>{{ strtoupper($loc) }}</option>@endforeach</select></div>
+            <div class="vs-form-wrap">
+                <div class="vs-form-card">
+                    <div class="vs-form-head"><h2>{{ __('landing.signup_form_title') }}</h2><p>{{ __('landing.signup_form_sub', ['days' => $maxTrialDays]) }}</p></div>
+                    <form id="signupForm" method="POST" action="{{ route('signup') }}">
+                        @csrf
+                        <div class="vs-form-body">
+                            <div class="vs-grid">
+                                <div class="vs-full"><label class="vs-label" for="business_name">{{ __('landing.signup_business_name') }} *</label><input class="vs-input" id="business_name" name="business_name" type="text" value="{{ old('business_name') }}" placeholder="{{ __('landing.signup_business_name') }}" required></div>
+                                <div class="vs-full"><label class="vs-label">{{ __('landing.signup_business_type') }}</label><div class="vs-types">@foreach($types as $type => $icon)<label class="vs-type"><input type="radio" name="business_type" value="{{ $type }}" {{ old('business_type', 'salon') === $type ? 'checked' : '' }}><span class="vs-type-box"><b>{{ $icon }}</b><span>{{ __('landing.signup_type_'.$type) }}</span></span></label>@endforeach</div></div>
+                                <div><label class="vs-label" for="slug">{{ __('landing.signup_booking_slug') }} *</label><div class="vs-slug"><input class="vs-input" id="slug" name="slug" type="text" value="{{ old('slug') }}" required><span class="vs-domain">.velora.com</span></div><p class="vs-help">{{ __('landing.signup_booking_slug_hint') }}</p></div>
+                                <div><label class="vs-label" for="email">{{ __('landing.signup_email') }} *</label><input class="vs-input" id="email" name="email" type="email" value="{{ old('email') }}" required></div>
+                                <div><label class="vs-label" for="password">{{ __('landing.signup_password') }} *</label><div style="position:relative"><input class="vs-input" id="password" name="password" type="password" required minlength="8" style="padding-inline-end:48px"><button type="button" onclick="togglePassword('password','passwordIcon')" aria-label="{{ __('landing.signup_show_password') ?? 'Show password' }}" style="position:absolute;top:0;inset-inline-end:0;width:46px;height:48px;border:0;background:none;color:#98A2B3;cursor:pointer"><span id="passwordIcon">◎</span></button></div><p class="vs-help">{{ __('landing.signup_password_hint') }}</p></div>
+                                <div><label class="vs-label" for="password_confirmation">{{ __('landing.signup_password_confirmation') }} *</label><input class="vs-input" id="password_confirmation" name="password_confirmation" type="password" required minlength="8"></div>
+                                <div><label class="vs-label" for="country">{{ __('landing.signup_country') }}</label><select class="vs-select" id="country" name="country">@foreach(config('localizer.countries', []) as $code => $country)<option value="{{ $code }}" {{ old('country') === $code ? 'selected' : '' }}>{{ $country['flag'] ?? '' }} {{ $country['name'] ?? $code }}</option>@endforeach</select></div>
+                                <div><label class="vs-label" for="admin_locale">{{ __('landing.signup_admin_locale') }}</label><select class="vs-select" id="admin_locale" name="admin_locale">@foreach(config('localizer.supported_locales', ['en','ar']) as $loc)<option value="{{ $loc }}" {{ old('admin_locale', $landingLocale) === $loc ? 'selected' : '' }}>{{ strtoupper($loc) }}</option>@endforeach</select></div>
+                            </div>
+                            <div style="margin-top:20px"><label class="vs-check"><input type="checkbox" name="terms" value="1" required><span>{{ __('landing.signup_terms_prefix') }} <a href="#">{{ __('landing.signup_terms') }}</a> {{ __('landing.signup_and') }} <a href="#">{{ __('landing.signup_privacy') }}</a></span></label></div>
+                            <div class="vs-coupon" style="margin-top:20px"><button type="button" class="vs-coupon-btn" onclick="toggleCoupon()">◇ {{ __('landing.signup_coupon_question') }}</button><div id="couponRow" class="vs-coupon-row" hidden><input class="vs-input" name="coupon" type="text" placeholder="{{ __('landing.signup_coupon_placeholder') }}"></div></div>
+                            <div style="margin-top:22px"><button id="submitBtn" type="submit" class="vs-submit"><span>{{ __('landing.signup_submit') }}</span> <span>→</span></button><p class="vs-existing">{{ __('landing.signup_existing') }} <a href="{{ route('central.login') }}">{{ __('landing.signup_login') }}</a></p><div class="vs-secure"><svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-width="1.5" d="M12 15v2m-5-8V7a5 5 0 0110 0v2m-8 0h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6a2 2 0 012-2z"/></svg><span>{{ __('landing.signup_isolated_data') }}</span></div></div>
                         </div>
-                    </div>
-                    <div class="px-7 py-6 border-b border-white/5"><label class="flex items-start gap-3 cursor-pointer"><input type="checkbox" name="terms" value="1" class="mt-1 rounded" required><span class="text-xs text-gray-500 leading-relaxed">{{ __('landing.signup_terms_prefix') }} <a href="#" class="text-brand-300 hover:text-brand-200 underline">{{ __('landing.signup_terms') }}</a> {{ __('landing.signup_and') }} <a href="#" class="text-brand-300 hover:text-brand-200 underline">{{ __('landing.signup_privacy') }}</a></span></label></div>
-                    <div class="px-7 py-5 border-b border-white/5"><button type="button" onclick="toggleCoupon()" class="text-xs text-gray-500 hover:text-gray-300 flex items-center gap-2"><span>◇</span> {{ __('landing.signup_coupon_question') }}</button><div id="couponRow" class="hidden mt-3"><input name="coupon" type="text" placeholder="{{ __('landing.signup_coupon_placeholder') }}" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-400 transition"></div></div>
-                    <div class="px-7 py-7"><button id="submitBtn" type="submit" class="w-full py-3.5 btn-primary rounded-xl text-white font-extrabold text-sm flex items-center justify-center gap-2"><span>{{ __('landing.signup_submit') }}</span><span>→</span></button><p class="text-center text-xs text-gray-600 mt-5">{{ __('landing.signup_existing') }} <a href="{{ route('central.login') }}" class="text-brand-300 hover:text-brand-200 font-semibold">{{ __('landing.signup_login') }}</a></p><div class="mt-5 pt-5 border-t border-white/5 flex items-center gap-2 text-[10px] text-gray-600"><svg class="w-4 h-4 text-brand-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-5-8V7a5 5 0 0110 0v2m-8 0h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6a2 2 0 012-2z"/></svg><span>{{ __('landing.signup_isolated_data') }}</span></div></div>
-                </form>
-                @if ($errors->any())<div class="mt-4 rounded-xl border border-red-400/20 bg-red-500/10 p-4 text-sm text-red-300"><ul class="space-y-1">@foreach($errors->all() as $error)<li>• {{ $error }}</li>@endforeach</ul></div>@endif
+                    </form>
+                </div>
+                @if ($errors->any())<div class="vs-errors"><ul style="margin:0;padding:0;list-style:none">@foreach($errors->all() as $error)<li style="margin-top:4px">• {{ $error }}</li>@endforeach</ul></div>@endif
             </div>
         </div>
     </div>
+</section>
 @endsection
 
 @push('scripts')
 <script>
-function togglePassword(inputId, iconId){const i=document.getElementById(inputId),x=document.getElementById(iconId);i.type=i.type==='password'?'text':'password';x.textContent=i.type==='password'?'◎':'◉'}
-function toggleCoupon(){document.getElementById('couponRow')?.classList.toggle('hidden')}
+function togglePassword(inputId, iconId){const i=document.getElementById(inputId),x=document.getElementById(iconId);if(!i||!x)return;i.type=i.type==='password'?'text':'password';x.textContent=i.type==='password'?'◎':'◉'}
+function toggleCoupon(){const r=document.getElementById('couponRow');if(!r)return;r.hidden=!r.hidden}
 </script>
 @endpush
