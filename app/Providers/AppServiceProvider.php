@@ -7,6 +7,7 @@ namespace App\Providers;
 use App\Application\Shared\Contracts\TransactionManager;
 use App\Application\Subscription\Events\SubscriptionUpgradeRequested;
 use App\Domain\Administration\Contracts\SystemNotificationReader;
+use App\Domain\Billing\Contracts\StripeWebhookProcessor;
 use App\Domain\Landing\Contracts\LandingSettingsReader;
 use App\Domain\Pricing\Contracts\CountryPriceSelector;
 use App\Domain\Queue\Contracts\QueueRepository as DomainQueueRepository;
@@ -19,6 +20,7 @@ use App\Infrastructure\Administration\LegacySystemNotificationReader;
 use App\Infrastructure\Billing\EloquentUpgradeRequestWriter;
 use App\Infrastructure\Billing\LegacySubscriptionReader;
 use App\Infrastructure\Landing\LegacyLandingSettingsReader;
+use App\Infrastructure\Payments\Stripe\StripeWebhookProcessor as StripeWebhookProcessorImplementation;
 use App\Infrastructure\Persistence\LaravelTransactionManager;
 use App\Infrastructure\Pricing\LegacyCountryPriceSelector;
 use App\Infrastructure\Reporting\LegacyReportReader;
@@ -50,6 +52,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(TenantRegistrar::class, LegacyTenantRegistrar::class);
         $this->app->bind(SystemNotificationReader::class, LegacySystemNotificationReader::class);
         $this->app->bind(LandingSettingsReader::class, LegacyLandingSettingsReader::class);
+        $this->app->bind(StripeWebhookProcessor::class, StripeWebhookProcessorImplementation::class);
     }
 
     public function boot(): void
