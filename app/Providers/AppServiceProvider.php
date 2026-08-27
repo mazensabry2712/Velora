@@ -52,34 +52,34 @@ use App\Services\PaymentGatewayRouter;
 use App\View\Composers\AdminLayoutComposer;
 use App\View\Composers\LandingLayoutComposer;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\View as ViewFacade;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\View\View;
 
 class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->singleton(PaymentGatewayManager::class);
         $this->app->bind(TransactionManager::class, LaravelTransactionManager::class);
-        $this->app->bind(PaymentGatewayResolver::class, PaymentGatewayRouter::class);
+        $this->app->bind(SystemNotificationReader::class, LegacySystemNotificationReader::class);
+        $this->app->bind(BillingReader::class, LegacyBillingReader::class);
+        $this->app->bind(CheckoutSessionCreator::class, PaymentGatewayCheckoutSessionCreator::class);
+        $this->app->bind(TrialExtender::class, LegacyTrialExtender::class);
+        $this->app->bind(CustomerReader::class, EloquentCustomerReader::class);
+        $this->app->bind(StaffWriter::class, EloquentStaffWriter::class);
+        $this->app->bind(QueueReader::class, EloquentQueueReader::class);
+        $this->app->bind(DomainQueueRepository::class, QueueRepository::class);
+        $this->app->bind(AppointmentReader::class, EloquentAppointmentReader::class);
+        $this->app->bind(CountryPriceSelector::class, LegacyCountryPriceSelector::class);
+        $this->app->bind(LandingSettingsReader::class, LegacyLandingSettingsReader::class);
+        $this->app->bind(ReportReader::class, LegacyReportReader::class);
+        $this->app->bind(TenantRegistrar::class, LegacyTenantRegistrar::class);
         $this->app->bind(SubscriptionReader::class, LegacySubscriptionReader::class);
         $this->app->bind(SubscriptionAccessReader::class, LegacySubscriptionAccessReader::class);
         $this->app->bind(UpgradeRequestWriter::class, EloquentUpgradeRequestWriter::class);
-        $this->app->bind(DomainQueueRepository::class, QueueRepository::class);
-        $this->app->bind(QueueReader::class, EloquentQueueReader::class);
-        $this->app->bind(AppointmentReader::class, EloquentAppointmentReader::class);
-        $this->app->bind(ReportReader::class, LegacyReportReader::class);
-        $this->app->bind(CountryPriceSelector::class, LegacyCountryPriceSelector::class);
-        $this->app->bind(TenantRegistrar::class, LegacyTenantRegistrar::class);
-        $this->app->bind(SystemNotificationReader::class, LegacySystemNotificationReader::class);
-        $this->app->bind(LandingSettingsReader::class, LegacyLandingSettingsReader::class);
-        $this->app->bind(StripeWebhookProcessor::class, StripeWebhookProcessorImplementation::class);
         $this->app->bind(MoyasarWebhookProcessorContract::class, MoyasarWebhookProcessor::class);
-        $this->app->bind(StaffWriter::class, EloquentStaffWriter::class);
-        $this->app->bind(BillingReader::class, LegacyBillingReader::class);
-        $this->app->bind(TrialExtender::class, LegacyTrialExtender::class);
-        $this->app->bind(CheckoutSessionCreator::class, PaymentGatewayCheckoutSessionCreator::class);
-        $this->app->bind(CustomerReader::class, EloquentCustomerReader::class);
+        $this->app->bind(StripeWebhookProcessor::class, StripeWebhookProcessorImplementation::class);
+        $this->app->bind(PaymentGatewayResolver::class, PaymentGatewayRouter::class);
     }
 
     public function boot(): void
@@ -91,10 +91,10 @@ class AppServiceProvider extends ServiceProvider
 
         Appointment::observe(AppointmentObserver::class);
 
-        View::composer('layouts.landing', LandingLayoutComposer::class);
-        View::composer('layouts.admin', AdminLayoutComposer::class);
+        ViewFacade::composer('layouts.landing', LandingLayoutComposer::class);
+        ViewFacade::composer('layouts.admin', AdminLayoutComposer::class);
 
-        View::composer('admin.appointments.index', function (View $view): void {
+        ViewFacade::composer('admin.appointments.index', function (View $view): void {
             $data = $view->getData();
 
             if (! array_key_exists('appointments', $data) && array_key_exists('paginatedData', $data)) {
