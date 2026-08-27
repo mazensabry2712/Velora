@@ -1,20 +1,26 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Auth;
 
+use App\Application\Tenant\Actions\RegisterTenant;
 use App\Http\Controllers\Controller;
-use App\Services\TenantRegistrationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
-class TenantRegistrationController extends Controller
+final class TenantRegistrationController extends Controller
 {
     public function __construct(
-        protected TenantRegistrationService $registrationService
+        private readonly RegisterTenant $registerTenant,
     ) {}
 
     /**
      * Handle new tenant signup.
+     *
+     * HTTP validation/response concerns stay here; tenant onboarding
+     * orchestration is owned by the application action.
      */
     public function store(Request $request)
     {
@@ -30,13 +36,13 @@ class TenantRegistrationController extends Controller
             'plan_id'       => 'nullable|integer|exists:subscription_plans,id',
             'promo_code'    => 'nullable|string|max:32',
         ], [
-            'subdomain.regex'    => 'Subdomain must be lowercase letters, numbers, or hyphens only.',
-            'terms.accepted'     => 'You must accept the Terms of Service.',
+            'subdomain.regex'     => 'Subdomain must be lowercase letters, numbers, or hyphens only.',
+            'terms.accepted'      => 'You must accept the Terms of Service.',
             'password.confirmed' => 'Passwords do not match.',
         ]);
 
         try {
-            $result = $this->registrationService->register($validated);
+            $result = $this->registerTenant->execute($validated);
 
             if ($request->expectsJson()) {
                 return response()->json([
@@ -47,19 +53,24 @@ class TenantRegistrationController extends Controller
             }
 
             return redirect()->away($result['redirect_url'])
-                ->with('success', 'Welcome to Velora! Your ' . ($result['trial_days'] ?? 14) . '-day free trial has started.');
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
+                ->with(
+                    'success',
+                    'Welcome to Velora! Your ' . ($result['trial_days'] ?? 14) . '-day free trial has started.'
+                );
+        } catch (ValidationException $e) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
                     'errors'  => $e->errors(),
                 ], 422);
             }
-            throw $e;
 
-        } catch (\Exception $e) {
-            Log::error('Tenant registration error: ' . $e->getMessage());
+            throw $e;
+        } catch (\Throwable $e) {
+            Log::error('Tenant registration error: ' . $e->getMessage(), [
+                'email'     => $request->input('email'),
+                'subdomain' => $request->input('subdomain'),
+            ]);
 
             if ($request->expectsJson()) {
                 return response()->json([
