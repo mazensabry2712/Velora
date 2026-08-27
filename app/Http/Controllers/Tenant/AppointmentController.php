@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Application\Booking\Actions\DeleteAppointment;
+use App\Application\Booking\Actions\UpdateAppointment;
 use App\Domain\Booking\DTOs\CreateBookingData;
 use App\Domain\Booking\Exceptions\SlotUnavailableException;
 use App\Domain\Booking\Services\BookingCreationService;
@@ -24,6 +26,8 @@ class AppointmentController extends Controller
 {
     public function __construct(
         private readonly BookingCreationService $bookingService,
+        private readonly UpdateAppointment $updateAppointment,
+        private readonly DeleteAppointment $deleteAppointment,
     ) {}
 
     public function store(Request $request): JsonResponse
@@ -113,9 +117,6 @@ class AppointmentController extends Controller
                 $validated['notes'] = strip_tags(trim($validated['notes']));
             }
 
-            // The appointment date/time represents the business schedule. Use the
-            // staff member's timezone as the authoritative timezone rather than
-            // trusting the customer's device timezone.
             $tz = $staffRecord->timezone ?: config('app.timezone');
             $startsAt = Carbon::createFromFormat(
                 'Y-m-d H:i',
@@ -128,7 +129,6 @@ class AppointmentController extends Controller
 
                 $customer = Customer::firstOrNew(['email' => $validated['customer_email']]);
 
-                // A blocked customer must not be able to create new public bookings.
                 if ($customer->exists && $customer->is_blocked) {
                     throw Validator::make([], [])->after(function ($validator) {
                         $validator->errors()->add('customer_email', 'This customer is not allowed to book appointments.');
@@ -227,14 +227,12 @@ class AppointmentController extends Controller
 
     public function update(Request $request, int $id): JsonResponse
     {
-        $appointment = Appointment::findOrFail($id);
-
         $validated = $request->validate([
             'status' => 'sometimes|in:pending,confirmed,completed,cancelled,no_show',
             'notes' => 'nullable|string|max:1000',
         ]);
 
-        $appointment->update($validated);
+        $appointment = $this->updateAppointment->execute($id, $validated);
 
         return response()->json([
             'success' => true,
@@ -245,8 +243,7 @@ class AppointmentController extends Controller
 
     public function destroy(int $id): JsonResponse
     {
-        $appointment = Appointment::findOrFail($id);
-        $appointment->delete();
+        $this->deleteAppointment->execute($id);
 
         return response()->json([
             'success' => true,
