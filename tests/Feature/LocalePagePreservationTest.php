@@ -4,13 +4,21 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\CheckMaintenanceMode;
 use Tests\TestCase;
 
 class LocalePagePreservationTest extends TestCase
 {
+    protected function withoutMaintenanceMiddleware(): static
+    {
+        $this->withoutMiddleware(CheckMaintenanceMode::class);
+
+        return $this;
+    }
+
     public function test_language_switch_preserves_signup_page(): void
     {
-        $response = $this->withServerVariables([
+        $response = $this->withoutMaintenanceMiddleware()->withServerVariables([
             'HTTP_HOST' => env('APP_DOMAIN', 'velora.test'),
             'SERVER_NAME' => env('APP_DOMAIN', 'velora.test'),
         ])->withHeaders([
@@ -22,7 +30,7 @@ class LocalePagePreservationTest extends TestCase
 
     public function test_language_switch_from_localized_signup_to_default_locale_preserves_page(): void
     {
-        $response = $this->withServerVariables([
+        $response = $this->withoutMaintenanceMiddleware()->withServerVariables([
             'HTTP_HOST' => env('APP_DOMAIN', 'velora.test'),
             'SERVER_NAME' => env('APP_DOMAIN', 'velora.test'),
         ])->withHeaders([
