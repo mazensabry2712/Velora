@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Application\Shared\Contracts\TransactionManager;
+use App\Application\Subscription\Events\SubscriptionUpgradeRequested;
 use App\Domain\Pricing\Contracts\CountryPriceSelector;
 use App\Domain\Queue\Contracts\QueueRepository as DomainQueueRepository;
 use App\Domain\Reporting\Contracts\ReportReader;
@@ -17,6 +18,7 @@ use App\Infrastructure\Billing\LegacySubscriptionReader;
 use App\Infrastructure\Persistence\LaravelTransactionManager;
 use App\Infrastructure\Pricing\LegacyCountryPriceSelector;
 use App\Infrastructure\Reporting\LegacyReportReader;
+use App\Infrastructure\Subscription\Listeners\SendUpgradeRequestNotifications;
 use App\Infrastructure\Tenancy\LegacyTenantRegistrar;
 use App\Models\Appointment;
 use App\Models\SystemSetting;
@@ -25,6 +27,7 @@ use App\Payments\PaymentGatewayManager;
 use App\Repositories\Eloquent\QueueRepository;
 use App\Services\PaymentGatewayRouter;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -45,6 +48,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Event::listen(
+            SubscriptionUpgradeRequested::class,
+            SendUpgradeRequestNotifications::class,
+        );
+
         Appointment::observe(AppointmentObserver::class);
 
         View::composer('layouts.landing', function ($view) {
