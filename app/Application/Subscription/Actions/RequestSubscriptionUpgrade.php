@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Application\Subscription\Actions;
 
+use App\Application\Subscription\Events\SubscriptionUpgradeRequested;
 use App\Domain\Subscription\Contracts\SubscriptionReader;
 use App\Domain\Subscription\Contracts\UpgradeRequestWriter;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Validation\ValidationException;
 
 final class RequestSubscriptionUpgrade
@@ -13,6 +15,7 @@ final class RequestSubscriptionUpgrade
     public function __construct(
         private readonly SubscriptionReader $subscriptions,
         private readonly UpgradeRequestWriter $requests,
+        private readonly Dispatcher $events,
     ) {}
 
     /** @return object */
@@ -39,6 +42,16 @@ final class RequestSubscriptionUpgrade
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+
+        $this->events->dispatch(new SubscriptionUpgradeRequested(
+            tenantId: $tenantId,
+            requesterName: $name,
+            requesterEmail: $email,
+            currentPlanName: (string) ($current['plan_name'] ?? 'N/A'),
+            requestedPlanId: $planId,
+            requestedPlanName: (string) ($plan->name ?? 'N/A'),
+            requestedPlanPrice: number_format((float) ($plan->price ?? 0), 2),
+        ));
 
         return $plan;
     }
