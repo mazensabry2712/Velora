@@ -81,20 +81,28 @@ class OnboardingController extends Controller
 
         try {
             $staff = Staff::query()->first();
+            $title = filled($data['specialty'] ?? null)
+                ? ['en' => trim($data['specialty']), 'ar' => trim($data['specialty'])]
+                : null;
 
             if (! $staff) {
                 $nameParts = explode(' ', trim($data['name']), 2);
                 $staff = Staff::create([
                     'first_name'       => $nameParts[0],
                     'last_name'        => $nameParts[1] ?? '',
+                    'title'            => $title,
                     'accepts_bookings' => true,
                     'is_active'        => true,
                 ]);
             } else {
-                $staff->update([
+                $updates = [
                     'accepts_bookings' => true,
                     'is_active'        => true,
-                ]);
+                ];
+                if ($title !== null) {
+                    $updates['title'] = $title;
+                }
+                $staff->update($updates);
             }
 
             $this->ensureDefaultWorkingHours($staff);
