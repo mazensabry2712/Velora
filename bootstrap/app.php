@@ -19,7 +19,10 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use NielsNumbers\LaravelLocalizer\Middleware\RedirectLocale;
+use NielsNumbers\LaravelLocalizer\Middleware\SetLocale;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -31,11 +34,17 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(SecurityHeaders::class);
-
-        // Inject the central Velora brand layer and language selector at runtime.
-        // The middleware bypasses PHPUnit requests so Laravel view assertions keep
-        // receiving the original View response object.
         $middleware->append(InjectVeloraBrandStyles::class);
+
+        // Laravel Localizer: resolve the locale from localized routes and
+        // persist the selection in session/cookie. Keep binding resolution
+        // after the locale middleware as required by the package.
+        $middleware->web(remove: [SubstituteBindings::class]);
+        $middleware->web(append: [
+            SetLocale::class,
+            RedirectLocale::class,
+            SubstituteBindings::class,
+        ]);
 
         $middleware->alias([
             'tenant' => InitializeTenancyByDomain::class,
