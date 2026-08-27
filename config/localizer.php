@@ -6,10 +6,11 @@ use NielsNumbers\LaravelLocalizer\Detectors\BrowserDetector;
 use NielsNumbers\LaravelLocalizer\Detectors\UserDetector;
 
 return [
-    'supported_locales' => [], // ['de', 'en', .. ]
+    'supported_locales' => [
+        'ar', 'en', 'fr', 'es', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'tr', 'hi', 'ko', 'nl', 'id',
+    ],
 
     'hide_default_locale' => true,
-
     'redirect_enabled' => true,
 
     'persist_locale' => [
@@ -22,8 +23,21 @@ return [
         BrowserDetector::class,
     ],
 
-    // Per-locale override for writing direction. Keys must match the
-    // locale codes used in `supported_locales`. Values: 'rtl' or 'ltr'.
-    // Wins over the script-based detection in `LocaleDirection`.
-    'locale_directions' => [],
+    'locale_directions' => [
+        'ar' => 'rtl',
+        'en' => 'ltr',
+        'fr' => 'ltr',
+        'es' => 'ltr',
+        'de' => 'ltr',
+        'it' => 'ltr',
+        'pt' => 'ltr',
+        'ru' => 'ltr',
+        'zh' => 'ltr',
+        'ja' => 'ltr',
+        'tr' => 'ltr',
+        'hi' => 'ltr',
+        'ko' => 'ltr',
+        'nl' => 'ltr',
+        'id' => 'ltr',
+    ],
 ];
