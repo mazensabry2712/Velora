@@ -20,7 +20,7 @@ use App\Models\Service;
 use App\Models\User;
 use App\Repositories\Contracts\AppointmentRepositoryInterface;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
-use BaconQrCode\Renderer\Image\ImageRenderer;
+use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
 use Illuminate\Http\JsonResponse;
