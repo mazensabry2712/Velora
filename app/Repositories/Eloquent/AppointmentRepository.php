@@ -2,14 +2,14 @@
 
 namespace App\Repositories\Eloquent;
 
+use App\Domain\Booking\Contracts\AppointmentCommand;
 use App\Models\Appointment;
 use App\Models\Queue;
 use App\Repositories\Contracts\AppointmentRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\DB;
 
-class AppointmentRepository implements AppointmentRepositoryInterface
+class AppointmentRepository implements AppointmentRepositoryInterface, AppointmentCommand
 {
     public function findById(int $id): ?Appointment
     {
