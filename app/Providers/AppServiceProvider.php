@@ -8,7 +8,6 @@ use App\Observers\AppointmentObserver;
 use App\Payments\Contracts\PaymentGatewayInterface;
 use App\Payments\PaymentGatewayManager;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -34,17 +33,6 @@ class AppServiceProvider extends ServiceProvider
     {
         // Register model observers
         Appointment::observe(AppointmentObserver::class);
-
-        // Explicitly load the landing translation group. The project uses a
-        // custom /lang path and custom locale middleware; registering the group
-        // here guarantees landing.nav_* and landing.* keys resolve reliably.
-        foreach (config('locales.supported', []) as $locale) {
-            $translationFile = base_path("lang/{$locale}/landing.php");
-
-            if (is_file($translationFile)) {
-                Lang::addLines(require $translationFile, $locale, 'landing');
-            }
-        }
 
         // Share platform settings with all landing views (layout + pages)
         View::composer('layouts.landing', function ($view) {
