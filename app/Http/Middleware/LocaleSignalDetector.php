@@ -10,13 +10,26 @@ use NielsNumbers\LaravelLocalizer\Contracts\DetectorInterface;
 class LocaleSignalDetector implements DetectorInterface
 {
     /**
-     * Resolve an explicit Velora locale signal before browser detection.
+     * Resolve locale signals with explicit URL locale taking precedence.
+     *
+     * Resolution order:
+     * 1. Explicit /{locale} route segment.
+     * 2. Explicit Velora session override.
+     * 3. Explicit Velora cookie override.
+     * 4. The configured omitted/default locale.
      *
      * @return string|array<int, string>|null
      */
     public function detect(Request $request): string|array|null
     {
         $supported = config('localizer.supported_locales', []);
+        $default = config('localizer.omitted_locale', 'ar');
+
+        // An explicit locale in the URL must always win over persisted state.
+        $routeLocale = $request->route('locale');
+        if (is_string($routeLocale) && in_array($routeLocale, $supported, true)) {
+            return $routeLocale;
+        }
 
         $sessionLocale = $request->session()->get('central_locale');
         if (is_string($sessionLocale) && in_array($sessionLocale, $supported, true)) {
@@ -28,6 +41,8 @@ class LocaleSignalDetector implements DetectorInterface
             return $cookieLocale;
         }
 
-        return null;
+        return is_string($default) && in_array($default, $supported, true)
+            ? $default
+            : null;
     }
 }
