@@ -178,6 +178,7 @@ return [
     'switcher_other' => 'Other countries',
     'switcher_footer' => 'We support languages across our global platform.',
     'switcher_lang_label' => 'Change language',
+    'dark_mode' => 'Dark mode',
     'nav_features' => 'Features',
     'nav_how_it_works' => 'How it works',
     'nav_pricing' => 'Pricing',
