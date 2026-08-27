@@ -25,11 +25,11 @@ class StripeWebhookControllerTest extends TestCase
 
     private const WEBHOOK_URL = '/webhooks/stripe';
 
-    private function mockStripeEvent(\Stripe\Event $event): void
+    private function mockStripeEvent(\Stripe\Event $event, int $expectedCalls = 1): void
     {
         $mock = $this->mock(StripeService::class);
         $mock->shouldReceive('constructWebhookEvent')
-             ->once()
+             ->times($expectedCalls)
              ->andReturn($event);
     }
 
@@ -69,7 +69,7 @@ class StripeWebhookControllerTest extends TestCase
         if (! $planId) {
             $planId = DB::table('subscription_plans')->insertGetId([
                 'name'          => 'Starter',
-                'slug'          => 'starter',
+                'slug'           => 'starter',
                 'price'         => 99.00,
                 'billing_cycle' => 'monthly',
                 'is_active'     => 1,
@@ -95,7 +95,7 @@ class StripeWebhookControllerTest extends TestCase
     {
         $this->mock(StripeService::class);
 
-        $response = $this->postJson(self::WEBHOOK_URL, []);
+        $response = $this->postJson(self::WEBHOOK_URL, [], []);
 
         $response->assertStatus(400)
                  ->assertJson(['error' => 'Missing signature']);
@@ -129,7 +129,7 @@ class StripeWebhookControllerTest extends TestCase
             'subscription_details' => [
                 'metadata' => ['tenant_id' => $tenantId],
             ],
-        ], 'evt_payment_failed_1');
+        ]);
 
         $this->mockStripeEvent($event);
 
@@ -162,7 +162,7 @@ class StripeWebhookControllerTest extends TestCase
             'id'                   => 'in_no_tenant',
             'object'               => 'invoice',
             'subscription_details' => null,
-        ], 'evt_payment_failed_missing_tenant');
+        ]);
 
         $this->mockStripeEvent($event);
 
@@ -219,7 +219,8 @@ class StripeWebhookControllerTest extends TestCase
             'metadata' => ['tenant_id' => $tenantId],
         ], 'evt_duplicate_checkout');
 
-        $this->mockStripeEvent($event);
+        $this->mockStripeEvent($event, 2);
+
         $first = $this->postJson(self::WEBHOOK_URL, [], [
             'Stripe-Signature' => 'valid_but_mocked',
         ]);
@@ -228,7 +229,6 @@ class StripeWebhookControllerTest extends TestCase
         $convertedAt = DB::table('tenant_subscriptions')->where('tenant_id', $tenantId)->value('converted_at');
         $this->assertNotNull($convertedAt);
 
-        $this->mockStripeEvent($event);
         $second = $this->postJson(self::WEBHOOK_URL, [], [
             'Stripe-Signature' => 'valid_but_mocked',
         ]);
