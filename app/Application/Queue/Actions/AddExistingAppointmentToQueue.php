@@ -18,9 +18,10 @@ final class AddExistingAppointmentToQueue
         private readonly TransactionManager $transactions,
     ) {}
 
-    public function execute(int $appointmentId): Queue
+    /** @return array{queue: Queue, created: bool} */
+    public function execute(int $appointmentId): array
     {
-        return $this->transactions->transaction(function () use ($appointmentId): Queue {
+        return $this->transactions->transaction(function () use ($appointmentId): array {
             $appointment = $this->appointments->findWithRelations($appointmentId, ['customer', 'queue']);
 
             if (! $appointment) {
@@ -30,17 +31,17 @@ final class AddExistingAppointmentToQueue
             }
 
             if ($appointment->queue) {
-                throw ValidationException::withMessages([
-                    'queue' => ['Appointment already in queue.'],
-                ]);
+                return ['queue' => $appointment->queue, 'created' => false];
             }
 
-            return $this->queues->create([
+            $queue = $this->queues->create([
                 'appointment_id' => $appointment->id,
                 'queue_number' => Queue::generateQueueNumber(),
                 'status' => 'waiting',
                 'is_vip' => (bool) ($appointment->customer?->is_vip ?? false),
             ]);
+
+            return ['queue' => $queue, 'created' => true];
         });
     }
 }
