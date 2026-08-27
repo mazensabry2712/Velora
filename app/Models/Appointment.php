@@ -54,20 +54,37 @@ class Appointment extends Model
         'no_show_at'         => 'datetime',
         'reminder_sent_at'    => 'datetime',
         'price'               => 'decimal:2',
-        'deposit_paid'        => 'decimal:2',
+        'deposit_paid'       => 'decimal:2',
         'discount_amount'     => 'decimal:2',
-        'metadata'            => 'array',
-        'attendees'           => 'integer',
+        'metadata'           => 'array',
+        'attendees'          => 'integer',
     ];
 
     // ── Boot ─────────────────────────────────────────────────────────────
 
     protected static function booted(): void
     {
-        // Auto-assign ULID on create
+        // Keep the legacy appointment columns synchronized with the booking-engine
+        // timestamps. This is required while old portal/admin consumers still read
+        // date/time_slot/service_type, even when a new-style appointment is created
+        // directly with starts_at/ends_at.
         static::creating(function (self $model) {
             if (empty($model->ulid)) {
                 $model->ulid = (string) Str::ulid();
+            }
+
+            if ($model->starts_at) {
+                $startsAt = $model->starts_at instanceof \Carbon\CarbonInterface
+                    ? $model->starts_at
+                    : \Carbon\Carbon::parse($model->starts_at);
+
+                if (empty($model->date)) {
+                    $model->date = $startsAt->toDateString();
+                }
+
+                if (empty($model->time_slot)) {
+                    $model->time_slot = $startsAt->format('H:i');
+                }
             }
         });
 
@@ -218,144 +235,3 @@ class Appointment extends Model
     }
 
     /** New: staff via dedicated staff table */
-    public function newStaff(): BelongsTo
-    {
-        return $this->belongsTo(Staff::class, 'staff_id_new');
-    }
-
-    /** Backward-compatible alias used by API consumers/controllers. */
-    public function staffNew(): BelongsTo
-    {
-        return $this->newStaff();
-    }
-
-    public function service(): BelongsTo
-    {
-        return $this->belongsTo(Service::class);
-    }
-
-    public function resource(): BelongsTo
-    {
-        return $this->belongsTo(Resource::class);
-    }
-
-    public function recurringRule(): BelongsTo
-    {
-        return $this->belongsTo(RecurringRule::class, 'recurring_id');
-    }
-
-    public function queue()
-    {
-        return $this->hasOne(Queue::class);
-    }
-
-    public function statusHistory(): HasMany
-    {
-        return $this->hasMany(AppointmentStatusHistory::class)->orderBy('created_at');
-    }
-
-    public function reminders(): HasMany
-    {
-        return $this->hasMany(ReminderLog::class);
-    }
-
-    // Scopes
-    public function scopeToday($query)
-    {
-        return $query->whereDate('date', today());
-    }
-
-    public function scopeUpcoming($query)
-    {
-        return $query->where('date', '>=', today())
-            ->whereNotIn('status', ['cancelled', 'completed']);
-    }
-
-    public function scopePending($query)
-    {
-        return $query->where('status', 'pending');
-    }
-
-    public function scopeConfirmed($query)
-    {
-        return $query->where('status', 'confirmed');
-    }
-
-    public function scopeInQueue($query)
-    {
-        return $query->whereHas('queue', function ($q) {
-            $q->whereIn('status', ['waiting', 'serving']);
-        });
-    }
-
-    // Helper Methods
-    public function canBeAddedToQueue(): bool
-    {
-        // Can't add if already in queue
-        if ($this->queue) {
-            return false;
-        }
-
-        // Can't add cancelled or completed appointments
-        if (in_array($this->status, ['cancelled', 'completed'])) {
-            return false;
-        }
-
-        return true;
-    }
-
-    public function isOverdue(): bool
-    {
-        return $this->date < today() && $this->status !== 'completed';
-    }
-
-    public function isSoon(): bool
-    {
-        $now = now();
-        $appointmentDate = \Carbon\Carbon::parse($this->date);
-
-        return $appointmentDate->isToday() &&
-               $appointmentDate->diffInHours($now) <= 2 &&
-               $appointmentDate > $now;
-    }
-
-    /**
-     * Get service name (from service relation or service_type field)
-     */
-    public function getServiceNameAttribute()
-    {
-        if ($this->service) {
-            return app()->getLocale() === 'ar' && $this->service->name_ar
-                ? $this->service->name_ar
-                : $this->service->name;
-        }
-        return $this->service_type;
-    }
-
-    // ── New helper methods ────────────────────────────────────────────────
-
-    public function canTransitionTo(string $newStatus): bool
-    {
-        return in_array($newStatus, self::VALID_TRANSITIONS[$this->status] ?? [], true);
-    }
-
-    public function getNetPriceAttribute(): float
-    {
-        return max(0, (float) $this->price - (float) $this->discount_amount);
-    }
-
-    public function scopeOnDate($query, \Carbon\Carbon $date)
-    {
-        return $query->whereDate('starts_at', $date->toDateString());
-    }
-
-    public function scopeForStaff($query, int $staffId)
-    {
-        return $query->where('staff_id_new', $staffId);
-    }
-
-    public function scopeForNewCustomer($query, int $customerId)
-    {
-        return $query->where('customer_id_new', $customerId);
-    }
-}
