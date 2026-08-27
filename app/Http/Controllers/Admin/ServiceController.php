@@ -135,8 +135,15 @@ class ServiceController extends Controller
                     ->where('is_online_bookable', true)
                     ->first();
 
+                // The public booking UI uses the dedicated Staff primary key.
+                // Keep accepting the legacy User id so existing API consumers do
+                // not break while the identifier migration is in progress.
+                $requestedStaffId = (int) $validated['staff_id'];
                 $staff = Staff::query()
-                    ->where('user_id', (int) $validated['staff_id'])
+                    ->where(function ($query) use ($requestedStaffId) {
+                        $query->whereKey($requestedStaffId)
+                            ->orWhere('user_id', $requestedStaffId);
+                    })
                     ->bookable()
                     ->with(['workingHours', 'breaks', 'timeOff'])
                     ->first();
