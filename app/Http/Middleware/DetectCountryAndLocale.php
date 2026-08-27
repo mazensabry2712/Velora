@@ -12,7 +12,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Detects the visitor's country and resolves the central locale/currency.
- * Explicit language selection always wins over geo detection.
+ * An explicit locale in a Laravel Localizer route always wins.
  */
 class DetectCountryAndLocale
 {
@@ -23,12 +23,22 @@ class DetectCountryAndLocale
         $country = $this->resolveCountry($request);
         Session::put('detected_country', $country);
 
-        App::setLocale($this->resolveLocale($request));
-        Session::put('central_locale', App::getLocale());
+        if (! $this->hasExplicitRouteLocale($request)) {
+            App::setLocale($this->resolveLocale($request));
+        }
 
+        Session::put('central_locale', App::getLocale());
         Session::put('current_currency', $this->resolveCurrency($request, $country));
 
         return $next($request);
+    }
+
+    private function hasExplicitRouteLocale(Request $request): bool
+    {
+        $routeLocale = $request->route('locale');
+        $supported = config('localizer.supported_locales', config('locales.supported', ['ar', 'en', 'fr']));
+
+        return is_string($routeLocale) && in_array($routeLocale, $supported, true);
     }
 
     private function resolveCountry(Request $request): string
@@ -44,8 +54,8 @@ class DetectCountryAndLocale
 
     private function resolveLocale(Request $request): string
     {
-        $supported = config('locales.supported', ['ar', 'en', 'fr']);
-        $default = config('locales.default', 'ar');
+        $supported = config('localizer.supported_locales', config('locales.supported', ['ar', 'en', 'fr']));
+        $default = config('locales.default', config('localizer.supported_locales.0', 'ar'));
 
         if (SystemSetting::get('allow_manual_language_switch', true)) {
             $cookieLocale = $request->cookie('velora_locale_override');
