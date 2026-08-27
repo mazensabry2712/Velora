@@ -12,7 +12,10 @@ return [
     ],
 
     'hide_default_locale' => true,
-    'redirect_enabled' => true,
+    // Explicit language URLs (/en, /fr, ...) must render directly.
+    // The landing root (/) is the canonical Arabic URL and should not
+    // redirect based on browser/session detection.
+    'redirect_enabled' => false,
 
     'persist_locale' => [
         'session' => true,
