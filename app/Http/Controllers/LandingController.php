@@ -106,10 +106,6 @@ class LandingController extends Controller
         $registrationEnabled = (bool) SystemSetting::get('registration_enabled', true);
         $currentLocale       = session('central_locale', 'en');
 
-        // Ensure tenant route generation from the central landing doesn't
-        // throw UrlGenerationException when views call tenant routes
-        // (e.g. `route('queue.status')`). Default to the demo subdomain
-        // seeded in development so links work from the marketing site.
         try {
             \Illuminate\Support\Facades\URL::defaults(['tenantSubdomain' => 'demo']);
         } catch (\Exception $_) {
@@ -138,8 +134,14 @@ class LandingController extends Controller
         $countryCode  = session('detected_country', 'US');
         $plans        = $this->geo->getPlansForCountry($countryCode);
         $maxTrialDays = $plans->max('trial_days') ?? SystemSetting::get('default_trial_days', 14);
+        $landingLocale = app()->getLocale() ?: config('localizer.omitted_locale', config('app.locale', 'en'));
 
-        return view('landing.signup', compact('plans', 'maxTrialDays', 'countryCode'));
+        return view('landing.signup', compact(
+            'plans',
+            'maxTrialDays',
+            'countryCode',
+            'landingLocale'
+        ));
     }
 
     /**
@@ -156,13 +158,11 @@ class LandingController extends Controller
         $globalPricing = $allPricing->firstWhere('country_code', 'GLOBAL')
             ?? CountryPricing::global();
 
-        // Build tax info for the detected country
         $countryCode = $summary['country_code'];
         $taxRecord   = CountryTax::forCountry($countryCode);
         $taxPct      = (float) ($taxRecord?->tax_percentage ?? 0);
         $taxName     = $taxRecord?->tax_name ?? 'VAT';
 
-        // Annual discount: pay 10 months, get 12
         $annualMultiplier   = 10;
         $trialDays          = (int) SystemSetting::get('default_trial_days', 14);
         $registrationEnabled = (bool) SystemSetting::get('registration_enabled', true);
@@ -181,36 +181,12 @@ class LandingController extends Controller
         ]);
     }
 
-    /**
-     * Check subdomain availability via AJAX.
-     */
-    public function checkSubdomain(Request $request)
-    {
-        $request->validate(['subdomain' => 'required|string|min:3|max:32']);
-
-        $service = app(\App\Services\TenantRegistrationService::class);
-        $result  = $service->checkSubdomainAvailability($request->subdomain);
-
-        return response()->json($result);
-    }
-
-    /**
-     * Get basic platform stats for the landing page.
-     */
     private function getPlatformStats(): array
     {
-        try {
-            return [
-                'tenants'      => DB::table('tenants')->count(),
-                'appointments' => 0, // Aggregate across tenant DBs (optional)
-                'countries'    => DB::table('tenants')
-                    ->selectRaw("JSON_UNQUOTE(JSON_EXTRACT(data, '$.country')) as country")
-                    ->whereRaw("JSON_EXTRACT(data, '$.country') IS NOT NULL")
-                    ->distinct()
-                    ->count(),
-            ];
-        } catch (\Exception $e) {
-            return ['tenants' => '500+', 'appointments' => '50,000+', 'countries' => '30+'];
-        }
+        return [
+            'businesses' => 0,
+            'appointments' => 0,
+            'countries' => count(config('localizer.supported_locales', [])),
+        ];
     }
 }
