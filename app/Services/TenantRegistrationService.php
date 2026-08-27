@@ -19,20 +19,10 @@ use Spatie\Permission\Models\Role;
 
 class TenantRegistrationService
 {
-    /**
-     * Register a new tenant with trial subscription.
-     *
-     * @param array $data {
-     *   business_name, subdomain, email, password, country?, language?
-     * }
-     * @return array { tenant, subdomain, redirect_url }
-     */
     public function register(array $data): array
     {
-        // ── Step 1: Validate uniqueness first — prevents duplicate tenants
         $this->validateUniqueness($data['subdomain'], $data['email']);
 
-        // ── Promo code validation (before any DB writes) ──────────────────
         $promoCode = null;
         if (! empty($data['promo_code'])) {
             $promoCode = PromoCode::where('code', strtoupper(trim($data['promo_code'])))->first();
@@ -44,8 +34,6 @@ class TenantRegistrationService
             }
         }
 
-        // ── Resolve the trial plan up front — fail fast with a clear error
-        //    instead of hitting a foreign key violation later on.
         $trialPlan = isset($data['plan_id'])
             ? SubscriptionPlan::where('is_active', true)->find($data['plan_id'])
             : null;
@@ -68,7 +56,6 @@ class TenantRegistrationService
         $subscription = null;
 
         try {
-            // ── Step 2: Create Tenant (fires TenantCreated → CreateDatabase + MigrateDatabase synchronously) ──
             $tenant = Tenant::create(['id' => $data['subdomain']]);
 
             $tenant->update([
@@ -81,13 +68,13 @@ class TenantRegistrationService
                 'business_type' => $data['business_type'] ?? null,
             ]);
 
-            // ── Step 3: Create domain (fires DomainCreated → LinkTenantDomain job) ──
             $tenant->domains()->create([
                 'domain' => $this->buildSubdomain($data['subdomain']),
             ]);
 
-            // ── Step 4: Create Admin User + settings inside tenant DB ──
-            $tenant->run(function () use ($data) {
+            // The first admin is created in the tenant DB and immediately
+            // authenticated so signup can continue directly into onboarding.
+            $tenant->run(function () use ($data, &$subscription, &$tenant) {
                 $adminRole = Role::firstOrCreate(
                     ['name' => 'Admin Tenant', 'guard_name' => 'web']
                 );
@@ -111,9 +98,14 @@ class TenantRegistrationService
                         'available_languages' => json_encode(['en', 'ar']),
                     ]
                 );
+
+                // Persist the authenticated user in the shared session. The
+                // tenant middleware will be active again when the browser
+                // follows the cross-subdomain redirect to /admin/dashboard.
+                auth()->login($user);
+                session()->regenerate();
             });
 
-            // ── Step 5: Back on central DB — create trial subscription ──
             $graceDays = 3;
 
             $subscription = TenantSubscription::create([
@@ -130,12 +122,10 @@ class TenantRegistrationService
                     . ($promoCode ? ' | promo: ' . $promoCode->code : ''),
             ]);
 
-            // Increment promo code usage now that the subscription is committed
             if ($promoCode) {
                 $promoCode->incrementUsage();
             }
         } catch (\Exception $e) {
-            // Cleanup: delete tenant (TenantDeleted event will drop the tenant DB automatically)
             if ($tenant) {
                 try {
                     $tenant->delete();
@@ -151,7 +141,6 @@ class TenantRegistrationService
             throw $e;
         }
 
-        // ── Step 6: Welcome email (non-blocking) ─────────────────────────────
         try {
             Mail::to($data['email'])->send(new WelcomeTenantMail(
                 $data['business_name'],
@@ -175,33 +164,14 @@ class TenantRegistrationService
         ];
     }
 
-    /**
-     * Check subdomain availability (AJAX endpoint helper)
-     */
     public function checkSubdomainAvailability(string $subdomain): array
     {
         $subdomain = strtolower(trim($subdomain));
 
         $reserved = [
-            'www',
-            'admin',
-            'api',
-            'mail',
-            'cdn',
-            'app',
-            'dashboard',
-            'support',
-            'help',
-            'billing',
-            'status',
-            'dev',
-            'staging',
-            'test',
-            'demo',
-            'beta',
-            'secure',
-            'login',
-            'signup'
+            'www', 'admin', 'api', 'mail', 'cdn', 'app', 'dashboard',
+            'support', 'help', 'billing', 'status', 'dev', 'staging', 'test',
+            'demo', 'beta', 'secure', 'login', 'signup'
         ];
 
         if (in_array($subdomain, $reserved)) {
@@ -227,13 +197,12 @@ class TenantRegistrationService
     private function validateUniqueness(string $subdomain, string $email): void
     {
         $subdomainCheck = $this->checkSubdomainAvailability($subdomain);
-        if (!$subdomainCheck['available']) {
+        if (! $subdomainCheck['available']) {
             throw ValidationException::withMessages([
                 'subdomain' => $subdomainCheck['message'],
             ]);
         }
 
-        // Check email uniqueness across all tenant DBs (central meta check)
         $emailExists = DB::table('tenants')
             ->whereRaw("JSON_EXTRACT(data, '$.email') = ?", [$email])
             ->exists();
@@ -251,10 +220,6 @@ class TenantRegistrationService
         return $slug . '.' . $base;
     }
 
-    /**
-     * Map a country code to the appropriate payment gateway.
-     * EG → Paymob | SA/AE/KW/BH/OM/QA → Moyasar | default → Stripe
-     */
     private function resolveGatewayForCountry(string $countryCode): string
     {
         $code = strtoupper(trim($countryCode));
