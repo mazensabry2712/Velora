@@ -10,6 +10,7 @@ use App\Application\Booking\Actions\DeleteAppointment;
 use App\Application\Booking\Actions\UpdateAppointment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 
 class AppointmentController extends Controller
 {
@@ -25,6 +26,18 @@ class AppointmentController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        $tenantId = (string) tenant()->getTenantKey();
+        $rateLimitKey = 'public-booking:' . $tenantId . ':' . $request->ip();
+
+        if (RateLimiter::tooManyAttempts($rateLimitKey, 5)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Too many booking attempts. Please try again later.',
+            ], 429);
+        }
+
+        RateLimiter::hit($rateLimitKey, 60);
+
         $formRequest = PublicBookingRequest::createFrom($request);
         $formRequest->setContainer(app());
         $formRequest->setRedirector(app('redirect'));
