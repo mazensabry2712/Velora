@@ -8,6 +8,7 @@ use App\Application\Subscription\Actions\CheckSubscriptionLimit;
 use App\Application\Subscription\Actions\GetAvailableUpgrades;
 use App\Application\Subscription\Actions\GetBillingHistory;
 use App\Application\Subscription\Actions\GetSubscriptionOverview;
+use App\Application\Subscription\Actions\GetSubscriptionUsage;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Mail\FounderAlertMail;
@@ -22,6 +23,7 @@ final class SubscriptionController extends Controller
     public function __construct(
         private readonly GetSubscriptionOverview $getOverview,
         private readonly GetAvailableUpgrades $getUpgrades,
+        private readonly GetSubscriptionUsage $getUsageAction,
         private readonly GetBillingHistory $getBillingHistory,
         private readonly CheckSubscriptionLimit $checkLimitAction,
     ) {}
@@ -30,7 +32,7 @@ final class SubscriptionController extends Controller
     {
         $subscriptionInfo = $this->getOverview->execute();
         $availableUpgrades = $this->getUpgrades->execute();
-        $usage = $subscriptionInfo['usage'] ?? $this->getBillingHistory->execute(0)->all();
+        $usage = $this->getUsageAction->execute();
         $invoices = $this->getBillingHistory->execute(10);
 
         return view('admin.subscription.index', compact(
@@ -122,11 +124,9 @@ final class SubscriptionController extends Controller
 
     public function getUsage()
     {
-        $info = $this->getOverview->execute();
-
         return response()->json([
             'success' => true,
-            'data' => $info,
+            'data' => $this->getOverview->execute(),
         ]);
     }
 
