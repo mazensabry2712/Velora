@@ -7,6 +7,7 @@ namespace App\Providers;
 use App\Application\Shared\Contracts\TransactionManager;
 use App\Application\Subscription\Events\SubscriptionUpgradeRequested;
 use App\Domain\Administration\Contracts\SystemNotificationReader;
+use App\Domain\Booking\Contracts\AppointmentCommand;
 use App\Domain\Landing\Contracts\LandingSettingsReader;
 use App\Domain\Pricing\Contracts\CountryPriceSelector;
 use App\Domain\Queue\Contracts\QueueRepository as DomainQueueRepository;
@@ -27,6 +28,7 @@ use App\Infrastructure\Tenancy\LegacyTenantRegistrar;
 use App\Models\Appointment;
 use App\Observers\AppointmentObserver;
 use App\Payments\PaymentGatewayManager;
+use App\Repositories\Eloquent\AppointmentRepository;
 use App\Repositories\Eloquent\QueueRepository;
 use App\Services\PaymentGatewayRouter;
 use App\View\Composers\AdminLayoutComposer;
@@ -50,6 +52,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(TenantRegistrar::class, LegacyTenantRegistrar::class);
         $this->app->bind(SystemNotificationReader::class, LegacySystemNotificationReader::class);
         $this->app->bind(LandingSettingsReader::class, LegacyLandingSettingsReader::class);
+        $this->app->bind(AppointmentCommand::class, AppointmentRepository::class);
     }
 
     public function boot(): void
