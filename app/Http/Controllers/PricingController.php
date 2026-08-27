@@ -4,20 +4,19 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Services\PricingService;
+use App\Application\Pricing\Actions\SetCountryOverride;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class PricingController extends Controller
+final class PricingController extends Controller
 {
-    public function __construct(private PricingService $pricing) {}
+    public function __construct(
+        private readonly SetCountryOverride $setCountryOverride,
+    ) {}
 
     /**
      * AJAX: switch the active pricing country for this session.
      * Called by the Alpine.js country-switcher on the pricing page.
-     *
-     * POST /pricing/set-country
-     * Body: { "country_code": "EG", "lang": "ar" }
      */
     public function setCountry(Request $request): JsonResponse
     {
@@ -26,14 +25,15 @@ class PricingController extends Controller
             'lang'         => ['nullable', 'string', 'max:5'],
         ]);
 
-        $code    = strtoupper($validated['country_code']);
-        $pricing = $this->pricing->setCountryOverride($code);
+        $pricing = $this->setCountryOverride->execute(
+            strtoupper($validated['country_code'])
+        );
 
-        // Keep Velora's explicit locale selection synchronized with the
-        // Laravel Localizer's own persistence keys. Without this, the POST
-        // can set `central_locale=ar` while Localizer still sees a stale
-        // `locale=en` value on the next GET and renders English on `/`.
-        $supported = ['en', 'ar', 'fr', 'es', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'tr', 'hi', 'ko', 'nl', 'id'];
+        $supported = config('localizer.supported_locales', [
+            'en', 'ar', 'fr', 'es', 'de', 'it', 'pt', 'ru', 'zh', 'ja',
+            'tr', 'hi', 'ko', 'nl', 'id',
+        ]);
+
         $lang = $validated['lang'] ?? 'en';
         if (in_array($lang, $supported, true)) {
             session()->put('central_locale', $lang);
