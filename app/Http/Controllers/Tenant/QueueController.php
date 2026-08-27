@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Application\Queue\Actions\SetQueuePriority;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\Queue;
@@ -13,6 +14,10 @@ use Illuminate\Support\Facades\DB;
 
 class QueueController extends Controller
 {
+    public function __construct(
+        private readonly SetQueuePriority $setQueuePriority,
+    ) {}
+
     public function index(Request $request)
     {
         $status = $request->input('status');
@@ -92,9 +97,6 @@ class QueueController extends Controller
         }
 
         $nextQueue->update(['status' => 'serving']);
-
-        // Appointment statuses are lowercase and must stay aligned with
-        // Appointment::VALID_TRANSITIONS.
         $nextQueue->appointment?->update(['status' => Appointment::STATUS_CONFIRMED]);
 
         try {
@@ -131,16 +133,19 @@ class QueueController extends Controller
             'is_vip' => 'required|boolean',
         ]);
 
-        $queue = Queue::findOrFail($request->queue_id);
+        try {
+            $queue = $this->setQueuePriority->execute(
+                (int) $request->queue_id,
+                (bool) $request->boolean('is_vip')
+            );
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $message = $e->errors()['queue_id'][0] ?? 'Invalid operation';
 
-        if ($queue->status !== 'waiting') {
             return response()->json([
                 'error' => 'Invalid operation',
-                'message' => 'Can only change priority for waiting queues',
+                'message' => $message,
             ], 400);
         }
-
-        $queue->update(['is_vip' => $request->is_vip]);
 
         return response()->json([
             'success' => true,
