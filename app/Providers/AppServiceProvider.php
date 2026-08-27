@@ -10,7 +10,9 @@ use App\Domain\Queue\Contracts\QueueRepository as DomainQueueRepository;
 use App\Domain\Reporting\Contracts\ReportReader;
 use App\Domain\Shared\Contracts\PaymentGatewayResolver;
 use App\Domain\Subscription\Contracts\SubscriptionReader;
+use App\Domain\Subscription\Contracts\UpgradeRequestWriter;
 use App\Domain\Tenant\Contracts\TenantRegistrar;
+use App\Infrastructure\Billing\EloquentUpgradeRequestWriter;
 use App\Infrastructure\Billing\LegacySubscriptionReader;
 use App\Infrastructure\Persistence\LaravelTransactionManager;
 use App\Infrastructure\Pricing\LegacyCountryPriceSelector;
@@ -34,6 +36,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(TransactionManager::class, LaravelTransactionManager::class);
         $this->app->bind(PaymentGatewayResolver::class, PaymentGatewayRouter::class);
         $this->app->bind(SubscriptionReader::class, LegacySubscriptionReader::class);
+        $this->app->bind(UpgradeRequestWriter::class, EloquentUpgradeRequestWriter::class);
         $this->app->bind(DomainQueueRepository::class, QueueRepository::class);
         $this->app->bind(ReportReader::class, LegacyReportReader::class);
         $this->app->bind(CountryPriceSelector::class, LegacyCountryPriceSelector::class);
