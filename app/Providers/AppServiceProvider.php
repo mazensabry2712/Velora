@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Application\Shared\Contracts\TransactionManager;
+use App\Domain\Queue\Contracts\QueueRepository as DomainQueueRepository;
 use App\Domain\Shared\Contracts\PaymentGatewayResolver;
 use App\Domain\Subscription\Contracts\SubscriptionReader;
 use App\Infrastructure\Billing\LegacySubscriptionReader;
@@ -13,6 +14,7 @@ use App\Models\Appointment;
 use App\Models\SystemSetting;
 use App\Observers\AppointmentObserver;
 use App\Payments\PaymentGatewayManager;
+use App\Repositories\Eloquent\QueueRepository;
 use App\Services\PaymentGatewayRouter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
@@ -27,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(TransactionManager::class, LaravelTransactionManager::class);
         $this->app->bind(PaymentGatewayResolver::class, PaymentGatewayRouter::class);
         $this->app->bind(SubscriptionReader::class, LegacySubscriptionReader::class);
+        $this->app->bind(DomainQueueRepository::class, QueueRepository::class);
     }
 
     public function boot(): void
