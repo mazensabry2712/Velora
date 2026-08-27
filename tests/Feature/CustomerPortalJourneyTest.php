@@ -6,7 +6,6 @@ use App\Models\Appointment;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Queue;
-use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TenantTestCase;
 
@@ -24,24 +23,36 @@ class CustomerPortalJourneyTest extends TenantTestCase
         ]);
     }
 
+    private function appointmentAttributes(Customer $customer, string $time, string $status = Appointment::STATUS_PENDING): array
+    {
+        $date = now()->addDay()->toDateString();
+        $startsAt = now()->addDay()->setTimeFromTimeString($time);
+        $endsAt = $startsAt->copy()->addMinutes(30);
+
+        return [
+            'customer_id_new' => $customer->id,
+            'staff_id_new' => $this->staff->id,
+            'service_id' => $this->service->id,
+            'date' => $date,
+            'time_slot' => $time,
+            'service_type' => $this->service->name ?? 'Consultation',
+            'starts_at' => $startsAt,
+            'ends_at' => $endsAt,
+            'ends_at_with_buffer' => $endsAt,
+            'timezone' => config('app.timezone'),
+            'price' => 100,
+            'attendees' => 1,
+            'source' => 'online',
+            'status' => $status,
+        ];
+    }
+
     #[Test]
     public function authenticated_customer_can_see_their_new_booking_history(): void
     {
         $customer = $this->customerRecordForUser();
 
-        $appointment = Appointment::create([
-            'customer_id_new' => $customer->id,
-            'staff_id_new' => $this->staff->id,
-            'service_id' => $this->service->id,
-            'starts_at' => now()->addDay()->setTime(9, 0),
-            'ends_at' => now()->addDay()->setTime(9, 30),
-            'ends_at_with_buffer' => now()->addDay()->setTime(9, 30),
-            'timezone' => config('app.timezone'),
-            'price' => 100,
-            'attendees' => 1,
-            'source' => 'online',
-            'status' => Appointment::STATUS_PENDING,
-        ]);
+        $appointment = Appointment::create($this->appointmentAttributes($customer, '09:00'));
 
         $other = Customer::create([
             'first_name' => 'Other',
@@ -52,19 +63,7 @@ class CustomerPortalJourneyTest extends TenantTestCase
             'is_blocked' => false,
         ]);
 
-        Appointment::create([
-            'customer_id_new' => $other->id,
-            'staff_id_new' => $this->staff->id,
-            'service_id' => $this->service->id,
-            'starts_at' => now()->addDay()->setTime(10, 0),
-            'ends_at' => now()->addDay()->setTime(10, 30),
-            'ends_at_with_buffer' => now()->addDay()->setTime(10, 30),
-            'timezone' => config('app.timezone'),
-            'price' => 100,
-            'attendees' => 1,
-            'source' => 'online',
-            'status' => Appointment::STATUS_PENDING,
-        ]);
+        Appointment::create($this->appointmentAttributes($other, '10:00'));
 
         $response = $this->actingAs($this->customer)->getJson('/api/my-appointments');
 
@@ -80,19 +79,7 @@ class CustomerPortalJourneyTest extends TenantTestCase
     {
         $customer = $this->customerRecordForUser();
 
-        $appointment = Appointment::create([
-            'customer_id_new' => $customer->id,
-            'staff_id_new' => $this->staff->id,
-            'service_id' => $this->service->id,
-            'starts_at' => now()->setTime(9, 0),
-            'ends_at' => now()->setTime(9, 30),
-            'ends_at_with_buffer' => now()->setTime(9, 30),
-            'timezone' => config('app.timezone'),
-            'price' => 100,
-            'attendees' => 1,
-            'source' => 'online',
-            'status' => Appointment::STATUS_PENDING,
-        ]);
+        $appointment = Appointment::create($this->appointmentAttributes($customer, '09:00'));
 
         $queue = Queue::create([
             'appointment_id' => $appointment->id,
@@ -116,19 +103,9 @@ class CustomerPortalJourneyTest extends TenantTestCase
     {
         $customer = $this->customerRecordForUser();
 
-        $appointment = Appointment::create([
-            'customer_id_new' => $customer->id,
-            'staff_id_new' => $this->staff->id,
-            'service_id' => $this->service->id,
-            'starts_at' => now()->addDay()->setTime(9, 0),
-            'ends_at' => now()->addDay()->setTime(9, 30),
-            'ends_at_with_buffer' => now()->addDay()->setTime(9, 30),
-            'timezone' => config('app.timezone'),
-            'price' => 100,
-            'attendees' => 1,
-            'source' => 'online',
-            'status' => Appointment::STATUS_COMPLETED,
-        ]);
+        $appointment = Appointment::create(
+            $this->appointmentAttributes($customer, '09:00', Appointment::STATUS_COMPLETED)
+        );
 
         $invoice = Invoice::create([
             'number' => 'INV-PORTAL-001',
