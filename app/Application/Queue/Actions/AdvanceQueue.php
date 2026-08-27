@@ -30,8 +30,13 @@ final class AdvanceQueue
 
             $next = $queues
                 ->where('status', 'waiting')
-                ->sortByDesc('is_vip')
-                ->sortBy('queue_number')
+                ->sort(function (Queue $left, Queue $right): int {
+                    if ((int) $left->is_vip !== (int) $right->is_vip) {
+                        return (int) $right->is_vip <=> (int) $left->is_vip;
+                    }
+
+                    return (int) $left->queue_number <=> (int) $right->queue_number;
+                })
                 ->first();
 
             if (! $next) {
