@@ -4,25 +4,11 @@ return [
     'default' => 'ar',
 
     'supported' => [
-        'ar',
-        'en',
-        'fr',
-        'es',
-        'de',
-        'it',
-        'pt',
-        'ru',
-        'zh',
-        'ja',
-        'tr',
-        'hi',
-        'ko',
-        'nl',
-        'id',
+        'ar', 'en', 'fr', 'es', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'tr', 'hi', 'ko', 'nl', 'id',
     ],
 
     'languages' => [
-        'ar' => ['name' => 'العربية', 'native' => 'العربية', 'direction' => 'rtl'],
+        'ar' => ['name' => 'Arabic', 'native' => 'العربية', 'direction' => 'rtl'],
         'en' => ['name' => 'English', 'native' => 'English', 'direction' => 'ltr'],
         'fr' => ['name' => 'French', 'native' => 'Français', 'direction' => 'ltr'],
         'es' => ['name' => 'Spanish', 'native' => 'Español', 'direction' => 'ltr'],
