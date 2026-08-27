@@ -30,9 +30,6 @@ use App\Infrastructure\Billing\EloquentBillingReader;
 use App\Infrastructure\Billing\EloquentSubscriptionReader;
 use App\Infrastructure\Billing\EloquentTrialExtender;
 use App\Infrastructure\Billing\EloquentUpgradeRequestWriter;
-use App\Infrastructure\Billing\LegacyBillingReader;
-use App\Infrastructure\Billing\LegacySubscriptionAccessReader;
-use App\Infrastructure\Billing\LegacyTrialExtender;
 use App\Infrastructure\Billing\PaymentGatewayCheckoutSessionCreator;
 use App\Infrastructure\Booking\EloquentAppointmentReader;
 use App\Infrastructure\Customer\EloquentCustomerReader;
@@ -83,6 +80,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(MoyasarWebhookProcessorContract::class, MoyasarWebhookProcessor::class);
         $this->app->bind(StripeWebhookProcessor::class, StripeWebhookProcessorImplementation::class);
         $this->app->bind(PaymentGatewayResolver::class, PaymentGatewayRouter::class);
+        $this->app->singleton(PaymentGatewayManager::class);
     }
 
     public function boot(): void
