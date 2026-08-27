@@ -91,6 +91,54 @@ final class LayerBoundaryTest extends TestCase
         }
     }
 
+    #[Test]
+    public function domain_layer_does_not_depend_on_framework_infrastructure_or_legacy_service_classes(): void
+    {
+        $domainPath = app_path('Domain');
+
+        if (! is_dir($domainPath)) {
+            self::markTestSkipped('Domain layer is not present.');
+        }
+
+        foreach ($this->phpFiles($domainPath) as $filePath => $contents) {
+            foreach ([
+                'App\\Infrastructure\\',
+                'App\\Services\\',
+                'App\\Repositories\\',
+            ] as $forbiddenNamespace) {
+                self::assertStringNotContainsString(
+                    $forbiddenNamespace,
+                    $contents,
+                    "Forbidden infrastructure dependency found in {$filePath}"
+                );
+            }
+        }
+    }
+
+    #[Test]
+    public function application_layer_depends_on_abstractions_not_infrastructure_implementations(): void
+    {
+        $applicationPath = app_path('Application');
+
+        if (! is_dir($applicationPath)) {
+            self::markTestSkipped('Application layer is not present.');
+        }
+
+        foreach ($this->phpFiles($applicationPath) as $filePath => $contents) {
+            self::assertStringNotContainsString(
+                'App\\Infrastructure\\',
+                $contents,
+                "Infrastructure implementation dependency found in {$filePath}"
+            );
+
+            self::assertStringNotContainsString(
+                'App\\Repositories\\',
+                $contents,
+                "Repository implementation dependency found in {$filePath}"
+            );
+        }
+    }
+
     /** @return array<string, string> */
     private function phpFiles(string $root): array
     {
