@@ -7,6 +7,7 @@ namespace App\Application\Queue\Actions;
 use App\Domain\Queue\Contracts\QueueRepository;
 use App\Models\Queue;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 final class SetQueuePriority
 {
@@ -24,8 +25,12 @@ final class SetQueuePriority
             throw ValidationException::withMessages(['queue_id' => ['Can only change priority for waiting queues.']]);
         }
 
-        $this->queues->update($queue, ['is_vip' => $isVip]);
+        if (! $this->queues->update($queue, ['is_vip' => $isVip])) {
+            throw new RuntimeException('Failed to update queue priority.');
+        }
 
-        return $queue->refresh();
+        $queue->is_vip = $isVip;
+
+        return $queue;
     }
 }
