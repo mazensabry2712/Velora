@@ -130,18 +130,20 @@ class OnboardingController extends Controller
 
             if (! $service) {
                 $service = Service::create([
-                    'name'      => $data['name'],
-                    'name_ar'   => $data['name'],
-                    'duration'  => $data['duration'],
-                    'price'     => $data['price'],
-                    'is_active' => true,
+                    'name'               => $data['name'],
+                    'name_ar'            => $data['name'],
+                    'duration'           => $data['duration'],
+                    'price'              => $data['price'],
+                    'is_active'          => true,
+                    'is_online_bookable' => true,
                 ]);
             } else {
                 $service->update([
-                    'name'      => $data['name'],
-                    'duration'  => $data['duration'],
-                    'price'     => $data['price'],
-                    'is_active' => true,
+                    'name'               => $data['name'],
+                    'duration'           => $data['duration'],
+                    'price'              => $data['price'],
+                    'is_active'          => true,
+                    'is_online_bookable' => true,
                 ]);
             }
 
@@ -153,7 +155,7 @@ class OnboardingController extends Controller
                         'service_id' => $service->id,
                     ],
                     [
-                        'user_id'    => auth()->id(),
+                        'user_id'    => $staff->user_id ?? auth()->id(),
                         'updated_at' => now(),
                         'created_at' => now(),
                     ]
@@ -185,6 +187,16 @@ class OnboardingController extends Controller
                 ], 422);
             }
 
+            $staff->update([
+                'is_active'        => true,
+                'accepts_bookings' => true,
+            ]);
+
+            $service->update([
+                'is_active'          => true,
+                'is_online_bookable' => true,
+            ]);
+
             $this->ensureDefaultWorkingHours($staff);
 
             DB::table('staff_services')->updateOrInsert(
@@ -193,7 +205,7 @@ class OnboardingController extends Controller
                     'service_id' => $service->id,
                 ],
                 [
-                    'user_id'    => auth()->id(),
+                    'user_id'    => $staff->user_id ?? auth()->id(),
                     'updated_at' => now(),
                     'created_at' => now(),
                 ]
