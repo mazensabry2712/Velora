@@ -8,7 +8,6 @@ use PHPUnit\Framework\Attributes\Test;
 use App\Repositories\Eloquent\StaffRepository;
 use Tests\TenantTestCase;
 
-
 #[Group('unit')]
 #[Group('repositories')]
 class StaffRepositoryTest extends TenantTestCase
@@ -18,7 +17,7 @@ class StaffRepositoryTest extends TenantTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->repo = new StaffRepository();
+        $this->repo = $this->app->make(StaffRepository::class);
     }
 
     #[Test]
