@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Application\Booking\DTOs;
 
-use Carbon\Carbon;
-
 final readonly class PublicBookingData
 {
     public function __construct(
@@ -15,8 +13,9 @@ final readonly class PublicBookingData
         public int $serviceId,
         public int $staffUserId,
         public ?int $resourceId,
-        public Carbon $startsAt,
-        public string $timezone,
+        public string $appointmentDate,
+        public string $appointmentTime,
+        public ?string $requestedTimezone,
         public ?string $notes,
     ) {}
 }
