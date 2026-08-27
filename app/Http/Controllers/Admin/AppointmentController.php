@@ -20,7 +20,7 @@ use App\Models\Service;
 use App\Models\User;
 use App\Repositories\Contracts\AppointmentRepositoryInterface;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
-use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\Image\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
 use Illuminate\Http\JsonResponse;
@@ -225,6 +225,12 @@ final class AppointmentController extends Controller
                     'appointment' => $this->appointments->findWithRelations($id, ['queue']),
                 ],
             ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'errors' => $e->errors(),
+            ], 400);
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
