@@ -8,16 +8,20 @@ use Illuminate\Support\Facades\App;
 
 class SetCentralLocale
 {
-    protected array $supported = ['en', 'ar', 'fr', 'es', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'tr', 'hi', 'ko', 'nl', 'id'];
-
     public function handle(Request $request, Closure $next)
     {
-        $locale = session('central_locale', config('app.locale', 'en'));
+        $supported = config('locales.supported', ['ar', 'en', 'fr']);
+        $default = config('locales.default', 'ar');
 
-        if (!in_array($locale, $this->supported)) {
-            $locale = 'en';
+        $locale = session('central_locale', $default);
+
+        if (!in_array($locale, $supported, true)) {
+            $locale = $default;
         }
 
+        // Persist the resolved locale so views that read the session directly
+        // use the same default and never fall back to a different language.
+        session()->put('central_locale', $locale);
         App::setLocale($locale);
 
         return $next($request);
