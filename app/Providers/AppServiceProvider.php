@@ -1,12 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
+use App\Application\Shared\Contracts\TransactionManager;
+use App\Domain\Shared\Contracts\PaymentGatewayResolver;
+use App\Infrastructure\Persistence\LaravelTransactionManager;
 use App\Models\Appointment;
 use App\Models\SystemSetting;
 use App\Observers\AppointmentObserver;
-use App\Payments\Contracts\PaymentGatewayInterface;
 use App\Payments\PaymentGatewayManager;
+use App\Services\PaymentGatewayRouter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -16,6 +21,12 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(PaymentGatewayManager::class);
+
+        // Keep application/domain code independent from Laravel's transaction API.
+        $this->app->bind(TransactionManager::class, LaravelTransactionManager::class);
+
+        // Domain/application code depends on a capability, not the router implementation.
+        $this->app->bind(PaymentGatewayResolver::class, PaymentGatewayRouter::class);
     }
 
     public function boot(): void
