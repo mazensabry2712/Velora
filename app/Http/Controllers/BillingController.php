@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Application\Billing\Actions\ExtendTrial;
 use App\Application\Billing\Actions\GetExpiredBillingOverview;
 use App\Domain\Shared\Contracts\PaymentGatewayResolver;
 use App\Models\SubscriptionPlan;
@@ -25,6 +26,7 @@ final class BillingController extends Controller
         protected StripeService $stripeService,
         protected MoyasarService $moyasarService,
         private readonly GetExpiredBillingOverview $getExpiredBillingOverview,
+        private readonly ExtendTrial $extendTrial,
     ) {}
 
     public function expired()
@@ -224,40 +226,25 @@ final class BillingController extends Controller
 
     public function extendTrial(Request $request)
     {
-        $tenantId = tenant('id');
-        $centralConnection = config('tenancy.database.central_connection', 'mysql');
-        $subscription = DB::connection($centralConnection)
-            ->table('tenant_subscriptions')
-            ->where('tenant_id', $tenantId)
-            ->where('status', 'trial')
-            ->orderByDesc('created_at')
-            ->first();
+        $result = $this->extendTrial->execute(tenant('id'));
 
-        if (!$subscription) {
-            return response()->json(['success' => false, 'message' => 'No active trial found.'], 422);
-        }
+        return match ($result['status']) {
+            'missing' => response()->json(['success' => false, 'message' => 'No active trial found.'], 422),
+            'already_extended' => response()->json(['success' => false, 'message' => 'Trial has already been extended once.'], 422),
+            'extended' => $this->extendedTrialResponse($request, $result['new_trial_ends_at']),
+            default => response()->json(['success' => false, 'message' => 'Unable to extend trial.'], 422),
+        };
+    }
 
-        if ($subscription->trial_extended) {
-            return response()->json(['success' => false, 'message' => 'Trial has already been extended once.'], 422);
-        }
+    private function extendedTrialResponse(Request $request, \DateTimeInterface $newTrialEndsAt)
+    {
+        Log::info("Trial extended 7 days for tenant " . tenant('id') . ". New trial_ends_at: {$newTrialEndsAt->format('Y-m-d H:i:s')}");
 
-        $newTrialEndsAt = now()->parse($subscription->trial_ends_at)->addDays(7);
-        DB::connection($centralConnection)
-            ->table('tenant_subscriptions')
-            ->where('id', $subscription->id)
-            ->update([
-                'trial_ends_at' => $newTrialEndsAt,
-                'trial_extended' => true,
-                'trial_extended_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-        Log::info("Trial extended 7 days for tenant {$tenantId}. New trial_ends_at: {$newTrialEndsAt}");
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
                 'message' => 'Trial extended by 7 days.',
-                'new_trial_ends_at' => $newTrialEndsAt->toDateTimeString(),
+                'new_trial_ends_at' => $newTrialEndsAt->format('Y-m-d H:i:s'),
             ]);
         }
 
