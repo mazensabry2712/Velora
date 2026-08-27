@@ -6,10 +6,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Application\Customer\Actions\CreateCustomer;
 use App\Application\Customer\Actions\DeleteCustomer;
+use App\Application\Customer\Actions\GetCustomer;
+use App\Application\Customer\Actions\GetCustomerAppointments;
+use App\Application\Customer\Actions\GetCustomers;
 use App\Application\Customer\Actions\SetCustomerBlockedState;
 use App\Application\Customer\Actions\UpdateCustomer;
 use App\Http\Controllers\Controller;
-use App\Models\Customer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -19,6 +21,9 @@ use Illuminate\Http\Request;
 final class CustomerController extends Controller
 {
     public function __construct(
+        private readonly GetCustomers $getCustomers,
+        private readonly GetCustomer $getCustomer,
+        private readonly GetCustomerAppointments $getCustomerAppointments,
         private readonly CreateCustomer $createCustomer,
         private readonly UpdateCustomer $updateCustomer,
         private readonly DeleteCustomer $deleteCustomer,
@@ -27,35 +32,18 @@ final class CustomerController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $query = Customer::withCount('appointments');
-
-        if ($search = $request->input('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%");
-            });
-        }
-
-        if ($request->filled('ltv_tier')) {
-            $query->where('ltv_tier', $request->input('ltv_tier'));
-        }
-
-        if ($request->filled('is_blocked')) {
-            $query->where('is_blocked', filter_var($request->input('is_blocked'), FILTER_VALIDATE_BOOLEAN));
-        }
-
-        if ($request->filled('tag')) {
-            $query->whereJsonContains('tags', $request->input('tag'));
-        }
-
-        if ($request->filled('acquisition_source')) {
-            $query->where('acquisition_source', $request->input('acquisition_source'));
-        }
+        $filters = [
+            'search' => $request->input('search'),
+            'ltv_tier' => $request->input('ltv_tier'),
+            'is_blocked' => $request->filled('is_blocked')
+                ? filter_var($request->input('is_blocked'), FILTER_VALIDATE_BOOLEAN)
+                : null,
+            'tag' => $request->input('tag'),
+            'acquisition_source' => $request->input('acquisition_source'),
+        ];
 
         return response()->json(
-            $query->orderByDesc('created_at')->paginate($request->integer('per_page', 20))
+            $this->getCustomers->execute($filters, $request->integer('per_page', 20))
         );
     }
 
@@ -83,12 +71,15 @@ final class CustomerController extends Controller
             $data['gdpr_consent_ip'] = $request->ip();
         }
 
-        return response()->json(['success' => true, 'data' => $this->createCustomer->execute($data)], 201);
+        return response()->json([
+            'success' => true,
+            'data' => $this->createCustomer->execute($data),
+        ], 201);
     }
 
     public function show(int $id): JsonResponse
     {
-        $customer = Customer::withCount('appointments')->findOrFail($id);
+        $customer = $this->getCustomer->execute($id);
 
         $stats = [
             'total_appointments' => $customer->appointments()->count(),
@@ -106,7 +97,7 @@ final class CustomerController extends Controller
 
     public function update(Request $request, int $id): JsonResponse
     {
-        $customer = Customer::findOrFail($id);
+        $customer = $this->getCustomer->execute($id);
         $data = $request->validate([
             'first_name' => 'sometimes|required|string|max:100',
             'last_name' => 'nullable|string|max:100',
@@ -122,31 +113,30 @@ final class CustomerController extends Controller
             'acquisition_source' => 'nullable|string|max:100',
         ]);
 
-        return response()->json(['success' => true, 'data' => $this->updateCustomer->execute($customer, $data)]);
+        return response()->json([
+            'success' => true,
+            'data' => $this->updateCustomer->execute($customer, $data),
+        ]);
     }
 
     public function destroy(int $id): JsonResponse
     {
-        $this->deleteCustomer->execute(Customer::findOrFail($id));
+        $this->deleteCustomer->execute($this->getCustomer->execute($id));
 
         return response()->json(['success' => true, 'message' => 'Customer deleted.']);
     }
 
     public function appointments(Request $request, int $id): JsonResponse
     {
-        $customer = Customer::findOrFail($id);
-        $appointments = $customer->appointments()
-            ->with(['service:id,name,price', 'staff:id,first_name,last_name'])
-            ->orderByDesc('starts_at')
-            ->paginate($request->integer('per_page', 15));
-
-        return response()->json($appointments);
+        return response()->json(
+            $this->getCustomerAppointments->execute($id, $request->integer('per_page', 15))
+        );
     }
 
     public function block(Request $request, int $id): JsonResponse
     {
         $customer = $this->setBlockedState->execute(
-            Customer::findOrFail($id),
+            $this->getCustomer->execute($id),
             true,
             $request->input('reason')
         );
@@ -156,7 +146,7 @@ final class CustomerController extends Controller
 
     public function unblock(int $id): JsonResponse
     {
-        $customer = $this->setBlockedState->execute(Customer::findOrFail($id), false);
+        $customer = $this->setBlockedState->execute($this->getCustomer->execute($id), false);
 
         return response()->json(['success' => true, 'message' => 'Customer unblocked.', 'data' => $customer]);
     }
