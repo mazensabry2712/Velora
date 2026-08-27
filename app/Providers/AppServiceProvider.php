@@ -7,6 +7,7 @@ namespace App\Providers;
 use App\Application\Shared\Contracts\TransactionManager;
 use App\Application\Subscription\Events\SubscriptionUpgradeRequested;
 use App\Domain\Administration\Contracts\SystemNotificationReader;
+use App\Domain\Landing\Contracts\LandingSettingsReader;
 use App\Domain\Pricing\Contracts\CountryPriceSelector;
 use App\Domain\Queue\Contracts\QueueRepository as DomainQueueRepository;
 use App\Domain\Reporting\Contracts\ReportReader;
@@ -17,18 +18,19 @@ use App\Domain\Tenant\Contracts\TenantRegistrar;
 use App\Infrastructure\Administration\LegacySystemNotificationReader;
 use App\Infrastructure\Billing\EloquentUpgradeRequestWriter;
 use App\Infrastructure\Billing\LegacySubscriptionReader;
+use App\Infrastructure\Landing\LegacyLandingSettingsReader;
 use App\Infrastructure\Persistence\LaravelTransactionManager;
 use App\Infrastructure\Pricing\LegacyCountryPriceSelector;
 use App\Infrastructure\Reporting\LegacyReportReader;
 use App\Infrastructure\Subscription\Listeners\SendUpgradeRequestNotifications;
 use App\Infrastructure\Tenancy\LegacyTenantRegistrar;
 use App\Models\Appointment;
-use App\Models\SystemSetting;
 use App\Observers\AppointmentObserver;
 use App\Payments\PaymentGatewayManager;
 use App\Repositories\Eloquent\QueueRepository;
 use App\Services\PaymentGatewayRouter;
 use App\View\Composers\AdminLayoutComposer;
+use App\View\Composers\LandingLayoutComposer;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -47,6 +49,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(CountryPriceSelector::class, LegacyCountryPriceSelector::class);
         $this->app->bind(TenantRegistrar::class, LegacyTenantRegistrar::class);
         $this->app->bind(SystemNotificationReader::class, LegacySystemNotificationReader::class);
+        $this->app->bind(LandingSettingsReader::class, LegacyLandingSettingsReader::class);
     }
 
     public function boot(): void
@@ -58,22 +61,7 @@ class AppServiceProvider extends ServiceProvider
 
         Appointment::observe(AppointmentObserver::class);
 
-        View::composer('layouts.landing', function ($view) {
-            try {
-                $appName = SystemSetting::get('app_name', config('app.name', 'Velora'));
-                $appLogoUrl = SystemSetting::get('app_logo_url', '');
-                $registrationEnabled = SystemSetting::get('registration_enabled', true);
-                $defaultTrialDays = SystemSetting::get('default_trial_days', 14);
-            } catch (\Throwable) {
-                $appName = config('app.name', 'Velora');
-                $appLogoUrl = '';
-                $registrationEnabled = true;
-                $defaultTrialDays = 14;
-            }
-
-            $view->with(compact('appName', 'appLogoUrl', 'registrationEnabled', 'defaultTrialDays'));
-        });
-
+        View::composer('layouts.landing', LandingLayoutComposer::class);
         View::composer('layouts.admin', AdminLayoutComposer::class);
     }
 }
