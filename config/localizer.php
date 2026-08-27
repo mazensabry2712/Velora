@@ -18,7 +18,8 @@ return [
         'cookie' => true,
     ],
 
-    // Let Localizer use its built-in URL and omitted-locale detectors.
+    // The localized route is authoritative for the landing:
+    // / is Arabic, /en is English, /fr is French, etc.
     'detectors' => [],
 
     'locale_directions' => [
