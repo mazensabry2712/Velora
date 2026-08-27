@@ -49,7 +49,7 @@
 </div>
 <div class="v-mobile-tools">
 <button id="themeToggleMobile" type="button" class="v-icon-btn" aria-label="{{ __('landing.dark_mode') ?? 'Dark mode' }}"></button>
-<button type="button" onclick="window.dispatchEvent(new Event('velora:open-lang-switcher'))" class="v-icon-btn" aria-label="{{ __('landing.switcher_lang_label') ?? 'Change language' }}"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 5h12M9 3v2m1.1 9.2A17.8 17.8 0 0 1 6.4 9m6.1 9 4.5-9 4.5 9m-.8-2h-7.4"/></svg></button>
+<button type="button" onclick="window.dispatchEvent(new Event('velora:open-lang-switcher'))" class="v-icon-btn" aria-label="{{ __('landing.switcher_lang_label') ?? 'Change language' }}"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 5h12M9 3v2m1.1 9.2A17.8 17.8 0 0 1 6.4 9m6.1 9-4.5 9m-.8-2h-7.4"/></svg></button>
 <button id="menuToggle" type="button" class="v-icon-btn" aria-label="Open menu" aria-controls="mobileMenu" aria-expanded="false"><svg width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-width="1.9" d="M4 7h16M4 12h16M4 17h16"/></svg></button>
 </div></nav>
 <div id="mobileMenu" class="v-menu" hidden>
