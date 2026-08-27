@@ -84,7 +84,7 @@ Route::middleware(['tenant', 'tenant.locale'])->group(function () {
     Route::get('staff', function () {
         return \App\Models\User::role('Staff')->select('id', 'name')->get();
     })->middleware('throttle:60,1');
-    Route::post('appointments', [\App\Http\Controllers\Tenant\AppointmentController::class, 'store'])
+    Route::post('appointments', [\App\Http\Controllers\Tenant\PublicBookingController::class, 'store'])
         ->middleware('throttle:30,1');
     Route::get('queue/status/{queueNumber}', [\App\Http\Controllers\Tenant\QueueController::class, 'getQueueStatus'])
         ->middleware('throttle:60,1');
