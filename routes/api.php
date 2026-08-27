@@ -103,7 +103,7 @@ Route::middleware(['tenant', 'tenant.locale', 'auth:sanctum'])->group(function (
         Route::post('queue/next', AdvanceQueueController::class);
         Route::post('queue/priority', [\App\Http\Controllers\Tenant\QueueController::class, 'priority']);
         Route::apiResource('queues', \App\Http\Controllers\Tenant\QueueController::class);
-        Route::get('queues/status/{status}', [\App\Http\Controllers\Tenant\QueueController::class, 'byStatus']);
+        Route::get('queues/status/{status}', [QueueReadController::class, 'byStatus']);
         Route::post('queues/{id}/skip', [QueueMutationController::class, 'skip']);
     });
 
