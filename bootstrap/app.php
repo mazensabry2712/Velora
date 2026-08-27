@@ -17,6 +17,7 @@ use App\Http\Middleware\InjectVeloraBrandStyles;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Configuration\ApplicationBuilder;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Routing\Middleware\SubstituteBindings;
@@ -25,7 +26,18 @@ use NielsNumbers\LaravelLocalizer\Middleware\RedirectLocale;
 use NielsNumbers\LaravelLocalizer\Middleware\SetLocale;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 
-return Application::configure(basePath: dirname(__DIR__))
+$app = new Application(basePath: dirname(__DIR__));
+
+// The project stores translation files in /lang. Set the language path before
+// the framework service providers are registered so TranslationServiceProvider
+// receives the correct path for groups such as landing.php.
+$app->useLangPath(base_path('lang'));
+
+return (new ApplicationBuilder($app))
+    ->withKernels()
+    ->withEvents()
+    ->withCommands()
+    ->withProviders()
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
@@ -36,9 +48,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(SecurityHeaders::class);
         $middleware->append(InjectVeloraBrandStyles::class);
 
-        // Laravel Localizer: resolve the locale from localized routes and
-        // persist the selection in session/cookie. Keep binding resolution
-        // after the locale middleware as required by the package.
         $middleware->web(remove: [SubstituteBindings::class]);
         $middleware->web(append: [
             SetLocale::class,
@@ -76,4 +85,5 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
-    })->create();
+    })
+    ->create();
