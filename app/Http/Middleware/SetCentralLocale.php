@@ -10,17 +10,25 @@ class SetCentralLocale
 {
     public function handle(Request $request, Closure $next)
     {
-        $supported = config('locales.supported', ['ar', 'en', 'fr']);
-        $default = config('locales.default', 'ar');
+        $supported = config('locales.supported', config('localizer.supported_locales', ['ar', 'en', 'fr']));
+        $default = config('locales.default', config('localizer.supported_locales.0', 'ar'));
+
+        // Laravel Localizer is authoritative when the current route contains
+        // an explicit {locale}. Never overwrite a locale chosen from the URL.
+        $routeLocale = $request->route('locale');
+        if (is_string($routeLocale) && in_array($routeLocale, $supported, true)) {
+            App::setLocale($routeLocale);
+            session()->put('central_locale', $routeLocale);
+
+            return $next($request);
+        }
 
         $locale = session('central_locale', $default);
 
-        if (!in_array($locale, $supported, true)) {
+        if (! in_array($locale, $supported, true)) {
             $locale = $default;
         }
 
-        // Persist the resolved locale so views that read the session directly
-        // use the same default and never fall back to a different language.
         session()->put('central_locale', $locale);
         App::setLocale($locale);
 
