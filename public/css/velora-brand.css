@@ -16,111 +16,234 @@
     --velora-brand-gradient-soft: linear-gradient(135deg, #1c1c1c 0%, #0e8f8a 52%, #22c7bd 100%);
 }
 
-/* Existing Tailwind primary utilities -> Velora brand palette. */
 .text-indigo-400, .text-indigo-500, .text-indigo-600,
 .text-indigo-700, .text-purple-400, .text-purple-500,
 .text-purple-600, .text-purple-700,
-.text-blue-500, .text-blue-600, .text-blue-700 {
-    color: var(--velora-accent-strong) !important;
-}
-
+.text-blue-500, .text-blue-600, .text-blue-700 { color: var(--velora-accent-strong) !important; }
 .hover\\:text-indigo-500:hover, .hover\\:text-indigo-600:hover,
 .hover\\:text-purple-500:hover, .hover\\:text-purple-600:hover,
-.hover\\:text-blue-500:hover, .hover\\:text-blue-600:hover {
-    color: var(--velora-accent) !important;
-}
-
+.hover\\:text-blue-500:hover, .hover\\:text-blue-600:hover { color: var(--velora-accent) !important; }
 .bg-indigo-500, .bg-indigo-600, .bg-indigo-700,
 .bg-purple-500, .bg-purple-600, .bg-purple-700,
-.bg-blue-500, .bg-blue-600, .bg-blue-700 {
-    background-color: var(--velora-accent-strong) !important;
-}
-
+.bg-blue-500, .bg-blue-600, .bg-blue-700 { background-color: var(--velora-accent-strong) !important; }
 .hover\\:bg-indigo-600:hover, .hover\\:bg-indigo-700:hover,
 .hover\\:bg-purple-600:hover, .hover\\:bg-purple-700:hover,
-.hover\\:bg-blue-600:hover, .hover\\:bg-blue-700:hover {
-    background-color: var(--velora-accent) !important;
-}
-
+.hover\\:bg-blue-600:hover, .hover\\:bg-blue-700:hover { background-color: var(--velora-accent) !important; }
 .border-indigo-400, .border-indigo-500, .border-indigo-600,
 .border-purple-400, .border-purple-500, .border-purple-600,
-.border-blue-400, .border-blue-500, .border-blue-600 {
-    border-color: var(--velora-accent) !important;
-}
-
+.border-blue-400, .border-blue-500, .border-blue-600 { border-color: var(--velora-accent) !important; }
 .ring-indigo-500, .ring-indigo-600, .ring-purple-500, .ring-purple-600,
 .focus\\:ring-indigo-500:focus, .focus\\:ring-indigo-600:focus,
-.focus\\:ring-purple-500:focus, .focus\\:ring-purple-600:focus {
-    --tw-ring-color: var(--velora-accent) !important;
-}
-
-/* Gradient utilities used throughout the existing UI. */
+.focus\\:ring-purple-500:focus, .focus\\:ring-purple-600:focus { --tw-ring-color: var(--velora-accent) !important; }
 .from-indigo-500, .from-indigo-600, .from-indigo-700,
 .from-purple-500, .from-purple-600, .from-purple-700,
-.from-blue-500, .from-blue-600, .from-blue-700 {
-    --tw-gradient-from: var(--velora-accent-deep) var(--tw-gradient-from-position) !important;
-    --tw-gradient-to: rgb(7 94 99 / 0) var(--tw-gradient-to-position) !important;
-}
-
+.from-blue-500, .from-blue-600, .from-blue-700 { --tw-gradient-from: var(--velora-accent-deep) var(--tw-gradient-from-position) !important; --tw-gradient-to: rgb(7 94 99 / 0) var(--tw-gradient-to-position) !important; }
 .to-indigo-500, .to-indigo-600, .to-indigo-700,
 .to-purple-500, .to-purple-600, .to-purple-700,
-.to-blue-500, .to-blue-600, .to-blue-700 {
-    --tw-gradient-to: var(--velora-accent) var(--tw-gradient-to-position) !important;
-}
-
+.to-blue-500, .to-blue-600, .to-blue-700 { --tw-gradient-to: var(--velora-accent) var(--tw-gradient-to-position) !important; }
 .via-purple-500, .via-purple-600, .via-indigo-500, .via-indigo-600,
-.via-blue-500, .via-blue-600 {
-    --tw-gradient-to: rgb(14 143 138 / 0) var(--tw-gradient-to-position) !important;
-    --tw-gradient-stops: var(--tw-gradient-from), var(--velora-accent-strong) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
-}
-
-/* Landing-specific identity hooks already present in the page. */
-.gradient-text {
-    background: var(--velora-brand-gradient) !important;
-}
-
-.nav-cta, .btn-primary {
-    background: var(--velora-brand-gradient-soft) !important;
-    box-shadow: 0 10px 30px var(--velora-accent-glow) !important;
-}
-
-.nav-cta:hover, .btn-primary:hover {
-    box-shadow: 0 14px 40px rgba(22, 184, 173, .34) !important;
-}
-
-.glass-light {
-    border-color: rgba(22, 184, 173, .16) !important;
-}
-
-.card-hover:hover {
-    box-shadow: 0 20px 60px rgba(22, 184, 173, .16) !important;
-}
-
-/* Admin shell accents. */
-#admin-scroll-progress {
-    background: var(--velora-brand-gradient) !important;
-}
-
-.back-top-ring::before {
-    border-color: var(--velora-accent) !important;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: var(--velora-accent) !important;
-}
-
-*:focus-visible {
-    outline-color: var(--velora-accent) !important;
-}
-
-/* Common brand-shadow utilities used by the existing Tailwind markup. */
-.shadow-indigo-500\/20, .shadow-indigo-500\/30, .shadow-indigo-500\/40,
-.shadow-purple-500\/20, .shadow-purple-500\/30, .shadow-purple-500\/40,
-.shadow-blue-500\/20, .shadow-blue-500\/30, .shadow-blue-500\/40 {
-    --tw-shadow-color: var(--velora-accent-glow) !important;
-}
-
-/* Preserve readability when the black logo/ident is displayed on light surfaces. */
+.via-blue-500, .via-blue-600 { --tw-gradient-to: rgb(14 143 138 / 0) var(--tw-gradient-to-position) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--velora-accent-strong) var(--tw-gradient-via-position), var(--tw-gradient-to) !important; }
+.gradient-text { background: var(--velora-brand-gradient) !important; }
+.nav-cta, .btn-primary { background: var(--velora-brand-gradient-soft) !important; box-shadow: 0 10px 30px var(--velora-accent-glow) !important; }
+.nav-cta:hover, .btn-primary:hover { box-shadow: 0 14px 40px rgba(22, 184, 173, .34) !important; }
+.glass-light { border-color: rgba(22, 184, 173, .16) !important; }
+.card-hover:hover { box-shadow: 0 20px 60px rgba(22, 184, 173, .16) !important; }
+#admin-scroll-progress { background: var(--velora-brand-gradient) !important; }
+.back-top-ring::before { border-color: var(--velora-accent) !important; }
+::-webkit-scrollbar-thumb:hover { background: var(--velora-accent) !important; }
+*:focus-visible { outline-color: var(--velora-accent) !important; }
+.shadow-indigo-500\\/20, .shadow-indigo-500\\/30, .shadow-indigo-500\\/40,
+.shadow-purple-500\\/20, .shadow-purple-500\\/30, .shadow-purple-500\\/40,
+.shadow-blue-500\\/20, .shadow-blue-500\\/30, .shadow-blue-500\\/40 { --tw-shadow-color: var(--velora-accent-glow) !important; }
 .velora-brand-ink { color: var(--velora-ink) !important; }
 .velora-brand-accent { color: var(--velora-accent-strong) !important; }
 .velora-brand-gradient { background-image: var(--velora-brand-gradient) !important; }
+
+/* -------------------------------------------------------------------------
+   Landing page redesign
+   Uses existing Blade markup/Alpine state; only presentation is replaced.
+   ------------------------------------------------------------------------- */
+body:has(.hero-bg) {
+    background: #070a0a !important;
+    color: #f5fbfa !important;
+}
+
+body:has(.hero-bg) .nav-blur {
+    background: rgba(7, 10, 10, .82) !important;
+    border-bottom: 1px solid rgba(22, 184, 173, .14) !important;
+    box-shadow: 0 10px 35px rgba(0,0,0,.18) !important;
+}
+body:has(.hero-bg) .nav-cta,
+body:has(.hero-bg) .btn-primary {
+    border: 1px solid rgba(92, 239, 224, .22) !important;
+    color: #fff !important;
+}
+body:has(.hero-bg) .hero-bg {
+    min-height: auto !important;
+    padding-top: 8.5rem !important;
+    padding-bottom: 5.5rem !important;
+    background:
+        radial-gradient(900px 420px at 50% 0%, rgba(22,184,173,.16), transparent 68%),
+        radial-gradient(600px 360px at 10% 40%, rgba(7,94,99,.18), transparent 72%),
+        #070a0a !important;
+}
+body:has(.hero-bg) .hero-blob-left,
+body:has(.hero-bg) .hero-blob-right { display:none !important; }
+body:has(.hero-bg) .hero-bg > .max-w-7xl { max-width: 1180px !important; }
+body:has(.hero-bg) .hero-bg h1 {
+    font-size: clamp(3rem, 7vw, 6rem) !important;
+    line-height: .98 !important;
+    letter-spacing: -.055em !important;
+    max-width: 980px;
+    margin-inline: auto;
+}
+body:has(.hero-bg) .hero-bg h1 .gradient-text {
+    background: linear-gradient(110deg, #f7fffe 0%, #16b8ad 55%, #8ce9e0 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+}
+body:has(.hero-bg) .hero-bg p {
+    max-width: 700px !important;
+    color: rgba(231, 245, 243, .68) !important;
+}
+body:has(.hero-bg) .hero-bg .glass {
+    background: rgba(255,255,255,.035) !important;
+    border-color: rgba(255,255,255,.08) !important;
+}
+body:has(.hero-bg) .hero-bg .glass:first-child {
+    border-color: rgba(22,184,173,.24) !important;
+}
+body:has(.hero-bg) .hero-bg .hero-preview {
+    max-width: 1080px !important;
+    margin-top: 1rem;
+}
+body:has(.hero-bg) .hero-bg .hero-preview > .absolute { display:none !important; }
+body:has(.hero-bg) .hero-bg .hero-preview .relative.glass {
+    background: #0e1313 !important;
+    border: 1px solid rgba(22,184,173,.18) !important;
+    box-shadow: 0 30px 100px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.03) !important;
+    animation: none !important;
+}
+body:has(.hero-bg) .feature-icon {
+    background: rgba(22,184,173,.10) !important;
+    border-color: rgba(22,184,173,.24) !important;
+}
+body:has(.hero-bg) .stat-card,
+body:has(.hero-bg) .testimonial-card {
+    background: rgba(255,255,255,.025) !important;
+    border-color: rgba(255,255,255,.07) !important;
+}
+body:has(.hero-bg) section[id] {
+    border-top-color: rgba(255,255,255,.05) !important;
+}
+
+/* Home sections: more editorial spacing and fewer visual collisions. */
+body:has(.hero-bg) main > section {
+    position: relative;
+}
+body:has(.hero-bg) main h2 {
+    letter-spacing: -.035em !important;
+}
+body:has(.hero-bg) .step-connector::after {
+    background: linear-gradient(90deg, rgba(22,184,173,.50), transparent) !important;
+}
+
+/* -------------------------------------------------------------------------
+   Pricing page
+   ------------------------------------------------------------------------- */
+body:has([x-data^="pricingPage"]) {
+    background: #07100f !important;
+}
+body:has([x-data^="pricingPage"]) .nav-blur {
+    background: rgba(7,16,15,.88) !important;
+    border-bottom-color: rgba(22,184,173,.14) !important;
+}
+body:has([x-data^="pricingPage"]) .min-h-screen {
+    background:
+        radial-gradient(700px 360px at 50% 2%, rgba(22,184,173,.13), transparent 72%),
+        #07100f !important;
+}
+body:has([x-data^="pricingPage"]) .min-h-screen > div:first-child { padding-top: 7rem !important; }
+body:has([x-data^="pricingPage"]) .min-h-screen h1 {
+    font-size: clamp(2.8rem, 5vw, 4.8rem) !important;
+    letter-spacing: -.055em !important;
+}
+body:has([x-data^="pricingPage"]) .min-h-screen h1 .gradient-text {
+    background: linear-gradient(110deg,#fff 10%,#16b8ad 70%,#89e7df) !important;
+    -webkit-background-clip:text !important;
+    -webkit-text-fill-color:transparent !important;
+}
+body:has([x-data^="pricingPage"]) .glass {
+    background: rgba(255,255,255,.035) !important;
+    border-color: rgba(255,255,255,.08) !important;
+}
+body:has([x-data^="pricingPage"]) .border-brand-500\/40 { border-color: rgba(22,184,173,.34) !important; }
+body:has([x-data^="pricingPage"]) .min-h-screen .bg-brand-600 { background: #0e8f8a !important; }
+body:has([x-data^="pricingPage"]) .min-h-screen .text-brand-400,
+body:has([x-data^="pricingPage"]) .min-h-screen .text-brand-300 { color: #61d8d0 !important; }
+body:has([x-data^="pricingPage"]) .min-h-screen .grid { align-items: stretch !important; }
+body:has([x-data^="pricingPage"]) .min-h-screen .grid > div > .glass {
+    box-shadow: 0 30px 90px rgba(0,0,0,.28), 0 0 0 1px rgba(22,184,173,.05) !important;
+}
+
+/* -------------------------------------------------------------------------
+   Signup page
+   ------------------------------------------------------------------------- */
+body:has(form) {
+    --signup-noise: rgba(255,255,255,.035);
+}
+body:has(.lg\\:w-\\[54\\%\\]) {
+    background: #070a0a !important;
+}
+body:has(.lg\\:w-\\[54\\%\\]) .bg-surface {
+    background:
+        radial-gradient(650px 500px at 15% 15%, rgba(22,184,173,.12), transparent 70%),
+        #070a0a !important;
+}
+body:has(.lg\\:w-\\[54\\%\\]) .lg\\:w-\\[54\\%\\] {
+    width: 48% !important;
+    background: linear-gradient(180deg, rgba(255,255,255,.015), rgba(255,255,255,0)) !important;
+    border-right: 1px solid rgba(255,255,255,.06);
+}
+body:has(.lg\\:w-\\[54\\%\\]) .lg\\:w-\\[54\\%\\] > .relative {
+    max-width: 560px !important;
+    margin-inline: auto !important;
+}
+body:has(.lg\\:w-\\[54\\%\\]) .lg\\:w-\\[54\\%\\] .btn-primary {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 14px !important;
+}
+body:has(.lg\\:w-\\[54\\%\\]) .flex-1.flex.flex-col {
+    background: rgba(255,255,255,.012) !important;
+}
+body:has(.lg\\:w-\\[54\\%\\]) .flex-1.flex.flex-col > .w-full {
+    max-width: 500px !important;
+}
+body:has(.lg\\:w-\\[54\\%\\]) .glass.rounded-3xl {
+    background: rgba(12,18,18,.88) !important;
+    border-color: rgba(22,184,173,.24) !important;
+    box-shadow: 0 28px 90px rgba(0,0,0,.40) !important;
+}
+body:has(.lg\\:w-\\[54\\%\\]) .glass.rounded-3xl > div:first-child {
+    background: linear-gradient(135deg, rgba(22,184,173,.10), rgba(7,94,99,.03)) !important;
+}
+body:has(.lg\\:w-\\[54\\%\\]) input,
+body:has(.lg\\:w-\\[54\\%\\]) select,
+body:has(.lg\\:w-\\[54\\%\\]) textarea {
+    background: rgba(255,255,255,.045) !important;
+    border-color: rgba(255,255,255,.10) !important;
+    color: #fff !important;
+}
+body:has(.lg\\:w-\\[54\\%\\]) input:focus,
+body:has(.lg\\:w-\\[54\\%\\]) select:focus,
+body:has(.lg\\:w-\\[54\\%\\]) textarea:focus {
+    border-color: rgba(22,184,173,.55) !important;
+    box-shadow: 0 0 0 3px rgba(22,184,173,.10) !important;
+}
+body:has(.lg\\:w-\\[54\\%\\]) .text-brand-400 { color: #61d8d0 !important; }
+
+@media (max-width: 1023px) {
+    body:has(.lg\\:w-\\[54\\%\\]) .lg\\:w-\\[54\\%\\] { width: 100% !important; border-right:0 !important; }
+    body:has(.lg\\:w-\\[54\\%\\]) .flex-1.flex.flex-col { min-height: 100vh !important; }
+}
