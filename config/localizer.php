@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\LocaleSignalDetector;
+
 return [
     'supported_locales' => [
         'ar', 'en', 'fr', 'es', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'tr', 'hi', 'ko', 'nl', 'id',
@@ -18,9 +20,12 @@ return [
         'cookie' => true,
     ],
 
-    // The localized route is authoritative for the landing:
-    // / is Arabic, /en is English, /fr is French, etc.
-    'detectors' => [],
+    // Keep Velora's existing pricing-country locale signals authoritative
+    // for the unprefixed landing route. Laravel Localizer still resolves
+    // explicit locale URLs (/en, /fr, ...) from their localized route data.
+    'detectors' => [
+        LocaleSignalDetector::class,
+    ],
 
     'locale_directions' => [
         'ar' => 'rtl',
