@@ -1,75 +1,165 @@
-/* Velora brand system — derived from public/logo.png and public/ident.png.
- * Product chrome uses the supplied navy/white identity.
- * Semantic success/warning/danger colors intentionally remain untouched.
- */
+/* Velora Brand System — Source of Truth: docs/VELORA_BRAND_GUIDELINES.md */
 :root {
-    --velora-ink: #000520;
-    --velora-ink-soft: #31405f;
-    --velora-navy-950: #000520;
-    --velora-navy-900: #07142c;
-    --velora-navy-800: #102349;
-    --velora-navy-700: #183461;
-    --velora-navy-600: #24477d;
-    --velora-surface: #ffffff;
-    --velora-surface-muted: #f4f7fb;
-    --velora-line: #dbe3ef;
-    --velora-accent: #183461;
-    --velora-accent-strong: #07142c;
-    --velora-accent-deep: #000520;
-    --velora-accent-glow: rgba(7, 20, 44, .14);
-    --velora-brand-gradient: linear-gradient(135deg, #000520 0%, #07142c 100%);
-    --velora-brand-gradient-soft: linear-gradient(135deg, #07142c 0%, #183461 100%);
+    --velora-primary-purple: #6D46FF;
+    --velora-primary-blue: #006CFF;
+    --velora-cyan: #00B8FF;
+    --velora-gradient: linear-gradient(90deg, #6D46FF 0%, #006CFF 52%, #00B8FF 100%);
+
+    --velora-sky-blue: #1677FF;
+    --velora-mint: #00D4A3;
+    --velora-deep-navy: #0D1226;
+    --velora-light-gray: #F5F7FA;
+
+    --velora-purple: #8A5CFF;
+    --velora-violet: #A855F7;
+    --velora-green: #22C55E;
+    --velora-orange: #FF9F0A;
+    --velora-pink: #FF4D8D;
+
+    --velora-dark: #1A233A;
+    --velora-gray-dark: #2D3748;
+    --velora-gray: #4B5563;
+    --velora-gray-light: #9CA3AF;
+    --velora-border: #E5E7EB;
+    --velora-white: #FFFFFF;
+
+    /* Semantic surface aliases. */
+    --velora-bg: var(--velora-white);
+    --velora-surface: var(--velora-white);
+    --velora-surface-muted: var(--velora-light-gray);
+    --velora-text: var(--velora-deep-navy);
+    --velora-text-muted: var(--velora-gray);
+    --velora-line: var(--velora-border);
+    --velora-accent: var(--velora-primary-blue);
+    --velora-accent-strong: var(--velora-primary-purple);
+    --velora-accent-glow: rgba(0, 108, 255, .18);
 
     /* Legacy aliases used by existing templates. */
-    --v-ink: #000520;
-    --v-ink-soft: #31405f;
-    --v-canvas: #f4f7fb;
-    --v-line: #dbe3ef;
-    --v-teal-700: #07142c;
-    --v-teal-600: #102349;
-    --v-teal-500: #183461;
-    --v-teal-400: #24477d;
-    --v-teal-100: #e8edf5;
-    --v-teal-50: #f4f7fb;
+    --v-ink: var(--velora-deep-navy);
+    --v-ink-soft: var(--velora-gray-dark);
+    --v-canvas: var(--velora-light-gray);
+    --v-line: var(--velora-border);
+    --v-teal-700: var(--velora-primary-blue);
+    --v-teal-600: var(--velora-sky-blue);
+    --v-teal-500: var(--velora-primary-purple);
+    --v-teal-400: var(--velora-cyan);
+    --v-teal-100: #EEF2FF;
+    --v-teal-50: #F7F8FF;
 }
 
+/* Explicit dark theme. Add .dark to the root or any page shell that owns the theme. */
+.dark,
+[data-theme="dark"] {
+    --velora-bg: #080B18;
+    --velora-surface: #0D1226;
+    --velora-surface-muted: #151C32;
+    --velora-text: #F8FAFC;
+    --velora-text-muted: #A7B0C0;
+    --velora-line: #252E45;
+    --velora-accent: #1677FF;
+    --velora-accent-strong: #8A5CFF;
+    --velora-accent-glow: rgba(22, 119, 255, .22);
+}
+
+/* Components should consume tokens, not invent their own brand shades. */
+.velora-brand-gradient,
+.gradient-text {
+    background-image: var(--velora-gradient) !important;
+}
+
+.nav-cta,
+.btn-primary {
+    background: var(--velora-gradient) !important;
+    color: var(--velora-white) !important;
+    box-shadow: 0 10px 28px var(--velora-accent-glow) !important;
+}
+
+.nav-cta:hover,
+.btn-primary:hover {
+    box-shadow: 0 14px 34px rgba(109, 70, 255, .24) !important;
+}
+
+.velora-brand-ink {
+    color: var(--velora-deep-navy) !important;
+}
+
+.velora-brand-accent {
+    color: var(--velora-primary-blue) !important;
+}
+
+.glass-light {
+    border-color: rgba(13, 18, 38, .12) !important;
+}
+
+.card-hover:hover {
+    box-shadow: 0 20px 55px rgba(13, 18, 38, .10) !important;
+}
+
+#admin-scroll-progress {
+    background: var(--velora-gradient) !important;
+}
+
+.back-top-ring::before {
+    border-color: var(--velora-primary-blue) !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--velora-primary-blue) !important;
+}
+
+*:focus-visible {
+    outline-color: var(--velora-primary-blue) !important;
+}
+
+/* Replace legacy utility-brand colors with the official Velora system. */
 .text-indigo-400, .text-indigo-500, .text-indigo-600, .text-indigo-700,
-.text-purple-400, .text-purple-500, .text-purple-600, .text-purple-700,
-.text-blue-500, .text-blue-600, .text-blue-700 { color: var(--velora-accent-strong) !important; }
-.hover\\:text-indigo-500:hover, .hover\\:text-indigo-600:hover,
-.hover\\:text-purple-500:hover, .hover\\:text-purple-600:hover,
-.hover\\:text-blue-500:hover, .hover\\:text-blue-600:hover { color: var(--velora-accent) !important; }
+.text-purple-400, .text-purple-500, .text-purple-600, .text-purple-700 {
+    color: var(--velora-primary-purple) !important;
+}
+
+.text-blue-500, .text-blue-600, .text-blue-700 {
+    color: var(--velora-sky-blue) !important;
+}
+
 .bg-indigo-500, .bg-indigo-600, .bg-indigo-700,
 .bg-purple-500, .bg-purple-600, .bg-purple-700,
-.bg-blue-500, .bg-blue-600, .bg-blue-700 { background-color: var(--velora-accent-strong) !important; }
-.hover\\:bg-indigo-600:hover, .hover\\:bg-indigo-700:hover,
-.hover\\:bg-purple-600:hover, .hover\\:bg-purple-700:hover,
-.hover\\:bg-blue-600:hover, .hover\\:bg-blue-700:hover { background-color: var(--velora-accent) !important; }
+.bg-blue-500, .bg-blue-600, .bg-blue-700 {
+    background: var(--velora-gradient) !important;
+}
+
 .border-indigo-400, .border-indigo-500, .border-indigo-600,
 .border-purple-400, .border-purple-500, .border-purple-600,
-.border-blue-400, .border-blue-500, .border-blue-600 { border-color: var(--velora-accent) !important; }
-.ring-indigo-500, .ring-indigo-600, .ring-purple-500, .ring-purple-600,
-.focus\\:ring-indigo-500:focus, .focus\\:ring-indigo-600:focus,
-.focus\\:ring-purple-500:focus, .focus\\:ring-purple-600:focus { --tw-ring-color: var(--velora-accent) !important; }
-.from-indigo-500, .from-indigo-600, .from-indigo-700,
-.from-purple-500, .from-purple-600, .from-purple-700,
-.from-blue-500, .from-blue-600, .from-blue-700 { --tw-gradient-from: var(--velora-navy-950) var(--tw-gradient-from-position) !important; --tw-gradient-to: rgb(0 5 32 / 0) var(--tw-gradient-to-position) !important; }
-.to-indigo-500, .to-indigo-600, .to-indigo-700,
-.to-purple-500, .to-purple-600, .to-purple-700,
-.to-blue-500, .to-blue-600, .to-blue-700 { --tw-gradient-to: var(--velora-navy-700) var(--tw-gradient-to-position) !important; }
-.via-purple-500, .via-purple-600, .via-indigo-500, .via-indigo-600,
-.via-blue-500, .via-blue-600 { --tw-gradient-to: rgb(24 52 97 / 0) var(--tw-gradient-to-position) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--velora-navy-800) var(--tw-gradient-via-position), var(--tw-gradient-to) !important; }
-.gradient-text, .velora-brand-gradient { background-image: var(--velora-brand-gradient) !important; }
-.nav-cta, .btn-primary { background: var(--velora-brand-gradient-soft) !important; box-shadow: 0 10px 28px var(--velora-accent-glow) !important; }
-.nav-cta:hover, .btn-primary:hover { box-shadow: 0 14px 34px rgba(7, 20, 44, .20) !important; }
-.glass-light { border-color: rgba(7, 20, 44, .12) !important; }
-.card-hover:hover { box-shadow: 0 20px 55px rgba(7, 20, 44, .10) !important; }
-#admin-scroll-progress { background: var(--velora-brand-gradient) !important; }
-.back-top-ring::before { border-color: var(--velora-accent) !important; }
-::-webkit-scrollbar-thumb:hover { background: var(--velora-accent) !important; }
-*:focus-visible { outline-color: var(--velora-accent) !important; }
-.velora-brand-ink { color: var(--velora-ink) !important; }
-.velora-brand-accent { color: var(--velora-accent-strong) !important; }
+.border-blue-400, .border-blue-500, .border-blue-600 {
+    border-color: var(--velora-primary-blue) !important;
+}
 
-/* Ensure legacy purple/teal landing rules cannot leak into the new page. */
-body:has(.v-home) { background: #f6f8fc !important; color: #0a1530 !important; }
+/* Dark-mode surface helpers for templates that already expose these classes. */
+.dark .velora-surface,
+[data-theme="dark"] .velora-surface {
+    background: var(--velora-surface) !important;
+    color: var(--velora-text) !important;
+    border-color: var(--velora-line) !important;
+}
+
+.dark .velora-page,
+[data-theme="dark"] .velora-page {
+    background: var(--velora-bg) !important;
+    color: var(--velora-text) !important;
+}
+
+.dark .velora-muted,
+[data-theme="dark"] .velora-muted {
+    color: var(--velora-text-muted) !important;
+}
+
+/* Landing shell follows the official system in both themes. */
+body:has(.v-home) {
+    background: var(--velora-bg) !important;
+    color: var(--velora-text) !important;
+}
+
+.dark body:has(.v-home),
+[data-theme="dark"] body:has(.v-home) {
+    background: #080B18 !important;
+    color: #F8FAFC !important;
+}
