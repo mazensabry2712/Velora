@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use App\Application\Shared\Contracts\TransactionManager;
 use App\Application\Subscription\Events\SubscriptionUpgradeRequested;
+use App\Domain\Administration\Contracts\SystemNotificationReader;
 use App\Domain\Pricing\Contracts\CountryPriceSelector;
 use App\Domain\Queue\Contracts\QueueRepository as DomainQueueRepository;
 use App\Domain\Reporting\Contracts\ReportReader;
@@ -13,6 +14,7 @@ use App\Domain\Shared\Contracts\PaymentGatewayResolver;
 use App\Domain\Subscription\Contracts\SubscriptionReader;
 use App\Domain\Subscription\Contracts\UpgradeRequestWriter;
 use App\Domain\Tenant\Contracts\TenantRegistrar;
+use App\Infrastructure\Administration\LegacySystemNotificationReader;
 use App\Infrastructure\Billing\EloquentUpgradeRequestWriter;
 use App\Infrastructure\Billing\LegacySubscriptionReader;
 use App\Infrastructure\Persistence\LaravelTransactionManager;
@@ -26,7 +28,7 @@ use App\Observers\AppointmentObserver;
 use App\Payments\PaymentGatewayManager;
 use App\Repositories\Eloquent\QueueRepository;
 use App\Services\PaymentGatewayRouter;
-use Illuminate\Support\Facades\DB;
+use App\View\Composers\AdminLayoutComposer;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -44,6 +46,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ReportReader::class, LegacyReportReader::class);
         $this->app->bind(CountryPriceSelector::class, LegacyCountryPriceSelector::class);
         $this->app->bind(TenantRegistrar::class, LegacyTenantRegistrar::class);
+        $this->app->bind(SystemNotificationReader::class, LegacySystemNotificationReader::class);
     }
 
     public function boot(): void
@@ -61,7 +64,7 @@ class AppServiceProvider extends ServiceProvider
                 $appLogoUrl = SystemSetting::get('app_logo_url', '');
                 $registrationEnabled = SystemSetting::get('registration_enabled', true);
                 $defaultTrialDays = SystemSetting::get('default_trial_days', 14);
-            } catch (\Throwable $e) {
+            } catch (\Throwable) {
                 $appName = config('app.name', 'Velora');
                 $appLogoUrl = '';
                 $registrationEnabled = true;
@@ -71,32 +74,6 @@ class AppServiceProvider extends ServiceProvider
             $view->with(compact('appName', 'appLogoUrl', 'registrationEnabled', 'defaultTrialDays'));
         });
 
-        View::composer('layouts.admin', function ($view) {
-            try {
-                $tenantId = tenant('id');
-                if (!$tenantId) {
-                    return;
-                }
-
-                $notifications = DB::connection('mysql')
-                    ->table('system_notifications')
-                    ->where('is_sent', true)
-                    ->where(function ($q) use ($tenantId) {
-                        $q->where('target', 'all')
-                          ->orWhere(function ($q2) use ($tenantId) {
-                              $q2->where('target', 'specific')
-                                 ->whereJsonContains('tenant_ids', $tenantId);
-                          });
-                    })
-                    ->where('sent_at', '>=', now()->subDays(7))
-                    ->orderByDesc('sent_at')
-                    ->limit(5)
-                    ->get(['id', 'title', 'message', 'type', 'sent_at']);
-
-                $view->with('systemNotifications', $notifications);
-            } catch (\Throwable $e) {
-                $view->with('systemNotifications', collect());
-            }
-        });
+        View::composer('layouts.admin', AdminLayoutComposer::class);
     }
 }
