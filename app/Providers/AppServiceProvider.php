@@ -6,6 +6,8 @@ namespace App\Providers;
 
 use App\Application\Shared\Contracts\TransactionManager;
 use App\Domain\Shared\Contracts\PaymentGatewayResolver;
+use App\Domain\Subscription\Contracts\SubscriptionReader;
+use App\Infrastructure\Billing\LegacySubscriptionReader;
 use App\Infrastructure\Persistence\LaravelTransactionManager;
 use App\Models\Appointment;
 use App\Models\SystemSetting;
@@ -22,11 +24,9 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(PaymentGatewayManager::class);
 
-        // Keep application/domain code independent from Laravel's transaction API.
         $this->app->bind(TransactionManager::class, LaravelTransactionManager::class);
-
-        // Domain/application code depends on a capability, not the router implementation.
         $this->app->bind(PaymentGatewayResolver::class, PaymentGatewayRouter::class);
+        $this->app->bind(SubscriptionReader::class, LegacySubscriptionReader::class);
     }
 
     public function boot(): void
