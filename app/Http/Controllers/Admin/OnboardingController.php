@@ -6,46 +6,43 @@ use App\Http\Controllers\Controller;
 use App\Models\Service;
 use App\Models\Setting;
 use App\Models\Staff;
-use App\Models\UsageLog;
+use App\Models\StaffWorkingHours;
+use App\Services\UsageLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * OnboardingController — 4-step wizard, under 5 minutes.
+ * Four-step first-run setup for a new Velora tenant.
  *
- * Step 1: Business info  (name, phone, logo)
- * Step 2: First staff    (name, specialty)
- * Step 3: First service  (name, duration, price)
- * Step 4: Booking link   (show subdomain + QR code)
- *
- * Tracks progress via settings.onboarding_step and settings.onboarding_completed.
+ * Step 1: Business info
+ * Step 2: First staff member
+ * Step 3: First service
+ * Step 4: Publish booking link
  */
 class OnboardingController extends Controller
 {
-    // ── Page ─────────────────────────────────────────────────────────────
-
     public function index()
     {
         $settings = Setting::first();
 
-        // If already completed, redirect to dashboard
         if ($settings?->onboarding_completed) {
             return redirect()->route('admin.dashboard');
         }
 
         $currentStep = $settings?->onboarding_step ?? 0;
         $subdomain   = tenant('id');
-        $domain      = config('app.domain', 'velora.app');
-        $bookingUrl  = "https://{$subdomain}.{$domain}/book";
+        $domain      = config('app.base_domain', config('app.domain', 'velora.test'));
+        $bookingUrl  = 'http://' . $subdomain . '.' . $domain . '/book';
+
+        if (request()->secure()) {
+            $bookingUrl = 'https://' . $subdomain . '.' . $domain . '/book';
+        }
 
         return view('admin.onboarding.wizard', compact('currentStep', 'bookingUrl', 'subdomain', 'domain'));
     }
-
-    // ── Step 1: Business Info ─────────────────────────────────────────────
 
     public function saveStep1(Request $request): JsonResponse
     {
@@ -58,10 +55,10 @@ class OnboardingController extends Controller
 
         try {
             $update = [
-                'business_name'  => $data['business_name'],
-                'phone'          => $data['phone'],
-                'address'        => $data['address'] ?? null,
-                'onboarding_step'=> 1,
+                'business_name'   => $data['business_name'],
+                'phone'           => $data['phone'],
+                'address'         => $data['address'] ?? null,
+                'onboarding_step' => 1,
             ];
 
             if ($request->hasFile('logo')) {
@@ -70,7 +67,6 @@ class OnboardingController extends Controller
             }
 
             Setting::updateOrCreate(['id' => 1], $update);
-
             UsageLog::log('onboarding_step1_completed', ['business_name' => $data['business_name']]);
 
             return response()->json(['success' => true, 'next_step' => 2]);
@@ -80,29 +76,34 @@ class OnboardingController extends Controller
         }
     }
 
-    // ── Step 2: First Staff ───────────────────────────────────────────────
-
     public function saveStep2(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name'           => 'required|string|max:100',
-            'specialty'      => 'nullable|string|max:100',
+            'name'      => 'required|string|max:100',
+            'specialty' => 'nullable|string|max:100',
         ]);
 
         try {
-            // Only create if no staff exists yet
-            if (Staff::count() === 0) {
-                // Split name into first_name / last_name
+            $staff = Staff::query()->first();
+
+            if (! $staff) {
                 $nameParts = explode(' ', trim($data['name']), 2);
-                Staff::create([
-                    'first_name' => $nameParts[0],
-                    'last_name'  => $nameParts[1] ?? '',
-                    'is_active'  => true,
+                $staff = Staff::create([
+                    'first_name'       => $nameParts[0],
+                    'last_name'        => $nameParts[1] ?? '',
+                    'accepts_bookings' => true,
+                    'is_active'        => true,
+                ]);
+            } else {
+                $staff->update([
+                    'accepts_bookings' => true,
+                    'is_active'        => true,
                 ]);
             }
 
-            Setting::updateOrCreate(['id' => 1], ['onboarding_step' => 2]);
+            $this->ensureDefaultWorkingHours($staff);
 
+            Setting::updateOrCreate(['id' => 1], ['onboarding_step' => 2]);
             UsageLog::log('onboarding_step2_completed', ['staff_name' => $data['name']]);
 
             return response()->json(['success' => true, 'next_step' => 3]);
@@ -111,8 +112,6 @@ class OnboardingController extends Controller
             return response()->json(['success' => false, 'message' => __('Something went wrong.')], 500);
         }
     }
-
-    // ── Step 3: First Service ─────────────────────────────────────────────
 
     public function saveStep3(Request $request): JsonResponse
     {
@@ -123,18 +122,44 @@ class OnboardingController extends Controller
         ]);
 
         try {
-            if (Service::count() === 0) {
-                Service::create([
+            $service = Service::query()->first();
+
+            if (! $service) {
+                $service = Service::create([
                     'name'      => $data['name'],
                     'name_ar'   => $data['name'],
                     'duration'  => $data['duration'],
                     'price'     => $data['price'],
                     'is_active' => true,
                 ]);
+            } else {
+                $service->update([
+                    'name'      => $data['name'],
+                    'duration'  => $data['duration'],
+                    'price'     => $data['price'],
+                    'is_active' => true,
+                ]);
+            }
+
+            $staff = Staff::query()->orderBy('id')->first();
+            if ($staff) {
+                DB::table('staff_services')->updateOrInsert(
+                    [
+                        'staff_id'   => $staff->id,
+                        'service_id' => $service->id,
+                    ],
+                    [
+                        // Keep the pivot compatible with the current tenant schema.
+                        'user_id'    => auth()->id(),
+                        'updated_at' => now(),
+                        'created_at' => now(),
+                    ]
+                );
+
+                $this->ensureDefaultWorkingHours($staff);
             }
 
             Setting::updateOrCreate(['id' => 1], ['onboarding_step' => 3]);
-
             UsageLog::log('onboarding_step3_completed', ['service_name' => $data['name']]);
 
             return response()->json(['success' => true, 'next_step' => 4]);
@@ -144,24 +169,46 @@ class OnboardingController extends Controller
         }
     }
 
-    // ── Step 4: Complete — show booking link ──────────────────────────────
-
     public function complete(Request $request): JsonResponse
     {
         try {
+            $staff   = Staff::query()->first();
+            $service = Service::query()->first();
+
+            if (! $staff || ! $service) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('Please complete the staff and service steps first.'),
+                ], 422);
+            }
+
+            $this->ensureDefaultWorkingHours($staff);
+
+            DB::table('staff_services')->updateOrInsert(
+                [
+                    'staff_id'   => $staff->id,
+                    'service_id' => $service->id,
+                ],
+                [
+                    'user_id'    => auth()->id(),
+                    'updated_at' => now(),
+                    'created_at' => now(),
+                ]
+            );
+
             Setting::updateOrCreate(['id' => 1], [
                 'onboarding_step'      => 4,
                 'onboarding_completed' => true,
+                'booking_enabled'     => true,
+                'queue_enabled'      => true,
             ]);
 
-            // Track activation in central DB
             $this->markTrialActivated();
-
             UsageLog::log('onboarding_completed', []);
 
             return response()->json([
-                'success'     => true,
-                'redirect_url'=> route('admin.dashboard'),
+                'success'      => true,
+                'redirect_url' => route('admin.dashboard'),
             ]);
         } catch (\Exception $e) {
             Log::error('Onboarding complete: ' . $e->getMessage());
@@ -169,7 +216,32 @@ class OnboardingController extends Controller
         }
     }
 
-    // ── Private ───────────────────────────────────────────────────────────
+    private function ensureDefaultWorkingHours(Staff $staff): void
+    {
+        $defaults = [
+            ['day_of_week' => 0, 'start_time' => '09:00', 'end_time' => '17:00'],
+            ['day_of_week' => 1, 'start_time' => '09:00', 'end_time' => '17:00'],
+            ['day_of_week' => 2, 'start_time' => '09:00', 'end_time' => '17:00'],
+            ['day_of_week' => 3, 'start_time' => '09:00', 'end_time' => '17:00'],
+            ['day_of_week' => 4, 'start_time' => '09:00', 'end_time' => '17:00'],
+            ['day_of_week' => 5, 'start_time' => '09:00', 'end_time' => '17:00'],
+            ['day_of_week' => 6, 'start_time' => '09:00', 'end_time' => '17:00'],
+        ];
+
+        foreach ($defaults as $hours) {
+            StaffWorkingHours::updateOrCreate(
+                [
+                    'staff_id'    => $staff->id,
+                    'day_of_week' => $hours['day_of_week'],
+                ],
+                [
+                    'start_time' => $hours['start_time'],
+                    'end_time'   => $hours['end_time'],
+                    'is_working' => true,
+                ]
+            );
+        }
+    }
 
     private function markTrialActivated(): void
     {
