@@ -11,8 +11,8 @@ final class AppointmentStatusTransition
     /** @var array<string, list<string>> */
     private const ALLOWED = [
         'pending' => ['confirmed', 'cancelled'],
-        'confirmed' => ['checked_in', 'cancelled', 'no_show'],
-        'checked_in' => ['in_service', 'cancelled', 'no_show'],
+        'confirmed' => ['checked_in', 'in_service', 'completed', 'cancelled', 'no_show'],
+        'checked_in' => ['in_service', 'completed', 'cancelled', 'no_show'],
         'in_service' => ['completed', 'cancelled'],
         'completed' => [],
         'cancelled' => [],
