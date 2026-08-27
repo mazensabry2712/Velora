@@ -8,59 +8,20 @@ use App\Observers\AppointmentObserver;
 use App\Payments\Contracts\PaymentGatewayInterface;
 use App\Payments\PaymentGatewayManager;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
-        // Tell Laravel to load translation files from /lang (not /resources/lang)
-        $this->app->useLangPath(base_path('lang'));
-
-        // Register PaymentGatewayManager as a singleton so driver instances are
-        // resolved from the container (supports constructor injection in gateways).
         $this->app->singleton(PaymentGatewayManager::class);
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
-        // Register model observers
         Appointment::observe(AppointmentObserver::class);
 
-        // The landing translation files are intentionally flat PHP arrays under
-        // lang/{locale}/landing.php. Laravel's runtime loader expects dotted keys
-        // when using addLines(), so normalize only this custom group here.
-        foreach (config('localizer.supported_locales', []) as $locale) {
-            $translationFile = base_path("lang/{$locale}/landing.php");
-
-            if (!is_file($translationFile)) {
-                continue;
-            }
-
-            $lines = require $translationFile;
-            if (!is_array($lines)) {
-                continue;
-            }
-
-            $dottedLines = [];
-            foreach ($lines as $key => $value) {
-                $dottedLines["landing.{$key}"] = $value;
-            }
-
-            if ($dottedLines !== []) {
-                Lang::addLines($dottedLines, $locale);
-            }
-        }
-
-        // Share platform settings with all landing views (layout + pages)
         View::composer('layouts.landing', function ($view) {
             try {
                 $appName             = SystemSetting::get('app_name', config('app.name', 'Velora'));
@@ -77,8 +38,6 @@ class AppServiceProvider extends ServiceProvider
             $view->with(compact('appName', 'appLogoUrl', 'registrationEnabled', 'defaultTrialDays'));
         });
 
-        // Share system notifications from super-admin with all tenant admin views.
-        // Only runs in tenant context (tenant() returns non-null).
         View::composer('layouts.admin', function ($view) {
             try {
                 $tenantId = tenant('id');
