@@ -4,8 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="theme-color" content="#075e63">
 
-    <title>{{ $title ?? config('app.name', 'Booking SaaS') }}</title>
+    <title>{{ $title ?? config('app.name', 'Velora') }}</title>
+
+    <!-- Velora brand -->
+    <link rel="stylesheet" href="{{ asset('css/velora-brand.css') }}">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -16,7 +20,6 @@
 
     <!-- Dark Mode Prevention Script - يمنع وميض الوضع الفاتح -->
     <script>
-        // يتم تنفيذ هذا الكود فوراً قبل عرض الصفحة
         (function() {
             if (localStorage.getItem('darkMode') === 'true' ||
                 (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -29,14 +32,12 @@
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 antialiased">
     <div class="min-h-screen flex flex-col">
-        <!-- Navigation -->
         @isset($navigation)
             {{ $navigation }}
         @else
             @include('layouts.navigation')
         @endisset
 
-        <!-- Page Heading -->
         @isset($header)
             <header class="bg-white dark:bg-slate-800 shadow border-b dark:border-slate-700">
                 <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
@@ -45,7 +46,6 @@
             </header>
         @endisset
 
-        <!-- Page Content -->
         <main class="flex-1">
             @if(session('success'))
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
@@ -66,10 +66,9 @@
             @yield('content')
         </main>
 
-        <!-- Footer -->
         <footer class="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 py-4 mt-auto">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-slate-600 dark:text-slate-400 text-sm">
-                &copy; {{ date('Y') }} {{ tenant()->name ?? config('app.name') }}. {{ __('All rights reserved.') }}
+                &copy; {{ date('Y') }} {{ tenant()->name ?? config('app.name', 'Velora') }}. {{ __('All rights reserved.') }}
             </div>
         </footer>
     </div>
