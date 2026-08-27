@@ -10,6 +10,7 @@ use App\Http\Controllers\SuperAdmin\SystemNotificationController;
 use App\Http\Controllers\Auth\SuperAdminAuthController;
 use App\Http\Controllers\Auth\TenantAuthController;
 use App\Http\Controllers\Tenant\AdvanceQueueController;
+use App\Http\Controllers\Tenant\AdminAppointmentCreationController;
 use App\Http\Controllers\Tenant\QueueMutationController;
 use App\Http\Controllers\Tenant\QueueReadController;
 
@@ -136,9 +137,10 @@ Route::middleware(['tenant', 'tenant.locale', 'auth:sanctum'])->group(function (
 /* Tenant APIs by token */
 Route::prefix('v1')->middleware(['tenant.token', 'tenant.locale', 'auth:sanctum', 'tenant.token.bound'])->group(function () {
     Route::middleware(['role:Admin Tenant|Staff'])->group(function () {
-        Route::apiResource('appointments', \App\Http\Controllers\Tenant\AppointmentController::class)->names([
-            'index' => 'api.v1.appointments.index', 'store' => 'api.v1.appointments.store', 'show' => 'api.v1.appointments.show', 'update' => 'api.v1.appointments.update', 'destroy' => 'api.v1.appointments.destroy',
+        Route::apiResource('appointments', \App\Http\Controllers\Tenant\AppointmentController::class)->except(['store'])->names([
+            'index' => 'api.v1.appointments.index', 'show' => 'api.v1.appointments.show', 'update' => 'api.v1.appointments.update', 'destroy' => 'api.v1.appointments.destroy',
         ]);
+        Route::post('appointments', [AdminAppointmentCreationController::class, 'store'])->name('api.v1.appointments.store');
         Route::apiResource('queues', \App\Http\Controllers\Tenant\QueueController::class)->names('api.v1.queues');
     });
 
