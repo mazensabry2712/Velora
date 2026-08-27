@@ -10,6 +10,7 @@ use App\Models\Queue;
 use Illuminate\Validation\ValidationException;
 use Mockery;
 use Mockery\MockInterface;
+use RuntimeException;
 use Tests\TestCase;
 
 final class SetQueuePriorityTest extends TestCase
@@ -38,6 +39,21 @@ final class SetQueuePriorityTest extends TestCase
         $repository->shouldNotReceive('update');
 
         $this->expectException(ValidationException::class);
+
+        (new SetQueuePriority($repository))->execute(10, true);
+    }
+
+    public function test_persistence_failure_is_reported(): void
+    {
+        $queue = new Queue(['id' => 10, 'status' => 'waiting', 'is_vip' => false]);
+
+        /** @var QueueRepository&MockInterface $repository */
+        $repository = Mockery::mock(QueueRepository::class);
+        $repository->expects('findById')->with(10)->once()->andReturn($queue);
+        $repository->expects('update')->with($queue, ['is_vip' => true])->once()->andReturnFalse();
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Failed to update queue priority.');
 
         (new SetQueuePriority($repository))->execute(10, true);
     }
