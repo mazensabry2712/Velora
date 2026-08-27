@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Application\Reporting\Actions;
 
-use App\Infrastructure\Reporting\LegacyReportReader;
+use App\Domain\Reporting\Contracts\ReportReader;
 
 final class GetDashboardReport
 {
     public function __construct(
-        private readonly LegacyReportReader $reports,
+        private readonly ReportReader $reports,
     ) {}
 
     /** @return array<string, mixed> */
