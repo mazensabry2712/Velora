@@ -72,6 +72,7 @@
         .v-nav-cta:hover { transform:translateY(-1px);box-shadow:0 14px 30px rgba(0,108,255,.24); }
         .v-nav-tools { display:flex;align-items:center;gap:6px; }
         .v-desktop-tools { display:flex;align-items:center;gap:6px; }
+        .v-mobile-tools { display:none;align-items:center;gap:6px; }
         .v-icon-btn { width:42px;height:42px;display:grid;place-items:center;border:1px solid var(--v-line);border-radius:12px;background:var(--v-surface);color:var(--v-ink);transition:.2s;cursor:pointer; }
         .v-icon-btn:hover { border-color:var(--v-sky-blue);color:var(--v-sky-blue); }
         .v-icon-btn svg { pointer-events:none; }
@@ -94,7 +95,7 @@
         html[data-theme="dark"] .v-nav, html[data-theme="dark"] .v-menu { box-shadow:0 18px 40px rgba(0,0,0,.35); }
         html[data-theme="dark"] .v-nav-link:hover, html[data-theme="dark"] .v-menu a:hover { background:rgba(22,119,255,.12); }
         html[data-theme="dark"] .v-footer { background:#0D1226; }
-        @media (max-width:980px){ .v-desktop-nav{display:none;} .v-desktop-tools{display:none;} .v-menu{display:block;} }
+        @media (max-width:980px){ .v-desktop-nav{display:none;} .v-desktop-tools{display:none;} .v-mobile-tools{display:flex;} .v-menu{display:none;} }
         @media (max-width:680px){ .v-shell,.v-footer-inner{width:calc(100% - 24px);} .v-header{padding-top:8px;} .v-nav{min-height:60px;border-radius:16px;padding:8px 9px;} .v-logo img{width:36px;height:36px;} .v-main{padding-top:84px;} .v-footer-inner{flex-direction:column;align-items:flex-start;} .v-footer-ident{height:22px;} }
         @media (max-width:380px){ .v-shell,.v-footer-inner{width:calc(100% - 18px);} .v-icon-btn{width:39px;height:39px;} }
         @media (prefers-reduced-motion:reduce){ *,*::before,*::after{scroll-behavior:auto!important;transition:none!important;} }
@@ -111,10 +112,15 @@
                 <a class="v-nav-link" href="{{ route('landing') }}#how-it-works">{{ __('landing.nav_how_it_works') }}</a>
                 <a class="v-nav-link" href="{{ route('landing') }}#pricing">{{ __('landing.nav_pricing') }}</a>
                 <a class="v-nav-link" href="{{ route('central.login') }}">{{ __('landing.nav_company_admin_sign_in') }}</a>
-                @if ($registrationEnabled ?? true)<a class="v-nav-cta" href="{{ route('signup') }}">{{ __('landing.nav_start_trial') }} <span aria-hidden="true">→</span></a>@endif
-                <div class="v-desktop-tools"><button id="themeToggleDesktop" type="button" class="v-icon-btn" aria-label="Switch to dark mode" title="Dark mode"></button></div>
             </div>
-            <div class="v-nav-tools">
+            <div class="v-desktop-tools">
+                @if ($registrationEnabled ?? true)
+                    <a class="v-nav-cta" href="{{ route('signup') }}">{{ __('landing.nav_start_trial') }} <span aria-hidden="true">→</span></a>
+                @endif
+                <button id="themeToggleDesktop" type="button" class="v-icon-btn" aria-label="Switch to dark mode" title="Dark mode"></button>
+                <button type="button" onclick="window.dispatchEvent(new Event('velora:open-lang-switcher'))" class="v-icon-btn" aria-label="{{ __('landing.switcher_lang_label') ?? 'Change language' }}"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 5h12M9 3v2m1.1 9.2A17.8 17.8 0 0 1 6.4 9m6.1 9 4.5-9 4.5 9m-.8-2h-7.4"/></svg></button>
+            </div>
+            <div class="v-mobile-tools">
                 <button id="themeToggleMobile" type="button" class="v-icon-btn" aria-label="Switch to dark mode" title="Dark mode"></button>
                 <button type="button" onclick="window.dispatchEvent(new Event('velora:open-lang-switcher'))" class="v-icon-btn" aria-label="{{ __('landing.switcher_lang_label') ?? 'Change language' }}"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 5h12M9 3v2m1.1 9.2A17.8 17.8 0 0 1 6.4 9m6.1 9 4.5-9 4.5 9m-.8-2h-7.4"/></svg></button>
                 <button id="menuToggle" type="button" class="v-icon-btn" aria-label="Open menu" aria-controls="mobileMenu" aria-expanded="false"><svg width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M4 7h16M4 12h16M4 17h16"/></svg></button>
@@ -135,7 +141,7 @@
 <script>
 (function(){
     const root=document.documentElement,meta=document.querySelector('meta[name="theme-color"]'),desktop=document.getElementById('themeToggleDesktop'),mobile=document.getElementById('themeToggleMobile'),menu=document.getElementById('mobileMenu'),menuToggle=document.getElementById('menuToggle');
-    const icons={sun:'<svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="4" stroke-width="1.8"/><path stroke-linecap="round" stroke-width="1.8" d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>',moon:'<svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20.2 15.6A8.5 8.5 0 0 1 8.4 3.8 8.5 8.5 0 1 0 20.2 15.6Z"/></svg>'};
+    const icons={sun:'<svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="4" stroke-width="1.8"/><path stroke-linecap="round" stroke-width="1.8" d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>',moon:'<svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-width="1.8" d="M20.2 15.6A8.5 8.5 0 0 1 8.4 3.8 8.5 8.5 0 1 0 20.2 15.6Z"/></svg>'};
     function apply(theme){root.dataset.theme=theme;localStorage.setItem('velora-theme',theme);const dark=theme==='dark';[desktop,mobile].forEach(b=>{if(!b)return;b.innerHTML=dark?icons.sun:icons.moon;b.setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode');b.setAttribute('title',dark?'Light mode':'Dark mode');});if(meta)meta.setAttribute('content',dark?'#080B18':'#0D1226');}
     apply(root.dataset.theme||'light');
     [desktop,mobile].forEach(b=>b&&b.addEventListener('click',()=>apply(root.dataset.theme==='dark'?'light':'dark')));
