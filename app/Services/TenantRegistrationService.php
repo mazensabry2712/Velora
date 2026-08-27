@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Mail\WelcomeTenantMail;
-use App\Models\PromoCode;
 use App\Models\Setting;
 use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
@@ -22,17 +21,6 @@ class TenantRegistrationService
     public function register(array $data): array
     {
         $this->validateUniqueness($data['subdomain'], $data['email']);
-
-        $promoCode = null;
-        if (! empty($data['promo_code'])) {
-            $promoCode = PromoCode::where('code', strtoupper(trim($data['promo_code'])))->first();
-
-            if (! $promoCode || ! $promoCode->isValid()) {
-                throw ValidationException::withMessages([
-                    'promo_code' => ['This promo code is invalid or has expired.'],
-                ]);
-            }
-        }
 
         $trialPlan = isset($data['plan_id'])
             ? SubscriptionPlan::where('is_active', true)->find($data['plan_id'])
@@ -74,7 +62,7 @@ class TenantRegistrationService
 
             // The first admin is created in the tenant DB and immediately
             // authenticated so signup can continue directly into onboarding.
-            $tenant->run(function () use ($data, &$subscription, &$tenant) {
+            $tenant->run(function () use ($data) {
                 $adminRole = Role::firstOrCreate(
                     ['name' => 'Admin Tenant', 'guard_name' => 'web']
                 );
@@ -118,13 +106,8 @@ class TenantRegistrationService
                 'ends_at'              => null,
                 'amount_paid'          => 0,
                 'payment_method'       => $this->resolveGatewayForCountry($data['country'] ?? 'US'),
-                'notes'                => 'Auto-created trial subscription'
-                    . ($promoCode ? ' | promo: ' . $promoCode->code : ''),
+                'notes'                => 'Auto-created trial subscription',
             ]);
-
-            if ($promoCode) {
-                $promoCode->incrementUsage();
-            }
         } catch (\Exception $e) {
             if ($tenant) {
                 try {
