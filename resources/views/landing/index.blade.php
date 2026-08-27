@@ -14,6 +14,7 @@
         --landing-white: #FFFFFF;
     }
 
+    /* Keep the landing page faithful to logo.png / ident.png: navy, white and neutral blue-grays only. */
     .v-home {
         --v-ink: var(--landing-ink);
         --v-ink-soft: var(--landing-muted);
@@ -22,7 +23,7 @@
         --v-teal-700: var(--landing-navy-900);
         --v-teal-600: var(--landing-navy-800);
         --v-teal-500: var(--landing-navy-700);
-        --v-teal-400: #2B4F88;
+        --v-teal-400: var(--landing-navy-700);
         --v-teal-100: #E8EDF5;
         --v-teal-50: #F3F6FA;
         background: var(--landing-bg) !important;
@@ -34,6 +35,40 @@
     .v-home .v-wrap { width: min(1160px, calc(100% - 40px)); margin: 0 auto; }
     .v-home .v-section { padding: 96px 0; }
     .v-home .v-section + .v-section { border-top: 1px solid var(--landing-line); }
+
+    /* Landing shell navigation override. */
+    body:has(.v-home) .v-nav {
+        background: rgba(255,255,255,.98) !important;
+        border-color: var(--landing-line) !important;
+        box-shadow: 0 10px 30px rgba(0,5,32,.07) !important;
+    }
+    body:has(.v-home) .v-nav-link {
+        color: #42516A !important;
+    }
+    body:has(.v-home) .v-nav-link:hover {
+        color: var(--landing-navy-900) !important;
+        background: #EEF2F7 !important;
+    }
+    body:has(.v-home) .v-nav-cta {
+        background: var(--landing-navy-900) !important;
+        color: #fff !important;
+        box-shadow: 0 10px 24px rgba(0,5,32,.14) !important;
+    }
+    body:has(.v-home) .v-nav-cta:hover {
+        background: var(--landing-navy-800) !important;
+    }
+    body:has(.v-home) .v-menu {
+        background: #fff !important;
+        border-color: var(--landing-line) !important;
+        box-shadow: 0 18px 40px rgba(0,5,32,.12) !important;
+    }
+    body:has(.v-home) .v-menu a {
+        color: #42516A !important;
+    }
+    body:has(.v-home) .v-menu a:hover {
+        color: var(--landing-navy-900) !important;
+        background: #EEF2F7 !important;
+    }
 
     .v-home .v-btn,
     .v-home .v-chip,
@@ -66,7 +101,6 @@
         padding: 74px 0 84px;
         background: var(--landing-bg) !important;
     }
-    .v-home .v-hero-glow { display: none !important; }
     .v-home .v-hero-grid {
         display: grid;
         grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr);
@@ -140,7 +174,6 @@
 
     .v-home .v-footer-ident { filter: none !important; }
 
-    /* Responsive layout: stack early and remove desktop-only density. */
     @media (max-width: 980px) {
         .v-home .v-hero-grid { grid-template-columns: 1fr; gap: 38px; }
         .v-home .v-hero-copy { max-width: 760px; margin-inline: auto; text-align: center; }
@@ -376,7 +409,7 @@
                     <div class="inline-flex items-center justify-center rounded-xl bg-white px-4 py-3 mb-6">
                         <img src="{{ asset('logo.png') }}" alt="Velora" class="h-8 w-auto">
                     </div>
-                    <h2 class="text-white text-3xl sm:text-5xl font-extrabold tracking-tight">{{ __('landing.how_cta') }}</h2>
+                    <h2 class="v-h2 !text-white">{{ __('landing.how_cta') }}</h2>
                     <p class="max-w-2xl mx-auto mt-4 text-[#AEB9CC] text-base sm:text-lg leading-8">{{ __('landing.hero_sub') }}</p>
                     <a href="{{ route('signup') }}" class="v-btn mt-7 inline-flex bg-white text-[#000520] border border-white hover:bg-[#EEF2F7]">
                         {{ __('landing.hero_cta_start', ['days' => $trialDays ?? 14]) }}
