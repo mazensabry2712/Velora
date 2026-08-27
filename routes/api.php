@@ -11,6 +11,7 @@ use App\Http\Controllers\Auth\SuperAdminAuthController;
 use App\Http\Controllers\Auth\TenantAuthController;
 use App\Http\Controllers\Tenant\AdvanceQueueController;
 use App\Http\Controllers\Tenant\QueueMutationController;
+use App\Http\Controllers\Tenant\QueueReadController;
 
 /* Authentication */
 Route::prefix('super-admin/auth')->group(function () {
@@ -88,7 +89,7 @@ Route::middleware(['tenant', 'tenant.locale'])->group(function () {
     })->middleware('throttle:60,1');
     Route::post('appointments', [\App\Http\Controllers\Tenant\PublicBookingController::class, 'store'])
         ->middleware('throttle:30,1');
-    Route::get('queue/status/{queueNumber}', [\App\Http\Controllers\Tenant\QueueController::class, 'getQueueStatus'])
+    Route::get('queue/status/{queueNumber}', [QueueReadController::class, 'status'])
         ->middleware('throttle:60,1');
 });
 
@@ -97,7 +98,7 @@ Route::middleware(['tenant', 'tenant.locale', 'auth:sanctum'])->group(function (
         Route::apiResource('appointments', \App\Http\Controllers\Tenant\AppointmentController::class)->except(['store'])->names([
             'index' => 'api.appointments.index', 'show' => 'api.appointments.show', 'update' => 'api.appointments.update', 'destroy' => 'api.appointments.destroy',
         ]);
-        Route::get('queue', [\App\Http\Controllers\Tenant\QueueController::class, 'index']);
+        Route::get('queue', [QueueReadController::class, 'index']);
         Route::post('queue/add', [QueueMutationController::class, 'add']);
         Route::post('queue/next', AdvanceQueueController::class);
         Route::post('queue/priority', [\App\Http\Controllers\Tenant\QueueController::class, 'priority']);
@@ -108,7 +109,7 @@ Route::middleware(['tenant', 'tenant.locale', 'auth:sanctum'])->group(function (
 
     Route::middleware(['role:Customer'])->group(function () {
         Route::get('my-appointments', [\App\Http\Controllers\Tenant\AppointmentController::class, 'myAppointments']);
-        Route::get('my-queue', [\App\Http\Controllers\Tenant\QueueController::class, 'myQueue']);
+        Route::get('my-queue', [QueueReadController::class, 'myQueue']);
         Route::get('my-invoices', [\App\Http\Controllers\Tenant\InvoiceController::class, 'myInvoices']);
         Route::get('invoices/{id}/download', [\App\Http\Controllers\Tenant\InvoiceController::class, 'download']);
     });
