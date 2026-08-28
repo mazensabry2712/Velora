@@ -6,8 +6,6 @@ namespace App\Http\Controllers\Auth;
 
 use App\Application\Tenant\Actions\RegisterTenant;
 use App\Http\Controllers\Controller;
-use App\Services\TenantRegistrationService;
-use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -16,35 +14,20 @@ final class TenantRegistrationController extends Controller
 {
     public function __construct(
         private readonly RegisterTenant $registerTenant,
-        private readonly TenantRegistrationService $tenantRegistrationService,
     ) {}
 
     /**
      * Handle new tenant signup.
      *
      * HTTP validation/response concerns stay here; tenant onboarding
-     * orchestration is owned by the application action.
+     * orchestration and uniqueness checks are owned by the application service.
      */
     public function store(Request $request)
     {
         $validated = $request->validate([
             'business_name' => 'required|string|min:2|max:100',
             'business_type' => 'nullable|string|max:60',
-            'subdomain'     => [
-                'required',
-                'string',
-                'min:3',
-                'max:32',
-                'regex:/^[a-z0-9][a-z0-9\-]{1,30}[a-z0-9]$/',
-                function (string $attribute, mixed $value, Closure $fail): void {
-                    $result = $this->tenantRegistrationService
-                        ->checkSubdomainAvailability((string) $value);
-
-                    if (! $result['available']) {
-                        $fail($result['message']);
-                    }
-                },
-            ],
+            'subdomain'     => 'required|string|min:3|max:32|regex:/^[a-z0-9][a-z0-9\-]{1,30}[a-z0-9]$/',
             'email'         => 'required|email:rfc,dns|max:191',
             'password'      => 'required|string|min:8|confirmed',
             'country'       => 'nullable|string|size:2',
