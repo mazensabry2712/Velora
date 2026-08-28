@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Domain\Subscription\SubscriptionLifecycle;
-use App\Mail\VerifyTenantEmailMail;
 use App\Mail\WelcomeTenantMail;
 use App\Models\Setting;
 use App\Models\SubscriptionPlan;
@@ -122,7 +121,6 @@ final class FinalizeTenantProvisioning implements ShouldQueue
 
             $handoffToken = Crypt::decryptString((string) ($data['provisioning_token_encrypted'] ?? ''));
             $handoffUrl = $this->handoffUrl($domain, $handoffToken);
-            $verificationUrl = (string) ($data['email_verification_url'] ?? '');
 
             $tenant->update([
                 'provisioning_status' => 'ready',
@@ -134,16 +132,6 @@ final class FinalizeTenantProvisioning implements ShouldQueue
             ]);
 
             if ($email !== '') {
-                if ($verifiedAt === null && $verificationUrl !== '') {
-                    Mail::to($email)->queue(new VerifyTenantEmailMail(
-                        $businessName,
-                        $tenant->id,
-                        $domain,
-                        $verificationUrl,
-                        24
-                    ));
-                }
-
                 Mail::to($email)->queue(new WelcomeTenantMail(
                     $businessName,
                     $tenant->id,
@@ -152,6 +140,8 @@ final class FinalizeTenantProvisioning implements ShouldQueue
                 ));
             }
 
+            // The encrypted bootstrap credentials are no longer needed after
+            // the admin is created. Remove them from central tenant data.
             $freshData = $this->tenantData($tenant);
             unset(
                 $freshData['provisioning_password'],
