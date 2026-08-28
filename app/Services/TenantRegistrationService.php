@@ -4,17 +4,21 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Mail\VerifyTenantEmailMail;
 use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
 final class TenantRegistrationService
 {
+    private const EMAIL_VERIFICATION_TTL_HOURS = 24;
+
     public function register(array $data): array
     {
         $this->validateUniqueness($data['subdomain'], $data['email']);
@@ -36,7 +40,9 @@ final class TenantRegistrationService
         }
 
         $subdomain = strtolower(trim($data['subdomain']));
-        $token = $subdomain.'.'.Str::random(48);
+        $provisioningToken = $subdomain.'.'.Str::random(48);
+        $verificationToken = $subdomain.'.'.Str::random(64);
+        $verificationExpiresAt = now()->addHours(self::EMAIL_VERIFICATION_TTL_HOURS);
 
         try {
             $tenant = Tenant::create([
@@ -51,9 +57,12 @@ final class TenantRegistrationService
                 'subscription_plan_id' => $trialPlan->id,
                 'provisioning_status' => 'queued',
                 'provisioning_message' => 'Your workspace is being prepared.',
-                'provisioning_token_hash' => hash('sha256', $token),
+                'provisioning_token_hash' => hash('sha256', $provisioningToken),
                 'provisioning_email' => $data['email'],
                 'provisioning_password' => Crypt::encryptString($data['password']),
+                'email_verification_token_hash' => hash('sha256', $verificationToken),
+                'email_verification_expires_at' => $verificationExpiresAt->toIso8601String(),
+                'email_verification_url' => url('/email/verify/'.$verificationToken),
             ]);
 
             $tenant->domains()->create([
@@ -69,13 +78,21 @@ final class TenantRegistrationService
             throw $e;
         }
 
+        Mail::to($data['email'])->queue(new VerifyTenantEmailMail(
+            $data['business_name'],
+            $tenant->id,
+            $this->buildSubdomain($subdomain),
+            url('/email/verify/'.$verificationToken),
+            self::EMAIL_VERIFICATION_TTL_HOURS,
+        ));
+
         $base = rtrim(config('app.base_domain', 'velora.test'), '.');
 
         return [
             'tenant' => $tenant,
             'subdomain' => $subdomain,
-            'provisioning_token' => $token,
-            'provisioning_url' => url('/signup/provisioning/'.$token),
+            'provisioning_token' => $provisioningToken,
+            'provisioning_url' => url('/signup/provisioning/'.$provisioningToken),
             'redirect_url' => 'http://'.$subdomain.'.'.$base.'/admin/onboarding',
             'trial_days' => 7,
         ];
