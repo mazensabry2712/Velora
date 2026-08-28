@@ -12,6 +12,9 @@ class TenantSubscription extends Model
         'subscription_plan_id',
         'status',
         'trial_ends_at',
+        'read_only_ends_at',
+        'locked_at',
+        'deletion_at',
         'grace_ends_at',
         'starts_at',
         'ends_at',
@@ -31,6 +34,9 @@ class TenantSubscription extends Model
 
     protected $casts = [
         'trial_ends_at'      => 'datetime',
+        'read_only_ends_at'  => 'datetime',
+        'locked_at'          => 'datetime',
+        'deletion_at'        => 'datetime',
         'grace_ends_at'      => 'datetime',
         'starts_at'          => 'datetime',
         'ends_at'            => 'datetime',
