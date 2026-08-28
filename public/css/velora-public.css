@@ -151,6 +151,85 @@ html[data-theme="dark"] .velora-public-button-secondary {
     box-shadow: var(--velora-public-shadow-lg);
 }
 
+/* Legacy Find Account compatibility layer.
+ * The view can keep its existing behavior/JS while its visual primitives
+ * consume the same Public tokens as Landing, Signup, Pricing and Login.
+ */
+body:has(#findAccountForm) {
+    background: var(--velora-bg) !important;
+    color: var(--velora-text) !important;
+}
+
+body:has(#findAccountForm) .bg-surface {
+    background: var(--velora-bg) !important;
+}
+
+body:has(#findAccountForm) .text-white {
+    color: var(--velora-text) !important;
+}
+
+body:has(#findAccountForm) .text-gray-200,
+body:has(#findAccountForm) .text-gray-300,
+body:has(#findAccountForm) .text-gray-400,
+body:has(#findAccountForm) .text-gray-500,
+body:has(#findAccountForm) .text-gray-600 {
+    color: var(--velora-text-muted) !important;
+}
+
+body:has(#findAccountForm) .border-white\/10,
+body:has(#findAccountForm) .border-gray-600,
+body:has(#findAccountForm) .border-gray-700 {
+    border-color: var(--velora-line) !important;
+}
+
+body:has(#findAccountForm) .bg-white\/\[0\.04\],
+body:has(#findAccountForm) .bg-gray-900\/50,
+body:has(#findAccountForm) .bg-gray-900\/60,
+body:has(#findAccountForm) .bg-gray-900\/80 {
+    background: color-mix(in srgb, var(--velora-surface) 92%, var(--velora-bg)) !important;
+}
+
+body:has(#findAccountForm) #subdomain-wrap {
+    border-color: var(--velora-line) !important;
+    background: color-mix(in srgb, var(--velora-surface) 94%, var(--velora-bg)) !important;
+}
+
+body:has(#findAccountForm) #subdomain {
+    color: var(--velora-text) !important;
+}
+
+body:has(#findAccountForm) #submit-btn {
+    background: var(--velora-gradient) !important;
+    box-shadow: 0 14px 30px var(--velora-accent-glow) !important;
+    border-radius: var(--velora-public-radius-sm) !important;
+}
+
+body:has(#findAccountForm) .bg-brand-500\/10,
+body:has(#findAccountForm) .text-brand-200,
+body:has(#findAccountForm) .text-brand-300,
+body:has(#findAccountForm) .text-brand-400,
+body:has(#findAccountForm) .text-brand-500 {
+    color: var(--velora-primary-blue) !important;
+}
+
+body:has(#findAccountForm) .bg-brand-500\/10 {
+    background: color-mix(in srgb, var(--velora-surface) 92%, var(--velora-accent-strong)) !important;
+}
+
+body:has(#findAccountForm) .animate-float {
+    animation-duration: 7s;
+}
+
+html[data-theme="dark"] body:has(#findAccountForm) .bg-surface {
+    background: #080B18 !important;
+}
+
+html[data-theme="dark"] body:has(#findAccountForm) .bg-gray-900\/50,
+html[data-theme="dark"] body:has(#findAccountForm) .bg-gray-900\/60,
+html[data-theme="dark"] body:has(#findAccountForm) .bg-gray-900\/80 {
+    background: #10172A !important;
+}
+
 @media (max-width: 760px) {
     :root {
         --velora-public-gutter: 24px;
