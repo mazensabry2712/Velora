@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Application\Tenant\Actions\RegisterTenant;
 use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
 use App\Models\User;
@@ -24,11 +25,6 @@ final class TenantEmailVerificationGateTest extends TestCase
         ]);
     }
 
-    private function host(): string
-    {
-        return (string) env('APP_DOMAIN', 'velora.test');
-    }
-
     private function createPlan(): SubscriptionPlan
     {
         return SubscriptionPlan::create([
@@ -47,36 +43,30 @@ final class TenantEmailVerificationGateTest extends TestCase
         ]);
     }
 
-    private function signup(string $subdomain): \Illuminate\Testing\TestResponse
+    private function signup(string $subdomain): Tenant
     {
         $plan = $this->createPlan();
 
-        return $this
-            ->withServerVariables([
-                'HTTP_HOST' => $this->host(),
-                'SERVER_NAME' => $this->host(),
-            ])
-            ->post('/signup', [
-                'business_name' => 'Email Gate Clinic',
-                'business_type' => 'Clinic',
-                'subdomain' => $subdomain,
-                'email' => 'gate-'.$subdomain.'@example.com',
-                'password' => 'password123',
-                'password_confirmation' => 'password123',
-                'country' => 'US',
-                'language' => 'en',
-                'terms' => '1',
-                'plan_id' => $plan->id,
-            ]);
+        $result = app(RegisterTenant::class)->execute([
+            'business_name' => 'Email Gate Clinic',
+            'business_type' => 'Clinic',
+            'subdomain' => $subdomain,
+            'email' => 'gate-'.$subdomain.'@gmail.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'country' => 'US',
+            'language' => 'en',
+            'terms' => '1',
+            'plan_id' => $plan->id,
+        ]);
+
+        return Tenant::findOrFail($result['tenant']->getKey());
     }
 
     public function test_signup_does_not_create_tenant_admin_before_email_verification(): void
     {
         $subdomain = 'gate-'.substr(md5(uniqid('', true)), 0, 10);
-        $response = $this->signup($subdomain);
-        $response->assertRedirect();
-
-        $tenant = Tenant::findOrFail($subdomain);
+        $tenant = $this->signup($subdomain);
         $email = (string) $tenant->provisioning_email;
 
         $exists = $tenant->run(fn () => User::where('email', $email)->exists());
@@ -88,13 +78,10 @@ final class TenantEmailVerificationGateTest extends TestCase
     public function test_verified_email_creates_the_admin_and_allows_one_time_handoff(): void
     {
         $subdomain = 'gate-ok-'.substr(md5(uniqid('', true)), 0, 10);
-        $response = $this->signup($subdomain);
-        $response->assertRedirect();
-
-        $tenant = Tenant::findOrFail($subdomain);
+        $tenant = $this->signup($subdomain);
         $verificationToken = Crypt::decryptString((string) $tenant->email_verification_token_encrypted);
 
-        $verify = $this->get('http://'.$this->host().'/email/verify/'.$verificationToken);
+        $verify = $this->get('http://'.env('APP_DOMAIN', 'velora.test').'/email/verify/'.$verificationToken);
         $tenant = $tenant->fresh();
 
         $this->assertNotNull($tenant->email_verified_at);
