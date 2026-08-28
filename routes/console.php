@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -14,17 +16,21 @@ Artisan::command('inspire', function () {
 |--------------------------------------------------------------------------
 */
 
-// Check subscription status every hour (trial→grace, grace→expired transitions)
+// Keep trial/read-only/locked transitions deterministic.
 Schedule::command('subscriptions:check-status')->hourly();
 
-// Send trial & grace reminder emails daily at 9 AM
+// Permanently purge tenants after the 30-day locked period.
+// This runs daily; the command is idempotent and only targets due tenants.
+Schedule::command('subscriptions:purge-expired --force')->dailyAt('02:30');
+
+// Send lifecycle reminder emails daily at 09:00.
 Schedule::command('subscriptions:send-trial-reminders')->dailyAt('09:00');
 
-// Process appointment reminders every 15 minutes
+// Process appointment reminders every 15 minutes.
 Schedule::command('reminders:process')->everyFifteenMinutes();
 
-// Aggregate analytics data daily at 00:30 (for yesterday)
+// Aggregate analytics data daily at 00:30 (for yesterday).
 Schedule::command('analytics:aggregate')->dailyAt('00:30');
 
-// Dispatch trial nudge emails daily at 09:00 (Day 1 / 3 / 7 / 12 of trial)
+// Dispatch trial nudge emails daily at 09:00.
 Schedule::command('trial:nudges')->dailyAt('09:00');
