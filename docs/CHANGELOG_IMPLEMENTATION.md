@@ -2,7 +2,96 @@
 
 ## Purpose
 
-This file is the living record of important work already performed and engineering work that should be performed next.
+This file is the living record of the important work already performed and the engineering work that should be performed next.
+
+## Application Page Inventory
+
+### Public / Landing — Central Domain
+
+- `/` — Landing / marketing page.
+- `/pricing` — Pricing page.
+- `/signup` — Tenant signup.
+- `/signup/provisioning/{token}` — Signup provisioning page.
+- `/signup/provisioning/{token}/status` — Provisioning status endpoint/page contract.
+- `/signup/provisioning/{token}/resend` — Verification resend action.
+- `/email/verify/{token}` — Tenant email verification.
+- `/login` — Central find-account / tenant discovery page.
+- `/{locale}`, `/lang/{locale}`, `/region/{locale}/{country}`, `/currency/{currency}` — public locale/region/currency switching routes.
+
+### Tenant Public / Customer
+
+- `/` — Tenant root redirect to booking.
+- `/book` — Public booking page.
+- `/queue` — Queue status redirect.
+- `/queue/status` — Public queue status.
+- `/my-queue` — Authenticated customer's queue page.
+- `/login` — Tenant login page.
+- `/change-language/{lang}` — Tenant language switch and authenticated-user locale persistence.
+
+### Tenant Authentication
+
+- `/login` — Tenant login UI.
+- `/api/auth/login` — Tenant login API.
+- `/api/auth/logout` — Tenant logout API.
+- Forgot Password / Reset Password — not implemented as a full Tenant-facing web flow yet; current Login UI intentionally exposes a disabled placeholder rather than a fake route.
+
+### Tenant Admin / Workspace
+
+- `/admin/dashboard` — Admin dashboard.
+- `/admin/onboarding` — Initial workspace onboarding.
+- `/admin/profile` — Profile management.
+- `/admin/appointments` — Appointment management.
+- `/admin/staff` — Staff management.
+- `/admin/customers` — Customer management.
+- `/admin/queue` — Queue day listing.
+- `/admin/queue/{date}` — Queue for a specific date.
+- `/admin/queue/{date}/print` — Printable queue view.
+- `/admin/queue/export-excel` — Queue export action.
+- `/admin/reports` — Reports.
+- `/admin/settings` — Tenant settings.
+- `/admin/assistants` — Assistant management.
+- `/admin/subscription` — Subscription overview.
+- `/admin/subscription/billing` — Subscription billing.
+- `/admin/subscription/upgrade` — Upgrade flow.
+
+### Tenant Billing / Payment Return Pages
+
+- `/billing/expired` — Expired subscription page.
+- `/billing/success` — Billing success page.
+- `/billing/moyasar/pay` — Moyasar payment entry.
+- `/billing/moyasar/callback` — Moyasar callback/return.
+- Stripe and Moyasar webhook endpoints exist separately and are API/webhook endpoints, not user-facing pages.
+
+### Tenant APIs Behind the Pages
+
+The Tenant application also exposes API routes for appointments, services, timeslots, working days, staff, queue operations, customers, settings and invoices. These are supporting endpoints rather than separate web pages and should not be counted as additional UI screens unless a dedicated view exists.
+
+### Super Admin — Intentionally Outside Tenant Language Scope For Now
+
+- `/super-admin/login`
+- `/super-admin/dashboard`
+- `/super-admin/tenants`
+- `/super-admin/subscription-plans`
+- `/super-admin/activity-logs`
+- `/super-admin/settings`
+- `/super-admin/notifications`
+- `/super-admin/analytics`
+- `/super-admin/reports`
+- `/super-admin/kpis`
+- `/super-admin/upgrade-requests`
+- `/super-admin/upgrade-requests/{id}`
+- `/super-admin/countries`
+- `/super-admin/country-pricing`
+- `/super-admin/promo-codes`
+- `/super-admin/lang/{locale}` — currently limited to the Super Admin's own central locale behavior.
+
+## Language Scope
+
+The 15 supported platform locales are:
+
+`ar`, `en`, `fr`, `es`, `de`, `it`, `pt`, `ru`, `zh`, `ja`, `tr`, `hi`, `ko`, `nl`, `id`.
+
+The Tenant/Public language scope covers Public/Landing, Tenant Customer, Tenant Authentication, Tenant Admin and Tenant Billing surfaces. Super Admin localization remains a separate scope for now.
 
 ## Already Implemented / Observed
 
@@ -54,7 +143,7 @@ This file is the living record of important work already performed and engineeri
 - Settings structure was rebuilt and split into partial views.
 - Arabic business name support was added to the rendered settings form.
 - The platform UI locale registry contains the same supported language set used by the Landing: `ar`, `en`, `fr`, `es`, `de`, `it`, `pt`, `ru`, `zh`, `ja`, `tr`, `hi`, `ko`, `nl`, `id`.
-- Arabic is the current public/default fallback, but the public default is read from the central `SystemSetting` key `public_default_locale`, allowing a future Super Admin language selector to change the public default without hard-coding Arabic into application behavior.
+- Arabic is the current public/default fallback, but the public default is now read from the central `SystemSetting` key `public_default_locale`, allowing a future Super Admin language selector to change the public default without hard-coding Arabic into application behavior.
 - Explicit locale routes, persisted public session/cookie state and the configurable public default continue to drive the central public experience.
 - Tenant email-verification pages resolve locale from the persisted tenant language.
 - Arabic verification rendering supports RTL and the Velora-branded verification page.
@@ -76,6 +165,7 @@ This file is the living record of important work already performed and engineeri
 ### Authentication / Signup / Tenant Handoff
 
 - Signup creates the central Tenant and Domain before tenant workspace provisioning.
+- Signup normalizes registration values and performs Tenant + Domain creation atomically within the registration transaction.
 - Verification email is sent during signup and the verification token is hashed/encrypted with an expiry.
 - Tenant provisioning no longer creates the first Admin before email verification.
 - Verification is the hard gate for creation/activation of the first Tenant Admin.
@@ -83,46 +173,46 @@ This file is the living record of important work already performed and engineeri
 - Handoff requires a ready workspace, verified tenant email, an existing verified tenant user and a valid one-time provisioning token.
 - Tenant login rejects unverified accounts.
 - Verification, provisioning and handoff flows have dedicated regression coverage.
-- Signup registration now normalizes the registration email/subdomain and performs central Tenant + Domain creation atomically inside the registration transaction.
-- Signup client-flow coverage now includes successful registration, duplicate email/subdomain protection, supported-language/default-language inheritance, invalid input, JSON response contract, verification replay/expiry, provisioning-link expiry, resend throttling and verified handoff behavior.
+- Tenant Login persists locale on the User and carries that locale into the authenticated session.
+- Tenant Login API responses were aligned with the translation catalog instead of returning English-only messages.
 
 ### Authentication UI / Frontend Consistency
 
-- A shared `public/css/velora-auth.css` layer consumes the official Velora brand tokens for authentication screens.
+- A shared `public/css/velora-auth.css` layer now consumes the official Velora brand tokens for authentication screens.
 - Tenant Login and Super Admin Login use the same responsive auth shell, official Velora gradient, typography, theme handling and RTL/LTR behavior.
 - Tenant Login and Super Admin Login use the Velora logo asset and no longer define independent legacy Indigo brand palettes.
 - The email-verification completion screen uses the shared auth visual language and `logo-bais.png`.
 - Find Account inherits the same Velora background, surfaces, typography, borders and primary-action styling through the shared auth layer without changing its existing JavaScript or routing behavior.
 - Auth theme persistence uses the shared `velora-theme` storage key on the updated auth screens.
-- Tenant Signup has a dedicated UI contract test covering the form structure, CSRF, POST contract, supported locales, direction metadata and password redisplay safety.
-- Tenant Login uses the shared locale/message catalog rather than an Arabic-vs-English text branch for core copy.
-- Tenant Login has one language dropdown, locale-aware RTL/LTR markup and a single-submit guard.
-- Tenant Login API responses use localized auth messages instead of English-only hard-coded success/failure/throttle copy.
-- Login localization has dedicated regression coverage across the supported locale registry.
+- Tenant Login now uses the locale `messages.*` catalog for its core copy and exposes a single responsive language dropdown.
+- Login UI direction and locale behavior are covered by `TenantLoginLocaleUiTest`.
 
 ### Translation Coverage
 
-- All 15 supported locales have real translated `auth.php` and `booking.php` core bundles.
+- All 15 supported locales now have real translated `auth.php` and `booking.php` core bundles.
 - All 15 supported locales have valid direction metadata (`rtl` for Arabic; `ltr` for the remaining supported locales).
-- `messages.php`, `notifications.php`, `pagination.php`, `passwords.php` and `validation.php` coverage has been expanded across the supported locale set, with regression coverage for the core bundle/parity requirements currently enforced by the test suite.
-- `tests/Feature/SupportedLocaleCoreCoverageTest.php` verifies core translation bundle existence, locale direction, and notification key/placeholder parity.
-- Translation coverage is a milestone, not a claim that every Tenant-facing screen is fully translated.
-- Remaining translation work includes feature-specific dashboard/admin copy, hard-coded Blade/JavaScript strings, emails and generated documents, plus quality review of runtime validation messages.
+- `messages.php` coverage was expanded for all supported tenant locales.
+- `notifications.php`, `pagination.php`, `passwords.php` and `validation.php` have been expanded for supported locales as core translation bundles.
+- `SupportedLocaleCoreCoverageTest` now checks core bundle existence and notification key/placeholder parity for the supported locales.
+- Translation bundle coverage is a core infrastructure milestone, not a claim that every Tenant-facing screen is fully translated.
+- Remaining translation work includes feature-specific dashboard/admin copy, hard-coded Blade/JavaScript strings, emails and generated documents.
+
+### Signup E2E / Frontend Contract
+
+- `SignupClientFlowTest` covers the client-facing signup lifecycle including validation, duplicates, locale selection/defaulting, verification, expiry, resend throttling, and machine-readable JSON contract behavior.
+- `SignupUiContractTest` verifies the Signup page structure, supported locales, language direction, required fields, CSRF protection, and safe validation redisplay behavior.
+- `SignupTenantHandoffTest` covers unverified access, successful verification and tenant handoff behavior.
+- `TenantEmailVerificationGateTest` verifies the Admin security gate and explicit Signup language/default inheritance.
+- `TenantVerificationLocaleTest` verifies tenant-language and explicit-language override behavior for the verification page using a real tenant database context.
+- `TenantEmailVerificationTest` covers verification route/mail/tenant provisioning metadata.
 
 ### Testing
 
 - Feature tests cover booking, appointments, queue, billing, localization and other administration areas.
 - Dedicated test base classes exist for tenant and super-admin scenarios.
-- `TenantEmailVerificationGateTest` verifies the Admin security gate and explicit Signup language/default inheritance.
-- `TenantVerificationLocaleTest` verifies tenant-language and explicit-language override behavior for the verification page using a real tenant database context.
-- `TenantEmailVerificationTest` covers verification route/mail/tenant provisioning metadata.
-- `SignupTenantHandoffTest` covers unverified access, verification and handoff behavior.
-- `SignupClientFlowTest` covers end-to-end HTTP Signup client scenarios and security edge cases.
-- `SignupUiContractTest` covers the Signup frontend contract across the supported locale registry.
-- `TenantLoginLocaleUiTest` covers Tenant Login localization/UI invariants across the supported locale registry.
-- `SupportedLocaleCoreCoverageTest` verifies core translation coverage and notification key/placeholder parity.
-- Latest user-reported local full suite: **537 tests, 4311 assertions, 0 failures, 0 errors**.
-- Latest user-reported focused Login UI suite: **5 tests, 333 assertions, 0 failures, 0 errors**.
+- `SupportedLocaleCoreCoverageTest` verifies core translation bundle existence, locale direction and notification key/placeholder parity for supported locales.
+- `TenantLoginLocaleUiTest` verifies Tenant Login localization behavior and UI contract across supported locales.
+- Last confirmed user-reported local full suite: **537 tests, 4311 assertions, 0 failures, 0 errors**.
 
 ## Important Risks Identified
 
@@ -139,15 +229,16 @@ This file is the living record of important work already performed and engineeri
 6. Public endpoints need explicit abuse/rate-limit verification.
 7. Subscription state transitions should be decoupled from normal requests where possible.
 8. Database indexes/performance should be reviewed under realistic tenant volume.
-9. Real email delivery must be validated outside the test suite with a working SMTP provider/sandbox.
+9. Real email delivery needs external SMTP/provider validation; local Mailtrap attempts have previously depended on queue/SMTP configuration.
 
 ### P2
 
 10. Dashboard analytics should be refactored and optimized further.
 11. Remaining hard-coded translations should be localized.
-12. Browser/mobile/RTL visual QA should be completed, including the complete Tenant language lifecycle across all 15 supported UI locales.
-13. Tenant Forgot Password / Reset Password flow still needs to be implemented and tested as a real Tenant-domain flow.
-14. Documentation should be synchronized whenever a new implementation milestone is merged.
+12. Browser/mobile/RTL visual QA should be completed across the Tenant language lifecycle.
+13. Forgot Password / Reset Password should be implemented as a complete Tenant-aware flow.
+14. Generated emails/PDFs/documents should be reviewed for locale completeness.
+15. Production operations/documentation should be completed.
 
 ## Execution Rule
 
@@ -162,51 +253,25 @@ Every completed task should update this file with:
 
 ## Latest Implementation Entry
 
-### 2026-08-29 — Signup E2E Hardening, Tenant Login Localization & Documentation Sync
+### 2026-08-29 — Application Page Inventory & Scope Clarification
 
 Scope:
-- Harden Signup from a real client perspective across frontend and backend.
-- Preserve the intended security order: Tenant/Domain first, verification gate, Admin creation only after verification, then one-time handoff.
-- Add Signup UI contract coverage.
-- Make Tenant Login language behavior consistent with the 15-locale Tenant lifecycle.
-- Localize Tenant Login API responses.
-- Synchronize this implementation log with the actual repository state and latest user-reported tests.
+- Document the current user-facing page inventory for Public/Landing, Tenant Customer, Tenant Authentication, Tenant Admin, Tenant Billing and Super Admin.
+- Explicitly distinguish web pages from supporting API endpoints.
+- Clarify that the 15-locale Tenant localization scope excludes Super Admin for now.
+- Record the current missing authentication screen: a complete Tenant Forgot/Reset Password flow.
 
 Changed:
-- `app/Services/TenantRegistrationService.php`
-- `app/Http/Controllers/Auth/TenantRegistrationController.php`
-- `app/Http/Controllers/Auth/TenantAuthController.php`
-- `resources/views/auth/login.blade.php`
-- `tests/Feature/SignupClientFlowTest.php`
-- `tests/Feature/SignupUiContractTest.php`
-- `tests/Feature/TenantLoginLocaleUiTest.php`
-- `docs/SIGNUP_E2E_TEST_PLAN.md`
-- `docs/TRANSLATION_COVERAGE.md`
 - `docs/CHANGELOG_IMPLEMENTATION.md`
 
-Behavior:
-- Signup registration uses supported locale state and preserves the configured public default when language is omitted.
-- Tenant + Domain registration is atomic and input is normalized before persistence.
-- First Tenant Admin remains unavailable before email verification.
-- Successful verification can return a 302 handoff redirect when the workspace is ready; tests assert the actual flow rather than forcing a 2xx response.
-- Tenant Login uses the locale/message catalog for visible copy and API responses.
-- Login language selection is presented as a single dropdown and persists through the existing Tenant language mechanism.
-
 Validation:
-- User-reported `SignupClientFlowTest`: **15 tests, 106 assertions, 0 failures, 0 errors**.
-- User-reported `SignupTenantHandoffTest`: **8 tests, 31 assertions, 0 failures, 0 errors**.
-- User-reported `TenantEmailVerificationGateTest`: **4 tests, 10 assertions, 0 failures, 0 errors**.
-- User-reported `SignupUiContractTest`: **3 tests, 78 assertions, 0 failures, 0 errors**.
-- User-reported `TenantLoginLocaleUiTest`: **5 tests, 333 assertions, 0 failures, 0 errors**.
-- User-reported latest complete local suite: **537 tests, 4311 assertions, 0 failures, 0 errors**.
-- SMTP/Mailtrap delivery remains an external environment validation item; the local queue previously demonstrated that the verification mail job can fail on external SMTP connectivity even when the queue itself is healthy.
+- Inventory was reconciled against the current central and tenant route definitions.
+- Last user-confirmed full suite remains **537 tests, 4311 assertions, 0 failures, 0 errors**.
 
 Follow-up:
-- Implement and test real Tenant Forgot Password / Reset Password.
-- Perform browser/mobile/RTL visual QA for Signup → Verification → Login → Dashboard.
-- Replace remaining hard-coded Tenant Dashboard/admin strings with feature namespaces.
-- Add stronger Tenant isolation and object-level authorization tests.
-- Validate real SMTP delivery with Mailtrap or another controlled sandbox before production.
+- Complete Tenant Forgot/Reset Password.
+- Continue page-by-page Tenant localization and hard-coded string audit.
+- Perform browser/mobile/RTL visual QA over the documented page inventory.
 
 ## Previous Implementation Entry
 
@@ -246,52 +311,12 @@ Behavior:
 
 Validation:
 - The user successfully migrated all existing tenant databases with `php artisan tenants:migrate --force`.
-- The targeted `TenantEmailVerificationGateTest` now passes: **4 tests, 10 assertions**.
-- The latest full suite is recorded in the later 2026-08-29 implementation entry.
+- The targeted `TenantEmailVerificationGateTest` passed: **4 tests, 10 assertions**.
+- The later expanded Authentication/Signup regression sequence culminated in the user-reported green full suite of **537 tests, 4311 assertions, 0 failures, 0 errors**.
 - Browser validation is still required for all supported languages, including RTL and non-Latin languages.
 
 Follow-up:
+- Complete the documented page-by-page Tenant localization audit.
+- Add/expand automated regression coverage for a manual Tenant language change surviving logout/login.
+- Add the future Super Admin `Public Default Language` control against `SystemSetting::get/set('public_default_locale', ...)`.
 - Continue the documented P0 tenant-isolation and object-level authorization audit.
-- Complete browser/mobile visual QA.
-
-### 2026-08-28 — Core Translation Coverage for Supported Locales
-
-Scope:
-- Ensure every supported platform locale has real core translation bundles.
-- Add regression coverage for core bundle existence, locale direction and selected parity requirements.
-
-Changed:
-- `lang/*/auth.php`
-- `lang/*/booking.php`
-- `lang/*/messages.php`
-- `lang/*/notifications.php`
-- `lang/*/pagination.php`
-- `lang/*/passwords.php`
-- `lang/*/validation.php`
-- `tests/Feature/SupportedLocaleCoreCoverageTest.php`
-- `docs/TRANSLATION_COVERAGE.md`
-
-Validation:
-- User-reported core translation coverage test: **3 tests, 1126 assertions, 0 failures, 0 errors** after the expanded core checks.
-- User-reported latest full suite after the expanded translation pass and later auth hardening is captured in the latest implementation entry.
-
-Follow-up:
-- Translate feature-specific Dashboard/admin copy.
-- Audit hard-coded Blade/JavaScript strings, emails and generated documents.
-
-### 2026-08-28 — Unified Velora Authentication UI
-
-Scope:
-- Establish one shared visual system for Tenant Login, Super Admin Login, Find Account and email-verification completion.
-- Keep authentication/security behavior unchanged while removing divergent legacy visual implementations.
-- Align the auth experience with the official Velora brand guidelines and the existing RTL/LTR localization model.
-
-Changed:
-- `public/css/velora-auth.css`
-- `resources/views/auth/login.blade.php`
-- `resources/views/super-admin/login.blade.php`
-- `resources/views/landing/email-verified.blade.php`
-
-Validation:
-- A fresh local full-suite run after the UI commit was reported by the user: **509 tests, 2665 assertions, 0 failures, 0 errors**.
-- SMTP/Mailtrap delivery remains an external environment validation item.
