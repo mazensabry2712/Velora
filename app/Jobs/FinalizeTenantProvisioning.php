@@ -37,9 +37,9 @@ final class FinalizeTenantProvisioning implements ShouldQueue
         $this->markProvisioning($tenant, 'finalizing');
 
         try {
-            $email = (string) ($data['provisioning_email'] ?? $data['email'] ?? '');
-            $businessName = (string) ($data['name'] ?? $data['business_name'] ?? 'Tenant');
-            $language = (string) ($data['language'] ?? 'en');
+            $email = (string) ($tenant->provisioning_email ?? $tenant->email ?? '');
+            $businessName = (string) ($tenant->name ?? 'Tenant');
+            $language = (string) ($tenant->language ?? 'en');
             $passwordPayload = (string) ($data['provisioning_password'] ?? '');
 
             if ($email === '' || $passwordPayload === '') {
@@ -47,7 +47,7 @@ final class FinalizeTenantProvisioning implements ShouldQueue
             }
 
             $password = Crypt::decryptString($passwordPayload);
-            $verifiedAt = $data['email_verified_at'] ?? null;
+            $verifiedAt = $tenant->email_verified_at;
 
             $tenant->run(function () use ($email, $businessName, $language, $verifiedAt, $password): void {
                 $adminRole = Role::firstOrCreate([
@@ -83,7 +83,7 @@ final class FinalizeTenantProvisioning implements ShouldQueue
                 );
             });
 
-            $planId = isset($data['subscription_plan_id']) ? (int) $data['subscription_plan_id'] : null;
+            $planId = $tenant->subscription_plan_id ? (int) $tenant->subscription_plan_id : null;
             $trialPlan = $planId
                 ? SubscriptionPlan::where('is_active', true)->find($planId)
                 : null;
@@ -108,7 +108,7 @@ final class FinalizeTenantProvisioning implements ShouldQueue
                     'starts_at' => $trialStartsAt,
                     'ends_at' => null,
                     'amount_paid' => 0,
-                    'payment_method' => $this->gateway((string) ($data['country'] ?? 'US')),
+                    'payment_method' => $this->gateway((string) ($tenant->country ?? 'US')),
                     'notes' => 'Auto-created 7-day trial. Read-only for 14 days, locked for 6 days, then permanently deleted.',
                 ]
             );
@@ -140,13 +140,8 @@ final class FinalizeTenantProvisioning implements ShouldQueue
                 ));
             }
 
-            // The encrypted bootstrap credentials are no longer needed after
-            // the admin is created. Remove them from central tenant data.
             $freshData = $this->tenantData($tenant);
-            unset(
-                $freshData['provisioning_password'],
-                $freshData['provisioning_token_encrypted']
-            );
+            unset($freshData['provisioning_password'], $freshData['provisioning_token_encrypted']);
             $tenant->update([
                 'data' => json_encode($freshData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ]);
