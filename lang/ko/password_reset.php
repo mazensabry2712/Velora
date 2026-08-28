@@ -1,0 +1,2 @@
+<?php
+return ['title'=>'비밀번호 복구','heading'=>'비밀번호를 잊으셨나요?','description'=>'이메일을 입력하면 안전한 재설정 링크를 보내드립니다.','send_link'=>'재설정 링크 보내기','back_to_login'=>'로그인으로 돌아가기','secure_recovery'=>'안전한 계정 복구','reset_title'=>'비밀번호 재설정','reset_heading'=>'새 비밀번호를 선택하세요','reset_description'=>'Velora 워크스페이스 계정의 새 비밀번호를 만드세요.','confirm_password'=>'새 비밀번호 확인','update_password'=>'비밀번호 업데이트','token_note'=>'이 링크는 60분 후 만료되며 한 번만 사용할 수 있습니다.','sent'=>'계정이 존재하면 재설정 링크를 이메일로 보냈습니다.','reset_success'=>'비밀번호가 재설정되었습니다. 다시 로그인하세요.','email_subject'=>'Velora 비밀번호 재설정'];
