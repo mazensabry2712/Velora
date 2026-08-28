@@ -16,7 +16,6 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Spatie\Permission\Models\Role;
@@ -26,12 +25,9 @@ final class FinalizeTenantProvisioning implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
-
     public int $timeout = 180;
 
-    public function __construct(public readonly Tenant $tenant)
-    {
-    }
+    public function __construct(public readonly Tenant $tenant) {}
 
     public function handle(): void
     {
@@ -108,7 +104,12 @@ final class FinalizeTenantProvisioning implements ShouldQueue
                 ]
             );
 
-            $domain = $tenant->domains()->first()?->domain;
+            $domainModel = $tenant->domains()->first();
+            $domain = $domainModel?->domain;
+
+            if ($domainModel && str_ends_with((string) $domain, '.test')) {
+                (new LinkTenantDomain($domainModel))->handle();
+            }
 
             $tenant->update([
                 'provisioning_status' => 'ready',
@@ -120,7 +121,7 @@ final class FinalizeTenantProvisioning implements ShouldQueue
             try {
                 Mail::to((string) ($data['email'] ?? $data['provisioning_email']))
                     ->queue(new WelcomeTenantMail(
-                        (string) ($data['name'] ?? 'Tenant'),
+                        $businessName,
                         $tenant->id,
                         (string) $domain,
                         SubscriptionLifecycle::TRIAL_DAYS
@@ -132,12 +133,10 @@ final class FinalizeTenantProvisioning implements ShouldQueue
             }
         } catch (\Throwable $e) {
             $this->markProvisioning($tenant, 'failed', $e->getMessage());
-
             Log::error('Tenant provisioning finalization failed.', [
                 'tenant_id' => $tenant->id,
                 'error' => $e->getMessage(),
             ]);
-
             throw $e;
         }
     }
@@ -151,11 +150,9 @@ final class FinalizeTenantProvisioning implements ShouldQueue
     private function tenantData(Tenant $tenant): array
     {
         $raw = $tenant->getRawOriginal('data');
-
         if (is_array($raw)) {
             return $raw;
         }
-
         return is_string($raw) ? (json_decode($raw, true) ?: []) : [];
     }
 
@@ -170,22 +167,18 @@ final class FinalizeTenantProvisioning implements ShouldQueue
     private function gateway(string $country): string
     {
         $code = strtoupper(trim($country));
-
         if ($code === 'EG') {
             return 'paymob';
         }
-
         if (in_array($code, ['SA', 'AE', 'KW', 'BH', 'OM', 'QA'], true)) {
             return 'moyasar';
         }
-
         return 'stripe';
     }
 
     private function handoffUrl(?string $domain, string $token): string
     {
         $scheme = str_starts_with(config('app.url', 'http://velora.test'), 'https') ? 'https' : 'http';
-
         return $scheme.'://'.$domain.'/__velora/provisioning/'.$token;
     }
 }
