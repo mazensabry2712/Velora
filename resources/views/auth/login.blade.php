@@ -1,7 +1,6 @@
 <!doctype html>
 @php
     $locale = app()->getLocale() ?: config('app.locale', 'en');
-    $isArabic = $locale === 'ar';
     $isRtl = in_array($locale, ['ar', 'he', 'fa'], true);
     $businessSettings = \App\Models\Setting::where('tenant_id', tenant()->id)->first();
     $businessLogo = $businessSettings?->logo ?? null;
@@ -19,7 +18,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $isArabic ? 'تسجيل الدخول' : 'Sign in' }} · {{ $displayName }}</title>
+    <title>{{ __('Login') }} · {{ $displayName }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -48,74 +47,83 @@
                 @endif
                 <span>
                     <strong>{{ $displayName }}</strong>
-                    <span>{{ $isArabic ? 'إدارة أعمالك بسهولة' : 'Manage your business with clarity' }}</span>
+                    <span>{{ __('Manage your business with clarity') }}</span>
                 </span>
             </a>
 
             <div class="va-tools">
-                <button id="themeToggle" type="button" class="va-tool" aria-label="{{ $isArabic ? 'تغيير المظهر' : 'Toggle theme' }}">◐</button>
-                @foreach ($supportedLocales as $supportedLocale)
-                    <a class="va-tool" href="{{ route('tenant.change.language', ['lang' => $supportedLocale]) }}">{{ strtoupper($supportedLocale) }}</a>
-                @endforeach
+                <button id="themeToggle" type="button" class="va-tool" aria-label="{{ __('Toggle theme') }}">◐</button>
+                <div class="va-language-menu">
+                    <button id="languageToggle" type="button" class="va-tool va-language-toggle" aria-haspopup="listbox" aria-expanded="false" aria-label="{{ __('Language') }}">
+                        {{ strtoupper($locale) }}
+                    </button>
+                    <div id="languageMenu" class="va-language-dropdown" role="listbox" hidden>
+                        @foreach ($supportedLocales as $supportedLocale)
+                            <a role="option" class="va-language-option{{ $supportedLocale === $locale ? ' active' : '' }}" aria-selected="{{ $supportedLocale === $locale ? 'true' : 'false' }}" href="{{ route('tenant.change.language', ['lang' => $supportedLocale]) }}">
+                                {{ strtoupper($supportedLocale) }}
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
             </div>
         </header>
 
         <main class="va-main">
             <section class="va-panel copy">
                 <div>
-                    <div class="va-kicker"><span class="va-dot"></span>{{ $isArabic ? 'مساحة عملك' : 'Your workspace' }}</div>
+                    <div class="va-kicker"><span class="va-dot"></span>{{ __('Workspace') }}</div>
                     <h1 class="va-title">
-                        {{ $isArabic ? 'أهلاً بك في ' : 'Welcome back to ' }}<span>Velora</span>
+                        {{ __('Welcome back') }} <span>Velora</span>
                     </h1>
                     <p class="va-copy">
-                        {{ $isArabic ? 'سجّل الدخول لمتابعة المواعيد، العملاء، الفريق، والحجوزات من مكان واحد.' : 'Sign in to keep your appointments, customers, team and bookings moving from one place.' }}
+                        {{ __('Sign in to keep your appointments, customers, team and bookings moving from one place.') }}
                     </p>
 
                     <div class="va-feature-list">
-                        <div class="va-feature"><span class="va-icon">✓</span><div><strong>{{ $isArabic ? 'بياناتك في سياق شركتك' : 'Workspace-aware access' }}</strong><span>{{ $isArabic ? 'يتم الدخول داخل مساحة العمل الصحيحة تلقائيًا.' : 'Your session is opened inside the correct tenant workspace.' }}</span></div></div>
-                        <div class="va-feature"><span class="va-icon">✓</span><div><strong>{{ $isArabic ? 'حماية قبل الوصول' : 'Verification first' }}</strong><span>{{ $isArabic ? 'لا يمكن للحساب غير الموثق الدخول حتى يتم تأكيد البريد.' : 'Unverified accounts are blocked until email verification is complete.' }}</span></div></div>
-                        <div class="va-feature"><span class="va-icon">✓</span><div><strong>{{ $isArabic ? 'واجهة ثنائية اللغة' : 'Bilingual by design' }}</strong><span>{{ $isArabic ? 'يدعم RTL وLTR بشكل متناسق.' : 'RTL and LTR are handled consistently across the experience.' }}</span></div></div>
+                        <div class="va-feature"><span class="va-icon">✓</span><div><strong>{{ __('Workspace-aware access') }}</strong><span>{{ __('Your session is opened inside the correct tenant workspace.') }}</span></div></div>
+                        <div class="va-feature"><span class="va-icon">✓</span><div><strong>{{ __('Verification first') }}</strong><span>{{ __('Unverified accounts are blocked until email verification is complete.') }}</span></div></div>
+                        <div class="va-feature"><span class="va-icon">✓</span><div><strong>{{ __('Bilingual by design') }}</strong><span>{{ __('RTL and LTR are handled consistently across the experience.') }}</span></div></div>
                     </div>
                 </div>
-                <p class="va-footnote">Velora · {{ date('Y') }} · {{ $isArabic ? 'وصول آمن إلى مساحة العمل' : 'Secure access to your workspace' }}</p>
+                <p class="va-footnote">Velora · {{ date('Y') }} · {{ __('Secure access to your workspace') }}</p>
             </section>
 
             <section class="va-panel form">
                 <div class="va-form-head">
                     <div>
-                        <h2>{{ $isArabic ? 'تسجيل الدخول' : 'Sign in' }}</h2>
-                        <p>{{ $isArabic ? 'استخدم بيانات حسابك لمتابعة العمل.' : 'Use your account credentials to continue.' }}</p>
+                        <h2>{{ __('Login') }}</h2>
+                        <p>{{ __('Use your account credentials to continue.') }}</p>
                     </div>
                 </div>
 
                 <form id="loginForm" class="va-form" novalidate>
                     @csrf
                     <div class="va-field">
-                        <label for="email">{{ $isArabic ? 'البريد الإلكتروني' : 'Email address' }}</label>
-                        <input class="va-input" type="email" id="email" name="email" autocomplete="username" required autofocus placeholder="{{ $isArabic ? 'name@example.com' : 'name@example.com' }}">
+                        <label for="email">{{ __('Email') }}</label>
+                        <input class="va-input" type="email" id="email" name="email" autocomplete="username" required autofocus placeholder="name@example.com">
                     </div>
 
                     <div class="va-field">
-                        <label for="password">{{ $isArabic ? 'كلمة المرور' : 'Password' }}</label>
+                        <label for="password">{{ __('Password') }}</label>
                         <input class="va-input" type="password" id="password" name="password" autocomplete="current-password" required placeholder="••••••••">
                     </div>
 
                     <div class="va-row">
-                        <label class="va-check"><input type="checkbox" id="remember"> <span>{{ $isArabic ? 'تذكرني' : 'Remember me' }}</span></label>
-                        <a class="va-link" href="#">{{ $isArabic ? 'نسيت كلمة المرور؟' : 'Forgot password?' }}</a>
+                        <label class="va-check"><input type="checkbox" id="remember"> <span>{{ __('Remember me') }}</span></label>
+                        <a class="va-link" href="{{ route('password.request') }}">{{ __('Forgot your password?') }}</a>
                     </div>
 
                     <div id="errorMessage" class="va-alert error" hidden></div>
                     <div id="successMessage" class="va-alert success" hidden></div>
 
                     <button type="submit" id="submitBtn" class="va-button">
-                        <span id="btnText">{{ $isArabic ? 'دخول' : 'Sign in' }}</span>
+                        <span id="btnText">{{ __('Login') }}</span>
                         <span id="loadingSpinner" hidden aria-hidden="true">◌</span>
                     </button>
                 </form>
 
                 <div class="va-meta">
-                    {{ $isArabic ? 'لديك شركة أخرى؟ استخدم رابط مساحة العمل الخاصة بها.' : 'Need another workspace? Open its tenant domain and sign in there.' }}
+                    {{ __('Need another workspace? Open its tenant domain and sign in there.') }}
                 </div>
             </section>
         </main>
@@ -123,13 +131,12 @@
 </div>
 
 <script>
-    const isArabic = @json($isArabic);
     const texts = {
-        loggingIn: isArabic ? 'جاري تسجيل الدخول...' : 'Signing in...',
-        login: isArabic ? 'دخول' : 'Sign in',
-        loginSuccess: isArabic ? 'تم تسجيل الدخول بنجاح.' : 'Signed in successfully.',
-        loginError: isArabic ? 'بيانات الدخول غير صحيحة.' : 'The provided credentials are incorrect.',
-        errorOccurred: isArabic ? 'حدث خطأ. حاول مرة أخرى.' : 'Something went wrong. Please try again.',
+        loggingIn: @json(__('Logging in...')),
+        login: @json(__('Login')),
+        loginSuccess: @json(__('Login successful!')),
+        loginError: @json(__('Invalid credentials')),
+        errorOccurred: @json(__('An error occurred! Please try again')),
     };
 
     const root = document.documentElement;
@@ -138,6 +145,21 @@
         const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
         root.dataset.theme = next;
         localStorage.setItem('velora-theme', next);
+    });
+
+    const languageToggle = document.getElementById('languageToggle');
+    const languageMenu = document.getElementById('languageMenu');
+    languageToggle.addEventListener('click', () => {
+        const open = languageMenu.hidden;
+        languageMenu.hidden = !open;
+        languageToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('.va-language-menu')) {
+            languageMenu.hidden = true;
+            languageToggle.setAttribute('aria-expanded', 'false');
+        }
     });
 
     document.getElementById('loginForm').addEventListener('submit', async (event) => {
