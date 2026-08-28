@@ -26,11 +26,13 @@ This document defines the current production-oriented Signup journey for a new T
 
 - Default Signup renders successfully.
 - Non-default localized Signup renders with the requested locale and correct text direction.
-- Required fields are enforced.
-- Password confirmation is enforced.
-- Terms acceptance is enforced.
-- Signup returns validation state without leaking password values into session input.
-- The form exposes business name, business type, subdomain, email, password, Terms and language controls.
+- Every supported platform locale can render its localized Signup route.
+- The form exposes business name, business type, subdomain, email, password, password confirmation, country, Terms and language controls.
+- The form uses POST and includes CSRF protection.
+- Required browser-side fields are present.
+- Password confirmation is enforced server-side.
+- Signup returns validation state without leaking submitted password values into the rendered page/session input.
+- The UI contract is covered independently from the business-flow tests.
 
 ### Backend
 
@@ -62,10 +64,13 @@ This document defines the current production-oriented Signup journey for a new T
 - The first verified Tenant Admin receives the Tenant locale.
 - Tenant language remains separate from Super Admin localization.
 - The language validator reads the central supported-locale registry rather than a duplicated hard-coded list.
+- Signup UI direction is driven by the centralized `localizer.locale_directions` registry.
 
 ## Automated Coverage
 
-`tests/Feature/SignupClientFlowTest.php` covers the acceptance matrix above.
+`tests/Feature/SignupClientFlowTest.php` covers the customer journey and business/security acceptance matrix.
+
+`tests/Feature/SignupUiContractTest.php` covers the rendered Signup UI contract across every supported locale, including form fields, POST method, CSRF presence, locale direction and password non-disclosure on validation redisplay.
 
 Related existing suites:
 
@@ -81,6 +86,7 @@ After pulling the latest `main`:
 
 ```powershell
 php artisan optimize:clear
+php artisan test --parallel --processes=12 tests/Feature/SignupUiContractTest.php
 php artisan test --parallel --processes=12 tests/Feature/SignupClientFlowTest.php
 php artisan test --parallel --processes=12 tests/Feature/SignupTenantHandoffTest.php
 php artisan test --parallel --processes=12 tests/Feature/TenantEmailVerificationGateTest.php
@@ -90,4 +96,4 @@ php artisan test --parallel --processes=12 tests/Feature/SupportedLocaleCoreCove
 php artisan test --parallel --processes=12
 ```
 
-The SignupClientFlowTest is intentionally separate so future features such as CAPTCHA, OAuth/SSO, billing selection, invite flows or additional anti-abuse controls can be added without weakening the current acceptance contract.
+The SignupClientFlowTest and SignupUiContractTest are intentionally separate so future features such as CAPTCHA, OAuth/SSO, billing selection, invite flows, richer client-side validation or additional anti-abuse controls can be added without weakening the current acceptance contract.
