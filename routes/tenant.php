@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\StaffScheduleController;
 use App\Http\Controllers\Auth\TenantAuthController;
+use App\Http\Controllers\Auth\TenantPasswordResetController;
 use App\Http\Controllers\Auth\TenantProvisioningController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\Tenant\AppointmentController;
@@ -47,31 +48,20 @@ Route::middleware([
     InitializeTenancyByDomain::class,
     PreventAccessFromCentralDomains::class,
 ])->group(function () {
-    // One-time tenant-domain handoff used after provisioning/email verification.
     Route::get('/__velora/provisioning/{token}', [TenantProvisioningController::class, 'handoff'])
         ->name('tenant.provisioning.handoff');
 
     Route::get('/change-language/{lang}', function ($lang) {
-        $supported = array_values(array_unique(
-            config('localizer.supported_locales', ['ar', 'en'])
-        ));
-
+        $supported = array_values(array_unique(config('localizer.supported_locales', ['ar', 'en'])));
         if (! in_array($lang, $supported, true)) {
             return redirect()->back();
         }
-
-        // Guests can keep a tenant-domain language choice in session.
-        // Authenticated users persist the choice on their tenant user record,
-        // making it survive logout/login and browser session changes.
         if (auth()->check()) {
-            $user = auth()->user();
-            $user->forceFill(['locale' => $lang])->save();
+            auth()->user()->forceFill(['locale' => $lang])->save();
         }
-
         session()->put('locale', $lang);
         session()->save();
         App::setLocale($lang);
-
         return redirect()->back();
     })->name('tenant.change.language');
 
@@ -87,6 +77,18 @@ Route::middleware([
         Route::get('/queue/status', fn () => view('customer.queue-status'))->name('customer.queue.status');
         Route::get('/queue', fn () => redirect()->route('customer.queue.status'))->name('queue.status');
         Route::get('/login', fn () => view('auth.login'))->name('login');
+
+        Route::get('/forgot-password', [TenantPasswordResetController::class, 'create'])
+            ->name('password.request')
+            ->middleware('throttle:10,1');
+        Route::post('/forgot-password', [TenantPasswordResetController::class, 'send'])
+            ->name('password.email')
+            ->middleware('throttle:10,1');
+        Route::get('/reset-password/{token}', [TenantPasswordResetController::class, 'edit'])
+            ->name('password.reset');
+        Route::post('/reset-password/{token}', [TenantPasswordResetController::class, 'update'])
+            ->name('password.update')
+            ->middleware('throttle:10,1');
 
         Route::prefix('api/auth')->group(function () {
             Route::post('/login', [TenantAuthController::class, 'login']);
