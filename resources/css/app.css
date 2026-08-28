@@ -9,3 +9,24 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/* Provisioning screen: use the official Velora logo asset instead of the placeholder "V" mark. */
+body:has(#verificationBox) [class~="h-8"][class~="w-8"][class~="bg-slate-900"][class~="text-sm"][class~="font-bold"][class~="text-white"] {
+    background-color: transparent !important;
+    background-image: url('/logo.png') !important;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+    color: transparent !important;
+    text-indent: -9999px;
+}
+
+body:has(#verificationBox) [class~="h-12"][class~="w-12"][class~="bg-slate-900"][class~="text-lg"][class~="font-bold"][class~="text-white"] {
+    background-color: transparent !important;
+    background-image: url('/logo.png') !important;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+    color: transparent !important;
+    text-indent: -9999px;
+}
