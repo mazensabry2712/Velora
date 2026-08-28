@@ -42,6 +42,7 @@ final class TenantRegistrationService
         $subdomain = strtolower(trim($data['subdomain']));
         $provisioningToken = $subdomain.'.'.Str::random(48);
         $verificationToken = $subdomain.'.'.Str::random(64);
+        $verificationUrl = url('/email/verify/'.$verificationToken);
         $verificationExpiresAt = now()->addHours(self::EMAIL_VERIFICATION_TTL_HOURS);
 
         try {
@@ -58,11 +59,13 @@ final class TenantRegistrationService
                 'provisioning_status' => 'queued',
                 'provisioning_message' => 'Your workspace is being prepared.',
                 'provisioning_token_hash' => hash('sha256', $provisioningToken),
+                'provisioning_token_encrypted' => Crypt::encryptString($provisioningToken),
                 'provisioning_email' => $data['email'],
                 'provisioning_password' => Crypt::encryptString($data['password']),
                 'email_verification_token_hash' => hash('sha256', $verificationToken),
+                'email_verification_token_encrypted' => Crypt::encryptString($verificationToken),
                 'email_verification_expires_at' => $verificationExpiresAt->toIso8601String(),
-                'email_verification_url' => url('/email/verify/'.$verificationToken),
+                'email_verification_url' => $verificationUrl,
             ]);
 
             $tenant->domains()->create([
@@ -82,7 +85,7 @@ final class TenantRegistrationService
             $data['business_name'],
             $tenant->id,
             $this->buildSubdomain($subdomain),
-            url('/email/verify/'.$verificationToken),
+            $verificationUrl,
             self::EMAIL_VERIFICATION_TTL_HOURS,
         ));
 
