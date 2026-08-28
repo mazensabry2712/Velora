@@ -41,7 +41,7 @@ final class TenantLoginLocaleUiTest extends TestCase
 
         self::assertIsString($view);
         self::assertStringContainsString('lang="{{ $locale }}"', $view);
-        self::assertStringContainsString("dir=\"{{ $isRtl ? 'rtl' : 'ltr' }}\"", $view);
+        self::assertStringContainsString('dir="{{ $isRtl ? \'rtl\' : \'ltr\' }}"', $view);
         self::assertStringContainsString('submitButton.disabled = true;', $view);
         self::assertStringContainsString('submitButton.disabled = false;', $view);
     }
