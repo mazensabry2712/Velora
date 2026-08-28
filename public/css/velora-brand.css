@@ -1,4 +1,6 @@
 /* Velora Brand System — Source of Truth: docs/VELORA_BRAND_GUIDELINES.md */
+@import url('./velora-public.css');
+
 :root {
     --velora-primary-purple: #6D46FF;
     --velora-primary-blue: #006CFF;
