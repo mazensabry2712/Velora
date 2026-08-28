@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Middleware;
 
 use Closure;
@@ -10,83 +12,105 @@ use Symfony\Component\HttpFoundation\Response;
 class SetTenantLocale
 {
     /**
-     * Handle an incoming request.
+     * Resolve the tenant UI locale with this precedence:
+     * explicit query parameter -> current session -> tenant default -> app default.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     * @return \Symfony\Component\HttpFoundation\Response
+     * @param Closure(Request): Response $next
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Default supported languages (fallback)
-        $supportedLanguages = ['en', 'ar', 'fr', 'es', 'de', 'it', 'pt', 'ru', 'zh', 'ja'];
+        $supportedLanguages = array_values(array_unique(
+            config('localizer.supported_locales', ['en', 'ar'])
+        ));
 
-        // Get available languages from tenant settings
         try {
             $tenant = tenant();
+
             if ($tenant) {
                 $settingsModel = \App\Models\Setting::where('tenant_id', $tenant->id)->first();
-                if ($settingsModel && $settingsModel->available_languages) {
-                    $supportedLanguages = $settingsModel->available_languages;
+
+                if ($settingsModel?->available_languages) {
+                    $available = is_string($settingsModel->available_languages)
+                        ? json_decode($settingsModel->available_languages, true)
+                        : $settingsModel->available_languages;
+
+                    if (is_array($available) && $available !== []) {
+                        $supportedLanguages = array_values(array_intersect(
+                            $supportedLanguages,
+                            $available
+                        ));
+                    }
                 }
             }
-        } catch (\Exception $e) {
-            // Use default if error
+        } catch (\Throwable) {
+            // Keep central configured locales as the fallback.
         }
 
-        // Check if language is passed in URL
-        if ($request->has('lang') && in_array($request->query('lang'), $supportedLanguages)) {
-            $locale = $request->query('lang');
-            session()->put('locale', $locale);
-            App::setLocale($locale);
+        if ($supportedLanguages === []) {
+            $supportedLanguages = ['en'];
         }
-        // Check if user has selected a language in session
-        elseif (session()->has('locale') && in_array(session('locale'), $supportedLanguages)) {
+
+        $locale = null;
+        $requestedLocale = $request->query('lang');
+
+        if (is_string($requestedLocale) && in_array($requestedLocale, $supportedLanguages, true)) {
+            $locale = $requestedLocale;
+            session()->put('locale', $locale);
+        } elseif (session()->has('locale') && in_array(session('locale'), $supportedLanguages, true)) {
             $locale = session('locale');
-            App::setLocale($locale);
         } else {
-            // Fall back to tenant settings or default
             try {
                 $tenant = tenant();
+                $tenantDefault = $tenant?->settings?->language;
 
-                if ($tenant && isset($tenant->settings) && isset($tenant->settings->language)) {
-                    App::setLocale($tenant->settings->language);
-                } else {
-                    // Use first available language or 'en'
-                    App::setLocale($supportedLanguages[0] ?? 'en');
+                if (is_string($tenantDefault) && in_array($tenantDefault, $supportedLanguages, true)) {
+                    $locale = $tenantDefault;
+                    session()->put('locale', $locale);
                 }
-            } catch (\Exception $e) {
-                App::setLocale(config('app.locale', 'en'));
+            } catch (\Throwable) {
+                // Fall through to application default.
             }
         }
-                // Ensure URL generation receives tenant subdomain by default
-                try {
-                    $tenantSubdomain = null;
-                    if (function_exists('tenant') && tenant()) {
-                        // Prefer explicit property if present
-                        if (isset(tenant()->subdomain) && tenant()->subdomain) {
-                            $tenantSubdomain = tenant()->subdomain;
-                        }
-                    }
 
-                    // Fallback: extract subdomain from host (demo.velora.test -> demo)
-                    if (! $tenantSubdomain) {
-                        $host = $request->getHost();
-                        $base = env('APP_BASE_DOMAIN', 'velora.test');
-                        if ($base && str_ends_with($host, $base)) {
-                            $tenantSubdomain = preg_replace('/\.' . preg_quote($base, '/') . '$/i', '', $host);
-                        } else {
-                            $parts = explode('.', $host);
-                            $tenantSubdomain = $parts[0] ?? null;
-                        }
-                    }
+        $locale ??= in_array(config('app.locale', 'en'), $supportedLanguages, true)
+            ? config('app.locale', 'en')
+            : $supportedLanguages[0];
 
-                    if ($tenantSubdomain) {
-                        \Illuminate\Support\Facades\URL::defaults(['tenantSubdomain' => $tenantSubdomain]);
-                    }
-                } catch (\Exception $e) {
-                    // ignore
+        App::setLocale($locale);
+
+        try {
+            $tenantSubdomain = null;
+
+            if (function_exists('tenant') && tenant()) {
+                if (isset(tenant()->subdomain) && tenant()->subdomain) {
+                    $tenantSubdomain = tenant()->subdomain;
                 }
+            }
+
+            if (! $tenantSubdomain) {
+                $host = $request->getHost();
+                $base = env('APP_BASE_DOMAIN', 'velora.test');
+
+                if ($base && str_ends_with($host, $base)) {
+                    $tenantSubdomain = preg_replace(
+                        '/\.' . preg_quote($base, '/') . '$/i',
+                        '',
+                        $host
+                    );
+                } else {
+                    $parts = explode('.', $host);
+                    $tenantSubdomain = $parts[0] ?? null;
+                }
+            }
+
+            if ($tenantSubdomain) {
+                \Illuminate\Support\Facades\URL::defaults([
+                    'tenantSubdomain' => $tenantSubdomain,
+                ]);
+            }
+        } catch (\Throwable) {
+            // URL defaults are best-effort only.
+        }
 
         return $next($request);
     }
