@@ -52,7 +52,7 @@ final class TenantRegistrationResilienceTest extends TestCase
             'business_name' => 'Resilience Test Business',
             'business_type' => 'Clinic',
             'subdomain' => $subdomain,
-            'email' => $this->uniqueId('signup') . '@example.com',
+            'email' => $this->uniqueId('signup') . '@gmail.com',
             'password' => 'Password123!',
             'password_confirmation' => 'Password123!',
             'country' => 'US',
