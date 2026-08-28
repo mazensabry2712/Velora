@@ -1,15 +1,14 @@
 <!doctype html>
 @php
-    $locale = app()->getLocale() ?: 'en';
-    $isArabic = $locale === 'ar';
+    $locale = app()->getLocale() ?: config('app.locale', 'ar');
     $isRtl = in_array($locale, ['ar', 'he', 'fa'], true);
 @endphp
 <html lang="{{ $locale }}" dir="{{ $isRtl ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="robots" content="noindex,nofollow">
-    <title>{{ $isArabic ? __('verification.email_verified') : __('Email verified') }} · Velora</title>
+    <title>{{ __('verification.email_verified') }} · Velora</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="stylesheet" href="{{ asset('css/velora-brand.css') }}">
     <link rel="stylesheet" href="{{ asset('css/velora-auth.css') }}">
@@ -26,7 +25,10 @@
         <section class="va-card">
             <div class="va-brand" style="justify-content:center">
                 <img src="{{ asset('logo-bais.png') }}" alt="Velora">
-                <span><strong>Velora</strong><span>{{ $isArabic ? 'مساحة عملك جاهزة' : 'Your workspace experience' }}</span></span>
+                <span>
+                    <strong>Velora</strong>
+                    <span>{{ __('verification.workspace_ready') }}</span>
+                </span>
             </div>
 
             <div class="va-status" aria-hidden="true">
@@ -36,26 +38,24 @@
             </div>
 
             <p style="text-align:center;color:var(--va-accent);font-size:11px;font-weight:900;letter-spacing:.18em;text-transform:uppercase">Velora</p>
-            <h1>{{ $isArabic ? __('verification.email_verified') : __('Email verified') }}</h1>
-            <p>
-                {{ $isArabic ? __('verification.message') : __('Your email has been verified. Please return to your workspace setup page to continue.') }}
-            </p>
+            <h1>{{ __('verification.email_verified') }}</h1>
+            <p>{{ __('verification.message') }}</p>
 
             @if (! empty($businessName))
                 <div class="va-business">
-                    <small>{{ $isArabic ? __('verification.business') : __('Business') }}</small>
+                    <small>{{ __('verification.business') }}</small>
                     <strong>{{ $businessName }}</strong>
                     @if (! empty($adminEmail))
-                        <small style="margin-top:8px">{{ $isArabic ? 'الحساب' : 'Admin account' }}</small>
+                        <small style="margin-top:8px">{{ __('verification.admin_account') }}</small>
                         <strong style="font-weight:700">{{ $adminEmail }}</strong>
                     @endif
                 </div>
             @endif
 
             <div class="va-meta">
-                {{ $isArabic ? 'تم تأكيد بريدك الإلكتروني بنجاح.' : 'Your email address has been successfully verified.' }}
+                {{ __('verification.verified_successfully') }}
                 <br>
-                {{ $isArabic ? 'يمكنك الآن متابعة إعداد مساحة العمل.' : 'You can now continue with your workspace setup.' }}
+                {{ __('verification.continue_workspace_setup') }}
             </div>
         </section>
     </main>
