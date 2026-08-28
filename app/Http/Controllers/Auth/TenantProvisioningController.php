@@ -6,7 +6,9 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Mail\VerifyTenantEmailMail;
+use App\Mail\WelcomeTenantMail;
 use App\Models\Tenant;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
@@ -14,6 +16,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
 
 final class TenantProvisioningController extends Controller
 {
@@ -73,13 +76,21 @@ final class TenantProvisioningController extends Controller
 
         $this->applyTenantLocale($tenant, $request->query('lang'));
 
+        $verifiedAt = now();
         $tenant->update([
-            'email_verified_at' => now(),
-            'email_verification_token_used_at' => now(),
+            'email_verified_at' => $verifiedAt,
+            'email_verification_token_used_at' => $verifiedAt,
             'email_verification_token_hash' => null,
             'email_verification_expires_at' => null,
             'email_verification_token_encrypted' => null,
             'email_verification_url' => null,
+        ]);
+
+        // Verification is the hard gate for the first tenant admin account.
+        // Do not allow the workspace handoff until this account exists.
+        $admin = $this->createVerifiedAdmin($tenant, $verifiedAt);
+
+        $tenant->update([
             'provisioning_message' => ($tenant->provisioning_status ?? null) === 'ready'
                 ? 'Email verified. Welcome to your workspace.'
                 : 'Email verified. We are finishing your workspace.',
@@ -91,6 +102,7 @@ final class TenantProvisioningController extends Controller
 
         return view('landing.email-verified', [
             'businessName' => $tenant->name,
+            'adminEmail' => $admin->email,
         ]);
     }
 
@@ -157,9 +169,9 @@ final class TenantProvisioningController extends Controller
         }
 
         $email = (string) ($tenant->provisioning_email ?? $tenant->email ?? '');
-        $user = $tenant->run(fn () => \App\Models\User::where('email', $email)->first());
-        if (! $user) {
-            abort(404);
+        $user = $tenant->run(fn () => User::where('email', $email)->first());
+        if (! $user || $user->email_verified_at === null) {
+            return redirect()->route('signup.provisioning', ['token' => $token]);
         }
 
         auth()->login($user);
@@ -167,6 +179,62 @@ final class TenantProvisioningController extends Controller
         $tenant->update(['provisioning_token_used_at' => now()]);
 
         return redirect('/admin/onboarding');
+    }
+
+    private function createVerifiedAdmin(Tenant $tenant, Carbon $verifiedAt): User
+    {
+        $email = (string) ($tenant->provisioning_email ?? $tenant->email ?? '');
+        if ($email === '') {
+            abort(422, 'Tenant email is missing.');
+        }
+
+        $data = $this->tenantData($tenant);
+        $passwordPayload = (string) ($data['provisioning_password'] ?? '');
+        if ($passwordPayload === '') {
+            throw new \RuntimeException('Verified tenant credentials are no longer available.');
+        }
+
+        $password = Crypt::decryptString($passwordPayload);
+        $businessName = (string) ($tenant->name ?? 'Tenant');
+
+        return $tenant->run(function () use ($email, $businessName, $password, $verifiedAt, $tenant, $data): User {
+            $role = Role::firstOrCreate([
+                'name' => 'Admin Tenant',
+                'guard_name' => 'web',
+            ]);
+
+            $user = User::firstOrCreate(
+                ['email' => $email],
+                [
+                    'name' => $businessName,
+                    'password' => $password,
+                    'email_verified_at' => $verifiedAt,
+                ]
+            );
+
+            $user->forceFill([
+                'email_verified_at' => $verifiedAt,
+            ])->save();
+            $user->assignRole($role);
+
+            $freshData = $data;
+            unset($freshData['provisioning_password']);
+            $tenant->update([
+                'data' => json_encode($freshData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ]);
+
+            $domain = (string) ($tenant->domains()->first()?->domain ?? '');
+            if ($email !== '') {
+                Mail::to($email)->queue(new WelcomeTenantMail(
+                    $businessName,
+                    $tenant->id,
+                    $domain,
+                    SubscriptionLifecycle::TRIAL_DAYS
+                ));
+            }
+
+            return $user;
+        });
     }
 
     private function applyTenantLocale(Tenant $tenant, ?string $requestedLocale = null): void
@@ -192,10 +260,6 @@ final class TenantProvisioningController extends Controller
             $supported = ['ar', 'en'];
         }
 
-        // The tenant's signup language is persisted on the central tenant
-        // record and must be the source of truth for central-domain pages
-        // (verification/provisioning), where tenant DB settings are not yet
-        // initialized as the active connection.
         $tenantDefault = $tenant->getAttribute('language');
         if (! is_string($tenantDefault) || $tenantDefault === '') {
             try {
@@ -268,5 +332,16 @@ final class TenantProvisioningController extends Controller
     private function emailIsVerified(Tenant $tenant): bool
     {
         return $tenant->email_verified_at !== null;
+    }
+
+    /** @return array<string, mixed> */
+    private function tenantData(Tenant $tenant): array
+    {
+        $raw = $tenant->getRawOriginal('data');
+        if (is_array($raw)) {
+            return $raw;
+        }
+
+        return is_string($raw) ? (json_decode($raw, true) ?: []) : [];
     }
 }
