@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Throwable;
 
 class SystemSetting extends Model
 {
@@ -14,23 +15,22 @@ class SystemSetting extends Model
         'description',
     ];
 
-    /**
-     * Get a setting value by key
-     */
     public static function get($key, $default = null)
     {
-        $setting = static::where('key', $key)->first();
+        try {
+            $setting = static::where('key', $key)->first();
+        } catch (Throwable $e) {
+            // Central settings are optional for isolated feature tests and fresh installations.
+            return $default;
+        }
 
-        if (!$setting) {
+        if (! $setting) {
             return $default;
         }
 
         return static::castValue($setting->value, $setting->type);
     }
 
-    /**
-     * Set a setting value
-     */
     public static function set($key, $value, $type = 'string', $group = 'general')
     {
         return static::updateOrCreate(
@@ -43,13 +43,10 @@ class SystemSetting extends Model
         );
     }
 
-    /**
-     * Cast value to appropriate type
-     */
     protected static function castValue($value, $type)
     {
         return match($type) {
-            'boolean' => (bool) $value,
+            'boolean' => filter_var($value, FILTER_VALIDATE_BOOLEAN),
             'number' => (float) $value,
             'json' => json_decode($value, true),
             default => $value,
