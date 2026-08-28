@@ -44,6 +44,6 @@ final class SubscriptionLifecycleTest extends TestCase
         $trialEnds = $start->copy()->addDays(SubscriptionLifecycle::TRIAL_DAYS);
         $deletionAt = SubscriptionLifecycle::deletionAt($trialEnds);
 
-        $this->assertSame(51, $start->diffInDays($deletionAt));
+        $this->assertEquals(51, $start->diffInDays($deletionAt));
     }
 }
