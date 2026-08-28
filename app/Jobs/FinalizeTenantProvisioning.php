@@ -33,7 +33,6 @@ final class FinalizeTenantProvisioning implements ShouldQueue
     {
         $tenant = $this->tenant->fresh();
         $data = $this->tenantData($tenant);
-
         $this->markProvisioning($tenant, 'finalizing');
 
         try {
@@ -74,12 +73,9 @@ final class FinalizeTenantProvisioning implements ShouldQueue
             $trialPlan = $planId
                 ? SubscriptionPlan::where('is_active', true)->find($planId)
                 : null;
-
-            if (! $trialPlan) {
-                $trialPlan = SubscriptionPlan::where('is_active', true)
-                    ->orderBy('price', 'asc')
-                    ->firstOrFail();
-            }
+            $trialPlan ??= SubscriptionPlan::where('is_active', true)
+                ->orderBy('price', 'asc')
+                ->firstOrFail();
 
             $trialStartsAt = now();
             $trialEndsAt = $trialStartsAt->copy()->addDays(SubscriptionLifecycle::TRIAL_DAYS);
@@ -95,7 +91,6 @@ final class FinalizeTenantProvisioning implements ShouldQueue
                     'read_only_ends_at' => $lockedAt,
                     'locked_at' => $lockedAt,
                     'deletion_at' => $deletionAt,
-                    'grace_ends_at' => null,
                     'starts_at' => $trialStartsAt,
                     'ends_at' => null,
                     'amount_paid' => 0,
@@ -105,38 +100,37 @@ final class FinalizeTenantProvisioning implements ShouldQueue
             );
 
             $domainModel = $tenant->domains()->first();
-            $domain = $domainModel?->domain;
+            $domain = (string) ($domainModel?->domain ?? '');
 
-            if ($domainModel && str_ends_with((string) $domain, '.test')) {
+            if ($domainModel && str_ends_with($domain, '.test')) {
                 (new LinkTenantDomain($domainModel))->handle();
             }
+
+            $token = (string) ($data['provisioning_token'] ?? '');
 
             $tenant->update([
                 'provisioning_status' => 'ready',
                 'provisioning_message' => 'Workspace ready.',
                 'provisioning_ready_at' => now()->toIso8601String(),
-                'provisioning_redirect_url' => $this->handoffUrl($domain, (string) ($data['provisioning_token'] ?? '')),
+                'provisioning_redirect_url' => $this->handoffUrl($domain, $token),
             ]);
 
-            try {
-                Mail::to((string) ($data['email'] ?? $data['provisioning_email']))
-                    ->queue(new WelcomeTenantMail(
-                        $businessName,
-                        $tenant->id,
-                        (string) $domain,
-                        SubscriptionLifecycle::TRIAL_DAYS
-                    ));
-            } catch (\Throwable $e) {
-                Log::warning('Welcome email could not be queued for tenant '.$tenant->id, [
-                    'error' => $e->getMessage(),
-                ]);
+            if ($email !== '') {
+                Mail::to($email)->queue(new WelcomeTenantMail(
+                    $businessName,
+                    $tenant->id,
+                    $domain,
+                    SubscriptionLifecycle::TRIAL_DAYS
+                ));
             }
         } catch (\Throwable $e) {
-            $this->markProvisioning($tenant, 'failed', $e->getMessage());
+            $this->markProvisioning($tenant, 'failed', 'We could not finish setting up your workspace.');
+
             Log::error('Tenant provisioning finalization failed.', [
                 'tenant_id' => $tenant->id,
                 'error' => $e->getMessage(),
             ]);
+
             throw $e;
         }
     }
@@ -176,7 +170,7 @@ final class FinalizeTenantProvisioning implements ShouldQueue
         return 'stripe';
     }
 
-    private function handoffUrl(?string $domain, string $token): string
+    private function handoffUrl(string $domain, string $token): string
     {
         $scheme = str_starts_with(config('app.url', 'http://velora.test'), 'https') ? 'https' : 'http';
         return $scheme.'://'.$domain.'/__velora/provisioning/'.$token;
