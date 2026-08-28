@@ -102,7 +102,7 @@ final class TenantRegistrationService
                         'timezone'            => 'UTC',
                         'booking_enabled'     => true,
                         'queue_enabled'       => true,
-                        'available_languages' => json_encode(['en', 'ar']),
+                        'available_languages' => json_encode(config('localizer.supported_locales', ['en', 'ar'])),
                     ]
                 );
 
