@@ -46,20 +46,24 @@ Route::middleware([
     PreventAccessFromCentralDomains::class,
 ])->group(function () {
     Route::get('/change-language/{lang}', function ($lang) {
-        $supported = ['en', 'ar', 'fr', 'es', 'de', 'it', 'pt', 'ru', 'zh', 'ja'];
+        $supported = array_values(array_unique(
+            config('localizer.supported_locales', ['en', 'ar'])
+        ));
+
         if (in_array($lang, $supported, true)) {
             session()->put('locale', $lang);
             session()->save();
         }
+
         return redirect()->back();
-    })->name('change.language');
+    })->name('tenant.change.language');
 
     Route::middleware([SetTenantLocale::class])->group(function () {
         Route::get('/', fn () => redirect('/book'));
 
         Route::get('/book', function () {
             $settings = Setting::where('tenant_id', tenant()->id)->first();
-            $availableLanguages = $settings?->available_languages ?? ['en'];
+            $availableLanguages = $settings?->available_languages ?? config('localizer.supported_locales', ['en', 'ar']);
             return view('customer.booking', compact('availableLanguages'));
         })->name('customer.booking');
 
@@ -77,7 +81,7 @@ Route::middleware([
             Route::get('/timeslots', [ServiceController::class, 'timeSlots']);
             Route::get('/available-timeslots', [ServiceController::class, 'availableTimeSlots']);
             Route::get('/workingdays', [ServiceController::class, 'workingDays']);
-            Route::get('/staff/{id}/services', [ServiceController::class, 'staffServices']);
+            Route::get('/staff/{id}/services', [StaffController::class, 'staffServices']);
             Route::get('/staff/by-service/{serviceId}', [ServiceController::class, 'byService']);
             Route::get('/staff/{id}/schedule', [StaffController::class, 'schedule']);
         });
@@ -107,7 +111,7 @@ Route::middleware([
             Route::middleware(['auth'])->group(function () {
                 Route::post('/billing/checkout', [BillingController::class, 'checkout'])->name('billing.checkout');
                 Route::post('/billing/portal', [BillingController::class, 'portal'])->name('billing.portal');
-                Route::post('/billing/extend-trial', [BillingController::class, 'extendTrial'])->name('billing.extend-trial');
+                Route::post('/billing/extend-trial', [BillingController::class, 'billing.extend-trial']);
             });
         });
 
