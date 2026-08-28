@@ -66,12 +66,12 @@ final class TenantRegistrationService
                 'provisioning_password' => Crypt::encryptString($data['password']),
                 'email_verification_token_hash' => hash('sha256', $verificationToken),
                 'email_verification_token_encrypted' => Crypt::encryptString($verificationToken),
-                'email_verification_expires_at' => $verificationExpiresAt->toIso8601String(),
+                'email_verification_expires_at' => $verificationExpiresAt,
                 'email_verification_url' => $verificationUrl,
+                'email_verified_at' => null,
+                'email_verification_token_used_at' => null,
             ]);
 
-            // The domain must exist before provisioning starts. This is
-            // especially important with the sync queue used by tests.
             $tenant->domains()->create([
                 'domain' => $this->buildSubdomain($subdomain),
             ]);
@@ -85,7 +85,6 @@ final class TenantRegistrationService
             throw $e;
         }
 
-        // Trigger provisioning only after the tenant domain exists.
         Event::dispatch(new TenantProvisioningRequested($tenant));
 
         Mail::to($data['email'])->queue(new VerifyTenantEmailMail(
