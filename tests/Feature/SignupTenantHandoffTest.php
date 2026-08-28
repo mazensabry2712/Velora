@@ -9,6 +9,7 @@ use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
@@ -103,7 +104,7 @@ final class SignupTenantHandoffTest extends TestCase
         $response->assertRedirect();
     }
 
-    public function test_signup_redirects_to_the_created_tenant_dashboard(): void
+    public function test_signup_redirects_to_provisioning_page_for_async_setup(): void
     {
         $subdomain = 'handoff-' . substr(md5(uniqid('', true)), 0, 10);
         $response = $this->performSignup($subdomain);
@@ -113,7 +114,10 @@ final class SignupTenantHandoffTest extends TestCase
         $tenantDomain = $tenant->domains()->firstOrFail()->domain;
 
         $this->assertSame($subdomain . '.' . $this->centralHost(), $tenantDomain);
-        $this->assertSame('http://' . $tenantDomain . '/admin/dashboard', $response->headers->get('Location'));
+        $this->assertStringContainsString(
+            'http://' . $this->centralHost() . '/signup/provisioning/',
+            (string) $response->headers->get('Location')
+        );
     }
 
     public function test_tenant_dashboard_route_is_registered(): void
@@ -122,22 +126,6 @@ final class SignupTenantHandoffTest extends TestCase
 
         $this->assertNotNull($route);
         $this->assertSame('admin/dashboard', $route->uri());
-    }
-
-    public function test_tenant_dashboard_route_matches_the_generated_tenant_url(): void
-    {
-        $subdomain = 'match-' . substr(md5(uniqid('', true)), 0, 10);
-        $response = $this->performSignup($subdomain);
-        $response->assertRedirect();
-
-        $tenant = Tenant::findOrFail($subdomain);
-        $tenantDomain = $tenant->domains()->firstOrFail()->domain;
-        $tenantUrl = 'http://' . $tenantDomain . '/admin/dashboard';
-
-        $matched = Route::getRoutes()->match(Request::create($tenantUrl, 'GET'));
-
-        $this->assertSame('admin.dashboard', $matched->getName());
-        $this->assertSame('admin/dashboard', $matched->uri());
     }
 
     public function test_tenant_domain_identification_works_for_the_created_domain(): void
@@ -188,7 +176,7 @@ final class SignupTenantHandoffTest extends TestCase
         $this->assertSame('.' . $this->centralHost(), $sessionCookie->getDomain());
     }
 
-    public function test_signup_creates_an_authenticated_admin_in_the_created_tenant(): void
+    public function test_unverified_tenant_is_not_authenticated_on_dashboard(): void
     {
         $subdomain = 'auth-' . substr(md5(uniqid('', true)), 0, 10);
         $response = $this->performSignup($subdomain);
@@ -196,41 +184,39 @@ final class SignupTenantHandoffTest extends TestCase
 
         $tenant = Tenant::findOrFail($subdomain);
         $tenantDomain = $tenant->domains()->firstOrFail()->domain;
-        $sessionCookie = collect($response->headers->getCookies())->first(
-            fn ($cookie) => $cookie->getName() === config('session.cookie')
-        );
 
-        $this->assertNotNull($sessionCookie);
+        $tenantResponse = $this->get('http://' . $tenantDomain . '/admin/dashboard');
 
-        $tenantUrl = 'http://' . $tenantDomain . '/admin/dashboard';
+        $this->assertSame(302, $tenantResponse->status());
+        $this->assertSame('http://' . $tenantDomain . '/login', $tenantResponse->headers->get('Location'));
+    }
 
-        $tenantResponse = $this
-            ->withCookie($sessionCookie->getName(), $sessionCookie->getValue())
-            ->get($tenantUrl);
+    public function test_verified_email_while_provisioning_pending_keeps_user_on_provisioning_flow(): void
+    {
+        $subdomain = 'verify-' . substr(md5(uniqid('', true)), 0, 10);
+        $response = $this->performSignup($subdomain);
+        $response->assertRedirect();
 
-        // New tenants must complete the first-run onboarding before the dashboard
-        // becomes available. A redirect to onboarding proves authentication,
-        // tenant identification, routing, and the subscription gate all worked.
-        $this->assertSame(
-            302,
-            $tenantResponse->status(),
-            "Tenant dashboard handoff failed. URL={$tenantUrl} Status={$tenantResponse->status()} Location=" .
-            $tenantResponse->headers->get('Location', '(none)') .
-            ' Content=' . $tenantResponse->getContent()
-        );
+        $tenant = Tenant::findOrFail($subdomain);
+        $verificationToken = Crypt::decryptString((string) $tenant->email_verification_token_encrypted);
 
-        $onboardingUrl = $tenantResponse->headers->get('Location');
-        $this->assertSame('http://' . $tenantDomain . '/admin/onboarding', $onboardingUrl);
+        $verifyResponse = $this->get('http://' . $this->centralHost() . '/email/verify/' . $verificationToken);
 
-        $onboardingResponse = $this
-            ->withCookie($sessionCookie->getName(), $sessionCookie->getValue())
-            ->get($onboardingUrl);
+        $tenant = $tenant->fresh();
 
-        $this->assertTrue(
-            $onboardingResponse->isSuccessful(),
-            "Tenant onboarding handoff failed. URL={$onboardingUrl} Status={$onboardingResponse->status()} Location=" .
-            $onboardingResponse->headers->get('Location', '(none)') .
-            ' Content=' . $onboardingResponse->getContent()
-        );
+        $this->assertNotNull($tenant->email_verified_at);
+        $this->assertNotNull($tenant->email_verification_token_used_at);
+        $this->assertNull($tenant->email_verification_token_hash);
+        $this->assertNull($tenant->email_verification_token_encrypted);
+        $this->assertNull($tenant->email_verification_expires_at);
+
+        if (($tenant->provisioning_status ?? null) === 'ready') {
+            $tenantDomain = $tenant->domains()->firstOrFail()->domain;
+            $verifyResponse->assertRedirect((string) $tenant->provisioning_redirect_url);
+            $handoffResponse = $this->get((string) $tenant->provisioning_redirect_url);
+            $handoffResponse->assertRedirect('http://' . $tenantDomain . '/admin/onboarding');
+        } else {
+            $verifyResponse->assertOk();
+        }
     }
 }

@@ -4,24 +4,23 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Domain\Subscription\SubscriptionLifecycle;
-use App\Mail\WelcomeTenantMail;
-use App\Models\Setting;
+use App\Events\TenantProvisioningRequested;
+use App\Mail\VerifyTenantEmailMail;
 use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
-use App\Models\TenantSubscription;
-use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
-use Spatie\Permission\Models\Role;
 
 final class TenantRegistrationService
 {
+    private const EMAIL_VERIFICATION_TTL_HOURS = 24;
+
     public function register(array $data): array
     {
         $this->validateUniqueness($data['subdomain'], $data['email']);
@@ -37,128 +36,74 @@ final class TenantRegistrationService
         }
 
         if (! $trialPlan) {
-            Log::error('Tenant registration failed: no active subscription plan found.');
             throw new RuntimeException(
                 'No active subscription plan is configured. Please seed the subscription_plans table.'
             );
         }
 
-        $tenant = null;
-        $subscription = null;
-        $trialStartsAt = now();
-        $trialEndsAt = $trialStartsAt->copy()->addDays(SubscriptionLifecycle::TRIAL_DAYS);
-        $lockedAt = SubscriptionLifecycle::lockedAt($trialEndsAt);
-        $deletionAt = SubscriptionLifecycle::deletionAt($trialEndsAt);
+        $subdomain = strtolower(trim($data['subdomain']));
+        $provisioningToken = $subdomain.'.'.Str::random(48);
+        $verificationToken = $subdomain.'.'.Str::random(64);
+        $verificationUrl = url('/email/verify/'.$verificationToken);
+        $verificationExpiresAt = now()->addHours(self::EMAIL_VERIFICATION_TTL_HOURS);
 
         try {
-            try {
-                $tenant = Tenant::create(['id' => $data['subdomain']]);
-            } catch (QueryException $e) {
-                if ($this->isDuplicateKeyException($e)) {
-                    throw ValidationException::withMessages([
-                        'subdomain' => 'This subdomain is already taken.',
-                    ]);
-                }
-
-                throw $e;
-            }
-
-            $tenant->update([
-                'name'          => $data['business_name'],
-                'email'         => $data['email'],
-                'country'       => $data['country'] ?? null,
-                'language'      => $data['language'] ?? 'en',
-                'active'        => true,
-                'gateway'       => $this->resolveGatewayForCountry($data['country'] ?? 'US'),
+            $tenant = Tenant::create([
+                'id' => $subdomain,
+                'name' => $data['business_name'],
+                'email' => $data['email'],
+                'country' => $data['country'] ?? null,
+                'language' => $data['language'] ?? 'en',
+                'active' => true,
+                'gateway' => $this->resolveGatewayForCountry($data['country'] ?? 'US'),
                 'business_type' => $data['business_type'] ?? null,
+                'subscription_plan_id' => $trialPlan->id,
+                'provisioning_status' => 'queued',
+                'provisioning_message' => 'Your workspace is being prepared.',
+                'provisioning_token_hash' => hash('sha256', $provisioningToken),
+                'provisioning_token_encrypted' => Crypt::encryptString($provisioningToken),
+                'provisioning_email' => $data['email'],
+                'provisioning_password' => Crypt::encryptString($data['password']),
+                'email_verification_token_hash' => hash('sha256', $verificationToken),
+                'email_verification_token_encrypted' => Crypt::encryptString($verificationToken),
+                'email_verification_expires_at' => $verificationExpiresAt,
+                'email_verification_url' => $verificationUrl,
+                'email_verified_at' => null,
+                'email_verification_token_used_at' => null,
             ]);
 
             $tenant->domains()->create([
-                'domain' => $this->buildSubdomain($data['subdomain']),
+                'domain' => $this->buildSubdomain($subdomain),
             ]);
-
-            // TenantCreated already provisions the tenant database, runs the
-            // tenant migrations and seeds the tenant database synchronously.
-            // Do not run tenants:migrate a second time here.
-
-            $tenant->run(function () use ($data) {
-                $adminRole = Role::firstOrCreate(
-                    ['name' => 'Admin Tenant', 'guard_name' => 'web']
-                );
-
-                $user = User::create([
-                    'name'     => $data['business_name'],
-                    'email'    => $data['email'],
-                    'password' => Hash::make($data['password']),
+        } catch (QueryException $e) {
+            if ($this->isDuplicateKeyException($e)) {
+                throw ValidationException::withMessages([
+                    'subdomain' => 'This subdomain is already taken.',
                 ]);
+            }
 
-                $user->assignRole($adminRole);
-
-                Setting::firstOrCreate(
-                    ['id' => 1],
-                    [
-                        'business_name'       => $data['business_name'],
-                        'language'            => $data['language'] ?? 'en',
-                        'timezone'            => 'UTC',
-                        'booking_enabled'     => true,
-                        'queue_enabled'       => true,
-                        'available_languages' => json_encode(config('localizer.supported_locales', ['en', 'ar'])),
-                    ]
-                );
-
-                auth()->login($user);
-                session()->regenerate();
-            });
-
-            $subscription = TenantSubscription::create([
-                'tenant_id'            => $tenant->id,
-                'subscription_plan_id' => $trialPlan->id,
-                'status'               => 'trial',
-                'trial_ends_at'        => $trialEndsAt,
-                'read_only_ends_at'    => $lockedAt,
-                'locked_at'            => $lockedAt,
-                'deletion_at'          => $deletionAt,
-                'grace_ends_at'        => null,
-                'starts_at'            => $trialStartsAt,
-                'ends_at'              => null,
-                'amount_paid'          => 0,
-                'payment_method'       => $this->resolveGatewayForCountry($data['country'] ?? 'US'),
-                'notes'                => 'Auto-created 7-day trial. Read-only for 14 days, locked for 6 days, then permanently deleted.',
-            ]);
-        } catch (ValidationException $e) {
-            $this->cleanupFailedTenant($tenant);
-            throw $e;
-        } catch (\Throwable $e) {
-            $this->cleanupFailedTenant($tenant);
-
-            Log::error('Tenant registration failed: ' . $e->getMessage(), [
-                'subdomain' => $data['subdomain'],
-                'email'     => $data['email'],
-                'trace'     => $e->getTraceAsString(),
-            ]);
             throw $e;
         }
 
-        try {
-            Mail::to($data['email'])->send(new WelcomeTenantMail(
-                $data['business_name'],
-                $data['subdomain'],
-                $this->buildSubdomain($data['subdomain']),
-                SubscriptionLifecycle::TRIAL_DAYS
-            ));
-        } catch (\Throwable $e) {
-            Log::warning('Welcome email failed for tenant ' . $tenant->id . ': ' . $e->getMessage());
-        }
+        Event::dispatch(new TenantProvisioningRequested($tenant));
 
-        $scheme = str_starts_with(config('app.url', 'http://velora.com'), 'https') ? 'https' : 'http';
-        $redirectUrl = $scheme . '://' . $this->buildSubdomain($data['subdomain']) . '/admin/dashboard';
+        Mail::to($data['email'])->queue(new VerifyTenantEmailMail(
+            $data['business_name'],
+            $tenant->id,
+            $this->buildSubdomain($subdomain),
+            $verificationUrl,
+            self::EMAIL_VERIFICATION_TTL_HOURS,
+        ));
+
+        $base = rtrim(config('app.base_domain', 'velora.test'), '.');
 
         return [
-            'tenant'       => $tenant,
-            'subdomain'    => $data['subdomain'],
-            'redirect_url' => $redirectUrl,
-            'subscription' => $subscription,
-            'trial_days'   => SubscriptionLifecycle::TRIAL_DAYS,
+            'tenant' => $tenant,
+            'subdomain' => $subdomain,
+            'provisioning_token' => $provisioningToken,
+            'provisioning_url' => url('/signup/provisioning/'.$provisioningToken),
+            'redirect_url' => 'http://'.$subdomain.'.'.$base.'/admin/onboarding',
+            'trial_days' => 7,
         ];
     }
 
@@ -169,7 +114,7 @@ final class TenantRegistrationService
         $reserved = [
             'www', 'admin', 'api', 'mail', 'cdn', 'app', 'dashboard',
             'support', 'help', 'billing', 'status', 'dev', 'staging', 'test',
-            'demo', 'beta', 'secure', 'login', 'signup'
+            'demo', 'beta', 'secure', 'login', 'signup',
         ];
 
         if (in_array($subdomain, $reserved, true)) {
@@ -180,20 +125,14 @@ final class TenantRegistrationService
             return ['available' => false, 'message' => 'Subdomain must be 3-32 lowercase alphanumeric characters or hyphens.'];
         }
 
-        $tenantExists = Tenant::withTrashed()
-            ->whereKey($subdomain)
-            ->exists();
-
-        if ($tenantExists) {
+        if (Tenant::withTrashed()->whereKey($subdomain)->exists()) {
             return ['available' => false, 'message' => 'This subdomain is already taken.'];
         }
 
-        $domainExists = \Stancl\Tenancy\Database\Models\Domain::where(
+        if (\Stancl\Tenancy\Database\Models\Domain::where(
             'domain',
             $this->buildSubdomain($subdomain)
-        )->exists();
-
-        if ($domainExists) {
+        )->exists()) {
             return ['available' => false, 'message' => 'This subdomain is already taken.'];
         }
 
@@ -210,36 +149,13 @@ final class TenantRegistrationService
         }
 
         $tenants = DB::table('tenants');
-
-        if (DB::connection()->getDriverName() === 'sqlite') {
-            $emailExists = $tenants
-                ->whereRaw("LOWER(json_extract(data, '$.email')) = LOWER(?)", [$email])
-                ->exists();
-        } else {
-            $emailExists = $tenants
-                ->whereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(data, '$.email'))) = LOWER(?)", [$email])
-                ->exists();
-        }
+        $emailExists = DB::connection()->getDriverName() === 'sqlite'
+            ? $tenants->whereRaw("LOWER(json_extract(data, '$.email')) = LOWER(?)", [$email])->exists()
+            : $tenants->whereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(data, '$.email'))) = LOWER(?)", [$email])->exists();
 
         if ($emailExists) {
             throw ValidationException::withMessages([
                 'email' => 'This email is already registered.',
-            ]);
-        }
-    }
-
-    private function cleanupFailedTenant(?Tenant $tenant): void
-    {
-        if (! $tenant) {
-            return;
-        }
-
-        try {
-            $tenant->forceDelete();
-        } catch (\Throwable $cleanupException) {
-            Log::critical('Failed to clean up partially-created tenant.', [
-                'tenant_id' => $tenant->getKey(),
-                'error' => $cleanupException->getMessage(),
             ]);
         }
     }
@@ -254,8 +170,8 @@ final class TenantRegistrationService
 
     private function buildSubdomain(string $slug): string
     {
-        $base = config('app.base_domain', 'velora.com');
-        return $slug . '.' . $base;
+        $base = config('app.base_domain', 'velora.test');
+        return $slug.'.'.$base;
     }
 
     private function resolveGatewayForCountry(string $countryCode): string

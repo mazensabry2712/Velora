@@ -16,12 +16,6 @@ final class TenantRegistrationController extends Controller
         private readonly RegisterTenant $registerTenant,
     ) {}
 
-    /**
-     * Handle new tenant signup.
-     *
-     * HTTP validation/response concerns stay here; tenant onboarding
-     * orchestration and uniqueness checks are owned by the application service.
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -45,22 +39,18 @@ final class TenantRegistrationController extends Controller
 
             if ($request->expectsJson()) {
                 return response()->json([
-                    'success'      => true,
-                    'redirect_url' => $result['redirect_url'],
-                    'message'      => 'Account created! Redirecting to your dashboard...',
+                    'success' => true,
+                    'provisioning_url' => $result['provisioning_url'],
+                    'message' => 'Account created! Your workspace is being prepared.',
                 ]);
             }
 
-            return redirect()->away($result['redirect_url'])
-                ->with(
-                    'success',
-                    'Welcome to Velora! Your ' . ($result['trial_days'] ?? 14) . '-day free trial has started.'
-                );
+            return redirect()->to($result['provisioning_url']);
         } catch (ValidationException $e) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'errors'  => $e->errors(),
+                    'errors' => $e->errors(),
                 ], 422);
             }
 
@@ -68,8 +58,8 @@ final class TenantRegistrationController extends Controller
                 ->withInput($request->except(['password', 'password_confirmation']))
                 ->withErrors($e->errors());
         } catch (\Throwable $e) {
-            Log::error('Tenant registration error: ' . $e->getMessage(), [
-                'email'     => $request->input('email'),
+            Log::error('Tenant registration error: '.$e->getMessage(), [
+                'email' => $request->input('email'),
                 'subdomain' => $request->input('subdomain'),
             ]);
 
@@ -93,7 +83,7 @@ final class TenantRegistrationController extends Controller
         $locale = $request->route('locale');
 
         if (is_string($locale) && $locale !== '') {
-            return url('/' . $locale . '/signup');
+            return url('/'.$locale.'/signup');
         }
 
         return url('/signup');

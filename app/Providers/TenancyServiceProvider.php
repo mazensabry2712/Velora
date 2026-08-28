@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Jobs\LinkTenantDomain;
+use App\Events\TenantProvisioningRequested;
+use App\Http\Controllers\Auth\TenantProvisioningController;
+use App\Jobs\FinalizeTenantProvisioning;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
@@ -17,22 +19,21 @@ use Stancl\Tenancy\Middleware;
 
 class TenancyServiceProvider extends ServiceProvider
 {
-    // By default, no namespace is used to support the callable array syntax.
     public static string $controllerNamespace = '';
 
     public function events()
     {
         return [
-            // Tenant events
             Events\CreatingTenant::class => [],
-            Events\TenantCreated::class => [
+            TenantProvisioningRequested::class => [
                 JobPipeline::make([
                     Jobs\CreateDatabase::class,
                     Jobs\MigrateDatabase::class,
                     Jobs\SeedDatabase::class,
-                ])->send(function (Events\TenantCreated $event) {
+                    FinalizeTenantProvisioning::class,
+                ])->send(function (TenantProvisioningRequested $event) {
                     return $event->tenant;
-                })->shouldBeQueued(false),
+                })->shouldBeQueued(true),
             ],
             Events\SavingTenant::class => [],
             Events\TenantSaved::class => [],
@@ -46,64 +47,45 @@ class TenancyServiceProvider extends ServiceProvider
                     return $event->tenant;
                 })->shouldBeQueued(false),
             ],
-
-            // Domain events
             Events\CreatingDomain::class => [],
-            Events\DomainCreated::class => [
-                JobPipeline::make([
-                    LinkTenantDomain::class,
-                ])->send(function (Events\DomainCreated $event) {
-                    return $event->domain;
-                })->shouldBeQueued(false),
-            ],
+            Events\DomainCreated::class => [],
             Events\SavingDomain::class => [],
             Events\DomainSaved::class => [],
             Events\UpdatingDomain::class => [],
             Events\DomainUpdated::class => [],
             Events\DeletingDomain::class => [],
             Events\DomainDeleted::class => [],
-
-            // Database events
             Events\DatabaseCreated::class => [],
             Events\DatabaseMigrated::class => [],
             Events\DatabaseSeeded::class => [],
             Events\DatabaseRolledBack::class => [],
             Events\DatabaseDeleted::class => [],
-
-            // Tenancy events
             Events\InitializingTenancy::class => [],
             Events\TenancyInitialized::class => [
                 Listeners\BootstrapTenancy::class,
             ],
-
             Events\EndingTenancy::class => [],
             Events\TenancyEnded::class => [
                 Listeners\RevertToCentralContext::class,
             ],
-
             Events\BootstrappingTenancy::class => [],
             Events\TenancyBootstrapped::class => [],
             Events\RevertingToCentralContext::class => [],
             Events\RevertedToCentralContext::class => [],
-
-            // Resource syncing
             Events\SyncedResourceSaved::class => [
                 Listeners\UpdateSyncedResource::class,
             ],
-
             Events\SyncedResourceChangedInForeignDatabase::class => [],
         ];
     }
 
-    public function register()
-    {
-        //
-    }
+    public function register() {}
 
     public function boot()
     {
         $this->bootEvents();
         $this->registerTenantLanguageRoute();
+        $this->registerProvisioningRoutes();
         $this->mapRoutes();
         $this->makeTenancyMiddlewareHighestPriority();
     }
@@ -115,7 +97,6 @@ class TenancyServiceProvider extends ServiceProvider
                 if ($listener instanceof JobPipeline) {
                     $listener = $listener->toListener();
                 }
-
                 Event::listen($event, $listener);
             }
         }
@@ -129,13 +110,11 @@ class TenancyServiceProvider extends ServiceProvider
             Middleware\PreventAccessFromCentralDomains::class,
         ])->get('/change-language/{lang}', function (string $lang) {
             $supported = config('localizer.supported_locales', ['en', 'ar']);
-
             if (! in_array($lang, $supported, true)) {
                 abort(404);
             }
 
             $tenant = function_exists('tenant') ? tenant() : null;
-
             if (! $tenant) {
                 abort(404);
             }
@@ -155,9 +134,36 @@ class TenancyServiceProvider extends ServiceProvider
 
             session()->put('locale', $lang);
             session()->save();
-
             return redirect()->back();
         })->name('tenant.change.language');
+    }
+
+    protected function registerProvisioningRoutes(): void
+    {
+        Route::middleware(['web', 'maintenance'])
+            ->get('/signup/provisioning/{token}', [TenantProvisioningController::class, 'show'])
+            ->name('signup.provisioning');
+
+        Route::middleware(['web', 'maintenance'])
+            ->get('/signup/provisioning/{token}/status', [TenantProvisioningController::class, 'status'])
+            ->name('signup.provisioning.status');
+
+        Route::middleware(['web', 'maintenance'])
+            ->post('/signup/provisioning/{token}/resend-verification', [TenantProvisioningController::class, 'resendVerification'])
+            ->name('signup.provisioning.resend')
+            ->middleware('throttle:3,1');
+
+        Route::middleware(['web', 'maintenance'])
+            ->get('/email/verify/{token}', [TenantProvisioningController::class, 'verifyEmail'])
+            ->name('tenant.email.verify')
+            ->middleware('throttle:10,1');
+
+        Route::middleware([
+            'web',
+            Middleware\InitializeTenancyByDomain::class,
+            Middleware\PreventAccessFromCentralDomains::class,
+        ])->get('/__velora/provisioning/{token}', [TenantProvisioningController::class, 'handoff'])
+            ->name('tenant.provisioning.handoff');
     }
 
     protected function mapRoutes()
