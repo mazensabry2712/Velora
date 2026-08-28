@@ -1,0 +1,2 @@
+<?php
+return ['title'=>'パスワードの復旧','heading'=>'パスワードをお忘れですか？','description'=>'メールアドレスを入力すると、安全なリセットリンクを送信します。','send_link'=>'リセットリンクを送信','back_to_login'=>'ログインに戻る','secure_recovery'=>'安全なアカウント復旧','reset_title'=>'パスワードをリセット','reset_heading'=>'新しいパスワードを設定','reset_description'=>'Velora ワークスペースの新しいパスワードを作成します。','confirm_password'=>'新しいパスワードを確認','update_password'=>'パスワードを更新','token_note'=>'リンクは60分で期限切れとなり、一度だけ使用できます。','sent'=>'アカウントが存在する場合、リセットリンクをメールで送信しました。','reset_success'=>'パスワードをリセットしました。もう一度ログインしてください。','email_subject'=>'Velora パスワードのリセット'];
