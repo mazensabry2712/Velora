@@ -6,8 +6,6 @@ namespace Tests\Feature;
 
 use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
-use Illuminate\Cookie\CookieValuePrefix;
-use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 final class SignupTenantHandoffTest extends TestCase
@@ -32,14 +30,27 @@ final class SignupTenantHandoffTest extends TestCase
         ];
     }
 
-    public function test_signup_redirects_to_the_created_tenant_dashboard(): void
+    private function createActivePlan(): SubscriptionPlan
     {
-        $plan = SubscriptionPlan::factory()->create([
-            'is_active' => true,
+        return SubscriptionPlan::create([
+            'name' => 'Handoff Test Plan',
+            'slug' => 'handoff-test-' . substr(md5(uniqid('', true)), 0, 12),
+            'description' => 'Signup handoff test plan',
             'price' => 0,
+            'billing_cycle' => 'monthly',
+            'max_users' => null,
+            'max_appointments' => null,
+            'storage_limit' => null,
+            'features' => [],
+            'is_active' => true,
+            'is_popular' => false,
             'trial_days' => 7,
         ]);
+    }
 
+    public function test_signup_redirects_to_the_created_tenant_dashboard(): void
+    {
+        $plan = $this->createActivePlan();
         $subdomain = 'handoff-' . substr(md5(uniqid('', true)), 0, 10);
 
         $response = $this
@@ -63,12 +74,7 @@ final class SignupTenantHandoffTest extends TestCase
 
     public function test_signup_session_cookie_is_valid_for_the_tenant_subdomain(): void
     {
-        $plan = SubscriptionPlan::factory()->create([
-            'is_active' => true,
-            'price' => 0,
-            'trial_days' => 7,
-        ]);
-
+        $plan = $this->createActivePlan();
         $subdomain = 'cookie-' . substr(md5(uniqid('', true)), 0, 10);
 
         $response = $this
@@ -95,31 +101,25 @@ final class SignupTenantHandoffTest extends TestCase
         $tenantDomain = $tenant->domains()->firstOrFail()->domain;
 
         $this->assertStringEndsWith('.' . $this->centralHost(), $tenantDomain);
-        $this->assertTrue($sessionCookie->getDomain() === null || str_ends_with(
-            $tenantDomain,
-            ltrim($sessionCookie->getDomain(), '.')
-        ));
+        $this->assertTrue(
+            $sessionCookie->getDomain() === null ||
+            str_ends_with($tenantDomain, ltrim($sessionCookie->getDomain(), '.'))
+        );
     }
 
     public function test_signup_creates_an_authenticated_admin_in_the_created_tenant(): void
     {
-        $plan = SubscriptionPlan::factory()->create([
-            'is_active' => true,
-            'price' => 0,
-            'trial_days' => 7,
-        ]);
-
+        $plan = $this->createActivePlan();
         $subdomain = 'auth-' . substr(md5(uniqid('', true)), 0, 10);
-        $data = $this->validSignupData($subdomain) + [
-            'plan_id' => $plan->id,
-        ];
 
         $response = $this
             ->withServerVariables([
                 'HTTP_HOST' => $this->centralHost(),
                 'SERVER_NAME' => $this->centralHost(),
             ])
-            ->post('/signup', $data);
+            ->post('/signup', $this->validSignupData($subdomain) + [
+                'plan_id' => $plan->id,
+            ]);
 
         $response->assertRedirect();
 
