@@ -65,6 +65,7 @@ This file is the living record of the important work already performed and the e
 - If Signup does not explicitly provide a language, the Tenant inherits the current central public default language rather than a hard-coded English default.
 - Before a user is authenticated, tenant Provisioning/Verification resolves from the Tenant default language.
 - Tenant users have a persistent `locale` preference stored in the tenant `users` table.
+- The first Tenant Admin created after email verification is initialized with the Tenant default language as its persisted `User.locale` unless an existing user locale is already set.
 - After authentication, persisted `User.locale` takes precedence over session and Tenant default locale.
 - Changing language from a tenant-domain language control updates the authenticated User's persisted locale and the current session.
 - The persisted User locale survives logout/login and does not silently revert to the Tenant default.
@@ -96,11 +97,12 @@ This file is the living record of the important work already performed and the e
 
 - Feature tests cover booking, appointments, queue, billing, localization and other administration areas.
 - Dedicated test base classes exist for tenant and super-admin scenarios.
-- `TenantEmailVerificationGateTest` verifies the Admin security gate and now also verifies explicit Signup language and public-default inheritance.
+- `TenantEmailVerificationGateTest` verifies the Admin security gate and explicit Signup language/default inheritance.
 - `TenantVerificationLocaleTest` verifies tenant-language and explicit-language override behavior for the verification page using a real tenant database context.
 - `TenantEmailVerificationTest` covers verification route/mail/tenant provisioning metadata.
 - `SignupTenantHandoffTest` covers unverified access, verification and handoff behavior.
 - Latest user-reported local full suite before the current tenant-user locale changes: **509 tests, 2665 assertions, 0 failures, 0 errors**.
+- After pulling the tenant locale changes, tenant migrations completed successfully for all local tenant databases. A targeted `TenantEmailVerificationGateTest` run then exposed a missing initialization of the verified Admin's persisted locale; that code path has now been fixed. A fresh local test run after this latest fix is still required.
 
 ## Important Risks Identified
 
@@ -146,12 +148,14 @@ Scope:
 - Persist Tenant user language choices so a user's manual language change survives logout/login.
 - Ensure authenticated User locale overrides session and Tenant default locale.
 - Allow every platform UI locale exposed by the Landing to remain available throughout the Tenant application.
+- Initialize the first verified Tenant Admin with the Tenant default language unless a persisted User locale already exists.
 - Keep Super Admin localization outside the Tenant language system for now.
 
 Changed:
 - `app/Http/Middleware/LocaleSignalDetector.php`
 - `app/Http/Middleware/SetTenantLocale.php`
 - `app/Http/Controllers/Auth/TenantAuthController.php`
+- `app/Http/Controllers/Auth/TenantProvisioningController.php`
 - `app/Models/User.php`
 - `database/migrations/tenant/2026_08_28_000001_add_locale_to_users_table.php`
 - `app/Services/TenantRegistrationService.php`
@@ -167,14 +171,17 @@ Behavior:
 - Tenant user locale precedence is: persisted User locale → explicit request/session override → Tenant default → application fallback.
 - Authenticated tenant language changes update both the User's persisted locale and the active session.
 - Existing Tenants are unaffected by future changes to `public_default_locale`.
-- `available_languages` is no longer used by tenant UI locale resolution, so a Tenant can use any supported UI locale from the Landing.
+- `available_languages` is not used to remove a supported platform UI locale.
+- The first verified Tenant Admin starts with `User.locale` equal to the Tenant language and can subsequently override it by explicitly changing language.
 
 Validation:
-- The implementation is committed to `main` but the new locale-persistence changes have not yet been run through the user's local PHPUnit suite.
-- The user should pull the new commits, run tenant migrations, clear config/cache and run the targeted + full test suites.
+- The user successfully migrated all existing tenant databases with `php artisan tenants:migrate --force`.
+- The new targeted gate test currently had one failure caused by the missing Admin-locale initialization; the fix is now committed.
+- A fresh targeted and full PHPUnit run after the latest fix is still required.
 - Browser validation is still required for all supported languages, including RTL and non-Latin languages.
 
 Follow-up:
+- Run `php artisan test --parallel --processes=12 tests/Feature/TenantEmailVerificationGateTest.php` after pulling the latest fix.
 - Add/expand automated regression coverage for a manual Tenant language change surviving logout/login.
 - Add the future Super Admin `Public Default Language` control against `SystemSetting::get/set('public_default_locale', ...)`.
 - Continue the documented P0 tenant-isolation and object-level authorization audit.
