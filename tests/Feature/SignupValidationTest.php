@@ -210,7 +210,13 @@ final class SignupValidationTest extends TestCase
 
     public function test_password_confirmation_must_match(): void
     {
-        $this->assertValidationError('password_confirmation', 'different-password');
+        $response = $this->postSignup(['password_confirmation' => 'different-password']);
+
+        $response->assertRedirect();
+        $errors = $response->getSession()->get('errors');
+
+        $this->assertNotNull($errors);
+        $this->assertTrue($errors->has('password'));
     }
 
     public function test_country_is_optional(): void
