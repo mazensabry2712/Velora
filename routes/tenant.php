@@ -36,9 +36,7 @@ use App\Http\Controllers\Web\WaitingListController;
 use App\Http\Middleware\EnsureSubscriptionIsValid;
 use App\Http\Middleware\SetTenantLocale;
 use App\Models\Setting;
-use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\Route;
-use Spatie\Permission\Models\Role;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
@@ -183,7 +181,6 @@ Route::middleware([
                 Route::post('/queue/{id}/complete', [AdminQueueController::class, 'complete'])->name('api.queue.complete');
                 Route::post('/queue/{id}/return-waiting', [AdminQueueController::class, 'returnToWaiting'])->name('api.queue.return-waiting');
                 Route::post('/queue/{id}/priority', [AdminQueueController::class, 'priority'])->name('api.queue.priority');
-                Route::post('/queue/{id}/priority', [AdminQueueController::class, 'priority'])->name('api.queue.set-priority');
                 Route::post('/customers', [AdminCustomerV2Controller::class, 'store'])->name('api.customers.store');
                 Route::put('/customers/{id}', [AdminCustomerV2Controller::class, 'update'])->name('api.customers.update');
                 Route::delete('/customers/{id}', [AdminCustomerV2Controller::class, 'destroy'])->name('api.customers.destroy');
