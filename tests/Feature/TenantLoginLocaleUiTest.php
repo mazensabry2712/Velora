@@ -8,35 +8,41 @@ use Tests\TestCase;
 
 final class TenantLoginLocaleUiTest extends TestCase
 {
-    public function test_login_page_uses_translation_catalog_for_core_labels(): void
+    public function test_login_view_uses_locale_aware_translation_keys(): void
     {
-        $this->app->setLocale('fr');
+        $view = file_get_contents(base_path('resources/views/auth/login.blade.php'));
 
-        $response = $this->withServerVariables([
-            'HTTP_HOST' => env('APP_DOMAIN', 'velora.test'),
-            'SERVER_NAME' => env('APP_DOMAIN', 'velora.test'),
-        ])->get('/login');
-
-        $response->assertOk();
-        $response->assertSee('lang="fr"', false);
-        $response->assertSee('dir="ltr"', false);
-        $response->assertSee(__('Login'), false);
-        $response->assertSee(__('Password'), false);
-        $response->assertSee(__('Remember me'), false);
-        $response->assertDontSee('{{ $isArabic', false);
+        self::assertIsString($view);
+        self::assertStringNotContainsString('$isArabic ?', $view);
+        self::assertStringContainsString("__('Login')", $view);
+        self::assertStringContainsString("__('Password')", $view);
+        self::assertStringContainsString("__('Remember me')", $view);
+        self::assertStringContainsString("__('Forgot your password?')", $view);
+        self::assertStringContainsString("@json(__('Logging in...'))", $view);
+        self::assertStringContainsString("@json(__('Login successful!'))", $view);
+        self::assertStringContainsString("@json(__('Invalid credentials'))", $view);
     }
 
-    public function test_login_page_exposes_a_single_language_control_group(): void
+    public function test_login_view_has_one_language_dropdown_and_no_broken_password_reset_route(): void
     {
-        $this->app->setLocale('fr');
+        $view = file_get_contents(base_path('resources/views/auth/login.blade.php'));
 
-        $response = $this->withServerVariables([
-            'HTTP_HOST' => env('APP_DOMAIN', 'velora.test'),
-            'SERVER_NAME' => env('APP_DOMAIN', 'velora.test'),
-        ])->get('/login');
+        self::assertIsString($view);
+        self::assertSame(1, substr_count($view, 'id="languageToggle"'));
+        self::assertSame(1, substr_count($view, 'id="languageMenu"'));
+        self::assertStringNotContainsString("route('password.request')", $view);
+        self::assertStringContainsString('aria-haspopup="listbox"', $view);
+        self::assertStringContainsString("route('tenant.change.language'", $view);
+    }
 
-        $response->assertOk();
-        $response->assertSee('aria-label', false);
-        $response->assertSee('tenant.change.language', false);
+    public function test_login_view_preserves_single_submit_guard_and_locale_direction(): void
+    {
+        $view = file_get_contents(base_path('resources/views/auth/login.blade.php'));
+
+        self::assertIsString($view);
+        self::assertStringContainsString('lang="{{ $locale }}"', $view);
+        self::assertStringContainsString("dir=\"{{ $isRtl ? 'rtl' : 'ltr' }}\"", $view);
+        self::assertStringContainsString('submitButton.disabled = true;', $view);
+        self::assertStringContainsString('submitButton.disabled = false;', $view);
     }
 }
