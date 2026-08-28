@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\StaffScheduleController;
 use App\Http\Controllers\Auth\TenantAuthController;
+use App\Http\Controllers\Auth\TenantProvisioningController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\Tenant\AppointmentController;
 use App\Http\Controllers\Tenant\InvoiceController;
@@ -45,6 +46,10 @@ Route::middleware([
     InitializeTenancyByDomain::class,
     PreventAccessFromCentralDomains::class,
 ])->group(function () {
+    // One-time tenant-domain handoff used after provisioning/email verification.
+    Route::get('/__velora/provisioning/{token}', [TenantProvisioningController::class, 'handoff'])
+        ->name('tenant.provisioning.handoff');
+
     Route::get('/change-language/{lang}', function ($lang) {
         $supported = array_values(array_unique(
             config('localizer.supported_locales', ['en', 'ar'])
@@ -185,7 +190,6 @@ Route::middleware([
                 Route::post('/queue/{id}/complete', [AdminQueueController::class, 'complete'])->name('api.queue.complete');
                 Route::post('/queue/{id}/return-waiting', [AdminQueueController::class, 'returnToWaiting'])->name('api.queue.return-waiting');
                 Route::post('/queue/{id}/priority', [AdminQueueController::class, 'priority'])->name('api.queue.priority');
-                Route::post('/queue/{id}/priority', [AdminQueueController::class, 'priority'])->name('api.queue.set-priority');
                 Route::post('/customers', [AdminCustomerV2Controller::class, 'store'])->name('api.customers.store');
                 Route::put('/customers/{id}', [AdminCustomerV2Controller::class, 'update'])->name('api.customers.update');
                 Route::delete('/customers/{id}', [AdminCustomerV2Controller::class, 'destroy'])->name('api.customers.destroy');
