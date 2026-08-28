@@ -19,11 +19,11 @@ final class SubscriptionLifecycleTest extends TestCase
         $lockedAt = SubscriptionLifecycle::lockedAt($trialEndsAt);
         $deletionAt = SubscriptionLifecycle::deletionAt($trialEndsAt);
 
-        $this->assertSame(7, $trialStartsAt->diffInDays($trialEndsAt));
-        $this->assertSame(14, $trialEndsAt->diffInDays($readOnlyEndsAt));
+        $this->assertEquals(7, $trialStartsAt->diffInDays($trialEndsAt));
+        $this->assertEquals(14, $trialEndsAt->diffInDays($readOnlyEndsAt));
         $this->assertTrue($readOnlyEndsAt->equalTo($lockedAt));
-        $this->assertSame(6, $lockedAt->diffInDays($deletionAt));
-        $this->assertSame(27, $trialStartsAt->diffInDays($deletionAt));
+        $this->assertEquals(6, $lockedAt->diffInDays($deletionAt));
+        $this->assertEquals(27, $trialStartsAt->diffInDays($deletionAt));
     }
 
     public function test_lifecycle_boundaries_preserve_the_same_time_of_day_and_timezone(): void
