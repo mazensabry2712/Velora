@@ -1,0 +1,2 @@
+<?php
+return ['title'=>'找回密码','heading'=>'忘记密码？','description'=>'输入邮箱，我们会发送安全的重置链接。','send_link'=>'发送重置链接','back_to_login'=>'返回登录','secure_recovery'=>'安全的账户恢复','reset_title'=>'重置密码','reset_heading'=>'设置新密码','reset_description'=>'为你的 Velora 工作区账户创建新密码。','confirm_password'=>'确认新密码','update_password'=>'更新密码','token_note'=>'链接 60 分钟后失效，并且只能使用一次。','sent'=>'如果账户存在，重置链接已发送到该邮箱。','reset_success'=>'密码已重置，请重新登录。','email_subject'=>'重置 Velora 密码'];
