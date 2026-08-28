@@ -181,6 +181,7 @@ Route::middleware([
                 Route::post('/queue/{id}/complete', [AdminQueueController::class, 'complete'])->name('api.queue.complete');
                 Route::post('/queue/{id}/return-waiting', [AdminQueueController::class, 'returnToWaiting'])->name('api.queue.return-waiting');
                 Route::post('/queue/{id}/priority', [AdminQueueController::class, 'priority'])->name('api.queue.priority');
+                Route::post('/queue/{id}/priority', [AdminQueueController::class, 'priority'])->name('api.queue.set-priority');
                 Route::post('/customers', [AdminCustomerV2Controller::class, 'store'])->name('api.customers.store');
                 Route::put('/customers/{id}', [AdminCustomerV2Controller::class, 'update'])->name('api.customers.update');
                 Route::delete('/customers/{id}', [AdminCustomerV2Controller::class, 'destroy'])->name('api.customers.destroy');
