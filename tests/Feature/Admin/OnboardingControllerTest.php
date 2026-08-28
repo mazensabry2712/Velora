@@ -12,8 +12,6 @@ use PHPUnit\Framework\Attributes\Test;
 #[Group('onboarding')]
 class OnboardingControllerTest extends TenantTestCase
 {
-    // ── Redirect when onboarding not complete ─────────────────────────────
-
     #[Test]
     public function guests_are_redirected_to_login(): void
     {
@@ -25,7 +23,6 @@ class OnboardingControllerTest extends TenantTestCase
     #[Test]
     public function admin_can_view_wizard(): void
     {
-        // Mark onboarding as NOT completed so the page shows
         Setting::first()?->update(['onboarding_completed' => false, 'onboarding_step' => 0]);
 
         $this->actingAs($this->admin);
@@ -33,15 +30,15 @@ class OnboardingControllerTest extends TenantTestCase
         $response = $this->get(route('admin.onboarding'));
 
         $response->assertOk();
-        $response->assertViewIs('admin.onboarding.wizard');
+        $response->assertViewIs('admin.onboarding.wizard-v2');
         $response->assertViewHas('currentStep');
         $response->assertViewHas('bookingUrl');
+        $response->assertViewHas('businessName');
     }
 
     #[Test]
     public function already_completed_admin_is_redirected_to_dashboard(): void
     {
-        // Ensure a Setting row exists with onboarding already completed
         Setting::updateOrCreate(['id' => 1], ['onboarding_completed' => true, 'onboarding_step' => 4]);
 
         $this->actingAs($this->admin);
@@ -51,46 +48,42 @@ class OnboardingControllerTest extends TenantTestCase
         $response->assertRedirect(route('admin.dashboard'));
     }
 
-    // ── Step 1 — Business info ────────────────────────────────────────────
-
     #[Test]
-    public function step1_saves_business_info(): void
+    public function step1_saves_contact_info_without_requiring_business_name(): void
     {
         Setting::first()?->update(['onboarding_completed' => false, 'onboarding_step' => 0]);
 
         $this->actingAs($this->admin);
 
         $response = $this->postJson(route('admin.onboarding.step1'), [
-            'business_name' => 'Barber Pro',
-            'phone'         => '+966500000001',
+            'phone'   => '+966500000001',
+            'address' => 'Riyadh',
         ]);
 
         $response->assertOk();
         $response->assertJson(['success' => true, 'next_step' => 2]);
 
         $this->assertDatabaseHas('settings', [
-            'business_name'   => 'Barber Pro',
+            'phone'           => '+966500000001',
+            'address'         => 'Riyadh',
             'onboarding_step' => 1,
         ]);
     }
 
     #[Test]
-    public function step1_requires_business_name(): void
+    public function step1_requires_phone(): void
     {
         Setting::first()?->update(['onboarding_completed' => false, 'onboarding_step' => 0]);
 
         $this->actingAs($this->admin);
 
         $response = $this->postJson(route('admin.onboarding.step1'), [
-            'business_name' => '',
-            'phone'         => '+966500000001',
+            'address' => 'Riyadh',
         ]);
 
         $response->assertStatus(422);
-        $response->assertJsonValidationErrors('business_name');
+        $response->assertJsonValidationErrors('phone');
     }
-
-    // ── Step 2 — Staff ───────────────────────────────────────────────────
 
     #[Test]
     public function step2_saves_service_choice(): void
@@ -112,8 +105,6 @@ class OnboardingControllerTest extends TenantTestCase
         ]);
     }
 
-    // ── Step 3 — Service ─────────────────────────────────────────────────
-
     #[Test]
     public function step3_saves_reminder_preference(): void
     {
@@ -134,8 +125,6 @@ class OnboardingControllerTest extends TenantTestCase
             'onboarding_step' => 3,
         ]);
     }
-
-    // ── Complete ─────────────────────────────────────────────────────────
 
     #[Test]
     public function complete_marks_onboarding_done_and_redirects_to_dashboard(): void
@@ -163,25 +152,24 @@ class OnboardingControllerTest extends TenantTestCase
         $centralConnection = config('tenancy.database.central_connection', 'sqlite');
         $db                = \Illuminate\Support\Facades\DB::connection($centralConnection);
 
-        // Ensure a subscription plan exists for the FK constraint
         $planId = $db->table('subscription_plans')->insertGetId([
-            'name'         => 'Trial Plan',
-            'slug'         => 'trial',
-            'price'        => 0,
-            'billing_cycle'=> 'monthly',
-            'trial_days'   => 14,
-            'is_active'    => 1,
-            'created_at'   => now(),
-            'updated_at'   => now(),
+            'name'          => 'Trial Plan',
+            'slug'          => 'trial',
+            'price'         => 0,
+            'billing_cycle' => 'monthly',
+            'trial_days'    => 14,
+            'is_active'     => 1,
+            'created_at'    => now(),
+            'updated_at'    => now(),
         ]);
 
         $db->table('tenant_subscriptions')->insert([
-            'tenant_id'              => $tenantId,
-            'subscription_plan_id'   => $planId,
-            'status'                 => 'trial',
-            'amount_paid'            => 0,
-            'created_at'             => now(),
-            'updated_at'             => now(),
+            'tenant_id'            => $tenantId,
+            'subscription_plan_id' => $planId,
+            'status'               => 'trial',
+            'amount_paid'          => 0,
+            'created_at'           => now(),
+            'updated_at'           => now(),
         ]);
 
         $this->actingAs($this->admin);
