@@ -25,14 +25,27 @@ class TenancyServiceProvider extends ServiceProvider
         return [
             Events\CreatingTenant::class => [],
             Events\TenantCreated::class => [
-                JobPipeline::make([
-                    Jobs\CreateDatabase::class,
-                    Jobs\MigrateDatabase::class,
-                    Jobs\SeedDatabase::class,
-                    FinalizeTenantProvisioning::class,
-                ])->send(function (Events\TenantCreated $event) {
-                    return $event->tenant;
-                })->shouldBeQueued(true),
+                function (Events\TenantCreated $event): void {
+                    $tenant = $event->tenant;
+
+                    // Only signup-created tenants should enter provisioning.
+                    // Plain Tenant::create() calls (including test fixtures)
+                    // must not create databases or bootstrap credentials.
+                    $status = (string) ($tenant->provisioning_status ?? '');
+                    $email = (string) ($tenant->provisioning_email ?? '');
+                    $password = (string) ($tenant->provisioning_password ?? '');
+
+                    if ($status !== 'queued' || $email === '' || $password === '') {
+                        return;
+                    }
+
+                    JobPipeline::make([
+                        Jobs\CreateDatabase::class,
+                        Jobs\MigrateDatabase::class,
+                        Jobs\SeedDatabase::class,
+                        FinalizeTenantProvisioning::class,
+                    ])->send($tenant)->shouldBeQueued(true)->dispatch();
+                },
             ],
             Events\SavingTenant::class => [],
             Events\TenantSaved::class => [],
@@ -147,16 +160,11 @@ class TenancyServiceProvider extends ServiceProvider
             ->get('/signup/provisioning/{token}/status', [TenantProvisioningController::class, 'status'])
             ->name('signup.provisioning.status');
 
-        Route::middleware(['web', 'maintenance'])
-            ->post('/signup/provisioning/{token}/resend-verification', [TenantProvisioningController::class, 'resendVerification'])
-            ->name('signup.provisioning.resend')
-            ->middleware('throttle:3,1');
-
         Route::middleware([
             'web',
             Middleware\InitializeTenancyByDomain::class,
             Middleware\PreventAccessFromCentralDomains::class,
-        ])->get('/email/verify/{token}', [TenantProvisioningController::class, 'verifyEmail'])
+        ])->get('/email/verify/{token}', TenantProvisioningController::class.'@verifyEmail')
             ->name('tenant.email.verify')
             ->middleware('throttle:10,1');
 
