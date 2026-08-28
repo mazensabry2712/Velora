@@ -53,21 +53,22 @@ This file is the living record of the important work already performed and the e
 
 - Settings structure was rebuilt and split into partial views.
 - Arabic business name support was added to the rendered settings form.
-- The public/tenant locale registry contains the same supported language set used by the Landing: `ar`, `en`, `fr`, `es`, `de`, `it`, `pt`, `ru`, `zh`, `ja`, `tr`, `hi`, `ko`, `nl`, `id`.
-- Arabic is currently the public/default fallback, but the public default is now read from the central `SystemSetting` key `public_default_locale`, so a future Super Admin language selector can change the public default without hard-coding `ar`.
+- The platform UI locale registry contains the same supported language set used by the Landing: `ar`, `en`, `fr`, `es`, `de`, `it`, `pt`, `ru`, `zh`, `ja`, `tr`, `hi`, `ko`, `nl`, `id`.
+- Arabic is the current public/default fallback, but the public default is now read from the central `SystemSetting` key `public_default_locale`, allowing a future Super Admin language selector to change the public default without hard-coding Arabic into application behavior.
 - Explicit locale routes, persisted public session/cookie state and the configurable public default continue to drive the central public experience.
 - Tenant email-verification pages resolve locale from the persisted tenant language.
 - Arabic verification rendering supports RTL and the Velora-branded verification page.
 
 ### Tenant Language Lifecycle
 
-- The language selected during Signup is persisted as the new Tenant default language.
+- The language selected during Signup is persisted as the Tenant default language.
 - If Signup does not explicitly provide a language, the Tenant inherits the current central public default language rather than a hard-coded English default.
 - Before a user is authenticated, tenant Provisioning/Verification resolves from the Tenant default language.
-- Tenant users now have a persistent `locale` preference stored in the tenant `users` table.
+- Tenant users have a persistent `locale` preference stored in the tenant `users` table.
 - After authentication, persisted `User.locale` takes precedence over session and Tenant default locale.
 - Changing language from a tenant-domain language control updates the authenticated User's persisted locale and the current session.
 - The persisted User locale survives logout/login and does not silently revert to the Tenant default.
+- All platform UI locales remain available to tenants; `Setting.available_languages` is not used to block a supported UI locale.
 - Existing Tenant defaults are not rewritten when the central public default changes.
 - Super Admin localization remains intentionally outside this Tenant language system for now.
 
@@ -95,7 +96,7 @@ This file is the living record of the important work already performed and the e
 
 - Feature tests cover booking, appointments, queue, billing, localization and other administration areas.
 - Dedicated test base classes exist for tenant and super-admin scenarios.
-- `TenantEmailVerificationGateTest` verifies that the first Tenant Admin does not exist before email verification and is created only after successful verification.
+- `TenantEmailVerificationGateTest` verifies the Admin security gate and now also verifies explicit Signup language and public-default inheritance.
 - `TenantVerificationLocaleTest` verifies tenant-language and explicit-language override behavior for the verification page using a real tenant database context.
 - `TenantEmailVerificationTest` covers verification route/mail/tenant provisioning metadata.
 - `SignupTenantHandoffTest` covers unverified access, verification and handoff behavior.
@@ -122,7 +123,7 @@ This file is the living record of the important work already performed and the e
 9. Dashboard analytics should be refactored and optimized further.
 10. Remaining hard-coded translations should be localized.
 11. Production operations/documentation should be completed.
-12. Browser/mobile/RTL visual QA should be completed, including the updated authentication surfaces and the complete tenant language lifecycle.
+12. Browser/mobile/RTL visual QA should be completed, including the complete Tenant language lifecycle across all 15 supported UI locales.
 
 ## Execution Rule
 
@@ -144,6 +145,7 @@ Scope:
 - Use the current public default when a Signup language is not explicitly selected.
 - Persist Tenant user language choices so a user's manual language change survives logout/login.
 - Ensure authenticated User locale overrides session and Tenant default locale.
+- Allow every platform UI locale exposed by the Landing to remain available throughout the Tenant application.
 - Keep Super Admin localization outside the Tenant language system for now.
 
 Changed:
@@ -154,6 +156,7 @@ Changed:
 - `database/migrations/tenant/2026_08_28_000001_add_locale_to_users_table.php`
 - `app/Services/TenantRegistrationService.php`
 - `routes/tenant.php`
+- `tests/Feature/TenantEmailVerificationGateTest.php`
 - `docs/CHANGELOG_IMPLEMENTATION.md`
 
 Behavior:
@@ -164,14 +167,15 @@ Behavior:
 - Tenant user locale precedence is: persisted User locale → explicit request/session override → Tenant default → application fallback.
 - Authenticated tenant language changes update both the User's persisted locale and the active session.
 - Existing Tenants are unaffected by future changes to `public_default_locale`.
+- `available_languages` is no longer used by tenant UI locale resolution, so a Tenant can use any supported UI locale from the Landing.
 
 Validation:
-- The implementation was committed to `main` but has not yet been run through the local PHPUnit suite after these new changes.
-- Run the full suite after pulling the commits.
-- Browser validation is still required for every supported language, especially RTL and non-Latin languages.
+- The implementation is committed to `main` but the new locale-persistence changes have not yet been run through the user's local PHPUnit suite.
+- The user should pull the new commits, run tenant migrations, clear config/cache and run the targeted + full test suites.
+- Browser validation is still required for all supported languages, including RTL and non-Latin languages.
 
 Follow-up:
-- Add/expand automated regression coverage for Tenant user locale persistence across login/logout.
+- Add/expand automated regression coverage for a manual Tenant language change surviving logout/login.
 - Add the future Super Admin `Public Default Language` control against `SystemSetting::get/set('public_default_locale', ...)`.
 - Continue the documented P0 tenant-isolation and object-level authorization audit.
 
@@ -190,16 +194,6 @@ Changed:
 - `resources/views/super-admin/login.blade.php`
 - `resources/views/landing/email-verified.blade.php`
 
-Related behavior retained:
-- Tenant authentication and verification gate remain unchanged.
-- Super Admin login continues to use its existing POST route and authorization behavior.
-- Find Account logic, availability checking and redirects remain unchanged.
-
 Validation:
-- A fresh local full-suite run after this UI commit was reported by the user: **509 tests, 2665 assertions, 0 failures, 0 errors**.
-- SMTP/Mailtrap delivery remains an external environment validation item and is not represented as a passing automated test.
-
-Follow-up:
-- Perform browser visual QA for light/dark, Arabic RTL, English LTR and mobile breakpoints across Signup, Provisioning, Verification, Find Account, Tenant Login and Super Admin Login.
-- Continue with the documented P0 tenant-isolation and object-level authorization audit.
-- Keep billing webhook/idempotency, storage quota, monitoring, backup/restore and release-readiness items open until verified.
+- A fresh local full-suite run after the UI commit was reported by the user: **509 tests, 2665 assertions, 0 failures, 0 errors**.
+- SMTP/Mailtrap delivery remains an external environment validation item.
