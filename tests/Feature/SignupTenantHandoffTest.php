@@ -198,24 +198,23 @@ final class SignupTenantHandoffTest extends TestCase
         $response->assertRedirect();
 
         $tenant = Tenant::findOrFail($subdomain);
-        $data = json_decode($tenant->getRawOriginal('data') ?? '{}', true) ?: [];
-        $verificationToken = Crypt::decryptString((string) ($data['email_verification_token_encrypted'] ?? ''));
+        $verificationToken = Crypt::decryptString((string) $tenant->email_verification_token_encrypted);
 
         $verifyResponse = $this->get('http://' . $this->centralHost() . '/email/verify/' . $verificationToken);
 
         $tenant = $tenant->fresh();
-        $freshData = json_decode($tenant->getRawOriginal('data') ?? '{}', true) ?: [];
 
-        $this->assertNotEmpty($freshData['email_verified_at'] ?? null);
-        $this->assertEmpty($freshData['email_verification_token_hash'] ?? null);
+        $this->assertNotNull($tenant->email_verified_at);
+        $this->assertNotNull($tenant->email_verification_token_used_at);
+        $this->assertNull($tenant->email_verification_token_hash);
+        $this->assertNull($tenant->email_verification_token_encrypted);
+        $this->assertNull($tenant->email_verification_expires_at);
 
         if (($tenant->provisioning_status ?? null) === 'ready') {
             $tenantDomain = $tenant->domains()->firstOrFail()->domain;
-            $handoffToken = Crypt::decryptString((string) ($freshData['provisioning_token_encrypted'] ?? ''));
-
-            $verifyResponse->assertRedirect(
-                'http://' . $tenantDomain . '/__velora/provisioning/' . $handoffToken
-            );
+            $verifyResponse->assertRedirect((string) $tenant->provisioning_redirect_url);
+            $handoffResponse = $this->get((string) $tenant->provisioning_redirect_url);
+            $handoffResponse->assertRedirect('http://' . $tenantDomain . '/admin/onboarding');
         } else {
             $verifyResponse->assertOk();
         }
