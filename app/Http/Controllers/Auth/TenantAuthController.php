@@ -5,17 +5,16 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\App;
 use Illuminate\Validation\ValidationException;
 
 class TenantAuthController extends Controller
 {
-    /**
-     * Tenant User Login
-     */
     public function login(Request $request)
     {
         $throttleKey = 'login:' . $request->ip() . ':' . $request->input('email');
@@ -72,6 +71,11 @@ class TenantAuthController extends Controller
 
         auth()->login($user, $request->filled('remember'));
 
+        $locale = $this->resolveUserLocale($user, $tenant);
+        $user->forceFill(['locale' => $locale])->save();
+        session()->put('locale', $locale);
+        App::setLocale($locale);
+
         $token = $user->createToken('tenant-token', $abilities)->plainTextToken;
 
         $redirectTo = $roleName === 'Customer' ? '/my-queue' : '/admin/dashboard';
@@ -82,6 +86,7 @@ class TenantAuthController extends Controller
             'redirect_to' => $redirectTo,
             'access_token' => $token,
             'token_type' => 'Bearer',
+            'locale' => $locale,
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
@@ -96,9 +101,6 @@ class TenantAuthController extends Controller
         ]);
     }
 
-    /**
-     * Register new Customer
-     */
     public function register(Request $request)
     {
         $request->validate([
@@ -120,6 +122,7 @@ class TenantAuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'locale' => $this->resolveUserLocale(null, $tenant),
         ]);
 
         $user->assignRole('Customer');
@@ -134,6 +137,7 @@ class TenantAuthController extends Controller
             'message' => 'Account created successfully',
             'access_token' => $token,
             'token_type' => 'Bearer',
+            'locale' => $user->locale,
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
@@ -148,9 +152,6 @@ class TenantAuthController extends Controller
         ], 201);
     }
 
-    /**
-     * Get Tenant User Profile
-     */
     public function profile(Request $request)
     {
         $user = $request->user();
@@ -162,6 +163,7 @@ class TenantAuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'locale' => $user->locale,
                 'role' => $user->getRoleNames()->first(),
                 'tenant' => [
                     'id' => $tenant->id,
@@ -172,9 +174,6 @@ class TenantAuthController extends Controller
         ]);
     }
 
-    /**
-     * Tenant User Logout
-     */
     public function logout(Request $request)
     {
         if ($request->user() && $request->user()->currentAccessToken()) {
@@ -190,5 +189,27 @@ class TenantAuthController extends Controller
             'success' => true,
             'message' => 'Logged out successfully',
         ]);
+    }
+
+    private function resolveUserLocale(?User $user, $tenant): string
+    {
+        $supported = array_values(array_unique(config('localizer.supported_locales', ['ar', 'en'])));
+        if ($user && is_string($user->locale) && in_array($user->locale, $supported, true)) {
+            return $user->locale;
+        }
+
+        $tenantLocale = $tenant?->language;
+        if (! is_string($tenantLocale) || ! in_array($tenantLocale, $supported, true)) {
+            $tenantLocale = $tenant?->settings?->language;
+        }
+
+        if (is_string($tenantLocale) && in_array($tenantLocale, $supported, true)) {
+            return $tenantLocale;
+        }
+
+        $publicDefault = SystemSetting::get('public_default_locale', 'ar');
+        return is_string($publicDefault) && in_array($publicDefault, $supported, true)
+            ? $publicDefault
+            : ($supported[0] ?? 'ar');
     }
 }
