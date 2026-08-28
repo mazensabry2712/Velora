@@ -118,7 +118,7 @@ final class SignupTenantHandoffTest extends TestCase
         $route = Route::getRoutes()->getByName('admin.dashboard');
 
         $this->assertNotNull($route);
-        $this->assertSame('/admin/dashboard', $route->uri());
+        $this->assertSame('admin/dashboard', $route->uri());
     }
 
     public function test_signup_session_cookie_is_valid_for_the_tenant_subdomain(): void
@@ -150,17 +150,16 @@ final class SignupTenantHandoffTest extends TestCase
 
         $this->assertNotNull($sessionCookie);
 
-        $this->withServerVariables([
-            'HTTP_HOST' => $tenantDomain,
-            'SERVER_NAME' => $tenantDomain,
-        ])->withCookie($sessionCookie->getName(), $sessionCookie->getValue());
+        $tenantUrl = 'http://' . $tenantDomain . '/admin/dashboard';
 
-        $tenantResponse = $this->get('/admin/dashboard');
+        $tenantResponse = $this
+            ->withCookie($sessionCookie->getName(), $sessionCookie->getValue())
+            ->get($tenantUrl);
 
         $this->assertSame(
             200,
             $tenantResponse->status(),
-            "Tenant dashboard handoff failed. Status={$tenantResponse->status()} Location=" .
+            "Tenant dashboard handoff failed. URL={$tenantUrl} Status={$tenantResponse->status()} Location=" .
             $tenantResponse->headers->get('Location', '(none)') .
             ' Content=' . $tenantResponse->getContent()
         );
