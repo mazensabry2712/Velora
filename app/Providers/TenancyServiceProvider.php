@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Jobs\LinkTenantDomain;
+use App\Jobs\FinalizeTenantProvisioning;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
@@ -17,22 +17,21 @@ use Stancl\Tenancy\Middleware;
 
 class TenancyServiceProvider extends ServiceProvider
 {
-    // By default, no namespace is used to support the callable array syntax.
     public static string $controllerNamespace = '';
 
     public function events()
     {
         return [
-            // Tenant events
             Events\CreatingTenant::class => [],
             Events\TenantCreated::class => [
                 JobPipeline::make([
                     Jobs\CreateDatabase::class,
                     Jobs\MigrateDatabase::class,
                     Jobs\SeedDatabase::class,
+                    FinalizeTenantProvisioning::class,
                 ])->send(function (Events\TenantCreated $event) {
                     return $event->tenant;
-                })->shouldBeQueued(false),
+                })->shouldBeQueued(true),
             ],
             Events\SavingTenant::class => [],
             Events\TenantSaved::class => [],
@@ -47,15 +46,10 @@ class TenancyServiceProvider extends ServiceProvider
                 })->shouldBeQueued(false),
             ],
 
-            // Domain events
             Events\CreatingDomain::class => [],
-            Events\DomainCreated::class => [
-                JobPipeline::make([
-                    LinkTenantDomain::class,
-                ])->send(function (Events\DomainCreated $event) {
-                    return $event->domain;
-                })->shouldBeQueued(false),
-            ],
+            // Herd/local-domain linking is performed after the tenant database
+            // is ready by FinalizeTenantProvisioning, so signup does not block.
+            Events\DomainCreated::class => [],
             Events\SavingDomain::class => [],
             Events\DomainSaved::class => [],
             Events\UpdatingDomain::class => [],
@@ -63,34 +57,28 @@ class TenancyServiceProvider extends ServiceProvider
             Events\DeletingDomain::class => [],
             Events\DomainDeleted::class => [],
 
-            // Database events
             Events\DatabaseCreated::class => [],
             Events\DatabaseMigrated::class => [],
             Events\DatabaseSeeded::class => [],
             Events\DatabaseRolledBack::class => [],
             Events\DatabaseDeleted::class => [],
 
-            // Tenancy events
             Events\InitializingTenancy::class => [],
             Events\TenancyInitialized::class => [
                 Listeners\BootstrapTenancy::class,
             ],
-
             Events\EndingTenancy::class => [],
             Events\TenancyEnded::class => [
                 Listeners\RevertToCentralContext::class,
             ],
-
             Events\BootstrappingTenancy::class => [],
             Events\TenancyBootstrapped::class => [],
             Events\RevertingToCentralContext::class => [],
             Events\RevertedToCentralContext::class => [],
 
-            // Resource syncing
             Events\SyncedResourceSaved::class => [
                 Listeners\UpdateSyncedResource::class,
             ],
-
             Events\SyncedResourceChangedInForeignDatabase::class => [],
         ];
     }
