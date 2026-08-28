@@ -11,7 +11,7 @@ use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
 use App\Models\TenantSubscription;
 use App\Models\User;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -51,7 +51,17 @@ final class TenantRegistrationService
         $deletionAt = SubscriptionLifecycle::deletionAt($trialEndsAt);
 
         try {
-            $tenant = Tenant::create(['id' => $data['subdomain']]);
+            try {
+                $tenant = Tenant::create(['id' => $data['subdomain']]);
+            } catch (QueryException $e) {
+                if ($this->isDuplicateKeyException($e)) {
+                    throw ValidationException::withMessages([
+                        'subdomain' => 'This subdomain is already taken.',
+                    ]);
+                }
+
+                throw $e;
+            }
 
             $tenant->update([
                 'name'          => $data['business_name'],
@@ -67,15 +77,9 @@ final class TenantRegistrationService
                 'domain' => $this->buildSubdomain($data['subdomain']),
             ]);
 
-            // A new tenant needs its own schema before any tenant-scoped
-            // user, role, settings, or other business data can be created.
-            // This keeps signup self-contained in production and prevents a
-            // successful central-domain registration from producing a tenant
-            // that cannot load its dashboard.
-            Artisan::call('tenants:migrate', [
-                '--tenants' => [$tenant->id],
-                '--force' => true,
-            ]);
+            // TenantCreated already provisions the tenant database, runs the
+            // tenant migrations and seeds the tenant database synchronously.
+            // Do not run tenants:migrate a second time here.
 
             $tenant->run(function () use ($data) {
                 $adminRole = Role::firstOrCreate(
@@ -121,13 +125,11 @@ final class TenantRegistrationService
                 'payment_method'       => $this->resolveGatewayForCountry($data['country'] ?? 'US'),
                 'notes'                => 'Auto-created 7-day trial. Read-only for 14 days, locked for 6 days, then permanently deleted.',
             ]);
+        } catch (ValidationException $e) {
+            $this->cleanupFailedTenant($tenant);
+            throw $e;
         } catch (\Throwable $e) {
-            if ($tenant) {
-                try {
-                    $tenant->delete();
-                } catch (\Throwable $ignored) {
-                }
-            }
+            $this->cleanupFailedTenant($tenant);
 
             Log::error('Tenant registration failed: ' . $e->getMessage(), [
                 'subdomain' => $data['subdomain'],
@@ -178,12 +180,20 @@ final class TenantRegistrationService
             return ['available' => false, 'message' => 'Subdomain must be 3-32 lowercase alphanumeric characters or hyphens.'];
         }
 
-        $exists = \Stancl\Tenancy\Database\Models\Domain::where(
+        $tenantExists = Tenant::withTrashed()
+            ->whereKey($subdomain)
+            ->exists();
+
+        if ($tenantExists) {
+            return ['available' => false, 'message' => 'This subdomain is already taken.'];
+        }
+
+        $domainExists = \Stancl\Tenancy\Database\Models\Domain::where(
             'domain',
             $this->buildSubdomain($subdomain)
         )->exists();
 
-        if ($exists) {
+        if ($domainExists) {
             return ['available' => false, 'message' => 'This subdomain is already taken.'];
         }
 
@@ -216,6 +226,30 @@ final class TenantRegistrationService
                 'email' => 'This email is already registered.',
             ]);
         }
+    }
+
+    private function cleanupFailedTenant(?Tenant $tenant): void
+    {
+        if (! $tenant) {
+            return;
+        }
+
+        try {
+            $tenant->forceDelete();
+        } catch (\Throwable $cleanupException) {
+            Log::critical('Failed to clean up partially-created tenant.', [
+                'tenant_id' => $tenant->getKey(),
+                'error' => $cleanupException->getMessage(),
+            ]);
+        }
+    }
+
+    private function isDuplicateKeyException(QueryException $exception): bool
+    {
+        $sqlState = $exception->errorInfo[0] ?? null;
+        $driverCode = $exception->errorInfo[1] ?? null;
+
+        return $sqlState === '23000' && (int) $driverCode === 1062;
     }
 
     private function buildSubdomain(string $slug): string
