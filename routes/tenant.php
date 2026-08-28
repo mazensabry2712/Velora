@@ -37,6 +37,7 @@ use App\Http\Controllers\Web\WaitingListController;
 use App\Http\Middleware\EnsureSubscriptionIsValid;
 use App\Http\Middleware\SetTenantLocale;
 use App\Models\Setting;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
@@ -52,13 +53,24 @@ Route::middleware([
 
     Route::get('/change-language/{lang}', function ($lang) {
         $supported = array_values(array_unique(
-            config('localizer.supported_locales', ['en', 'ar'])
+            config('localizer.supported_locales', ['ar', 'en'])
         ));
 
-        if (in_array($lang, $supported, true)) {
-            session()->put('locale', $lang);
-            session()->save();
+        if (! in_array($lang, $supported, true)) {
+            abort(404);
         }
+
+        // Guests can keep a tenant-domain language choice in session.
+        // Authenticated users persist the choice on their tenant user record,
+        // making it survive logout/login and browser session changes.
+        if (auth()->check()) {
+            $user = auth()->user();
+            $user->forceFill(['locale' => $lang])->save();
+        }
+
+        session()->put('locale', $lang);
+        session()->save();
+        App::setLocale($lang);
 
         return redirect()->back();
     })->name('tenant.change.language');
@@ -68,7 +80,7 @@ Route::middleware([
 
         Route::get('/book', function () {
             $settings = Setting::where('tenant_id', tenant()->id)->first();
-            $availableLanguages = $settings?->available_languages ?? config('localizer.supported_locales', ['en', 'ar']);
+            $availableLanguages = $settings?->available_languages ?? config('localizer.supported_locales', ['ar', 'en']);
             return view('customer.booking', compact('availableLanguages'));
         })->name('customer.booking');
 
