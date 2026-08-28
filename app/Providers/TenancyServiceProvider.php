@@ -151,6 +151,14 @@ class TenancyServiceProvider extends ServiceProvider
             'web',
             Middleware\InitializeTenancyByDomain::class,
             Middleware\PreventAccessFromCentralDomains::class,
+        ])->get('/email/verify/{token}', [TenantProvisioningController::class, 'verifyEmail'])
+            ->name('tenant.email.verify')
+            ->middleware('throttle:10,1');
+
+        Route::middleware([
+            'web',
+            Middleware\InitializeTenancyByDomain::class,
+            Middleware\PreventAccessFromCentralDomains::class,
         ])->get('/__velora/provisioning/{token}', [TenantProvisioningController::class, 'handoff'])
             ->name('tenant.provisioning.handoff');
     }
