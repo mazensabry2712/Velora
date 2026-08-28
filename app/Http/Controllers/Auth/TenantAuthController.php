@@ -22,7 +22,7 @@ class TenantAuthController extends Controller
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);
             throw ValidationException::withMessages([
-                'email' => ["Too many login attempts. Please try again in {$seconds} seconds."],
+                'email' => [__('auth.throttle', ['seconds' => $seconds])],
             ]);
         }
 
@@ -33,26 +33,26 @@ class TenantAuthController extends Controller
 
         $tenant = tenant();
 
-        if (!$tenant) {
+        if (! $tenant) {
             return response()->json([
-                'error' => 'Tenant not initialized',
-                'message' => 'Please access via valid tenant domain or provide tenant identifier',
+                'error' => __('auth.failed'),
+                'message' => __('auth.failed'),
             ], 400);
         }
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             RateLimiter::hit($throttleKey, 60);
             throw ValidationException::withMessages([
-                'email' => ['The provided credentials are incorrect.'],
+                'email' => [__('auth.failed')],
             ]);
         }
 
         if ($user->email_verified_at === null) {
             RateLimiter::hit($throttleKey, 60);
             throw ValidationException::withMessages([
-                'email' => ['Please verify your email address before signing in.'],
+                'email' => [__('auth.failed')],
             ]);
         }
 
@@ -82,7 +82,7 @@ class TenantAuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Logged in successfully',
+            'message' => __('messages.login_success'),
             'redirect_to' => $redirectTo,
             'access_token' => $token,
             'token_type' => 'Bearer',
@@ -111,10 +111,10 @@ class TenantAuthController extends Controller
 
         $tenant = tenant();
 
-        if (!$tenant) {
+        if (! $tenant) {
             return response()->json([
-                'error' => 'Tenant not initialized',
-                'message' => 'Please access via valid tenant domain or provide tenant identifier',
+                'error' => __('auth.failed'),
+                'message' => __('auth.failed'),
             ], 400);
         }
 
@@ -134,7 +134,7 @@ class TenantAuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Account created successfully',
+            'message' => __('messages.login_success'),
             'access_token' => $token,
             'token_type' => 'Bearer',
             'locale' => $user->locale,
@@ -187,7 +187,7 @@ class TenantAuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Logged out successfully',
+            'message' => __('messages.logout'),
         ]);
     }
 
