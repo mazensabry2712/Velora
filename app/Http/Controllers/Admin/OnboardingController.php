@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * Four-step first-run setup for a new Velora tenant.
  *
- * Step 1: Business info
+ * Step 1: Contact/brand info (business name comes from Signup)
  * Step 2: First staff member
  * Step 3: First service
  * Step 4: Publish booking link
@@ -33,25 +33,30 @@ class OnboardingController extends Controller
 
         $currentStep = $settings?->onboarding_step ?? 0;
         $subdomain   = tenant('id');
+        $businessName = tenant()?->name ?? $settings?->business_name ?? '';
         $domain      = config('app.base_domain', config('app.domain', 'velora.test'));
         $scheme      = request()->secure() ? 'https' : 'http';
         $bookingUrl  = "{$scheme}://{$subdomain}.{$domain}/book";
 
-        return view('admin.onboarding.wizard', compact('currentStep', 'bookingUrl', 'subdomain', 'domain'));
+        return view('admin.onboarding.wizard', compact(
+            'currentStep',
+            'bookingUrl',
+            'subdomain',
+            'domain',
+            'businessName'
+        ));
     }
 
     public function saveStep1(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'business_name' => 'required|string|max:100',
-            'phone'         => 'required|string|max:30',
-            'address'       => 'nullable|string|max:255',
-            'logo'          => 'nullable|image|max:2048',
+            'phone'   => 'required|string|max:30',
+            'address' => 'nullable|string|max:255',
+            'logo'    => 'nullable|image|max:2048',
         ]);
 
         try {
             $update = [
-                'business_name'   => $data['business_name'],
                 'phone'           => $data['phone'],
                 'address'         => $data['address'] ?? null,
                 'onboarding_step' => 1,
@@ -63,7 +68,9 @@ class OnboardingController extends Controller
             }
 
             Setting::updateOrCreate(['id' => 1], $update);
-            UsageLog::log('onboarding_step1_completed', ['business_name' => $data['business_name']]);
+            UsageLog::log('onboarding_step1_completed', [
+                'business_name' => tenant()?->name ?? Setting::first()?->business_name,
+            ]);
 
             return response()->json(['success' => true, 'next_step' => 2]);
         } catch (\Exception $e) {
@@ -88,9 +95,6 @@ class OnboardingController extends Controller
             if (! $staff) {
                 $nameParts = explode(' ', trim($data['name']), 2);
                 $staff = Staff::create([
-                    // The first staff member is the tenant owner completing onboarding.
-                    // Keep the Staff profile attached to the authenticated User so all
-                    // booking APIs can resolve the same identity consistently.
                     'user_id'          => auth()->id(),
                     'first_name'       => $nameParts[0],
                     'last_name'        => $nameParts[1] ?? '',
