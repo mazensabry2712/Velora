@@ -27,11 +27,6 @@ final class TenantPasswordResetFlowTest extends TestCase
         ]);
     }
 
-    private function centralHost(): string
-    {
-        return (string) env('APP_DOMAIN', 'velora.test');
-    }
-
     private function plan(): SubscriptionPlan
     {
         return SubscriptionPlan::create([
@@ -68,16 +63,6 @@ final class TenantPasswordResetFlowTest extends TestCase
         return Tenant::findOrFail($result['tenant']->getKey());
     }
 
-    private function migrateTenant(Tenant $tenant): void
-    {
-        $tenant->run(function (): void {
-            Artisan::call('migrate', [
-                '--path' => 'database/migrations/tenant',
-                '--force' => true,
-            ]);
-        });
-    }
-
     private function createVerifiedUser(Tenant $tenant, string $email, string $locale = 'en'): void
     {
         $tenant->run(function () use ($email, $locale): void {
@@ -98,22 +83,22 @@ final class TenantPasswordResetFlowTest extends TestCase
         $subdomain = 'reset-' . substr(md5(uniqid('', true)), 0, 8);
         $email = 'owner-' . $subdomain . '@gmail.com';
         $tenant = $this->tenant($subdomain, 'fr');
-        $this->migrateTenant($tenant);
         $this->createVerifiedUser($tenant, $email, 'fr');
         $host = $tenant->domains()->firstOrFail()->domain;
+        $baseUrl = 'http://' . $host;
 
-        $requestReset = $this->withServerVariables(['HTTP_HOST' => $host])
-            ->post('/forgot-password', ['email' => $email]);
+        $requestReset = $this->post($baseUrl . '/forgot-password', ['email' => $email]);
 
         $requestReset->assertRedirect();
         $requestReset->assertSessionHas('status');
 
-        Mail::assertQueued(TenantPasswordResetMail::class, function (TenantPasswordResetMail $mail) use ($email): bool {
+        Mail::assertQueued(TenantPasswordResetMail::class, function (TenantPasswordResetMail $mail) use ($email, $baseUrl): bool {
             parse_str((string) parse_url($mail->resetUrl, PHP_URL_QUERY), $query);
             return $mail->locale === 'fr'
                 && $mail->name === 'Reset User'
                 && ($query['email'] ?? null) === $email
-                && isset($query['token']);
+                && isset($query['token'])
+                && str_starts_with($mail->resetUrl, $baseUrl . '/reset-password/');
         });
 
         $queued = null;
@@ -127,18 +112,16 @@ final class TenantPasswordResetFlowTest extends TestCase
         $token = (string) ($query['token'] ?? '');
         self::assertNotSame('', $token);
 
-        $showReset = $this->withServerVariables(['HTTP_HOST' => $host])
-            ->get('/reset-password/' . urlencode($token) . '?email=' . urlencode($email));
+        $showReset = $this->get($baseUrl . '/reset-password/' . urlencode($token) . '?email=' . urlencode($email));
         $showReset->assertOk();
 
-        $update = $this->withServerVariables(['HTTP_HOST' => $host])
-            ->post('/reset-password/' . urlencode($token), [
-                'email' => $email,
-                'password' => 'new-password-123',
-                'password_confirmation' => 'new-password-123',
-            ]);
+        $update = $this->post($baseUrl . '/reset-password/' . urlencode($token), [
+            'email' => $email,
+            'password' => 'new-password-123',
+            'password_confirmation' => 'new-password-123',
+        ]);
 
-        $update->assertRedirect(route('login', [], false));
+        $update->assertRedirect($baseUrl . '/login');
         $update->assertSessionHas('status');
 
         $tenant->run(function () use ($email): void {
@@ -148,8 +131,7 @@ final class TenantPasswordResetFlowTest extends TestCase
             self::assertDatabaseMissing('password_reset_tokens', ['email' => $email]);
         });
 
-        $reuse = $this->withServerVariables(['HTTP_HOST' => $host])
-            ->get('/reset-password/' . urlencode($token) . '?email=' . urlencode($email));
+        $reuse = $this->get($baseUrl . '/reset-password/' . urlencode($token) . '?email=' . urlencode($email));
         $reuse->assertRedirect();
         $reuse->assertSessionHasErrors('email');
     }
@@ -160,11 +142,9 @@ final class TenantPasswordResetFlowTest extends TestCase
 
         $subdomain = 'reset-unknown-' . substr(md5(uniqid('', true)), 0, 8);
         $tenant = $this->tenant($subdomain);
-        $this->migrateTenant($tenant);
         $host = $tenant->domains()->firstOrFail()->domain;
 
-        $response = $this->withServerVariables(['HTTP_HOST' => $host])
-            ->post('/forgot-password', ['email' => 'does-not-exist@gmail.com']);
+        $response = $this->post('http://' . $host . '/forgot-password', ['email' => 'does-not-exist@gmail.com']);
 
         $response->assertRedirect();
         $response->assertSessionHas('status');
@@ -177,8 +157,6 @@ final class TenantPasswordResetFlowTest extends TestCase
 
         $tenantA = $this->tenant('reset-a-' . substr(md5(uniqid('', true)), 0, 7));
         $tenantB = $this->tenant('reset-b-' . substr(md5(uniqid('', true)), 0, 7));
-        $this->migrateTenant($tenantA);
-        $this->migrateTenant($tenantB);
 
         $email = 'shared-reset@gmail.com';
         $this->createVerifiedUser($tenantA, $email);
@@ -187,7 +165,8 @@ final class TenantPasswordResetFlowTest extends TestCase
         $hostA = $tenantA->domains()->firstOrFail()->domain;
         $hostB = $tenantB->domains()->firstOrFail()->domain;
 
-        $this->withServerVariables(['HTTP_HOST' => $hostA])->post('/forgot-password', ['email' => $email]);
+        $this->post('http://' . $hostA . '/forgot-password', ['email' => $email])->assertRedirect();
+
         $mail = null;
         Mail::assertQueued(TenantPasswordResetMail::class, function (TenantPasswordResetMail $queued) use (&$mail): bool {
             $mail = $queued;
@@ -197,8 +176,7 @@ final class TenantPasswordResetFlowTest extends TestCase
         parse_str((string) parse_url($mail->resetUrl, PHP_URL_QUERY), $query);
         $token = (string) $query['token'];
 
-        $crossTenant = $this->withServerVariables(['HTTP_HOST' => $hostB])
-            ->get('/reset-password/' . urlencode($token) . '?email=' . urlencode($email));
+        $crossTenant = $this->get('http://' . $hostB . '/reset-password/' . urlencode($token) . '?email=' . urlencode($email));
 
         $crossTenant->assertRedirect();
         $crossTenant->assertSessionHasErrors('email');
