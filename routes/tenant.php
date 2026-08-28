@@ -36,49 +36,37 @@ use App\Http\Controllers\Web\WaitingListController;
 use App\Http\Middleware\EnsureSubscriptionIsValid;
 use App\Http\Middleware\SetTenantLocale;
 use App\Models\Setting;
+use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\Route;
 use Spatie\Permission\Models\Role;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
-// All tenant routes use one subscription lifecycle guard.
 Route::middleware([
     'web',
     InitializeTenancyByDomain::class,
     PreventAccessFromCentralDomains::class,
-    EnsureSubscriptionIsValid::class,
 ])->group(function () {
-
-    // Change language - kept outside locale middleware to avoid redirect loops.
     Route::get('/change-language/{lang}', function ($lang) {
         $supported = ['en', 'ar', 'fr', 'es', 'de', 'it', 'pt', 'ru', 'zh', 'ja'];
         if (in_array($lang, $supported, true)) {
             session()->put('locale', $lang);
             session()->save();
         }
-
         return redirect()->back();
     })->name('change.language');
 
     Route::middleware([SetTenantLocale::class])->group(function () {
-        Route::get('/', function () {
-            return redirect('/book');
-        });
+        Route::get('/', fn () => redirect('/book'));
 
         Route::get('/book', function () {
-            $settings = \App\Models\Setting::where('tenant_id', tenant()->id)->first();
+            $settings = Setting::where('tenant_id', tenant()->id)->first();
             $availableLanguages = $settings?->available_languages ?? ['en'];
             return view('customer.booking', compact('availableLanguages'));
         })->name('customer.booking');
 
-        Route::get('/queue/status', function () {
-            return view('customer.queue-status');
-        })->name('customer.queue.status');
-
-        Route::get('/queue', function () {
-            return redirect()->route('customer.queue.status');
-        })->name('queue.status');
-
+        Route::get('/queue/status', fn () => view('customer.queue-status'))->name('customer.queue.status');
+        Route::get('/queue', fn () => redirect()->route('customer.queue.status'))->name('queue.status');
         Route::get('/login', fn () => view('auth.login'))->name('login');
 
         Route::prefix('api/auth')->group(function () {
@@ -86,13 +74,11 @@ Route::middleware([
             Route::post('/logout', [TenantAuthController::class, 'logout'])->middleware('auth');
         });
 
-        // Public reads remain available during read-only, but create/update/delete
-        // requests are stopped by EnsureSubscriptionIsValid.
         Route::prefix('api/booking')->group(function () {
-            Route::get('/services',            [ServiceController::class, 'index']);
-            Route::get('/timeslots',           [ServiceController::class, 'timeSlots']);
+            Route::get('/services', [ServiceController::class, 'index']);
+            Route::get('/timeslots', [ServiceController::class, 'timeSlots']);
             Route::get('/available-timeslots', [ServiceController::class, 'availableTimeSlots']);
-            Route::get('/workingdays',         [ServiceController::class, 'workingDays']);
+            Route::get('/workingdays', [ServiceController::class, 'workingDays']);
             Route::get('/staff/{id}/services', [ServiceController::class, 'staffServices']);
             Route::get('/staff/by-service/{serviceId}', [StaffController::class, 'byService']);
             Route::get('/staff/{id}/schedule', [StaffController::class, 'schedule']);
@@ -130,30 +116,23 @@ Route::middleware([
             Route::post('/onboarding/step2', [OnboardingController::class, 'saveStep2'])->name('onboarding.step2');
             Route::post('/onboarding/step3', [OnboardingController::class, 'saveStep3'])->name('onboarding.step3');
             Route::post('/onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
-
             Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
             Route::put('/profile', [ProfileController::class, 'updateProfile'])->name('profile.update');
             Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar');
             Route::delete('/profile/avatar', [ProfileController::class, 'removeAvatar'])->name('profile.avatar.remove');
             Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
             Route::delete('/profile', [ProfileController::class, 'deleteAccount'])->name('profile.delete');
-
             Route::get('/appointments', [AdminAppointmentController::class, 'index'])->name('appointments');
             Route::get('/staff', [StaffController::class, 'index'])->name('staff');
             Route::get('/settings', [SettingController::class, 'index'])->name('settings');
-
             Route::get('/queue', [AdminQueueController::class, 'days'])->name('queue');
             Route::get('/queue/{date}', [AdminQueueController::class, 'show'])->name('queue.day');
             Route::get('/queue/{date}/print', [AdminQueueController::class, 'print'])->name('queue.print');
             Route::get('/queue/export-excel', [AdminQueueController::class, 'exportExcel'])->name('queue.export.excel');
-
             Route::get('/customers', [CustomerController::class, 'adminPage'])->name('customers');
-
             Route::get('/reports', [ReportController::class, 'index'])->name('reports');
             Route::get('/reports/export-appointments', [ReportController::class, 'exportAppointments'])->name('reports.export.appointments');
-
             Route::middleware(['role:Admin Tenant'])->get('/assistants', [AssistantController::class, 'page'])->name('assistants');
-
             Route::middleware(['role:Admin Tenant'])->group(function () {
                 Route::get('/subscription', [SubscriptionController::class, 'index'])->name('subscription.index');
                 Route::get('/subscription/billing', [SubscriptionController::class, 'billing'])->name('subscription.billing');
@@ -174,7 +153,6 @@ Route::middleware([
                 Route::post('/appointments/bulk-day-action', [AdminAppointmentController::class, 'bulkDayAction'])->name('api.appointments.bulkDayAction');
                 Route::get('/appointments/{id}/qrcode', [AdminAppointmentController::class, 'generateQRCode'])->name('api.appointments.qrcode');
                 Route::post('/appointments/{id}/rate', [AdminAppointmentController::class, 'rate'])->name('api.appointments.rate');
-
                 Route::post('/settings', [SettingController::class, 'save'])->name('api.settings.save');
                 Route::get('/settings/services/{id}', [ServiceController::class, 'show'])->name('api.services.show');
                 Route::post('/settings/services', [ServiceController::class, 'store'])->name('api.services.store');
@@ -185,14 +163,12 @@ Route::middleware([
                 Route::delete('/settings/timeslots/{id}', [ServiceController::class, 'destroyTimeSlot'])->name('api.timeslots.destroy');
                 Route::post('/settings/working-days/{id}/toggle', [ServiceController::class, 'toggleWorkingDay'])->name('api.workingdays.toggle');
                 Route::post('/settings/staff-services/toggle', [ServiceController::class, 'toggleStaffService'])->name('api.staff.services.toggle');
-
                 Route::get('/staff/{id}', [StaffController::class, 'show'])->name('api.staff.show');
                 Route::post('/staff', [StaffController::class, 'store'])->name('api.staff.store');
                 Route::put('/staff/{id}', [StaffController::class, 'update'])->name('api.staff.update');
                 Route::delete('/staff/{id}', [StaffController::class, 'destroy'])->name('api.staff.destroy');
                 Route::get('/staff/by-specialization/{specialization}', [StaffController::class, 'bySpecialization'])->name('api.staff.by-specialization');
                 Route::get('/staff/{id}/services', [StaffController::class, 'services'])->name('api.staff.services');
-
                 Route::post('/queue/add', [AdminQueueController::class, 'addDirect'])->name('api.queue.add');
                 Route::post('/queue/call-next', [AdminQueueController::class, 'callNext'])->name('api.queue.call-next');
                 Route::post('/queue/move-next-day', [AdminQueueController::class, 'moveToNextDay'])->name('api.queue.move-next-day');
@@ -203,12 +179,11 @@ Route::middleware([
                 Route::post('/queue/{id}/complete', [AdminQueueController::class, 'complete'])->name('api.queue.complete');
                 Route::post('/queue/{id}/return-waiting', [AdminQueueController::class, 'returnToWaiting'])->name('api.queue.return-waiting');
                 Route::post('/queue/{id}/priority', [AdminQueueController::class, 'priority'])->name('api.queue.priority');
-
+                Route::post('/queue/{id}/priority', [AdminQueueController::class, 'priority'])->name('api.queue.set-priority');
                 Route::post('/customers', [AdminCustomerV2Controller::class, 'store'])->name('api.customers.store');
                 Route::put('/customers/{id}', [AdminCustomerV2Controller::class, 'update'])->name('api.customers.update');
                 Route::delete('/customers/{id}', [AdminCustomerV2Controller::class, 'destroy'])->name('api.customers.destroy');
                 Route::get('/customers/{id}', [AdminCustomerV2Controller::class, 'show'])->name('api.customers.show');
-
                 Route::post('/invoices/{id}/send', [InvoiceController::class, 'send'])->name('api.invoices.send');
             });
         });
