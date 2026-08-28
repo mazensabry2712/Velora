@@ -9,6 +9,7 @@ use App\Mail\VerifyTenantEmailMail;
 use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
@@ -19,12 +20,14 @@ final class TenantProvisioningController extends Controller
     private const TOKEN_TTL_MINUTES = 30;
     private const EMAIL_VERIFICATION_TTL_HOURS = 24;
 
-    public function show(string $token)
+    public function show(Request $request, string $token)
     {
         $tenant = $this->resolveTenant($token);
         if (! $tenant) {
             abort(404);
         }
+
+        $this->applyTenantLocale($tenant, $request->query('lang'));
 
         return view('landing.tenant-provisioning', [
             'token' => $token,
@@ -61,12 +64,14 @@ final class TenantProvisioningController extends Controller
         ]);
     }
 
-    public function verifyEmail(string $token)
+    public function verifyEmail(Request $request, string $token)
     {
         $tenant = $this->resolveEmailVerificationTenant($token);
         if (! $tenant) {
             abort(404);
         }
+
+        $this->applyTenantLocale($tenant, $request->query('lang'));
 
         $tenant->update([
             'email_verified_at' => now(),
@@ -162,6 +167,38 @@ final class TenantProvisioningController extends Controller
         $tenant->update(['provisioning_token_used_at' => now()]);
 
         return redirect('/admin/onboarding');
+    }
+
+    private function applyTenantLocale(Tenant $tenant, ?string $requestedLocale = null): void
+    {
+        $supported = array_values(array_unique(config('localizer.supported_locales', ['ar', 'en'])));
+        $available = null;
+
+        try {
+            $settings = $tenant->settings;
+            if ($settings?->available_languages) {
+                $available = is_string($settings->available_languages)
+                    ? json_decode($settings->available_languages, true)
+                    : $settings->available_languages;
+            }
+        } catch (\Throwable) {
+        }
+
+        if (is_array($available) && $available !== []) {
+            $supported = array_values(array_intersect($supported, $available));
+        }
+
+        if ($supported === []) {
+            $supported = ['ar', 'en'];
+        }
+
+        $default = $tenant->settings?->language;
+        $locale = is_string($requestedLocale) && in_array($requestedLocale, $supported, true)
+            ? $requestedLocale
+            : (is_string($default) && in_array($default, $supported, true) ? $default : 'en');
+
+        App::setLocale($locale);
+        session()->put('locale', $locale);
     }
 
     private function resolveTenant(string $token): ?Tenant
