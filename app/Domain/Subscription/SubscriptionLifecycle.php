@@ -10,7 +10,7 @@ final class SubscriptionLifecycle
 {
     public const TRIAL_DAYS = 7;
     public const READ_ONLY_DAYS = 14;
-    public const LOCKED_DAYS = 30;
+    public const LOCKED_DAYS = 6;
 
     public static function readOnlyEndsAt(CarbonInterface $trialEndsAt): CarbonInterface
     {
