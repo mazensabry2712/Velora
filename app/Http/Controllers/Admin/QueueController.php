@@ -177,6 +177,15 @@ final class QueueController extends Controller
         return $this->transition($id, 'waiting', __('Returned to waiting.'));
     }
 
+    /**
+     * Backward-compatible alias for the legacy route that still targets
+     * `priority`, while the canonical implementation is `setPriority`.
+     */
+    public function priority(Request $request, int $id): JsonResponse
+    {
+        return $this->setPriority($request, $id);
+    }
+
     public function setPriority(Request $request, int $id): JsonResponse
     {
         $request->validate(['priority' => 'required|boolean']);
