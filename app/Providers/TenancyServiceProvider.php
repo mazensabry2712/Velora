@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Http\Controllers\Auth\TenantProvisioningController;
 use App\Jobs\FinalizeTenantProvisioning;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\Facades\Event;
@@ -45,10 +46,7 @@ class TenancyServiceProvider extends ServiceProvider
                     return $event->tenant;
                 })->shouldBeQueued(false),
             ],
-
             Events\CreatingDomain::class => [],
-            // Herd/local-domain linking is performed after the tenant database
-            // is ready by FinalizeTenantProvisioning, so signup does not block.
             Events\DomainCreated::class => [],
             Events\SavingDomain::class => [],
             Events\DomainSaved::class => [],
@@ -56,13 +54,11 @@ class TenancyServiceProvider extends ServiceProvider
             Events\DomainUpdated::class => [],
             Events\DeletingDomain::class => [],
             Events\DomainDeleted::class => [],
-
             Events\DatabaseCreated::class => [],
             Events\DatabaseMigrated::class => [],
             Events\DatabaseSeeded::class => [],
             Events\DatabaseRolledBack::class => [],
             Events\DatabaseDeleted::class => [],
-
             Events\InitializingTenancy::class => [],
             Events\TenancyInitialized::class => [
                 Listeners\BootstrapTenancy::class,
@@ -75,7 +71,6 @@ class TenancyServiceProvider extends ServiceProvider
             Events\TenancyBootstrapped::class => [],
             Events\RevertingToCentralContext::class => [],
             Events\RevertedToCentralContext::class => [],
-
             Events\SyncedResourceSaved::class => [
                 Listeners\UpdateSyncedResource::class,
             ],
@@ -83,15 +78,13 @@ class TenancyServiceProvider extends ServiceProvider
         ];
     }
 
-    public function register()
-    {
-        //
-    }
+    public function register() {}
 
     public function boot()
     {
         $this->bootEvents();
         $this->registerTenantLanguageRoute();
+        $this->registerProvisioningRoutes();
         $this->mapRoutes();
         $this->makeTenancyMiddlewareHighestPriority();
     }
@@ -103,7 +96,6 @@ class TenancyServiceProvider extends ServiceProvider
                 if ($listener instanceof JobPipeline) {
                     $listener = $listener->toListener();
                 }
-
                 Event::listen($event, $listener);
             }
         }
@@ -117,13 +109,11 @@ class TenancyServiceProvider extends ServiceProvider
             Middleware\PreventAccessFromCentralDomains::class,
         ])->get('/change-language/{lang}', function (string $lang) {
             $supported = config('localizer.supported_locales', ['en', 'ar']);
-
             if (! in_array($lang, $supported, true)) {
                 abort(404);
             }
 
             $tenant = function_exists('tenant') ? tenant() : null;
-
             if (! $tenant) {
                 abort(404);
             }
@@ -143,9 +133,26 @@ class TenancyServiceProvider extends ServiceProvider
 
             session()->put('locale', $lang);
             session()->save();
-
             return redirect()->back();
         })->name('tenant.change.language');
+    }
+
+    protected function registerProvisioningRoutes(): void
+    {
+        Route::middleware(['web', 'maintenance'])
+            ->get('/signup/provisioning/{token}', [TenantProvisioningController::class, 'show'])
+            ->name('signup.provisioning');
+
+        Route::middleware(['web', 'maintenance'])
+            ->get('/signup/provisioning/{token}/status', [TenantProvisioningController::class, 'status'])
+            ->name('signup.provisioning.status');
+
+        Route::middleware([
+            'web',
+            Middleware\InitializeTenancyByDomain::class,
+            Middleware\PreventAccessFromCentralDomains::class,
+        ])->get('/__velora/provisioning/{token}', [TenantProvisioningController::class, 'handoff'])
+            ->name('tenant.provisioning.handoff');
     }
 
     protected function mapRoutes()
