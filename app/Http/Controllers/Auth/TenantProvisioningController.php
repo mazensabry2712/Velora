@@ -9,6 +9,7 @@ use App\Mail\VerifyTenantEmailMail;
 use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -67,18 +68,16 @@ final class TenantProvisioningController extends Controller
             abort(404);
         }
 
-        $data = $this->tenantData($tenant);
-        $data['email_verified_at'] = now()->toIso8601String();
-        $data['email_verification_token_used_at'] = now()->toIso8601String();
-        unset(
-            $data['email_verification_token_hash'],
-            $data['email_verification_expires_at'],
-            $data['email_verification_url']
-        );
-
         $tenant->update([
-            'data' => json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-            'provisioning_message' => 'Email verified. Welcome to your workspace.',
+            'email_verified_at' => now(),
+            'email_verification_token_used_at' => now(),
+            'email_verification_token_hash' => null,
+            'email_verification_expires_at' => null,
+            'email_verification_token_encrypted' => null,
+            'email_verification_url' => null,
+            'provisioning_message' => ($tenant->provisioning_status ?? null) === 'ready'
+                ? 'Email verified. Welcome to your workspace.'
+                : 'Email verified. We are finishing your workspace.',
         ]);
 
         if (($tenant->provisioning_status ?? null) === 'ready' && ($handoffUrl = (string) $tenant->provisioning_redirect_url) !== '') {
@@ -110,8 +109,7 @@ final class TenantProvisioningController extends Controller
         }
         RateLimiter::hit($key, 60);
 
-        $data = $this->tenantData($tenant);
-        $email = (string) ($data['provisioning_email'] ?? $data['email'] ?? '');
+        $email = (string) ($tenant->provisioning_email ?? $tenant->email ?? '');
         if ($email === '') {
             return response()->json([
                 'success' => false,
@@ -121,17 +119,18 @@ final class TenantProvisioningController extends Controller
 
         $verificationToken = $tenant->id.'.'.Str::random(64);
         $verificationUrl = url('/email/verify/'.$verificationToken);
-        $data['email_verification_token_hash'] = hash('sha256', $verificationToken);
-        $data['email_verification_expires_at'] = now()->addHours(self::EMAIL_VERIFICATION_TTL_HOURS)->toIso8601String();
-        $data['email_verification_url'] = $verificationUrl;
-        $data['email_verification_token_used_at'] = null;
+        $expiresAt = now()->addHours(self::EMAIL_VERIFICATION_TTL_HOURS);
 
         $tenant->update([
-            'data' => json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            'email_verification_token_hash' => hash('sha256', $verificationToken),
+            'email_verification_token_encrypted' => Crypt::encryptString($verificationToken),
+            'email_verification_expires_at' => $expiresAt,
+            'email_verification_url' => $verificationUrl,
+            'email_verification_token_used_at' => null,
         ]);
 
         Mail::to($email)->queue(new VerifyTenantEmailMail(
-            (string) ($data['name'] ?? $data['business_name'] ?? 'Tenant'),
+            (string) $tenant->name,
             $tenant->id,
             (string) ($tenant->domains()->first()?->domain ?? ''),
             $verificationUrl,
@@ -148,8 +147,7 @@ final class TenantProvisioningController extends Controller
             abort(404);
         }
 
-        $data = $this->tenantData($tenant);
-        if (empty($data['email_verified_at'])) {
+        if (! $this->emailIsVerified($tenant)) {
             return redirect()->route('signup.provisioning', ['token' => $token]);
         }
 
@@ -197,10 +195,9 @@ final class TenantProvisioningController extends Controller
             return null;
         }
 
-        $data = $this->tenantData($tenant);
-        $hash = (string) ($data['email_verification_token_hash'] ?? '');
-        $expires = $data['email_verification_expires_at'] ?? null;
-        if ($hash === '' || ! hash_equals($hash, hash('sha256', $token)) || ! is_string($expires)) {
+        $hash = (string) ($tenant->email_verification_token_hash ?? '');
+        $expires = $tenant->email_verification_expires_at;
+        if ($hash === '' || ! hash_equals($hash, hash('sha256', $token)) || ! $expires) {
             return null;
         }
 
@@ -212,21 +209,11 @@ final class TenantProvisioningController extends Controller
             return null;
         }
 
-        return empty($data['email_verification_token_used_at']) ? $tenant : null;
-    }
-
-    /** @return array<string, mixed> */
-    private function tenantData(Tenant $tenant): array
-    {
-        $raw = $tenant->getRawOriginal('data');
-        if (is_array($raw)) {
-            return $raw;
-        }
-        return is_string($raw) ? (json_decode($raw, true) ?: []) : [];
+        return $tenant->email_verification_token_used_at === null ? $tenant : null;
     }
 
     private function emailIsVerified(Tenant $tenant): bool
     {
-        return ! empty($this->tenantData($tenant)['email_verified_at']);
+        return $tenant->email_verified_at !== null;
     }
 }
