@@ -24,7 +24,9 @@ final class TenantEmailVerificationTest extends TestCase
         $this->assertContains('GET', $route->methods());
 
         $action = $route->getAction('uses');
-        $this->assertSame([TenantProvisioningController::class, 'verifyEmail'], $action);
+        $this->assertTrue(is_array($action));
+        $this->assertSame(TenantProvisioningController::class, ltrim((string) ($action[0] ?? ''), '\\'));
+        $this->assertSame('verifyEmail', $action[1] ?? null);
 
         $this->assertNotContains(\Stancl\Tenancy\Middleware\InitializeTenancyByDomain::class, $route->middleware());
     }
