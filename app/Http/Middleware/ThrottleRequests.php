@@ -21,8 +21,8 @@ class ThrottleRequests
         if (RateLimiter::tooManyAttempts($rateLimitKey, $maxAttempts)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Too many requests. Please try again later.',
-                'retry_after' => RateLimiter::availableIn($rateLimitKey)
+                'message' => $this->messageFor($key),
+                'retry_after' => RateLimiter::availableIn($rateLimitKey),
             ], 429);
         }
 
@@ -30,7 +30,6 @@ class ThrottleRequests
 
         $response = $next($request);
 
-        // Add rate limit headers
         $response->headers->add([
             'X-RateLimit-Limit' => $maxAttempts,
             'X-RateLimit-Remaining' => RateLimiter::remaining($rateLimitKey, $maxAttempts),
@@ -39,11 +38,14 @@ class ThrottleRequests
         return $response;
     }
 
-    /**
-     * Resolve request signature for rate limiting.
-     */
     protected function resolveRequestSignature(Request $request, string $key): string
     {
+        $tenantKey = tenant()?->getTenantKey();
+
+        if ($key === 'public-booking') {
+            return 'public-booking:' . $tenantKey . ':' . $request->ip();
+        }
+
         $user = $request->user();
 
         if ($user) {
@@ -51,5 +53,12 @@ class ThrottleRequests
         }
 
         return sha1($key . '|' . $request->ip());
+    }
+
+    protected function messageFor(string $key): string
+    {
+        return $key === 'public-booking'
+            ? 'Too many booking attempts. Please try again later.'
+            : 'Too many requests. Please try again later.';
     }
 }
