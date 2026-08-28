@@ -69,17 +69,28 @@ final class CheckSubscriptionStatus extends Command
             ->get();
 
         foreach ($readOnlyExpired as $sub) {
+            $lockedAt = $sub->locked_at
+                ? now()->parse($sub->locked_at)
+                : now()->parse($sub->read_only_ends_at);
+            $deletionAt = $sub->deletion_at
+                ? now()->parse($sub->deletion_at)
+                : $lockedAt->copy()->addDays(SubscriptionLifecycle::LOCKED_DAYS);
+
             DB::connection('mysql')
                 ->table('tenant_subscriptions')
                 ->where('id', $sub->id)
                 ->update([
                     'status' => 'locked',
-                    'locked_at' => $sub->locked_at ?? $now,
+                    'locked_at' => $lockedAt,
+                    'deletion_at' => $deletionAt,
                     'updated_at' => $now,
                 ]);
 
             $this->line("  [read_only→locked] Tenant: {$sub->tenant_id}");
-            Log::info("Subscription {$sub->id} (tenant: {$sub->tenant_id}) transitioned read_only→locked.");
+            Log::info("Subscription {$sub->id} (tenant: {$sub->tenant_id}) transitioned read_only→locked.", [
+                'locked_at' => $lockedAt->toDateTimeString(),
+                'deletion_at' => $deletionAt->toDateTimeString(),
+            ]);
             $processed++;
         }
 
