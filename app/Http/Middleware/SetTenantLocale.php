@@ -11,16 +11,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class SetTenantLocale
 {
-    /**
-     * Resolve the tenant UI locale with this precedence:
-     * explicit query parameter -> current session -> tenant default -> app default.
-     *
-     * @param Closure(Request): Response $next
-     */
     public function handle(Request $request, Closure $next): Response
     {
         $supportedLanguages = array_values(array_unique(
-            config('localizer.supported_locales', ['en', 'ar'])
+            config('localizer.supported_locales', ['ar', 'en'])
         ));
 
         try {
@@ -43,25 +37,48 @@ class SetTenantLocale
                 }
             }
         } catch (\Throwable) {
-            // Keep central configured locales as the fallback.
+            // Fall back to centrally configured locales.
         }
 
         if ($supportedLanguages === []) {
-            $supportedLanguages = ['en'];
+            $supportedLanguages = ['ar'];
         }
 
         $locale = null;
-        $requestedLocale = $request->query('lang');
 
-        if (is_string($requestedLocale) && in_array($requestedLocale, $supportedLanguages, true)) {
+        // A signed-in tenant user gets the persistent preference first.
+        // This deliberately outranks the session so a browser/session reset
+        // cannot silently revert the user's chosen language.
+        try {
+            $user = $request->user();
+            $userLocale = $user?->locale;
+
+            if (is_string($userLocale) && in_array($userLocale, $supportedLanguages, true)) {
+                $locale = $userLocale;
+                session()->put('locale', $locale);
+            }
+        } catch (\Throwable) {
+            // Continue with guest/session/tenant resolution.
+        }
+
+        $requestedLocale = $request->query('lang');
+        if ($locale === null && is_string($requestedLocale) && in_array($requestedLocale, $supportedLanguages, true)) {
             $locale = $requestedLocale;
             session()->put('locale', $locale);
-        } elseif (session()->has('locale') && in_array(session('locale'), $supportedLanguages, true)) {
+        }
+
+        if ($locale === null && session()->has('locale') && in_array(session('locale'), $supportedLanguages, true)) {
             $locale = session('locale');
-        } else {
+        }
+
+        if ($locale === null) {
             try {
                 $tenant = tenant();
-                $tenantDefault = $tenant?->settings?->language;
+                $tenantDefault = $tenant?->language;
+
+                if (! is_string($tenantDefault) || ! in_array($tenantDefault, $supportedLanguages, true)) {
+                    $tenantDefault = $tenant?->settings?->language;
+                }
 
                 if (is_string($tenantDefault) && in_array($tenantDefault, $supportedLanguages, true)) {
                     $locale = $tenantDefault;
