@@ -24,6 +24,10 @@ final class TenantRegistrationService
 
     public function register(array $data): array
     {
+        $data['subdomain'] = strtolower(trim((string) $data['subdomain']));
+        $data['email'] = strtolower(trim((string) $data['email']));
+        $data['business_name'] = trim((string) $data['business_name']);
+
         $this->validateUniqueness($data['subdomain'], $data['email']);
 
         $supportedLocales = config('localizer.supported_locales', ['ar', 'en']);
@@ -49,40 +53,52 @@ final class TenantRegistrationService
             );
         }
 
-        $subdomain = strtolower(trim($data['subdomain']));
+        $subdomain = $data['subdomain'];
         $provisioningToken = $subdomain.'.'.Str::random(48);
         $verificationToken = $subdomain.'.'.Str::random(64);
         $verificationUrl = url('/email/verify/'.$verificationToken);
         $verificationExpiresAt = now()->addHours(self::EMAIL_VERIFICATION_TTL_HOURS);
 
         try {
-            $tenant = Tenant::create([
-                'id' => $subdomain,
-                'name' => $data['business_name'],
-                'email' => $data['email'],
-                'country' => $data['country'] ?? null,
-                'language' => $tenantLocale,
-                'active' => true,
-                'gateway' => $this->resolveGatewayForCountry($data['country'] ?? 'US'),
-                'business_type' => $data['business_type'] ?? null,
-                'subscription_plan_id' => $trialPlan->id,
-                'provisioning_status' => 'queued',
-                'provisioning_message' => 'Your workspace is being prepared.',
-                'provisioning_token_hash' => hash('sha256', $provisioningToken),
-                'provisioning_token_encrypted' => Crypt::encryptString($provisioningToken),
-                'provisioning_email' => $data['email'],
-                'provisioning_password' => Crypt::encryptString($data['password']),
-                'email_verification_token_hash' => hash('sha256', $verificationToken),
-                'email_verification_token_encrypted' => Crypt::encryptString($verificationToken),
-                'email_verification_expires_at' => $verificationExpiresAt,
-                'email_verification_url' => $verificationUrl,
-                'email_verified_at' => null,
-                'email_verification_token_used_at' => null,
-            ]);
+            $tenant = DB::transaction(function () use (
+                $data,
+                $tenantLocale,
+                $trialPlan,
+                $subdomain,
+                $provisioningToken,
+                $verificationToken,
+                $verificationExpiresAt
+            ): Tenant {
+                $tenant = Tenant::create([
+                    'id' => $subdomain,
+                    'name' => $data['business_name'],
+                    'email' => $data['email'],
+                    'country' => $data['country'] ?? null,
+                    'language' => $tenantLocale,
+                    'active' => true,
+                    'gateway' => $this->resolveGatewayForCountry($data['country'] ?? 'US'),
+                    'business_type' => $data['business_type'] ?? null,
+                    'subscription_plan_id' => $trialPlan->id,
+                    'provisioning_status' => 'queued',
+                    'provisioning_message' => 'Your workspace is being prepared.',
+                    'provisioning_token_hash' => hash('sha256', $provisioningToken),
+                    'provisioning_token_encrypted' => Crypt::encryptString($provisioningToken),
+                    'provisioning_email' => $data['email'],
+                    'provisioning_password' => Crypt::encryptString($data['password']),
+                    'email_verification_token_hash' => hash('sha256', $verificationToken),
+                    'email_verification_token_encrypted' => Crypt::encryptString($verificationToken),
+                    'email_verification_expires_at' => $verificationExpiresAt,
+                    'email_verification_url' => $verificationUrl,
+                    'email_verified_at' => null,
+                    'email_verification_token_used_at' => null,
+                ]);
 
-            $tenant->domains()->create([
-                'domain' => $this->buildSubdomain($subdomain),
-            ]);
+                $tenant->domains()->create([
+                    'domain' => $this->buildSubdomain($subdomain),
+                ]);
+
+                return $tenant;
+            });
         } catch (QueryException $e) {
             if ($this->isDuplicateKeyException($e)) {
                 throw ValidationException::withMessages([
