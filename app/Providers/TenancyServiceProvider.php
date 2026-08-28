@@ -27,14 +27,11 @@ class TenancyServiceProvider extends ServiceProvider
             Events\TenantCreated::class => [
                 function (Events\TenantCreated $event): void {
                     $tenant = $event->tenant;
-
-                    // Only signup-created tenants should enter provisioning.
-                    // Plain Tenant::create() calls (including test fixtures)
-                    // must not create databases or bootstrap credentials.
                     $status = (string) ($tenant->provisioning_status ?? '');
                     $email = (string) ($tenant->provisioning_email ?? '');
                     $password = (string) ($tenant->provisioning_password ?? '');
 
+                    // Only signup-created tenants enter the provisioning pipeline.
                     if ($status !== 'queued' || $email === '' || $password === '') {
                         return;
                     }
@@ -160,14 +157,21 @@ class TenancyServiceProvider extends ServiceProvider
             ->get('/signup/provisioning/{token}/status', [TenantProvisioningController::class, 'status'])
             ->name('signup.provisioning.status');
 
-        Route::middleware([
-            'web',
-            Middleware\InitializeTenancyByDomain::class,
-            Middleware\PreventAccessFromCentralDomains::class,
-        ])->get('/email/verify/{token}', TenantProvisioningController::class.'@verifyEmail')
+        Route::middleware(['web', 'maintenance'])
+            ->post('/signup/provisioning/{token}/resend-verification', [TenantProvisioningController::class, 'resendVerification'])
+            ->name('signup.provisioning.resend')
+            ->middleware('throttle:3,1');
+
+        // Verification is central because the verification secret and its
+        // state live in the central Tenant record, which exists before the
+        // tenant database is provisioned.
+        Route::middleware(['web', 'maintenance'])
+            ->get('/email/verify/{token}', TenantProvisioningController::class.'@verifyEmail')
             ->name('tenant.email.verify')
             ->middleware('throttle:10,1');
 
+        // The final handoff remains on the tenant domain and is only allowed
+        // once both provisioning and email verification are complete.
         Route::middleware([
             'web',
             Middleware\InitializeTenancyByDomain::class,
