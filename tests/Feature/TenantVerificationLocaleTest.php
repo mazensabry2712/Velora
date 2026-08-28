@@ -6,21 +6,32 @@ namespace Tests\Feature;
 
 use App\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Crypt;
 use Tests\TestCase;
 
 final class TenantVerificationLocaleTest extends TestCase
 {
     use RefreshDatabase;
 
+    private function tenantData(string $email): array
+    {
+        return [
+            'provisioning_email' => $email,
+            'provisioning_password' => Crypt::encryptString('password123'),
+        ];
+    }
+
     public function test_email_verification_page_uses_tenant_signup_language(): void
     {
         $tenantId = 'locale-ar-'.bin2hex(random_bytes(4));
         $token = $tenantId.'.'.str_repeat('a', 64);
+        $email = $tenantId.'@example.com';
 
         $tenant = Tenant::withoutEvents(fn () => Tenant::create([
             'id' => $tenantId,
             'name' => 'Arabic Business',
             'language' => 'ar',
+            'data' => $this->tenantData($email),
             'provisioning_status' => 'ready',
             'provisioning_redirect_url' => '',
             'email_verification_token_hash' => hash('sha256', $token),
@@ -42,11 +53,13 @@ final class TenantVerificationLocaleTest extends TestCase
     {
         $tenantId = 'locale-en-'.bin2hex(random_bytes(4));
         $token = $tenantId.'.'.str_repeat('b', 64);
+        $email = $tenantId.'@example.com';
 
         Tenant::withoutEvents(fn () => Tenant::create([
             'id' => $tenantId,
             'name' => 'English Business',
             'language' => 'en',
+            'data' => $this->tenantData($email),
             'provisioning_status' => 'ready',
             'provisioning_redirect_url' => '',
             'email_verification_token_hash' => hash('sha256', $token),
