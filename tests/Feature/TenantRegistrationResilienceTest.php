@@ -41,9 +41,19 @@ final class TenantRegistrationResilienceTest extends TestCase
         ];
     }
 
+    private function postSignup(array $payload)
+    {
+        $host = (string) env('APP_DOMAIN', 'velora.test');
+
+        return $this->withServerVariables([
+            'HTTP_HOST' => $host,
+            'SERVER_NAME' => $host,
+        ])->post('/signup', $payload);
+    }
+
     public function test_soft_deleted_tenant_id_is_treated_as_taken(): void
     {
-        $subdomain = $this->uniqueId('reserved-soft-deleted');
+        $subdomain = $this->uniqueId('softdel');
 
         $tenant = Tenant::create(['id' => $subdomain]);
         $tenant->delete();
@@ -57,12 +67,12 @@ final class TenantRegistrationResilienceTest extends TestCase
 
     public function test_soft_deleted_tenant_id_rejects_registration_before_insert(): void
     {
-        $subdomain = $this->uniqueId('reusable-blocked');
+        $subdomain = $this->uniqueId('blocked');
 
         $tenant = Tenant::create(['id' => $subdomain]);
         $tenant->delete();
 
-        $response = $this->post('/signup', $this->validSignupPayload($subdomain));
+        $response = $this->postSignup($this->validSignupPayload($subdomain));
 
         $response->assertRedirect();
         $errors = $response->getSession()->get('errors');
@@ -74,10 +84,10 @@ final class TenantRegistrationResilienceTest extends TestCase
 
     public function test_signup_subdomain_collision_does_not_become_generic_server_error(): void
     {
-        $subdomain = $this->uniqueId('collision-check');
+        $subdomain = $this->uniqueId('collision');
         Tenant::create(['id' => $subdomain]);
 
-        $response = $this->post('/signup', $this->validSignupPayload($subdomain));
+        $response = $this->postSignup($this->validSignupPayload($subdomain));
 
         $response->assertRedirect();
         $this->assertNotSame(500, $response->status());
