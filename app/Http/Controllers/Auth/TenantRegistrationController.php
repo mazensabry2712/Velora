@@ -64,7 +64,9 @@ final class TenantRegistrationController extends Controller
                 ], 422);
             }
 
-            return back()->withInput()->withErrors($e->errors());
+            return redirect()->to($this->signupUrl($request))
+                ->withInput($request->except(['password', 'password_confirmation']))
+                ->withErrors($e->errors());
         } catch (\Throwable $e) {
             Log::error('Tenant registration error: ' . $e->getMessage(), [
                 'email'     => $request->input('email'),
@@ -78,9 +80,22 @@ final class TenantRegistrationController extends Controller
                 ], 500);
             }
 
-            return back()->withInput()->withErrors([
-                'general' => 'Something went wrong. Please try again or contact support.',
-            ]);
+            return redirect()->to($this->signupUrl($request))
+                ->withInput($request->except(['password', 'password_confirmation']))
+                ->withErrors([
+                    'general' => 'Something went wrong. Please try again or contact support.',
+                ]);
         }
+    }
+
+    private function signupUrl(Request $request): string
+    {
+        $locale = $request->route('locale');
+
+        if (is_string($locale) && $locale !== '') {
+            return url('/' . $locale . '/signup');
+        }
+
+        return url('/signup');
     }
 }
