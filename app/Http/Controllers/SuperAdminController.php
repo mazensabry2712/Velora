@@ -19,7 +19,12 @@ class SuperAdminController extends Controller
     public function promoCodes()
     {
         $promoCodes = PromoCode::query()->latest()->paginate(20);
-        return view('super-admin.promo-codes.index', compact('promoCodes'));
+
+        return view('super-admin.promo-codes.index', [
+            'promoCodes' => $promoCodes,
+            // Backward-compatible view variable used by the existing Blade table.
+            'codes' => $promoCodes,
+        ]);
     }
 
     public function storePromoCode(Request $request)
@@ -62,6 +67,7 @@ class SuperAdminController extends Controller
     {
         $promoCode = PromoCode::findOrFail($id);
         $promoCode->update(['is_active' => ! $promoCode->is_active]);
+
         return redirect()->route('super-admin.promo-codes.index')->with('success', 'Promo code status updated successfully.');
     }
 
@@ -69,6 +75,7 @@ class SuperAdminController extends Controller
     {
         $promoCode = PromoCode::findOrFail($id);
         $promoCode->delete();
+
         return redirect()->route('super-admin.promo-codes.index')->with('success', 'Promo code deleted successfully.');
     }
 
