@@ -13,32 +13,13 @@ class SetTenantLocale
 {
     public function handle(Request $request, Closure $next): Response
     {
+        // The UI locale registry is global and must match the languages exposed
+        // by the Landing. Tenant `available_languages` may govern business or
+        // booking content, but it must not prevent the application UI from
+        // using any supported platform language.
         $supportedLanguages = array_values(array_unique(
             config('localizer.supported_locales', ['ar', 'en'])
         ));
-
-        try {
-            $tenant = tenant();
-
-            if ($tenant) {
-                $settingsModel = \App\Models\Setting::where('tenant_id', $tenant->id)->first();
-
-                if ($settingsModel?->available_languages) {
-                    $available = is_string($settingsModel->available_languages)
-                        ? json_decode($settingsModel->available_languages, true)
-                        : $settingsModel->available_languages;
-
-                    if (is_array($available) && $available !== []) {
-                        $supportedLanguages = array_values(array_intersect(
-                            $supportedLanguages,
-                            $available
-                        ));
-                    }
-                }
-            }
-        } catch (\Throwable) {
-            // Fall back to centrally configured locales.
-        }
 
         if ($supportedLanguages === []) {
             $supportedLanguages = ['ar'];
@@ -47,8 +28,8 @@ class SetTenantLocale
         $locale = null;
 
         // A signed-in tenant user gets the persistent preference first.
-        // This deliberately outranks the session so a browser/session reset
-        // cannot silently revert the user's chosen language.
+        // This outranks session state so the preference survives logout/login
+        // and cannot silently revert to the Tenant default.
         try {
             $user = $request->user();
             $userLocale = $user?->locale;
@@ -58,7 +39,7 @@ class SetTenantLocale
                 session()->put('locale', $locale);
             }
         } catch (\Throwable) {
-            // Continue with guest/session/tenant resolution.
+            // Continue with request/session/tenant resolution.
         }
 
         $requestedLocale = $request->query('lang');
