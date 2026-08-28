@@ -25,23 +25,27 @@ class TenancyServiceProvider extends ServiceProvider
         return [
             Events\CreatingTenant::class => [],
             Events\TenantCreated::class => [
-                function (Events\TenantCreated $event): void {
-                    $tenant = $event->tenant;
-                    $status = (string) ($tenant->provisioning_status ?? '');
-                    $email = (string) ($tenant->provisioning_email ?? '');
-                    $password = (string) ($tenant->provisioning_password ?? '');
+                JobPipeline::make([
+                    Jobs\CreateDatabase::class,
+                    Jobs\MigrateDatabase::class,
+                    Jobs\SeedDatabase::class,
+                    FinalizeTenantProvisioning::class,
+                ])
+                    ->send(function (Events\TenantCreated $event) {
+                        $tenant = $event->tenant;
+                        $status = (string) ($tenant->provisioning_status ?? '');
+                        $email = (string) ($tenant->provisioning_email ?? '');
+                        $password = (string) ($tenant->provisioning_password ?? '');
 
-                    if ($status !== 'queued' || $email === '' || $password === '') {
-                        return;
-                    }
+                        // Only signup-created tenants enter the provisioning pipeline.
+                        // Ordinary tenant fixtures/creates remain untouched.
+                        if ($status !== 'queued' || $email === '' || $password === '') {
+                            return null;
+                        }
 
-                    JobPipeline::make([
-                        Jobs\CreateDatabase::class,
-                        Jobs\MigrateDatabase::class,
-                        Jobs\SeedDatabase::class,
-                        FinalizeTenantProvisioning::class,
-                    ])->send(fn () => $tenant)->shouldBeQueued(true)->dispatch();
-                },
+                        return $tenant;
+                    })
+                    ->shouldBeQueued(true),
             ],
             Events\SavingTenant::class => [],
             Events\TenantSaved::class => [],
@@ -60,7 +64,7 @@ class TenancyServiceProvider extends ServiceProvider
             Events\SavingDomain::class => [],
             Events\DomainSaved::class => [],
             Events\UpdatingDomain::class => [],
-            Events\DomainUpdated::class => [],
+            Events\TenantUpdated::class => [],
             Events\DeletingDomain::class => [],
             Events\DomainDeleted::class => [],
             Events\DatabaseCreated::class => [],
