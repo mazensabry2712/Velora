@@ -18,7 +18,6 @@ class TenantAuthController extends Controller
      */
     public function login(Request $request)
     {
-        // Rate limiting for login attempts
         $throttleKey = 'login:' . $request->ip() . ':' . $request->input('email');
 
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
@@ -51,6 +50,13 @@ class TenantAuthController extends Controller
             ]);
         }
 
+        if ($user->email_verified_at === null) {
+            RateLimiter::hit($throttleKey, 60);
+            throw ValidationException::withMessages([
+                'email' => ['Please verify your email address before signing in.'],
+            ]);
+        }
+
         RateLimiter::clear($throttleKey);
 
         $roleName = $user->getRoleNames()->first();
@@ -62,9 +68,6 @@ class TenantAuthController extends Controller
             default => [],
         };
 
-        // Bind the token cryptographically to the tenant context. The tenant
-        // middleware uses this scope before Sanctum resolves the user so a
-        // token issued for tenant A can never initialize tenant B first.
         $abilities[] = 'tenant:' . $tenant->id;
 
         auth()->login($user, $request->filled('remember'));
