@@ -83,6 +83,31 @@ Route::prefix('super-admin')->middleware(['auth:web', 'super.admin'])->group(fun
     Route::post('/notifications/{id}/send', [SystemNotificationController::class, 'send']);
 });
 
+/* Versioned tenant API (V1) */
+Route::prefix('v1')
+    ->middleware(['tenant.token', 'tenant.locale'])
+    ->group(function () {
+        Route::middleware(['auth:sanctum', 'tenant.token.bound'])->group(function () {
+            Route::middleware(['role:Admin Tenant|Staff'])->group(function () {
+                Route::get('appointments', [\App\Http\Controllers\Tenant\AppointmentController::class, 'index']);
+                Route::post('appointments', [AdminAppointmentCreationController::class, 'store']);
+                Route::get('queues', [\App\Http\Controllers\Tenant\QueueController::class, 'index']);
+            });
+
+            Route::middleware(['role:Admin Tenant'])->group(function () {
+                Route::apiResource('invoices', \App\Http\Controllers\Tenant\InvoiceController::class);
+                Route::get('analytics/summary', [\App\Http\Controllers\Tenant\AnalyticsController::class, 'summary']);
+                Route::get('analytics/daily', [\App\Http\Controllers\Tenant\AnalyticsController::class, 'daily']);
+            });
+
+            Route::prefix('push-tokens')->group(function () {
+                Route::get('/', [\App\Http\Controllers\Tenant\PushTokenController::class, 'index']);
+                Route::post('/', [\App\Http\Controllers\Tenant\PushTokenController::class, 'store']);
+                Route::delete('/{id}', [\App\Http\Controllers\Tenant\PushTokenController::class, 'destroy']);
+            });
+        });
+    });
+
 /* Tenant APIs by domain */
 Route::middleware(['tenant', 'tenant.locale'])->group(function () {
     Route::get('staff', function () {
