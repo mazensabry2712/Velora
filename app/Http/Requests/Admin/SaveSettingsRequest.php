@@ -13,6 +13,10 @@ class SaveSettingsRequest extends FormRequest
 
     public function rules(): array
     {
+        $supportedLocales = implode(',', config('localizer.supported_locales', [
+            'en', 'ar', 'fr', 'es', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'tr', 'hi', 'ko', 'nl', 'id',
+        ]));
+
         return [
             'business_name'         => 'nullable|string|max:255',
             'business_name_ar'      => 'nullable|string|max:255',
@@ -26,7 +30,7 @@ class SaveSettingsRequest extends FormRequest
             'tiktok'                => 'nullable|url|max:255',
             'snapchat'              => 'nullable|string|max:100',
             'available_languages'   => 'nullable|array',
-            'available_languages.*' => 'string|in:en,ar,fr,es,de,it,pt,ru,zh,ja',
+            'available_languages.*' => 'string|in:' . $supportedLocales,
             'logo'                  => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ];
     }
