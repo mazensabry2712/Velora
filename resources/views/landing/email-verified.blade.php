@@ -27,7 +27,7 @@
                 <img src="{{ asset('logo-bais.png') }}" alt="Velora">
                 <span>
                     <strong>Velora</strong>
-                    <span>{{ __('verification.workspace_ready') }}</span>
+                    <span>{{ __('messages.login_to_account') }}</span>
                 </span>
             </div>
 
@@ -46,16 +46,14 @@
                     <small>{{ __('verification.business') }}</small>
                     <strong>{{ $businessName }}</strong>
                     @if (! empty($adminEmail))
-                        <small style="margin-top:8px">{{ __('verification.admin_account') }}</small>
+                        <small style="margin-top:8px">{{ __('messages.email') }}</small>
                         <strong style="font-weight:700">{{ $adminEmail }}</strong>
                     @endif
                 </div>
             @endif
 
             <div class="va-meta">
-                {{ __('verification.verified_successfully') }}
-                <br>
-                {{ __('verification.continue_workspace_setup') }}
+                {{ __('verification.message') }}
             </div>
         </section>
     </main>
