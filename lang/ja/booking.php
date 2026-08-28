@@ -1,0 +1,4 @@
+<?php
+return [
+    'Book Appointment' => '予約する','Book your appointment online' => 'オンラインで予約する','Full Name' => '氏名','Enter your full name' => '氏名を入力してください','Email' => 'メールアドレス','Enter your email' => 'メールアドレスを入力してください','Phone Number' => '電話番号','Enter your phone number' => '電話番号を入力してください','Appointment Date' => '予約日','Appointment Time' => '予約時間','Select time' => '時間を選択','Preferred Staff' => '希望スタッフ','Any available staff' => '空いているスタッフ','Additional Notes' => '追加メモ','Any special requests or notes...' => '特別な要望やメモ...','Booking...' => '予約中...','Appointment Booked Successfully!' => '予約が完了しました！','You will receive a confirmation email shortly.' => '確認メールをまもなくお送りします。','Booking Failed' => '予約に失敗しました','An error occurred. Please try again.' => 'エラーが発生しました。もう一度お試しください。','Check Queue Status' => '順番待ち状況を確認',
+];
