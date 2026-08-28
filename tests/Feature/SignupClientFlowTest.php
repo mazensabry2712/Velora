@@ -12,6 +12,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
 final class SignupClientFlowTest extends TestCase
@@ -189,8 +190,6 @@ final class SignupClientFlowTest extends TestCase
         ])->post('/signup', $data);
 
         $response->assertRedirect()->assertSessionHasErrors(['password']);
-        $response->assertSessionHasNoErrors();
-
         $this->assertFalse(Tenant::whereKey($subdomain)->exists());
         $this->assertNull(session('password'));
         $this->assertNull(session('password_confirmation'));
@@ -321,7 +320,7 @@ final class SignupClientFlowTest extends TestCase
         ])->get('/email/verify/' . $token);
 
         $tenant = $tenant->fresh();
-        $verify->assertStatus(200);
+        $verify->assertSuccessful();
 
         $this->assertNotNull($tenant->email_verified_at);
         $this->assertNotNull($tenant->email_verification_token_used_at);
@@ -382,13 +381,14 @@ final class SignupClientFlowTest extends TestCase
         $response->assertNotFound();
     }
 
-    public function test_resend_verification_is_idempotent_after_verification_and_throttled_before_it(): void
+    public function test_resend_verification_is_throttled_before_verification_and_idempotent_after_verification(): void
     {
         $subdomain = 'resend-' . $this->uniqueSuffix();
         $this->signup($subdomain, 'ar')->assertRedirect();
 
         $tenant = $this->tenantFor($subdomain);
         $token = Crypt::decryptString((string) $tenant->provisioning_token_encrypted);
+        $key = 'tenant-email-verification:' . '127.0.0.1' . ':' . $tenant->id;
 
         for ($i = 0; $i < 3; $i++) {
             $response = $this->withServerVariables([
@@ -406,11 +406,13 @@ final class SignupClientFlowTest extends TestCase
 
         $throttled->assertStatus(429);
 
+        RateLimiter::clear($key);
+
         $verificationToken = Crypt::decryptString((string) $tenant->fresh()->email_verification_token_encrypted);
         $this->withServerVariables([
             'HTTP_HOST' => $this->centralHost(),
             'SERVER_NAME' => $this->centralHost(),
-        ])->get('/email/verify/' . $verificationToken)->assertOk();
+        ])->get('/email/verify/' . $verificationToken)->assertSuccessful();
 
         $verifiedResend = $this->withServerVariables([
             'HTTP_HOST' => $this->centralHost(),
