@@ -103,7 +103,7 @@ final class FinalizeTenantProvisioning implements ShouldQueue
             $domain = (string) ($domainModel?->domain ?? '');
 
             if ($domainModel && str_ends_with($domain, '.test')) {
-                (new LinkTenantDomain($domainModel))->handle();
+                (new \App\Jobs\LinkTenantDomain($domainModel))->handle();
             }
 
             $token = (string) ($data['provisioning_token'] ?? '');
