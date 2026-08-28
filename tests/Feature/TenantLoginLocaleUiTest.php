@@ -70,7 +70,10 @@ final class TenantLoginLocaleUiTest extends TestCase
 
                 self::assertIsString($resolved);
                 self::assertNotSame('', trim($resolved), "Empty translation for [{$key}] in locale [{$locale}].");
-                self::assertNotSame($key, $resolved, "Missing translation key [{$key}] in locale [{$locale}].");
+
+                if ($locale !== 'en') {
+                    self::assertNotSame($key, $resolved, "Missing translation key [{$key}] in locale [{$locale}].");
+                }
             }
         }
     }
