@@ -1,0 +1,180 @@
+/* Velora Public Design System
+ * Shared visual primitives for Landing, Signup, Pricing, Find Account and Tenant Login.
+ * Brand colors/tokens are defined by velora-brand.css; this file adds reusable public-surface geometry.
+ */
+
+:root {
+    --velora-public-shell: 1180px;
+    --velora-public-gutter: 40px;
+    --velora-public-radius-sm: 12px;
+    --velora-public-radius-md: 16px;
+    --velora-public-radius-lg: 20px;
+    --velora-public-radius-xl: 28px;
+    --velora-public-shadow-sm: 0 10px 30px rgba(13, 18, 38, .06);
+    --velora-public-shadow-md: 0 20px 55px rgba(13, 18, 38, .08);
+    --velora-public-shadow-lg: 0 30px 90px rgba(13, 18, 38, .11);
+    --velora-public-focus: 0 0 0 4px rgba(0, 108, 255, .09);
+}
+
+html, body {
+    font-family: 'Plus Jakarta Sans', Inter, system-ui, sans-serif;
+}
+
+.velora-public-page {
+    min-height: 100dvh;
+    background: var(--velora-bg);
+    color: var(--velora-text);
+}
+
+.velora-public-container {
+    width: min(var(--velora-public-shell), calc(100% - var(--velora-public-gutter)));
+    margin-inline: auto;
+}
+
+.velora-public-surface {
+    border: 1px solid var(--velora-line);
+    border-radius: var(--velora-public-radius-xl);
+    background: var(--velora-surface);
+    box-shadow: var(--velora-public-shadow-md);
+}
+
+.velora-public-glass {
+    background: color-mix(in srgb, var(--velora-surface) 94%, transparent);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid var(--velora-line);
+    box-shadow: var(--velora-public-shadow-sm);
+}
+
+.velora-public-button {
+    min-height: 50px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding-inline: 18px;
+    border-radius: var(--velora-public-radius-sm);
+    font-size: 13px;
+    font-weight: 800;
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+}
+
+.velora-public-button-primary {
+    color: #fff;
+    background: var(--velora-gradient);
+    box-shadow: 0 14px 30px var(--velora-accent-glow);
+}
+
+.velora-public-button-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 18px 38px rgba(0, 108, 255, .24);
+}
+
+.velora-public-button-secondary {
+    color: var(--velora-text);
+    border: 1px solid var(--velora-line);
+    background: var(--velora-surface);
+}
+
+.velora-public-button-secondary:hover {
+    transform: translateY(-1px);
+    background: var(--velora-surface-muted);
+}
+
+.velora-public-input,
+.velora-public-select {
+    width: 100%;
+    min-height: 52px;
+    padding-inline: 15px;
+    border: 1px solid var(--velora-line);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--velora-surface) 94%, var(--velora-bg));
+    color: var(--velora-text);
+    outline: none;
+    transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+
+.velora-public-input:focus,
+.velora-public-select:focus {
+    border-color: rgba(0, 108, 255, .55);
+    box-shadow: var(--velora-public-focus);
+    background: var(--velora-surface);
+}
+
+.velora-public-label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--velora-text);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.velora-public-muted {
+    color: var(--velora-text-muted);
+}
+
+.velora-public-gradient-text {
+    background-image: var(--velora-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+}
+
+.velora-public-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid rgba(109, 70, 255, .16);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--velora-surface) 92%, var(--velora-accent-strong));
+    color: var(--velora-primary-blue);
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.velora-public-kicker::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--velora-gradient);
+}
+
+html[data-theme="dark"] {
+    color-scheme: dark;
+}
+
+html[data-theme="dark"] .velora-public-surface,
+html[data-theme="dark"] .velora-public-button-secondary {
+    box-shadow: var(--velora-public-shadow-lg);
+}
+
+@media (max-width: 760px) {
+    :root {
+        --velora-public-gutter: 24px;
+    }
+
+    .velora-public-container {
+        width: calc(100% - var(--velora-public-gutter));
+    }
+
+    .velora-public-button {
+        width: 100%;
+    }
+}
+
+@media (max-width: 400px) {
+    :root {
+        --velora-public-gutter: 18px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .velora-public-button,
+    .velora-public-input,
+    .velora-public-select {
+        transition: none;
+    }
+}
