@@ -18,9 +18,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ __('Login') }} · {{ $displayName }}</title>
+    <title>{{ __('messages.login') }} · {{ $displayName }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/velora-brand.css') }}">
     <link rel="stylesheet" href="{{ asset('css/velora-auth.css') }}">
@@ -47,14 +48,14 @@
                 @endif
                 <span>
                     <strong>{{ $displayName }}</strong>
-                    <span>{{ __('Manage your business with clarity') }}</span>
+                    <span>{{ __('messages.login_to_account') }}</span>
                 </span>
             </a>
 
             <div class="va-tools">
                 <button id="themeToggle" type="button" class="va-tool" aria-label="{{ __('Toggle theme') }}">◐</button>
                 <div class="va-language-menu">
-                    <button id="languageToggle" type="button" class="va-tool va-language-toggle" aria-haspopup="listbox" aria-expanded="false" aria-label="{{ __('Language') }}">
+                    <button id="languageToggle" type="button" class="va-tool va-language-toggle" aria-haspopup="listbox" aria-expanded="false" aria-label="{{ __('messages.language') }}">
                         {{ strtoupper($locale) }}
                     </button>
                     <div id="languageMenu" class="va-language-dropdown" role="listbox" hidden>
@@ -71,12 +72,12 @@
         <main class="va-main">
             <section class="va-panel copy">
                 <div>
-                    <div class="va-kicker"><span class="va-dot"></span>{{ __('Workspace') }}</div>
+                    <div class="va-kicker"><span class="va-dot"></span>{{ __('messages.dashboard') }}</div>
                     <h1 class="va-title">
                         {{ __('Welcome back') }} <span>Velora</span>
                     </h1>
                     <p class="va-copy">
-                        {{ __('Sign in to keep your appointments, customers, team and bookings moving from one place.') }}
+                        {{ __('messages.login_to_account') }}
                     </p>
 
                     <div class="va-feature-list">
@@ -91,25 +92,25 @@
             <section class="va-panel form">
                 <div class="va-form-head">
                     <div>
-                        <h2>{{ __('Login') }}</h2>
-                        <p>{{ __('Use your account credentials to continue.') }}</p>
+                        <h2>{{ __('messages.login') }}</h2>
+                        <p>{{ __('messages.login_to_account') }}</p>
                     </div>
                 </div>
 
                 <form id="loginForm" class="va-form" novalidate>
                     @csrf
                     <div class="va-field">
-                        <label for="email">{{ __('Email') }}</label>
+                        <label for="email">{{ __('messages.email') }}</label>
                         <input class="va-input" type="email" id="email" name="email" autocomplete="username" required autofocus placeholder="name@example.com">
                     </div>
 
                     <div class="va-field">
-                        <label for="password">{{ __('Password') }}</label>
+                        <label for="password">{{ __('messages.password') }}</label>
                         <input class="va-input" type="password" id="password" name="password" autocomplete="current-password" required placeholder="••••••••">
                     </div>
 
                     <div class="va-row">
-                        <label class="va-check"><input type="checkbox" id="remember"> <span>{{ __('Remember me') }}</span></label>
+                        <label class="va-check"><input type="checkbox" id="remember"> <span>{{ __('messages.remember_me') }}</span></label>
                         <span class="va-link" aria-disabled="true" title="{{ __('Password reset is not enabled yet') }}">{{ __('Forgot your password?') }}</span>
                     </div>
 
@@ -117,7 +118,7 @@
                     <div id="successMessage" class="va-alert success" hidden></div>
 
                     <button type="submit" id="submitBtn" class="va-button">
-                        <span id="btnText">{{ __('Login') }}</span>
+                        <span id="btnText">{{ __('messages.login') }}</span>
                         <span id="loadingSpinner" hidden aria-hidden="true">◌</span>
                     </button>
                 </form>
@@ -132,11 +133,11 @@
 
 <script>
     const texts = {
-        loggingIn: @json(__('Logging in...')),
-        login: @json(__('Login')),
-        loginSuccess: @json(__('Login successful!')),
-        loginError: @json(__('Invalid credentials')),
-        errorOccurred: @json(__('An error occurred! Please try again')),
+        loggingIn: @json(__('messages.loading')),
+        login: @json(__('messages.login')),
+        loginSuccess: @json(__('messages.login_success')),
+        loginError: @json(__('messages.login_failed')),
+        errorOccurred: @json(__('messages.error_occurred')),
     };
 
     const root = document.documentElement;
