@@ -80,12 +80,16 @@ Route::middleware([
             Route::get('/available-timeslots', [ServiceController::class, 'availableTimeSlots']);
             Route::get('/workingdays', [ServiceController::class, 'workingDays']);
             Route::get('/staff/{id}/services', [ServiceController::class, 'staffServices']);
-            Route::get('/staff/by-service/{serviceId}', [StaffController::class, 'byService']);
+            Route::get('/staff/by-service/{serviceId}', [ServiceController::class, 'byService']);
             Route::get('/staff/{id}/schedule', [StaffController::class, 'schedule']);
         });
 
         Route::get('/api/queue', [QueueController::class, 'publicQueue'])->name('api.queue.public');
         Route::get('/api/queue/status/{queueNumber}', [QueueController::class, 'getQueueStatus'])->name('api.queue.status');
+
+        Route::post('/api/appointments', [\App\Http\Controllers\Web\BookingController::class, 'store'])
+            ->middleware(EnsureSubscriptionIsValid::class)
+            ->name('api.appointments.public');
 
         Route::post('/logout', function () {
             auth()->guard('web')->logout();
