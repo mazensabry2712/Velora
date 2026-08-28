@@ -64,9 +64,10 @@ final class TenantRegistrationController extends Controller
                 ], 422);
             }
 
-            return redirect()->to($this->signupUrl($request))
-                ->withInput($request->except(['password', 'password_confirmation']))
-                ->withErrors($e->errors());
+            // Let Laravel's exception handler perform the normal web
+            // validation redirect. This preserves the framework's session
+            // error bag and previous URL across localized signup routes.
+            throw $e;
         } catch (\Throwable $e) {
             Log::error('Tenant registration error: ' . $e->getMessage(), [
                 'email'     => $request->input('email'),
@@ -80,22 +81,9 @@ final class TenantRegistrationController extends Controller
                 ], 500);
             }
 
-            return redirect()->to($this->signupUrl($request))
-                ->withInput($request->except(['password', 'password_confirmation']))
-                ->withErrors([
-                    'general' => 'Something went wrong. Please try again or contact support.',
-                ]);
+            return back()->withInput()->withErrors([
+                'general' => 'Something went wrong. Please try again or contact support.',
+            ]);
         }
-    }
-
-    private function signupUrl(Request $request): string
-    {
-        $locale = $request->route('locale');
-
-        if (is_string($locale) && $locale !== '') {
-            return url('/' . $locale . '/signup');
-        }
-
-        return url('/signup');
     }
 }
