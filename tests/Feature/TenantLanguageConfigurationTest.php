@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace Tests\Feature;
+
 use App\Support\AdminNavigation;
 use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
