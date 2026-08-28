@@ -108,7 +108,7 @@ final class FinalizeTenantProvisioning implements ShouldQueue
                 (new LinkTenantDomain($domainModel))->handle();
             }
 
-            $verificationToken = Str::random(64);
+            $verificationToken = $tenant->id.'.'.Str::random(64);
             $verificationExpiresAt = now()->addHours(24);
             $handoffToken = (string) ($data['provisioning_token'] ?? '');
             $handoffUrl = $this->handoffUrl($domain, $handoffToken);
@@ -142,6 +142,14 @@ final class FinalizeTenantProvisioning implements ShouldQueue
                     SubscriptionLifecycle::TRIAL_DAYS
                 ));
             }
+
+            // The encrypted bootstrap password is no longer needed after the
+            // tenant admin has been created. Remove it from central tenant data.
+            $freshData = $this->tenantData($tenant);
+            unset($freshData['provisioning_password']);
+            $tenant->update([
+                'data' => json_encode($freshData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ]);
         } catch (\Throwable $e) {
             $this->markProvisioning($tenant, 'failed', 'We could not finish setting up your workspace.');
 
@@ -166,7 +174,6 @@ final class FinalizeTenantProvisioning implements ShouldQueue
         if (is_array($raw)) {
             return $raw;
         }
-
         return is_string($raw) ? (json_decode($raw, true) ?: []) : [];
     }
 
