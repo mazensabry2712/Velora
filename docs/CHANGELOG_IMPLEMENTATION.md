@@ -68,6 +68,15 @@ This file is the living record of the important work already performed and the e
 - Tenant login now rejects unverified accounts.
 - Verification, provisioning and handoff flows have dedicated regression coverage.
 
+### Authentication UI / Frontend Consistency
+
+- A shared `public/css/velora-auth.css` layer now consumes the official Velora brand tokens for authentication screens.
+- Tenant Login and Super Admin Login use the same responsive auth shell, official Velora gradient, typography, theme handling and RTL/LTR behavior.
+- Tenant Login and Super Admin Login use the Velora logo asset and no longer define independent legacy Indigo brand palettes.
+- The email-verification completion screen now uses the shared auth visual language and `logo-bais.png`.
+- Find Account inherits the same Velora background, surfaces, typography, borders and primary-action styling through the shared auth layer without changing its existing JavaScript or routing behavior.
+- Auth theme persistence uses the shared `velora-theme` storage key on the updated auth screens.
+
 ### Testing
 
 - Feature tests cover booking, appointments, queue, billing, localization and other administration areas.
@@ -76,7 +85,7 @@ This file is the living record of the important work already performed and the e
 - `TenantVerificationLocaleTest` verifies tenant-language and explicit-language override behavior for the verification page using a real tenant database context.
 - `TenantEmailVerificationTest` covers verification route/mail/tenant provisioning metadata.
 - `SignupTenantHandoffTest` covers unverified access, verification and handoff behavior.
-- Latest local full suite: **509 tests, 2665 assertions, 0 failures, 0 errors**.
+- Latest verified backend/auth suite before the UI-only changes: **509 tests, 2665 assertions, 0 failures, 0 errors**.
 
 ## Important Risks Identified
 
@@ -99,7 +108,7 @@ This file is the living record of the important work already performed and the e
 9. Dashboard analytics should be refactored and optimized further.
 10. Remaining hard-coded translations should be localized.
 11. Production operations/documentation should be completed.
-12. Browser/mobile/RTL visual QA should be completed.
+12. Browser/mobile/RTL visual QA should be completed, including the updated authentication surfaces.
 
 ## Execution Rule
 
@@ -112,7 +121,38 @@ Every completed task should update this file with:
 - Result.
 - Any follow-up risk.
 
-## Latest Verified Entry
+## Latest Implementation Entry
+
+### 2026-08-28 — Unified Velora Authentication UI
+
+Scope:
+- Establish one shared visual system for Tenant Login, Super Admin Login, Find Account and email-verification completion.
+- Keep authentication/security behavior unchanged while removing divergent legacy visual implementations.
+- Align the auth experience with the official Velora brand guidelines and the existing RTL/LTR localization model.
+
+Changed:
+- `public/css/velora-auth.css`
+- `resources/views/auth/login.blade.php`
+- `resources/views/super-admin/login.blade.php`
+- `resources/views/landing/email-verified.blade.php`
+
+Related behavior retained:
+- Tenant authentication and verification gate remain unchanged.
+- Super Admin login continues to use its existing POST route and authorization behavior.
+- Find Account logic, availability checking and redirects remain unchanged.
+
+Validation:
+- The shared UI changes were committed after the previously verified 509-test backend/auth suite.
+- A fresh local full-suite run is still required after pulling the latest UI changes.
+- SMTP/Mailtrap delivery remains an external environment validation item and is not represented as a passing automated test here.
+
+Follow-up:
+- Run the full PHPUnit suite after pulling this commit.
+- Perform browser visual QA for light/dark, Arabic RTL, English LTR and mobile breakpoints across Signup, Provisioning, Verification, Find Account, Tenant Login and Super Admin Login.
+- Continue with the documented P0 tenant-isolation and object-level authorization audit.
+- Keep billing webhook/idempotency, storage quota, monitoring, backup/restore and release-readiness items open until verified.
+
+## Previous Verified Entry
 
 ### 2026-08-28 — Tenant Email Verification Gate & Handoff Hardening
 
