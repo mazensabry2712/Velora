@@ -10,6 +10,8 @@ use App\Models\Tenant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
+use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
+use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 use Tests\TestCase;
 
 final class SignupTenantHandoffTest extends TestCase
@@ -136,6 +138,39 @@ final class SignupTenantHandoffTest extends TestCase
 
         $this->assertSame('admin.dashboard', $matched->getName());
         $this->assertSame('admin/dashboard', $matched->uri());
+    }
+
+    public function test_tenant_domain_identification_works_for_the_created_domain(): void
+    {
+        $subdomain = 'probe-' . substr(md5(uniqid('', true)), 0, 10);
+        $response = $this->performSignup($subdomain);
+        $response->assertRedirect();
+
+        $tenant = Tenant::findOrFail($subdomain);
+        $tenantDomain = $tenant->domains()->firstOrFail()->domain;
+        $probePath = '/__signup_tenant_probe_' . $subdomain;
+
+        Route::middleware([
+            'web',
+            InitializeTenancyByDomain::class,
+            PreventAccessFromCentralDomains::class,
+        ])->get($probePath, function (Request $request) {
+            return response()->json([
+                'host' => $request->getHost(),
+                'tenant_id' => tenant('id'),
+            ]);
+        });
+
+        $probe = $this->get('http://' . $tenantDomain . $probePath);
+
+        $this->assertSame(
+            200,
+            $probe->status(),
+            "Tenant identification failed for {$tenantDomain}. Status={$probe->status()} Content=" . $probe->getContent()
+        );
+
+        $probe->assertJsonPath('host', $tenantDomain);
+        $probe->assertJsonPath('tenant_id', $tenant->id);
     }
 
     public function test_signup_session_cookie_is_valid_for_the_tenant_subdomain(): void
