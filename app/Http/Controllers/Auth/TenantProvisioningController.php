@@ -200,8 +200,9 @@ final class TenantProvisioningController extends Controller
 
         $password = Crypt::decryptString($passwordPayload);
         $businessName = (string) ($tenant->name ?? 'Tenant');
+        $initialLocale = $this->resolveTenantLocale($tenant);
 
-        return $tenant->run(function () use ($email, $businessName, $password, $verifiedAt, $tenant, $data): User {
+        return $tenant->run(function () use ($email, $businessName, $password, $verifiedAt, $tenant, $data, $initialLocale): User {
             $role = Role::firstOrCreate([
                 'name' => 'Admin Tenant',
                 'guard_name' => 'web',
@@ -213,11 +214,13 @@ final class TenantProvisioningController extends Controller
                     'name' => $businessName,
                     'password' => $password,
                     'email_verified_at' => $verifiedAt,
+                    'locale' => $initialLocale,
                 ]
             );
 
             $user->forceFill([
                 'email_verified_at' => $verifiedAt,
+                'locale' => (is_string($user->locale) && $user->locale !== '') ? $user->locale : $initialLocale,
             ])->save();
             $user->assignRole($role);
 
@@ -239,6 +242,29 @@ final class TenantProvisioningController extends Controller
 
             return $user;
         });
+    }
+
+    private function resolveTenantLocale(Tenant $tenant): string
+    {
+        $supported = array_values(array_unique(config('localizer.supported_locales', ['ar', 'en'])));
+        $tenantLocale = $tenant->getAttribute('language');
+
+        if (! is_string($tenantLocale) || ! in_array($tenantLocale, $supported, true)) {
+            try {
+                $tenantLocale = $tenant->settings?->language;
+            } catch (\Throwable) {
+                $tenantLocale = null;
+            }
+        }
+
+        if (is_string($tenantLocale) && in_array($tenantLocale, $supported, true)) {
+            return $tenantLocale;
+        }
+
+        $publicDefault = \App\Models\SystemSetting::get('public_default_locale', 'ar');
+        return is_string($publicDefault) && in_array($publicDefault, $supported, true)
+            ? $publicDefault
+            : ($supported[0] ?? 'ar');
     }
 
     private function applyTenantLocale(Tenant $tenant, ?string $requestedLocale = null): void
