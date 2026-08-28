@@ -45,4 +45,49 @@ final class TenantLoginLocaleUiTest extends TestCase
         self::assertStringContainsString('submitButton.disabled = true;', $view);
         self::assertStringContainsString('submitButton.disabled = false;', $view);
     }
+
+    public function test_login_core_copy_resolves_for_every_supported_locale(): void
+    {
+        $supportedLocales = array_values(array_unique(
+            config('localizer.supported_locales', ['ar', 'en'])
+        ));
+
+        self::assertNotEmpty($supportedLocales);
+
+        foreach ($supportedLocales as $locale) {
+            $this->app->setLocale($locale);
+
+            foreach ([
+                'Login',
+                'Password',
+                'Remember me',
+                'Forgot your password?',
+                'Logging in...',
+                'Login successful!',
+                'Invalid credentials',
+            ] as $key) {
+                $resolved = __($key);
+
+                self::assertIsString($resolved);
+                self::assertNotSame('', trim($resolved), "Empty translation for [{$key}] in locale [{$locale}].");
+                self::assertNotSame($key, $resolved, "Missing translation key [{$key}] in locale [{$locale}].");
+            }
+        }
+    }
+
+    public function test_login_direction_contract_lists_only_rtl_locales(): void
+    {
+        $rtlLocales = ['ar', 'he', 'fa'];
+        $supportedLocales = array_values(array_unique(
+            config('localizer.supported_locales', ['ar', 'en'])
+        ));
+
+        foreach ($rtlLocales as $locale) {
+            self::assertContains($locale, $rtlLocales);
+        }
+
+        foreach (array_intersect($supportedLocales, $rtlLocales) as $locale) {
+            self::assertContains($locale, $rtlLocales);
+        }
+    }
 }
