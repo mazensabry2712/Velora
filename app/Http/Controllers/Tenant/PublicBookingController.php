@@ -11,7 +11,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\PublicBookingRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\RateLimiter;
 
 final class PublicBookingController extends Controller
 {
@@ -22,16 +21,6 @@ final class PublicBookingController extends Controller
     public function store(PublicBookingRequest $request): JsonResponse
     {
         $tenantId = (string) tenant()->getTenantKey();
-        $rateLimitKey = 'public-booking:' . $tenantId . ':' . $request->ip();
-
-        if (RateLimiter::tooManyAttempts($rateLimitKey, 5)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Too many booking attempts. Please try again later.',
-            ], 429);
-        }
-
-        RateLimiter::hit($rateLimitKey, 60);
 
         try {
             $validated = $request->validated();
