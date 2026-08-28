@@ -17,7 +17,7 @@ Every core business rule should be protected by automated tests and then verifie
 
 ### Feature
 
-- [ ] Tenant authentication.
+- [x] Tenant authentication.
 - [ ] Admin authorization.
 - [ ] Staff authorization.
 - [ ] Customer booking.
@@ -31,16 +31,21 @@ Every core business rule should be protected by automated tests and then verifie
 - [ ] Billing callbacks/webhooks.
 - [ ] Trial extension.
 - [ ] Exports.
-- [ ] Locale switching.
+- [x] Locale switching.
+- [x] Signup email verification flow.
+- [x] Tenant Admin creation is gated by email verification.
+- [x] Verified tenant handoff flow.
+- [x] Unverified Tenant Admin login is rejected.
 
 ### Integration
 
-- [ ] Appointment + queue integration.
+- [x] Appointment + queue integration.
 - [ ] Booking + staff schedule integration.
-- [ ] Subscription + tenant middleware integration.
+- [x] Subscription + tenant middleware integration.
 - [ ] Billing provider + subscription state integration.
 - [ ] Queue + notifications/reminders where applicable.
 - [ ] Tenant filesystem + uploaded assets.
+- [x] Signup + provisioning + email verification + handoff integration coverage.
 
 ### Security / Negative Tests
 
@@ -49,13 +54,27 @@ Every core business rule should be protected by automated tests and then verifie
 - [ ] Tenant A cannot delete tenant B resources.
 - [ ] Staff cannot access Admin-only operations.
 - [ ] Assistant cannot access Admin-only operations.
-- [ ] Customer cannot call admin APIs.
+- [x] Customer cannot call admin APIs.
 - [ ] Invalid provider webhook is rejected.
 - [ ] Duplicate webhook does not duplicate side effects.
 - [ ] Booking cannot be created for unavailable slot.
 - [ ] Concurrent booking of the same slot has deterministic outcome.
+- [x] Unverified tenant cannot complete Admin handoff.
+- [x] Unverified tenant cannot authenticate as the first Tenant Admin.
 
 ## High-Value Scenarios
+
+### Signup / Verification
+
+- [x] Signup persists Tenant + Domain.
+- [x] Verification email is issued.
+- [x] Verification token expires and is single-use.
+- [x] Tenant Admin does not exist before verification.
+- [x] Verification creates/activates the first Tenant Admin.
+- [x] Ready workspace can hand off only after verified email.
+- [x] Tenant verification page follows tenant language.
+- [x] Arabic verification page renders RTL.
+- [x] Supported explicit verification locale can override tenant default.
 
 ### Booking
 
@@ -99,6 +118,17 @@ Every production bug should result in:
 3. A regression test.
 4. A release note entry when user-visible.
 
+## Current Automated Baseline
+
+As of 2026-08-28:
+
+```text
+php artisan test --parallel --processes=12
+→ 509 tests, 2665 assertions, 0 failures, 0 errors
+```
+
+The baseline is local verification. It does not by itself certify production readiness.
+
 ## QA Environments
 
 Recommended:
@@ -128,8 +158,9 @@ The exact commands may be adjusted to the final CI/deployment environment.
 - [ ] Safari desktop where commercially relevant.
 - [ ] Chrome Android / modern mobile browser.
 - [ ] Safari iOS.
-- [ ] RTL Arabic flow.
-- [ ] LTR English flow.
+- [x] RTL Arabic flow (automated verification-page coverage).
+- [x] LTR English flow (automated verification-page override/default coverage).
+- [ ] Full manual browser regression across signup/provisioning/onboarding.
 
 ## Performance QA
 
