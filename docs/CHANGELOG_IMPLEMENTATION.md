@@ -93,6 +93,15 @@ This file is the living record of the important work already performed and the e
 - Find Account inherits the same Velora background, surfaces, typography, borders and primary-action styling through the shared auth layer without changing its existing JavaScript or routing behavior.
 - Auth theme persistence uses the shared `velora-theme` storage key on the updated auth screens.
 
+### Translation Coverage
+
+- All 15 supported locales now have real translated `auth.php` and `booking.php` core bundles.
+- All 15 supported locales have valid direction metadata (`rtl` for Arabic; `ltr` for the remaining supported locales).
+- A core locale coverage regression test exists at `tests/Feature/SupportedLocaleCoreCoverageTest.php`.
+- The first expanded `messages.php` translation pass now covers the previously missing tenant locales beyond `ar/en/fr`: `de`, `es`, `it`, `pt`, `ru`, `zh`, `ja`, `tr`, `hi`, `ko`, `nl`, `id`.
+- `messages.php` coverage is a translation milestone, not a claim that every Tenant-facing screen is fully translated.
+- Remaining translation work includes full `notifications.php`, `pagination.php`, `passwords.php`, `validation.php`, feature-specific dashboard/admin copy, hard-coded Blade/JavaScript strings, emails and generated documents.
+
 ### Testing
 
 - Feature tests cover booking, appointments, queue, billing, localization and other administration areas.
@@ -101,8 +110,9 @@ This file is the living record of the important work already performed and the e
 - `TenantVerificationLocaleTest` verifies tenant-language and explicit-language override behavior for the verification page using a real tenant database context.
 - `TenantEmailVerificationTest` covers verification route/mail/tenant provisioning metadata.
 - `SignupTenantHandoffTest` covers unverified access, verification and handoff behavior.
-- Latest user-reported local full suite before the current tenant-user locale changes: **509 tests, 2665 assertions, 0 failures, 0 errors**.
-- After pulling the tenant locale changes, tenant migrations completed successfully for all local tenant databases. A targeted `TenantEmailVerificationGateTest` run then exposed a missing initialization of the verified Admin's persisted locale; that code path has now been fixed. A fresh local test run after this latest fix is still required.
+- `SupportedLocaleCoreCoverageTest` verifies core translation bundle existence and locale direction for every supported locale.
+- Last confirmed user-reported local full suite before the expanded translation pass: **513 tests, 2714 assertions, 0 failures, 0 errors**.
+- The expanded `messages.php` translation additions have been committed but have not yet been run through the user's local PHPUnit suite after the latest changes.
 
 ## Important Risks Identified
 
@@ -176,17 +186,36 @@ Behavior:
 
 Validation:
 - The user successfully migrated all existing tenant databases with `php artisan tenants:migrate --force`.
-- The new targeted gate test currently had one failure caused by the missing Admin-locale initialization; the fix is now committed.
-- A fresh targeted and full PHPUnit run after the latest fix is still required.
+- The targeted `TenantEmailVerificationGateTest` now passes: **4 tests, 10 assertions**.
+- The last confirmed full suite before the expanded `messages.php` pass was **513 tests, 2714 assertions, 0 failures, 0 errors**.
 - Browser validation is still required for all supported languages, including RTL and non-Latin languages.
 
 Follow-up:
-- Run `php artisan test --parallel --processes=12 tests/Feature/TenantEmailVerificationGateTest.php` after pulling the latest fix.
+- Run the core locale coverage and full suite after pulling the expanded translation pass.
 - Add/expand automated regression coverage for a manual Tenant language change surviving logout/login.
 - Add the future Super Admin `Public Default Language` control against `SystemSetting::get/set('public_default_locale', ...)`.
 - Continue the documented P0 tenant-isolation and object-level authorization audit.
 
 ## Previous Implementation Entry
+
+### 2026-08-28 — Core Translation Coverage for Supported Locales
+
+Scope:
+- Ensure every supported platform locale has real core `auth.php` and `booking.php` bundles.
+- Add regression coverage for core bundle existence and locale direction.
+
+Changed:
+- `lang/*/auth.php` for previously missing locales.
+- `lang/*/booking.php` for previously missing locales.
+- `tests/Feature/SupportedLocaleCoreCoverageTest.php`
+- `docs/TRANSLATION_COVERAGE.md`
+
+Validation:
+- User-reported local core coverage test: **2 tests, 46 assertions, 0 failures**.
+- User-reported full suite immediately after this pass: **513 tests, 2714 assertions, 0 failures, 0 errors**.
+
+Follow-up:
+- Expand the same approach to `messages.php`, `notifications.php`, `pagination.php`, `passwords.php`, `validation.php` and feature-specific UI.
 
 ### 2026-08-28 — Unified Velora Authentication UI
 
