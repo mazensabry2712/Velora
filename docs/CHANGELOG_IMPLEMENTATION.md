@@ -54,11 +54,29 @@ This file is the living record of the important work already performed and the e
 - Settings structure was rebuilt and split into partial views.
 - Arabic business name support was added to the rendered settings form.
 - Multiple tenant languages are supported by the locale layer.
+- Tenant email-verification pages now resolve locale from the persisted tenant language.
+- Arabic verification rendering supports RTL and the Velora-branded verification page.
+
+### Authentication / Signup / Tenant Handoff
+
+- Signup creates the central Tenant and Domain before tenant workspace provisioning.
+- Verification email is sent during signup and the verification token is hashed/encrypted with an expiry.
+- Tenant provisioning no longer creates the first Admin before email verification.
+- Verification is the hard gate for creation/activation of the first Tenant Admin.
+- Verified Tenant Admin creation is idempotent and consumes the temporary provisioning password after account creation.
+- Handoff requires a ready workspace, verified tenant email, an existing verified tenant user and a valid one-time provisioning token.
+- Tenant login now rejects unverified accounts.
+- Verification, provisioning and handoff flows have dedicated regression coverage.
 
 ### Testing
 
 - Feature tests cover booking, appointments, queue, billing, localization and other administration areas.
 - Dedicated test base classes exist for tenant and super-admin scenarios.
+- `TenantEmailVerificationGateTest` verifies that the first Tenant Admin does not exist before email verification and is created only after successful verification.
+- `TenantVerificationLocaleTest` verifies tenant-language and explicit-language override behavior for the verification page using a real tenant database context.
+- `TenantEmailVerificationTest` covers verification route/mail/tenant provisioning metadata.
+- `SignupTenantHandoffTest` covers unverified access, verification and handoff behavior.
+- Latest local full suite: **509 tests, 2665 assertions, 0 failures, 0 errors**.
 
 ## Important Risks Identified
 
@@ -94,23 +112,38 @@ Every completed task should update this file with:
 - Result.
 - Any follow-up risk.
 
-## Entry Template
+## Latest Verified Entry
 
-```text
-### YYYY-MM-DD — <title>
+### 2026-08-28 — Tenant Email Verification Gate & Handoff Hardening
 
 Scope:
-- ...
+- Enforce email verification before creation of the first Tenant Admin.
+- Protect tenant handoff from unverified or missing tenant users.
+- Align verification-page locale with tenant signup language.
+- Keep provisioning and verification flows compatible with tenant database initialization.
+- Add regression coverage for the security gate and locale behavior.
 
 Changed:
-- ...
+- `app/Jobs/FinalizeTenantProvisioning.php`
+- `app/Http/Controllers/Auth/TenantProvisioningController.php`
+- `app/Http/Controllers/Auth/TenantAuthController.php`
+- `tests/Feature/TenantEmailVerificationGateTest.php`
+- `tests/Feature/TenantVerificationLocaleTest.php`
+- `tests/Feature/SignupTenantHandoffTest.php`
+- `tests/Feature/Admin/QueueControllerTest.php` (route-name regression fix)
 
 Tests:
-- ...
+- `php artisan test --parallel --processes=12 tests/Feature/TenantEmailVerificationGateTest.php` — PASS (2 tests, 7 assertions)
+- `php artisan test --parallel --processes=12 tests/Feature/SignupTenantHandoffTest.php` — PASS (8 tests, 31 assertions)
+- `php artisan test --parallel --processes=12 tests/Feature/TenantEmailVerificationTest.php` — PASS (4 tests, 19 assertions)
+- `php artisan test --parallel --processes=12 tests/Feature/Admin/QueueControllerTest.php` — PASS (15 tests, 42 assertions)
+- `php artisan test --parallel --processes=12 tests/Feature/TenantVerificationLocaleTest.php` — PASS (2 tests, 9 assertions)
+- `php artisan test --parallel --processes=12` — PASS (509 tests, 2665 assertions)
+- `php artisan queue:failed` — PASS / no failed jobs
 
 Result:
-- PASS / PARTIAL / BLOCKED
+- PASS
 
 Follow-up:
-- ...
-```
+- Continue with the documented P0 tenant-isolation and object-level authorization audit.
+- Keep billing webhook/idempotency, storage quota, monitoring, backup/restore and release-readiness items open until verified.
