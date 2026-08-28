@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Events\TenantProvisioningRequested;
 use App\Mail\VerifyTenantEmailMail;
 use App\Models\SubscriptionPlan;
+use App\Models\SystemSetting;
 use App\Models\Tenant;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +25,13 @@ final class TenantRegistrationService
     public function register(array $data): array
     {
         $this->validateUniqueness($data['subdomain'], $data['email']);
+
+        $supportedLocales = config('localizer.supported_locales', ['ar', 'en']);
+        $publicDefaultLocale = $this->publicDefaultLocale($supportedLocales);
+        $requestedLocale = $data['language'] ?? null;
+        $tenantLocale = is_string($requestedLocale) && in_array($requestedLocale, $supportedLocales, true)
+            ? $requestedLocale
+            : $publicDefaultLocale;
 
         $trialPlan = isset($data['plan_id'])
             ? SubscriptionPlan::where('is_active', true)->find($data['plan_id'])
@@ -53,7 +61,7 @@ final class TenantRegistrationService
                 'name' => $data['business_name'],
                 'email' => $data['email'],
                 'country' => $data['country'] ?? null,
-                'language' => $data['language'] ?? 'en',
+                'language' => $tenantLocale,
                 'active' => true,
                 'gateway' => $this->resolveGatewayForCountry($data['country'] ?? 'US'),
                 'business_type' => $data['business_type'] ?? null,
@@ -158,6 +166,23 @@ final class TenantRegistrationService
                 'email' => 'This email is already registered.',
             ]);
         }
+    }
+
+    private function publicDefaultLocale(array $supportedLocales): string
+    {
+        $fallback = 'ar';
+
+        try {
+            $configured = SystemSetting::get('public_default_locale', $fallback);
+            if (is_string($configured) && in_array($configured, $supportedLocales, true)) {
+                return $configured;
+            }
+        } catch (\Throwable) {
+        }
+
+        return in_array($fallback, $supportedLocales, true)
+            ? $fallback
+            : ($supportedLocales[0] ?? 'en');
     }
 
     private function isDuplicateKeyException(QueryException $exception): bool
