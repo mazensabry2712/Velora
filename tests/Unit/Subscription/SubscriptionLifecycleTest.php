@@ -28,22 +28,22 @@ final class SubscriptionLifecycleTest extends TestCase
         );
     }
 
-    public function test_deletion_is_thirty_days_after_locked_starts(): void
+    public function test_deletion_is_six_days_after_locked_starts(): void
     {
         $trialEnds = Carbon::parse('2026-09-04 12:00:00');
 
         $this->assertSame(
-            '2026-10-18 12:00:00',
+            '2026-09-24 12:00:00',
             SubscriptionLifecycle::deletionAt($trialEnds)->toDateTimeString()
         );
     }
 
-    public function test_total_trial_to_permanent_deletion_window_is_fifty_one_days(): void
+    public function test_total_trial_to_permanent_deletion_window_is_twenty_seven_days(): void
     {
         $start = Carbon::parse('2026-08-28 12:00:00');
         $trialEnds = $start->copy()->addDays(SubscriptionLifecycle::TRIAL_DAYS);
         $deletionAt = SubscriptionLifecycle::deletionAt($trialEnds);
 
-        $this->assertEquals(51, $start->diffInDays($deletionAt));
+        $this->assertEquals(27, $start->diffInDays($deletionAt));
     }
 }
