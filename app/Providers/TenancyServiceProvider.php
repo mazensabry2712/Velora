@@ -31,7 +31,6 @@ class TenancyServiceProvider extends ServiceProvider
                     $email = (string) ($tenant->provisioning_email ?? '');
                     $password = (string) ($tenant->provisioning_password ?? '');
 
-                    // Only signup-created tenants enter the provisioning pipeline.
                     if ($status !== 'queued' || $email === '' || $password === '') {
                         return;
                     }
@@ -41,7 +40,7 @@ class TenancyServiceProvider extends ServiceProvider
                         Jobs\MigrateDatabase::class,
                         Jobs\SeedDatabase::class,
                         FinalizeTenantProvisioning::class,
-                    ])->send($tenant)->shouldBeQueued(true)->dispatch();
+                    ])->send(fn () => $tenant)->shouldBeQueued(true)->dispatch();
                 },
             ],
             Events\SavingTenant::class => [],
@@ -162,16 +161,11 @@ class TenancyServiceProvider extends ServiceProvider
             ->name('signup.provisioning.resend')
             ->middleware('throttle:3,1');
 
-        // Verification is central because the verification secret and its
-        // state live in the central Tenant record, which exists before the
-        // tenant database is provisioned.
         Route::middleware(['web', 'maintenance'])
-            ->get('/email/verify/{token}', TenantProvisioningController::class.'@verifyEmail')
+            ->get('/email/verify/{token}', [TenantProvisioningController::class, 'verifyEmail'])
             ->name('tenant.email.verify')
             ->middleware('throttle:10,1');
 
-        // The final handoff remains on the tenant domain and is only allowed
-        // once both provisioning and email verification are complete.
         Route::middleware([
             'web',
             Middleware\InitializeTenancyByDomain::class,
