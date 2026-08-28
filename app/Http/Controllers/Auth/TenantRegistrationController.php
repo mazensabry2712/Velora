@@ -6,6 +6,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Application\Tenant\Actions\RegisterTenant;
 use App\Http\Controllers\Controller;
+use App\Services\TenantRegistrationService;
+use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -14,6 +16,7 @@ final class TenantRegistrationController extends Controller
 {
     public function __construct(
         private readonly RegisterTenant $registerTenant,
+        private readonly TenantRegistrationService $tenantRegistrationService,
     ) {}
 
     /**
@@ -27,7 +30,21 @@ final class TenantRegistrationController extends Controller
         $validated = $request->validate([
             'business_name' => 'required|string|min:2|max:100',
             'business_type' => 'nullable|string|max:60',
-            'subdomain'     => 'required|string|min:3|max:32|regex:/^[a-z0-9][a-z0-9\-]{1,30}[a-z0-9]$/',
+            'subdomain'     => [
+                'required',
+                'string',
+                'min:3',
+                'max:32',
+                'regex:/^[a-z0-9][a-z0-9\-]{1,30}[a-z0-9]$/',
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    $result = $this->tenantRegistrationService
+                        ->checkSubdomainAvailability((string) $value);
+
+                    if (! $result['available']) {
+                        $fail($result['message']);
+                    }
+                },
+            ],
             'email'         => 'required|email:rfc,dns|max:191',
             'password'      => 'required|string|min:8|confirmed',
             'country'       => 'nullable|string|size:2',
@@ -64,10 +81,9 @@ final class TenantRegistrationController extends Controller
                 ], 422);
             }
 
-            // Let Laravel's exception handler perform the normal web
-            // validation redirect. This preserves the framework's session
-            // error bag and previous URL across localized signup routes.
-            throw $e;
+            return redirect()->to($this->signupUrl($request))
+                ->withInput($request->except(['password', 'password_confirmation']))
+                ->withErrors($e->errors());
         } catch (\Throwable $e) {
             Log::error('Tenant registration error: ' . $e->getMessage(), [
                 'email'     => $request->input('email'),
@@ -81,9 +97,22 @@ final class TenantRegistrationController extends Controller
                 ], 500);
             }
 
-            return back()->withInput()->withErrors([
-                'general' => 'Something went wrong. Please try again or contact support.',
-            ]);
+            return redirect()->to($this->signupUrl($request))
+                ->withInput($request->except(['password', 'password_confirmation']))
+                ->withErrors([
+                    'general' => 'Something went wrong. Please try again or contact support.',
+                ]);
         }
+    }
+
+    private function signupUrl(Request $request): string
+    {
+        $locale = $request->route('locale');
+
+        if (is_string($locale) && $locale !== '') {
+            return url('/' . $locale . '/signup');
+        }
+
+        return url('/signup');
     }
 }
