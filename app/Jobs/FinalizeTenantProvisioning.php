@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Domain\Subscription\SubscriptionLifecycle;
+use App\Mail\VerifyTenantEmailMail;
 use App\Mail\WelcomeTenantMail;
 use App\Models\Setting;
 use App\Models\SubscriptionPlan;
@@ -18,6 +19,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
 final class FinalizeTenantProvisioning implements ShouldQueue
@@ -103,19 +105,36 @@ final class FinalizeTenantProvisioning implements ShouldQueue
             $domain = (string) ($domainModel?->domain ?? '');
 
             if ($domainModel && str_ends_with($domain, '.test')) {
-                (new \App\Jobs\LinkTenantDomain($domainModel))->handle();
+                (new LinkTenantDomain($domainModel))->handle();
             }
 
-            $token = (string) ($data['provisioning_token'] ?? '');
+            $verificationToken = Str::random(64);
+            $verificationExpiresAt = now()->addHours(24);
+            $handoffToken = (string) ($data['provisioning_token'] ?? '');
+            $handoffUrl = $this->handoffUrl($domain, $handoffToken);
+            $verificationUrl = $this->verificationUrl($domain, $verificationToken);
+
+            $data['email_verification_token_hash'] = hash('sha256', $verificationToken);
+            $data['email_verification_expires_at'] = $verificationExpiresAt->toIso8601String();
+            $data['email_verification_url'] = $verificationUrl;
 
             $tenant->update([
                 'provisioning_status' => 'ready',
-                'provisioning_message' => 'Workspace ready.',
+                'provisioning_message' => 'Workspace ready. Please verify your email to continue.',
                 'provisioning_ready_at' => now()->toIso8601String(),
-                'provisioning_redirect_url' => $this->handoffUrl($domain, $token),
+                'provisioning_redirect_url' => $handoffUrl,
+                'data' => json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ]);
 
             if ($email !== '') {
+                Mail::to($email)->queue(new VerifyTenantEmailMail(
+                    $businessName,
+                    $tenant->id,
+                    $domain,
+                    $verificationUrl,
+                    24
+                ));
+
                 Mail::to($email)->queue(new WelcomeTenantMail(
                     $businessName,
                     $tenant->id,
@@ -147,6 +166,7 @@ final class FinalizeTenantProvisioning implements ShouldQueue
         if (is_array($raw)) {
             return $raw;
         }
+
         return is_string($raw) ? (json_decode($raw, true) ?: []) : [];
     }
 
@@ -174,5 +194,11 @@ final class FinalizeTenantProvisioning implements ShouldQueue
     {
         $scheme = str_starts_with(config('app.url', 'http://velora.test'), 'https') ? 'https' : 'http';
         return $scheme.'://'.$domain.'/__velora/provisioning/'.$token;
+    }
+
+    private function verificationUrl(string $domain, string $token): string
+    {
+        $scheme = str_starts_with(config('app.url', 'http://velora.test'), 'https') ? 'https' : 'http';
+        return $scheme.'://'.$domain.'/email/verify/'.$token;
     }
 }
