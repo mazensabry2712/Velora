@@ -17,6 +17,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Spatie\Permission\Models\Role;
@@ -46,9 +47,10 @@ final class FinalizeTenantProvisioning implements ShouldQueue
                 throw new \RuntimeException('Tenant provisioning credentials are missing.');
             }
 
+            $password = Crypt::decryptString($passwordPayload);
             $verifiedAt = $data['email_verified_at'] ?? null;
 
-            $tenant->run(function () use ($email, $businessName, $language, $verifiedAt, $passwordPayload): void {
+            $tenant->run(function () use ($email, $businessName, $language, $verifiedAt, $password): void {
                 $adminRole = Role::firstOrCreate([
                     'name' => 'Admin Tenant',
                     'guard_name' => 'web',
@@ -58,7 +60,7 @@ final class FinalizeTenantProvisioning implements ShouldQueue
                     ['email' => $email],
                     [
                         'name' => $businessName,
-                        'password' => decrypt($passwordPayload),
+                        'password' => $password,
                         'email_verified_at' => $verifiedAt,
                     ]
                 );
@@ -118,25 +120,21 @@ final class FinalizeTenantProvisioning implements ShouldQueue
                 (new LinkTenantDomain($domainModel))->handle();
             }
 
-            $handoffToken = (string) ($data['provisioning_token_plain'] ?? '');
+            $handoffToken = Crypt::decryptString((string) ($data['provisioning_token_encrypted'] ?? ''));
             $handoffUrl = $this->handoffUrl($domain, $handoffToken);
-
             $verificationUrl = (string) ($data['email_verification_url'] ?? '');
-            if ($verificationUrl === '') {
-                $verificationUrl = $this->verificationUrl($data);
-            }
 
             $tenant->update([
                 'provisioning_status' => 'ready',
                 'provisioning_message' => $verifiedAt
                     ? 'Workspace ready. Redirecting...'
                     : 'Workspace ready. Please verify your email to continue.',
-                'provisioning_ready_at' => now()->toIso8601String(),
+                'provisioning_ready_at' => now(),
                 'provisioning_redirect_url' => $handoffUrl,
             ]);
 
             if ($email !== '') {
-                if ($verifiedAt === null) {
+                if ($verifiedAt === null && $verificationUrl !== '') {
                     Mail::to($email)->queue(new VerifyTenantEmailMail(
                         $businessName,
                         $tenant->id,
@@ -155,7 +153,10 @@ final class FinalizeTenantProvisioning implements ShouldQueue
             }
 
             $freshData = $this->tenantData($tenant);
-            unset($freshData['provisioning_password'], $freshData['provisioning_token_plain']);
+            unset(
+                $freshData['provisioning_password'],
+                $freshData['provisioning_token_encrypted']
+            );
             $tenant->update([
                 'data' => json_encode($freshData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ]);
@@ -205,12 +206,5 @@ final class FinalizeTenantProvisioning implements ShouldQueue
     {
         $scheme = str_starts_with(config('app.url', 'http://velora.test'), 'https') ? 'https' : 'http';
         return $scheme.'://'.$domain.'/__velora/provisioning/'.$token;
-    }
-
-    /** @param array<string, mixed> $data */
-    private function verificationUrl(array $data): string
-    {
-        $token = (string) ($data['email_verification_token_plain'] ?? '');
-        return $token === '' ? '' : url('/email/verify/'.$token);
     }
 }
