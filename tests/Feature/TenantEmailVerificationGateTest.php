@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Application\Tenant\Actions\RegisterTenant;
 use App\Models\SubscriptionPlan;
+use App\Models\SystemSetting;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
@@ -43,11 +44,11 @@ final class TenantEmailVerificationGateTest extends TestCase
         ]);
     }
 
-    private function signup(string $subdomain): Tenant
+    private function signup(string $subdomain, ?string $language = 'en'): Tenant
     {
         $plan = $this->createPlan();
 
-        $result = app(RegisterTenant::class)->execute([
+        $data = [
             'business_name' => 'Email Gate Clinic',
             'business_type' => 'Clinic',
             'subdomain' => $subdomain,
@@ -55,10 +56,15 @@ final class TenantEmailVerificationGateTest extends TestCase
             'password' => 'password123',
             'password_confirmation' => 'password123',
             'country' => 'US',
-            'language' => 'en',
             'terms' => '1',
             'plan_id' => $plan->id,
-        ]);
+        ];
+
+        if ($language !== null) {
+            $data['language'] = $language;
+        }
+
+        $result = app(RegisterTenant::class)->execute($data);
 
         return Tenant::findOrFail($result['tenant']->getKey());
     }
@@ -75,10 +81,28 @@ final class TenantEmailVerificationGateTest extends TestCase
         $this->assertNull($tenant->email_verified_at);
     }
 
-    public function test_verified_email_creates_the_admin_and_allows_one_time_handoff(): void
+    public function test_signup_without_explicit_language_inherits_current_public_default(): void
+    {
+        SystemSetting::set('public_default_locale', 'fr', 'string', 'localization');
+
+        $subdomain = 'gate-default-'.substr(md5(uniqid('', true)), 0, 8);
+        $tenant = $this->signup($subdomain, null);
+
+        $this->assertSame('fr', $tenant->language);
+    }
+
+    public function test_explicit_signup_language_becomes_tenant_default(): void
+    {
+        $subdomain = 'gate-lang-'.substr(md5(uniqid('', true)), 0, 8);
+        $tenant = $this->signup($subdomain, 'de');
+
+        $this->assertSame('de', $tenant->language);
+    }
+
+    public function test_verified_email_creates_the_admin_and_keeps_tenant_language(): void
     {
         $subdomain = 'gate-ok-'.substr(md5(uniqid('', true)), 0, 10);
-        $tenant = $this->signup($subdomain);
+        $tenant = $this->signup($subdomain, 'fr');
         $verificationToken = Crypt::decryptString((string) $tenant->email_verification_token_encrypted);
 
         $verify = $this->get('http://'.env('APP_DOMAIN', 'velora.test').'/email/verify/'.$verificationToken);
@@ -88,8 +112,9 @@ final class TenantEmailVerificationGateTest extends TestCase
         $this->assertNotNull($tenant->email_verification_token_used_at);
 
         $email = (string) $tenant->provisioning_email;
-        $userExists = $tenant->run(fn () => User::where('email', $email)->exists());
-        $this->assertTrue($userExists, 'Tenant admin must be created only after verification.');
+        $user = $tenant->run(fn () => User::where('email', $email)->first());
+        $this->assertNotNull($user, 'Tenant admin must be created only after verification.');
+        $this->assertSame('fr', $user->locale);
 
         if (($tenant->provisioning_status ?? null) === 'ready') {
             $verify->assertRedirect((string) $tenant->provisioning_redirect_url);
