@@ -8,7 +8,6 @@ use App\Application\Booking\DTOs\PublicBookingData;
 use App\Application\Shared\Contracts\TransactionManager;
 use App\Domain\Booking\DTOs\CreateBookingData;
 use App\Domain\Booking\Services\BookingCreationService;
-use App\Domain\Subscription\Contracts\SubscriptionAccessReader;
 use App\Models\Customer;
 use App\Models\Queue;
 use App\Models\Resource;
@@ -21,14 +20,11 @@ final class CreatePublicBooking
     public function __construct(
         private readonly BookingCreationService $bookingService,
         private readonly TransactionManager $transactions,
-        private readonly SubscriptionAccessReader $subscriptions,
     ) {}
 
     /** @return array{appointment: mixed, queue: Queue, customer: Customer} */
     public function execute(PublicBookingData $data): array
     {
-        $this->ensureBookingIsAllowed();
-
         $staff = Staff::query()
             ->where('user_id', $data->staffUserId)
             ->where('is_active', true)
@@ -105,30 +101,6 @@ final class CreatePublicBooking
                 'customer' => $customer,
             ];
         });
-    }
-
-    private function ensureBookingIsAllowed(): void
-    {
-        $subscription = $this->subscriptions->currentState();
-
-        if (! $subscription) {
-            $this->fail('subscription', 'Online booking is temporarily unavailable for this workspace.');
-        }
-
-        $status = (string) ($subscription['status'] ?? '');
-        $now = now();
-
-        if ($status === 'trial' && ! empty($subscription['trial_ends_at']) && $now->gte(Carbon::parse($subscription['trial_ends_at']))) {
-            $this->fail('subscription', 'Online booking is disabled after the trial period. Please upgrade the workspace.');
-        }
-
-        if ($status === 'active' && ! empty($subscription['ends_at']) && $now->gte(Carbon::parse($subscription['ends_at']))) {
-            $this->fail('subscription', 'Online booking is disabled because the subscription period has ended. Please upgrade the workspace.');
-        }
-
-        if (in_array($status, ['read_only', 'locked', 'cancelled', 'suspended', 'expired', 'grace'], true)) {
-            $this->fail('subscription', 'Online booking is currently disabled. Please upgrade the workspace to restore booking operations.');
-        }
     }
 
     private function splitName(string $fullName): array
