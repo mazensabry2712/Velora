@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\SuperAdminAuthController;
+use App\Http\Controllers\Auth\TenantProvisioningController;
 use App\Http\Controllers\Auth\TenantRegistrationController;
 use App\Http\Controllers\CountrySettingController;
 use App\Http\Controllers\LandingController;
@@ -79,6 +80,27 @@ Route::middleware(['web', 'maintenance'])
                 ]);
             })->name('central.login');
         });
+
+        // Signup provisioning is intentionally kept outside the localized route
+        // group. The registration service generates canonical unprefixed URLs,
+        // while the provisioning controller resolves the tenant's persisted
+        // language for the page itself.
+        Route::get('/signup/provisioning/{token}', [TenantProvisioningController::class, 'show'])
+            ->name('signup.provisioning');
+
+        Route::get('/signup/provisioning/{token}/status', [TenantProvisioningController::class, 'status'])
+            ->name('signup.provisioning.status')
+            ->middleware('throttle:120,1');
+
+        Route::post('/signup/provisioning/{token}/resend', [TenantProvisioningController::class, 'resendVerification'])
+            ->name('signup.provisioning.resend')
+            ->middleware('throttle:6,1');
+
+        Route::get('/signup/provisioning/{token}/handoff', [TenantProvisioningController::class, 'handoff'])
+            ->name('signup.provisioning.handoff');
+
+        Route::get('/email/verify/{token}', [TenantProvisioningController::class, 'verifyEmail'])
+            ->name('signup.email.verify');
 
         // Keep the legacy endpoint temporarily for existing bookmarks/clients.
         // Preserve the current marketing page when switching locale.
