@@ -75,7 +75,7 @@ final class SignupTenantHandoffTest extends TestCase
         $this->assertSame($subdomain, $result['tenant']->getKey());
     }
 
-    public function test_signup_http_failure_surfaces_real_response(): void
+    public function test_signup_http_creates_the_tenant(): void
     {
         $plan = $this->createActivePlan();
         $subdomain = 'http-diag-' . substr(md5(uniqid('', true)), 0, 10);
@@ -159,12 +159,12 @@ final class SignupTenantHandoffTest extends TestCase
         );
     }
 
-    public function test_signup_creates_an_authenticated_admin_in_the_created_tenant(): void
+    public function test_signup_tenant_dashboard_response_exposes_real_handoff_failure(): void
     {
         $plan = $this->createActivePlan();
-        $subdomain = 'auth-' . substr(md5(uniqid('', true)), 0, 10);
+        $subdomain = 'dashboard-' . substr(md5(uniqid('', true)), 0, 10);
 
-        $response = $this
+        $signup = $this
             ->withServerVariables([
                 'HTTP_HOST' => $this->centralHost(),
                 'SERVER_NAME' => $this->centralHost(),
@@ -173,11 +173,11 @@ final class SignupTenantHandoffTest extends TestCase
                 'plan_id' => $plan->id,
             ]);
 
-        $response->assertRedirect();
+        $signup->assertRedirect();
 
         $tenant = Tenant::findOrFail($subdomain);
         $tenantDomain = $tenant->domains()->firstOrFail()->domain;
-        $sessionCookie = collect($response->headers->getCookies())->first(
+        $sessionCookie = collect($signup->headers->getCookies())->first(
             fn ($cookie) => $cookie->getName() === config('session.cookie')
         );
 
@@ -191,7 +191,53 @@ final class SignupTenantHandoffTest extends TestCase
             ->withCookie($sessionCookie->getName(), $sessionCookie->getValue())
             ->get('/admin/dashboard');
 
-        $tenantResponse->assertSuccessful();
-        $this->assertNotSame('/login', parse_url($tenantResponse->headers->get('Location', ''), PHP_URL_PATH));
+        $this->assertSame(
+            200,
+            $tenantResponse->status(),
+            "Tenant dashboard handoff failed. Status={$tenantResponse->status()} Location=" .
+            $tenantResponse->headers->get('Location', '(none)') .
+            " Content=" . $tenantResponse->getContent()
+        );
+    }
+
+    public function test_signup_dashboard_route_exists_for_the_created_tenant(): void
+    {
+        $plan = $this->createActivePlan();
+        $subdomain = 'route-' . substr(md5(uniqid('', true)), 0, 10);
+
+        $signup = $this
+            ->withServerVariables([
+                'HTTP_HOST' => $this->centralHost(),
+                'SERVER_NAME' => $this->centralHost(),
+            ])
+            ->post('/signup', $this->validSignupData($subdomain) + [
+                'plan_id' => $plan->id,
+            ]);
+
+        $signup->assertRedirect();
+
+        $tenant = Tenant::findOrFail($subdomain);
+        $tenantDomain = $tenant->domains()->firstOrFail()->domain;
+
+        $this->assertTrue(
+            \Illuminate\Support\Facades\Route::has('admin.dashboard'),
+            'The named tenant admin.dashboard route must exist.'
+        );
+
+        $this->assertSame(
+            'admin.dashboard',
+            \Illuminate\Support\Facades\Route::getRoutes()
+                ->getByName('admin.dashboard')
+                ?->getName()
+        );
+
+        $this->assertSame(
+            '/admin/dashboard',
+            parse_url($signup->headers->get('Location'), PHP_URL_PATH)
+                ? substr(parse_url($signup->headers->get('Location'), PHP_URL_PATH), 0, strlen('/admin/dashboard'))
+                : null
+        );
+
+        $this->assertStringEndsWith('.' . $this->centralHost(), $tenantDomain);
     }
 }
