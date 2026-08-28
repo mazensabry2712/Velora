@@ -20,7 +20,9 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\ApplicationBuilder;
 use Illuminate\Foundation\Configuration\Exceptions;
-use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use NielsNumbers\LaravelLocalizer\Middleware\RedirectLocale;
@@ -29,9 +31,6 @@ use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 
 $app = new Application(basePath: dirname(__DIR__));
 
-// The project stores translation files in /lang. Set the language path before
-// the framework service providers are registered so TranslationServiceProvider
-// receives the correct path for groups such as landing.php.
 $app->useLangPath(base_path('lang'));
 
 return (new ApplicationBuilder($app))
@@ -86,6 +85,15 @@ return (new ApplicationBuilder($app))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (ThrottleRequestsException $exception, $request) {
+            if ($request->is('api/appointments')) {
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => 'Too many booking attempts. Please try again later.',
+                ], 429);
+            }
+
+            return null;
+        });
     })
     ->create();
