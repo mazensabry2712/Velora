@@ -57,7 +57,7 @@ Route::middleware([
         ));
 
         if (! in_array($lang, $supported, true)) {
-            abort(404);
+            return redirect()->back();
         }
 
         // Guests can keep a tenant-domain language choice in session.
