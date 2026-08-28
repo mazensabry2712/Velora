@@ -6,18 +6,16 @@ namespace Tests\Feature;
 
 use App\Http\Controllers\Auth\TenantProvisioningController;
 use App\Mail\VerifyTenantEmailMail;
-use App\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 final class TenantEmailVerificationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_email_verification_route_is_registered_on_tenant_domain(): void
+    public function test_email_verification_route_is_registered_on_central_domain(): void
     {
         $route = Route::getRoutes()->getByName('tenant.email.verify');
 
@@ -25,6 +23,7 @@ final class TenantEmailVerificationTest extends TestCase
         $this->assertSame('email/verify/{token}', $route->uri());
         $this->assertContains('GET', $route->methods());
         $this->assertSame(TenantProvisioningController::class.'@verifyEmail', $route->getActionName());
+        $this->assertNotContains(\Stancl\Tenancy\Middleware\InitializeTenancyByDomain::class, $route->middleware());
     }
 
     public function test_resend_verification_route_is_registered_on_central_signup_flow(): void
@@ -42,7 +41,7 @@ final class TenantEmailVerificationTest extends TestCase
             'Demo Business',
             'demo-business',
             'demo-business.velora.test',
-            'http://demo-business.velora.test/email/verify/demo-business.secret-token',
+            'http://velora.test/email/verify/demo-business.secret-token',
             24,
         );
 
@@ -61,5 +60,7 @@ final class TenantEmailVerificationTest extends TestCase
         $this->assertTrue(Schema::hasColumn('tenants', 'provisioning_token_used_at'));
         $this->assertTrue(Schema::hasColumn('tenants', 'provisioning_email'));
         $this->assertTrue(Schema::hasColumn('tenants', 'provisioning_redirect_url'));
+        $this->assertTrue(Schema::hasColumn('tenants', 'provisioning_ready_at'));
+        $this->assertTrue(Schema::hasColumn('tenants', 'provisioning_message'));
     }
 }
