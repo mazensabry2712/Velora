@@ -208,12 +208,29 @@ final class SignupTenantHandoffTest extends TestCase
             ->withCookie($sessionCookie->getName(), $sessionCookie->getValue())
             ->get($tenantUrl);
 
+        // New tenants must complete the first-run onboarding before the dashboard
+        // becomes available. A redirect to onboarding proves authentication,
+        // tenant identification, routing, and the subscription gate all worked.
         $this->assertSame(
-            200,
+            302,
             $tenantResponse->status(),
             "Tenant dashboard handoff failed. URL={$tenantUrl} Status={$tenantResponse->status()} Location=" .
             $tenantResponse->headers->get('Location', '(none)') .
             ' Content=' . $tenantResponse->getContent()
+        );
+
+        $onboardingUrl = $tenantResponse->headers->get('Location');
+        $this->assertSame('http://' . $tenantDomain . '/admin/onboarding', $onboardingUrl);
+
+        $onboardingResponse = $this
+            ->withCookie($sessionCookie->getName(), $sessionCookie->getValue())
+            ->get($onboardingUrl);
+
+        $this->assertTrue(
+            $onboardingResponse->isSuccessful(),
+            "Tenant onboarding handoff failed. URL={$onboardingUrl} Status={$onboardingResponse->status()} Location=" .
+            $onboardingResponse->headers->get('Location', '(none)') .
+            ' Content=' . $onboardingResponse->getContent()
         );
     }
 }
