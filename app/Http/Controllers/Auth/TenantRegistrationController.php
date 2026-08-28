@@ -64,7 +64,7 @@ final class TenantRegistrationController extends Controller
                 ], 422);
             }
 
-            throw $e;
+            return back()->withInput()->withErrors($e->errors());
         } catch (\Throwable $e) {
             Log::error('Tenant registration error: ' . $e->getMessage(), [
                 'email'     => $request->input('email'),
