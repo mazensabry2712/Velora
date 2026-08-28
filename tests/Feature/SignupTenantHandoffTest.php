@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Application\Tenant\Actions\RegisterTenant;
 use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
 use Illuminate\Support\Facades\Artisan;
@@ -58,6 +59,20 @@ final class SignupTenantHandoffTest extends TestCase
             'is_popular' => false,
             'trial_days' => 7,
         ]);
+    }
+
+    public function test_registration_action_surfaces_real_signup_failure(): void
+    {
+        $plan = $this->createActivePlan();
+        $subdomain = 'diag-' . substr(md5(uniqid('', true)), 0, 10);
+
+        $result = app(RegisterTenant::class)->execute(
+            $this->validSignupData($subdomain) + ['plan_id' => $plan->id]
+        );
+
+        $this->assertArrayHasKey('tenant', $result);
+        $this->assertInstanceOf(Tenant::class, $result['tenant']);
+        $this->assertSame($subdomain, $result['tenant']->getKey());
     }
 
     public function test_signup_redirects_to_the_created_tenant_dashboard(): void
