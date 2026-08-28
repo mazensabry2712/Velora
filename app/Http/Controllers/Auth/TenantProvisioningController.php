@@ -8,10 +8,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 
 final class TenantProvisioningController extends Controller
 {
+    private const TOKEN_TTL_MINUTES = 30;
+
     public function show(string $token)
     {
         $tenant = $this->resolveTenant($token);
@@ -32,7 +33,10 @@ final class TenantProvisioningController extends Controller
         $tenant = $this->resolveTenant($token);
 
         if (! $tenant) {
-            return response()->json(['success' => false, 'message' => 'This provisioning link is invalid or expired.'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'This provisioning link is invalid or expired.',
+            ], 404);
         }
 
         $status = (string) ($tenant->provisioning_status ?? 'queued');
@@ -58,11 +62,20 @@ final class TenantProvisioningController extends Controller
 
         $tenant = Tenant::withTrashed()->find($tenantId);
 
-        if (! $tenant || (string) ($tenant->provisioning_token_hash ?? '') !== hash('sha256', $token)) {
+        if (! $tenant || ! hash_equals((string) ($tenant->provisioning_token_hash ?? ''), hash('sha256', $token))) {
             return null;
         }
 
         if ($tenant->deleted_at !== null) {
+            return null;
+        }
+
+        if ($tenant->provisioning_token_used_at) {
+            return null;
+        }
+
+        $createdAt = $tenant->created_at;
+        if ($createdAt && $createdAt->lt(now()->subMinutes(self::TOKEN_TTL_MINUTES))) {
             return null;
         }
 
@@ -75,10 +88,6 @@ final class TenantProvisioningController extends Controller
 
         if (! $tenant || ($tenant->provisioning_status ?? null) !== 'ready') {
             abort(404);
-        }
-
-        if ($tenant->provisioning_token_used_at) {
-            return redirect('/admin/dashboard');
         }
 
         $email = (string) ($tenant->provisioning_email ?? $tenant->email ?? '');
