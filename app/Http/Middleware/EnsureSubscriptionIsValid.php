@@ -15,9 +15,6 @@ use Illuminate\Support\Facades\Mail;
 
 final class EnsureSubscriptionIsValid
 {
-    /**
-     * Routes that must remain reachable when the tenant is read-only/locked.
-     */
     protected array $excludedRoutes = [
         'billing/expired',
         'billing/success',
@@ -54,7 +51,6 @@ final class EnsureSubscriptionIsValid
 
         $now = now();
 
-        // Active paid subscriptions have full access until their paid period ends.
         if ($subscription->status === 'active') {
             if (! empty($subscription->ends_at) && $now->gte($subscription->ends_at)) {
                 $this->moveToReadOnly($subscription);
@@ -65,7 +61,6 @@ final class EnsureSubscriptionIsValid
             }
         }
 
-        // Trial gets full access for exactly seven days. No grace period.
         if ($subscription->status === 'trial') {
             if (empty($subscription->trial_ends_at) || $now->lt($subscription->trial_ends_at)) {
                 $this->shareTrialBanner($subscription);
@@ -76,7 +71,6 @@ final class EnsureSubscriptionIsValid
             $subscription = $this->freshSubscriptionState($subscription->id, $subscription);
         }
 
-        // Legacy grace rows are migrated into the canonical read-only phase.
         if ($subscription->status === 'grace' || $subscription->status === 'expired') {
             $this->moveLegacyExpiredStateToLifecycle($subscription);
             $subscription = $this->freshSubscriptionState($subscription->id, $subscription);
@@ -115,7 +109,6 @@ final class EnsureSubscriptionIsValid
                 : now();
 
             if ($now->gte($deletionAt)) {
-                // Do not delete from a request. The scheduled purge command owns permanent deletion.
                 return $this->redirectToBilling($request, 'pending_deletion');
             }
 
@@ -170,12 +163,18 @@ final class EnsureSubscriptionIsValid
 
     private function moveToLocked(object $subscription): void
     {
+        $lockedAt = ! empty($subscription->locked_at)
+            ? now()->parse($subscription->locked_at)
+            : now();
+        $deletionAt = $lockedAt->copy()->addDays(SubscriptionLifecycle::LOCKED_DAYS);
+
         DB::connection('mysql')
             ->table('tenant_subscriptions')
             ->where('id', $subscription->id)
             ->update([
                 'status' => 'locked',
-                'locked_at' => $subscription->locked_at ?? now(),
+                'locked_at' => $lockedAt,
+                'deletion_at' => $subscription->deletion_at ?? $deletionAt,
                 'updated_at' => now(),
             ]);
     }
@@ -198,7 +197,7 @@ final class EnsureSubscriptionIsValid
 
         $readOnlyEndsAt = SubscriptionLifecycle::readOnlyEndsAt($anchor);
         $deletionAt = SubscriptionLifecycle::deletionAt($anchor);
-        $status = now()->lt($readOnlyEndsAt) ? 'read_only' : (now()->lt($deletionAt) ? 'locked' : 'locked');
+        $status = now()->lt($readOnlyEndsAt) ? 'read_only' : 'locked';
 
         DB::connection('mysql')
             ->table('tenant_subscriptions')
