@@ -1,6 +1,6 @@
 # Velora — Project Status
 
-> **Snapshot:** Main branch reviewed on 2026-08-26.
+> **Snapshot:** Main branch reviewed on 2026-08-28.
 >
 > This document records what is already implemented in the repository and what still needs to be completed before calling Velora fully production-ready.
 
@@ -49,6 +49,18 @@ The project is built around:
 - [x] Tenant-level settings.
 - [x] Admin role separation.
 - [x] Onboarding flow.
+
+### Authentication / Signup
+
+- [x] Central signup creates Tenant + Domain.
+- [x] Signup verification email flow.
+- [x] Verification token hashing/encryption and expiry.
+- [x] Tenant-language aware verification page.
+- [x] Arabic RTL verification rendering.
+- [x] First Tenant Admin creation gated by email verification.
+- [x] Unverified Tenant Admin cannot log in.
+- [x] Tenant handoff requires verified email + existing verified user + ready workspace.
+- [x] Provisioning/handoff regression tests.
 
 ### Booking
 
@@ -113,6 +125,8 @@ The project is built around:
 - [x] Locale tests.
 - [x] Multi-region / tenancy-oriented tests.
 - [x] Super-admin test structure.
+- [x] Signup / verification / tenant-handoff regression tests.
+- [x] Latest local full suite: **509 tests, 2665 assertions, 0 failures, 0 errors**.
 
 ## 4. Known Incomplete / Risk Areas
 
@@ -145,6 +159,8 @@ These are not cosmetic tasks. They affect production readiness.
 ## 5. Current Readiness
 
 Velora has a strong core SaaS implementation, but this repository should currently be treated as **production-candidate**, not as a system that has already passed a complete security, billing and deployment certification.
+
+The latest local automated regression baseline is green at **509 tests / 2665 assertions**.
 
 The most important next objective is to reduce the gap between:
 
