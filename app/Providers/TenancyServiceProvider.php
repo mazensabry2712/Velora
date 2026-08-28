@@ -29,15 +29,10 @@ class TenancyServiceProvider extends ServiceProvider
                 JobPipeline::make([
                     Jobs\CreateDatabase::class,
                     Jobs\MigrateDatabase::class,
-                    // Jobs\SeedDatabase::class,
                     Jobs\SeedDatabase::class,
-
-                    // Your own jobs to prepare the tenant.
-                    // Provision API keys, create S3 buckets, anything you want!
-
                 ])->send(function (Events\TenantCreated $event) {
                     return $event->tenant;
-                })->shouldBeQueued(false), // `false` by default, but you probably want to make this `true` for production.
+                })->shouldBeQueued(false),
             ],
             Events\SavingTenant::class => [],
             Events\TenantSaved::class => [],
@@ -49,14 +44,14 @@ class TenancyServiceProvider extends ServiceProvider
                     Jobs\DeleteDatabase::class,
                 ])->send(function (Events\TenantDeleted $event) {
                     return $event->tenant;
-                })->shouldBeQueued(false), // `false` by default, but you probably want to make this `true` for production.
+                })->shouldBeQueued(false),
             ],
 
             // Domain events
             Events\CreatingDomain::class => [],
             Events\DomainCreated::class => [
                 JobPipeline::make([
-                    LinkTenantDomain::class, // Auto-link domain to Herd
+                    LinkTenantDomain::class,
                 ])->send(function (Events\DomainCreated $event) {
                     return $event->domain;
                 })->shouldBeQueued(false),
@@ -96,7 +91,6 @@ class TenancyServiceProvider extends ServiceProvider
                 Listeners\UpdateSyncedResource::class,
             ],
 
-            // Fired only when a synced resource is changed in a different DB than the origin DB (to avoid infinite loops)
             Events\SyncedResourceChangedInForeignDatabase::class => [],
         ];
     }
@@ -106,13 +100,13 @@ class TenancyServiceProvider extends ServiceProvider
         //
     }
 
-
- public function boot()
-{
-    $this->bootEvents();
-    $this->mapRoutes();
-    $this->makeTenancyMiddlewareHighestPriority();
-}
+    public function boot()
+    {
+        $this->bootEvents();
+        $this->registerTenantLanguageRoute();
+        $this->mapRoutes();
+        $this->makeTenancyMiddlewareHighestPriority();
+    }
 
     protected function bootEvents()
     {
@@ -127,26 +121,59 @@ class TenancyServiceProvider extends ServiceProvider
         }
     }
 
+    protected function registerTenantLanguageRoute(): void
+    {
+        Route::middleware([
+            'web',
+            Middleware\InitializeTenancyByDomain::class,
+            Middleware\PreventAccessFromCentralDomains::class,
+        ])->get('/change-language/{lang}', function (string $lang) {
+            $supported = config('localizer.supported_locales', ['en', 'ar']);
 
+            if (! in_array($lang, $supported, true)) {
+                abort(404);
+            }
 
-protected function mapRoutes()
-{
-    $this->app->booted(function () {
-        if (file_exists(base_path('routes/tenant.php'))) {
-            Route::namespace(static::$controllerNamespace)
-                ->group(base_path('routes/tenant.php'));
-        }
-    });
-}
+            $tenant = function_exists('tenant') ? tenant() : null;
 
+            if (! $tenant) {
+                abort(404);
+            }
 
+            $settings = $tenant->run(
+                fn () => \App\Models\Setting::where('tenant_id', $tenant->id)->first()
+            );
+
+            $available = $settings?->available_languages;
+            if (is_string($available)) {
+                $available = json_decode($available, true);
+            }
+
+            if (is_array($available) && $available !== [] && ! in_array($lang, $available, true)) {
+                return redirect()->back()->with('error', __('This language is not enabled for this tenant.'));
+            }
+
+            session()->put('locale', $lang);
+            session()->save();
+
+            return redirect()->back();
+        })->name('tenant.change.language');
+    }
+
+    protected function mapRoutes()
+    {
+        $this->app->booted(function () {
+            if (file_exists(base_path('routes/tenant.php'))) {
+                Route::namespace(static::$controllerNamespace)
+                    ->group(base_path('routes/tenant.php'));
+            }
+        });
+    }
 
     protected function makeTenancyMiddlewareHighestPriority()
     {
         $tenancyMiddleware = [
-            // Even higher priority than the initialization middleware
             Middleware\PreventAccessFromCentralDomains::class,
-
             Middleware\InitializeTenancyByDomain::class,
             Middleware\InitializeTenancyBySubdomain::class,
             Middleware\InitializeTenancyByDomainOrSubdomain::class,
