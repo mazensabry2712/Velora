@@ -11,6 +11,7 @@ use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
 use App\Models\TenantSubscription;
 use App\Models\User;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -64,6 +65,16 @@ final class TenantRegistrationService
 
             $tenant->domains()->create([
                 'domain' => $this->buildSubdomain($data['subdomain']),
+            ]);
+
+            // A new tenant needs its own schema before any tenant-scoped
+            // user, role, settings, or other business data can be created.
+            // This keeps signup self-contained in production and prevents a
+            // successful central-domain registration from producing a tenant
+            // that cannot load its dashboard.
+            Artisan::call('tenants:migrate', [
+                '--tenants' => [$tenant->id],
+                '--force' => true,
             ]);
 
             $tenant->run(function () use ($data) {
