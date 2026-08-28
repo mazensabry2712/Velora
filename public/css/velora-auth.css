@@ -85,6 +85,39 @@ body.va-page {
 .va-business strong { display:block; margin-top:4px; color:var(--va-text); font-size:13px; }
 .va-actions { margin-top:22px; display:flex; gap:10px; }
 .va-actions > * { flex:1; }
+
+/* Legacy public auth surfaces: keep their behavior, but inherit the same visual language. */
+body:has(#findAccountForm) {
+    background: var(--va-bg) !important;
+    color: var(--va-text) !important;
+    font-family: 'Plus Jakarta Sans', 'Tajawal', Inter, system-ui, sans-serif !important;
+}
+body:has(#findAccountForm) .bg-surface { background: var(--va-bg) !important; }
+body:has(#findAccountForm) .bg-gray-900\/60,
+body:has(#findAccountForm) .bg-gray-900\/50,
+body:has(#findAccountForm) .bg-gray-900\/80 {
+    background: color-mix(in srgb,var(--va-surface) 92%,var(--va-bg)) !important;
+}
+body:has(#findAccountForm) .text-white { color: var(--va-text) !important; }
+body:has(#findAccountForm) .text-gray-200,
+body:has(#findAccountForm) .text-gray-300,
+body:has(#findAccountForm) .text-gray-400,
+body:has(#findAccountForm) .text-gray-500,
+body:has(#findAccountForm) .text-gray-600 { color: var(--va-muted) !important; }
+body:has(#findAccountForm) .border-white\/10,
+body:has(#findAccountForm) .border-gray-600,
+body:has(#findAccountForm) .border-gray-700 { border-color: var(--va-line) !important; }
+body:has(#findAccountForm) .bg-white\/\[0\.04\] { background: color-mix(in srgb,var(--va-surface) 95%,transparent) !important; }
+body:has(#findAccountForm) .bg-brand-500\/10 { background: rgba(0,108,255,.07) !important; }
+body:has(#findAccountForm) .text-brand-200,
+body:has(#findAccountForm) .text-brand-300,
+body:has(#findAccountForm) .text-brand-400 { color: var(--va-accent) !important; }
+body:has(#findAccountForm) #subdomain-wrap { background: color-mix(in srgb,var(--va-surface) 93%,var(--va-bg)) !important; }
+body:has(#findAccountForm) #subdomain { color: var(--va-text) !important; }
+body:has(#findAccountForm) #submit-btn { background: var(--va-gradient) !important; box-shadow: 0 14px 34px rgba(0,108,255,.19) !important; }
+body:has(#findAccountForm) .from-indigo-500 { --tw-gradient-from: #6D46FF !important; }
+body:has(#findAccountForm) .to-violet-500 { --tw-gradient-to: #8A5CFF !important; }
+
 @media (max-width: 980px) { .va-main { grid-template-columns:1fr; } .va-panel.copy { min-height:auto; } }
 @media (max-width: 640px) { .va-container { width:calc(100% - 20px); padding-block:14px 28px; } .va-topbar { margin-bottom:16px; } .va-brand strong { font-size:16px; } .va-panel.copy, .va-panel.form, .va-card { padding:22px; border-radius:22px; } .va-title { font-size:38px; } .va-form-head h2 { font-size:26px; } .va-row { align-items:flex-start; flex-direction:column; } .va-tools { gap:5px; } .va-tool { min-height:38px; padding-inline:10px; } }
 html[dir="rtl"] .va-title { letter-spacing:0; }
