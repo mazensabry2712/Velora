@@ -44,90 +44,77 @@ final class TenantRegistrationService
 
         $tenant = null;
         $subscription = null;
-
         $trialStartsAt = now();
         $trialEndsAt = $trialStartsAt->copy()->addDays(SubscriptionLifecycle::TRIAL_DAYS);
         $lockedAt = SubscriptionLifecycle::lockedAt($trialEndsAt);
         $deletionAt = SubscriptionLifecycle::deletionAt($trialEndsAt);
 
         try {
-            $tenant = DB::transaction(function () use (
-                $data,
-                $trialPlan,
-                $trialStartsAt,
-                $trialEndsAt,
-                $lockedAt,
-                $deletionAt,
-                &$subscription,
-            ): Tenant {
-                $tenant = Tenant::create(['id' => $data['subdomain']]);
+            $tenant = Tenant::create(['id' => $data['subdomain']]);
 
-                $tenant->update([
-                    'name'          => $data['business_name'],
-                    'email'         => $data['email'],
-                    'country'       => $data['country'] ?? null,
-                    'language'      => $data['language'] ?? 'en',
-                    'active'        => true,
-                    'gateway'       => $this->resolveGatewayForCountry($data['country'] ?? 'US'),
-                    'business_type' => $data['business_type'] ?? null,
+            $tenant->update([
+                'name'          => $data['business_name'],
+                'email'         => $data['email'],
+                'country'       => $data['country'] ?? null,
+                'language'      => $data['language'] ?? 'en',
+                'active'        => true,
+                'gateway'       => $this->resolveGatewayForCountry($data['country'] ?? 'US'),
+                'business_type' => $data['business_type'] ?? null,
+            ]);
+
+            $tenant->domains()->create([
+                'domain' => $this->buildSubdomain($data['subdomain']),
+            ]);
+
+            $tenant->run(function () use ($data) {
+                $adminRole = Role::firstOrCreate(
+                    ['name' => 'Admin Tenant', 'guard_name' => 'web']
+                );
+
+                $user = User::create([
+                    'name'     => $data['business_name'],
+                    'email'    => $data['email'],
+                    'password' => Hash::make($data['password']),
                 ]);
 
-                $tenant->domains()->create([
-                    'domain' => $this->buildSubdomain($data['subdomain']),
-                ]);
+                $user->assignRole($adminRole);
 
-                $tenant->run(function () use ($data) {
-                    $adminRole = Role::firstOrCreate(
-                        ['name' => 'Admin Tenant', 'guard_name' => 'web']
-                    );
+                Setting::firstOrCreate(
+                    ['id' => 1],
+                    [
+                        'business_name'       => $data['business_name'],
+                        'language'            => $data['language'] ?? 'en',
+                        'timezone'            => 'UTC',
+                        'booking_enabled'     => true,
+                        'queue_enabled'       => true,
+                        'available_languages' => json_encode(['en', 'ar']),
+                    ]
+                );
 
-                    $user = User::create([
-                        'name'     => $data['business_name'],
-                        'email'    => $data['email'],
-                        'password' => Hash::make($data['password']),
-                    ]);
-
-                    $user->assignRole($adminRole);
-
-                    Setting::firstOrCreate(
-                        ['id' => 1],
-                        [
-                            'business_name'       => $data['business_name'],
-                            'language'            => $data['language'] ?? 'en',
-                            'timezone'            => 'UTC',
-                            'booking_enabled'     => true,
-                            'queue_enabled'       => true,
-                            'available_languages' => json_encode(['en', 'ar']),
-                        ]
-                    );
-
-                    auth()->login($user);
-                    session()->regenerate();
-                });
-
-                $subscription = TenantSubscription::create([
-                    'tenant_id'            => $tenant->id,
-                    'subscription_plan_id' => $trialPlan->id,
-                    'status'               => 'trial',
-                    'trial_ends_at'        => $trialEndsAt,
-                    'read_only_ends_at'    => $lockedAt,
-                    'locked_at'            => $lockedAt,
-                    'deletion_at'          => $deletionAt,
-                    'grace_ends_at'        => null,
-                    'starts_at'            => $trialStartsAt,
-                    'ends_at'              => null,
-                    'amount_paid'          => 0,
-                    'payment_method'       => $this->resolveGatewayForCountry($data['country'] ?? 'US'),
-                    'notes'                => 'Auto-created 7-day trial. Read-only for 14 days, locked for 30 days, then permanently deleted.',
-                ]);
-
-                return $tenant;
+                auth()->login($user);
+                session()->regenerate();
             });
-        } catch (\Exception $e) {
+
+            $subscription = TenantSubscription::create([
+                'tenant_id'            => $tenant->id,
+                'subscription_plan_id' => $trialPlan->id,
+                'status'               => 'trial',
+                'trial_ends_at'        => $trialEndsAt,
+                'read_only_ends_at'    => $lockedAt,
+                'locked_at'            => $lockedAt,
+                'deletion_at'          => $deletionAt,
+                'grace_ends_at'        => null,
+                'starts_at'            => $trialStartsAt,
+                'ends_at'              => null,
+                'amount_paid'          => 0,
+                'payment_method'       => $this->resolveGatewayForCountry($data['country'] ?? 'US'),
+                'notes'                => 'Auto-created 7-day trial. Read-only for 14 days, locked for 30 days, then permanently deleted.',
+            ]);
+        } catch (\Throwable $e) {
             if ($tenant) {
                 try {
                     $tenant->delete();
-                } catch (\Exception $ignored) {
+                } catch (\Throwable $ignored) {
                 }
             }
 
@@ -146,11 +133,11 @@ final class TenantRegistrationService
                 $this->buildSubdomain($data['subdomain']),
                 SubscriptionLifecycle::TRIAL_DAYS
             ));
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::warning('Welcome email failed for tenant ' . $tenant->id . ': ' . $e->getMessage());
         }
 
-        $scheme      = str_starts_with(config('app.url', 'http://velora.com'), 'https') ? 'https' : 'http';
+        $scheme = str_starts_with(config('app.url', 'http://velora.com'), 'https') ? 'https' : 'http';
         $redirectUrl = $scheme . '://' . $this->buildSubdomain($data['subdomain']) . '/admin/dashboard';
 
         return [
