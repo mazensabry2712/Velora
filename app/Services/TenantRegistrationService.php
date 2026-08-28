@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Events\TenantProvisioningRequested;
 use App\Mail\VerifyTenantEmailMail;
 use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -68,6 +70,8 @@ final class TenantRegistrationService
                 'email_verification_url' => $verificationUrl,
             ]);
 
+            // The domain must exist before provisioning starts. This is
+            // especially important with the sync queue used by tests.
             $tenant->domains()->create([
                 'domain' => $this->buildSubdomain($subdomain),
             ]);
@@ -80,6 +84,9 @@ final class TenantRegistrationService
 
             throw $e;
         }
+
+        // Trigger provisioning only after the tenant domain exists.
+        Event::dispatch(new TenantProvisioningRequested($tenant));
 
         Mail::to($data['email'])->queue(new VerifyTenantEmailMail(
             $data['business_name'],
