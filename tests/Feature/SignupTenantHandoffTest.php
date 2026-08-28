@@ -34,7 +34,7 @@ final class SignupTenantHandoffTest extends TestCase
             'business_name' => 'Handoff Test Clinic',
             'business_type' => 'Clinic',
             'subdomain' => $subdomain,
-            'email' => 'handoff-' . $subdomain . '@example.com',
+            'email' => 'handoff-' . $subdomain . '@gmail.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
             'country' => 'US',
