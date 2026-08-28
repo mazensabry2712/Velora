@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Application\Tenant\Actions\RegisterTenant;
 use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
@@ -119,6 +120,22 @@ final class SignupTenantHandoffTest extends TestCase
 
         $this->assertNotNull($route);
         $this->assertSame('admin/dashboard', $route->uri());
+    }
+
+    public function test_tenant_dashboard_route_matches_the_generated_tenant_url(): void
+    {
+        $subdomain = 'match-' . substr(md5(uniqid('', true)), 0, 10);
+        $response = $this->performSignup($subdomain);
+        $response->assertRedirect();
+
+        $tenant = Tenant::findOrFail($subdomain);
+        $tenantDomain = $tenant->domains()->firstOrFail()->domain;
+        $tenantUrl = 'http://' . $tenantDomain . '/admin/dashboard';
+
+        $matched = Route::getRoutes()->match(Request::create($tenantUrl, 'GET'));
+
+        $this->assertSame('admin.dashboard', $matched->getName());
+        $this->assertSame('admin/dashboard', $matched->uri());
     }
 
     public function test_signup_session_cookie_is_valid_for_the_tenant_subdomain(): void
