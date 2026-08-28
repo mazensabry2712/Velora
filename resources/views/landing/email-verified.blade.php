@@ -1,41 +1,61 @@
 <!doctype html>
-<html lang="{{ app()->getLocale() }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
+@php
+    $locale = app()->getLocale() ?: 'en';
+    $isArabic = $locale === 'ar';
+    $isRtl = in_array($locale, ['ar', 'he', 'fa'], true);
+@endphp
+<html lang="{{ $locale }}" dir="{{ $isRtl ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ app()->getLocale() === 'ar' ? __('verification.title') : __('Email verified') }} · Velora</title>
+    <meta name="robots" content="noindex,nofollow">
+    <title>{{ $isArabic ? __('verification.email_verified') : __('Email verified') }} · Velora</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="stylesheet" href="{{ asset('css/velora-brand.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/velora-auth.css') }}">
+    <script>
+        (function () {
+            const saved = localStorage.getItem('velora-theme');
+            const preferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.documentElement.dataset.theme = saved || (preferred ? 'dark' : 'light');
+        })();
+    </script>
 </head>
-<body class="min-h-screen antialiased" style="background: var(--velora-light-gray); color: var(--velora-deep-navy);">
-    <main class="min-h-screen flex items-center justify-center px-5 py-12">
-        <section class="w-full max-w-lg overflow-hidden rounded-[2rem] border bg-white shadow-[0_30px_80px_-35px_rgba(13,18,38,.28)]" style="border-color: var(--velora-border);">
-            <div class="h-1.5" style="background: var(--velora-gradient);"></div>
-            <div class="p-7 text-center sm:p-10">
-                <img src="{{ asset('logo.png') }}" alt="Velora" class="mx-auto mb-8 h-11 w-auto max-w-[190px] object-contain">
+<body class="va-page">
+    <main class="va-center">
+        <section class="va-card">
+            <div class="va-brand" style="justify-content:center">
+                <img src="{{ asset('logo-bais.png') }}" alt="Velora">
+                <span><strong>Velora</strong><span>{{ $isArabic ? 'مساحة عملك جاهزة' : 'Your workspace experience' }}</span></span>
+            </div>
 
-                <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl" style="background: rgba(0,212,163,.10); color: var(--velora-mint);">
-                    <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
-                        <path d="m5 12 4 4L19 6" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
+            <div class="va-status" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <path d="m5 12 4 4L19 6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+
+            <p style="text-align:center;color:var(--va-accent);font-size:11px;font-weight:900;letter-spacing:.18em;text-transform:uppercase">Velora</p>
+            <h1>{{ $isArabic ? __('verification.email_verified') : __('Email verified') }}</h1>
+            <p>
+                {{ $isArabic ? __('verification.message') : __('Your email has been verified. Please return to your workspace setup page to continue.') }}
+            </p>
+
+            @if (! empty($businessName))
+                <div class="va-business">
+                    <small>{{ $isArabic ? __('verification.business') : __('Business') }}</small>
+                    <strong>{{ $businessName }}</strong>
+                    @if (! empty($adminEmail))
+                        <small style="margin-top:8px">{{ $isArabic ? 'الحساب' : 'Admin account' }}</small>
+                        <strong style="font-weight:700">{{ $adminEmail }}</strong>
+                    @endif
                 </div>
+            @endif
 
-                <p class="mb-2 text-sm font-semibold" style="color: var(--velora-primary-blue);">Velora</p>
-                <h1 class="text-2xl font-bold tracking-tight sm:text-3xl">
-                    {{ app()->getLocale() === 'ar' ? __('verification.email_verified') : __('Email verified') }}
-                </h1>
-                <p class="mt-4 text-sm leading-7 sm:text-base" style="color: var(--velora-gray);">
-                    {{ app()->getLocale() === 'ar' ? __('verification.message') : __('Your email has been verified. Please return to your workspace setup page to continue.') }}
-                </p>
-
-                @if (! empty($businessName))
-                    <div class="mx-auto mt-7 max-w-sm rounded-2xl border px-4 py-3 text-start" style="border-color: var(--velora-border); background: var(--velora-light-gray);">
-                        <p class="text-xs font-medium" style="color: var(--velora-gray-light);">
-                            {{ app()->getLocale() === 'ar' ? __('verification.business') : __('Business') }}
-                        </p>
-                        <p class="mt-1 truncate text-sm font-bold" style="color: var(--velora-deep-navy);">{{ $businessName }}</p>
-                    </div>
-                @endif
+            <div class="va-meta">
+                {{ $isArabic ? 'تم تأكيد بريدك الإلكتروني بنجاح.' : 'Your email address has been successfully verified.' }}
+                <br>
+                {{ $isArabic ? 'يمكنك الآن متابعة إعداد مساحة العمل.' : 'You can now continue with your workspace setup.' }}
             </div>
         </section>
     </main>
