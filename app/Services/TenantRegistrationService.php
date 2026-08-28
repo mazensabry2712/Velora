@@ -108,7 +108,7 @@ final class TenantRegistrationService
                 'ends_at'              => null,
                 'amount_paid'          => 0,
                 'payment_method'       => $this->resolveGatewayForCountry($data['country'] ?? 'US'),
-                'notes'                => 'Auto-created 7-day trial. Read-only for 14 days, locked for 30 days, then permanently deleted.',
+                'notes'                => 'Auto-created 7-day trial. Read-only for 14 days, locked for 6 days, then permanently deleted.',
             ]);
         } catch (\Throwable $e) {
             if ($tenant) {
