@@ -128,14 +128,6 @@ final class SignupTenantHandoffTest extends TestCase
         $this->assertSame('admin/dashboard', $route->uri());
     }
 
-    public function test_tenant_dashboard_route_matches_the_generated_tenant_url(): void
-    {
-        $route = Route::getRoutes()->getByName('admin.dashboard');
-
-        $this->assertNotNull($route);
-        $this->assertSame('admin/dashboard', $route->uri());
-    }
-
     public function test_tenant_domain_identification_works_for_the_created_domain(): void
     {
         $subdomain = 'probe-' . substr(md5(uniqid('', true)), 0, 10);
@@ -211,10 +203,21 @@ final class SignupTenantHandoffTest extends TestCase
 
         $verifyResponse = $this->get('http://' . $this->centralHost() . '/email/verify/' . $verificationToken);
 
-        $this->assertSame(200, $verifyResponse->status());
+        $tenant = $tenant->fresh();
+        $freshData = json_decode($tenant->getRawOriginal('data') ?? '{}', true) ?: [];
 
-        $freshData = json_decode($tenant->fresh()->getRawOriginal('data') ?? '{}', true) ?: [];
         $this->assertNotEmpty($freshData['email_verified_at'] ?? null);
         $this->assertEmpty($freshData['email_verification_token_hash'] ?? null);
+
+        if (($tenant->provisioning_status ?? null) === 'ready') {
+            $tenantDomain = $tenant->domains()->firstOrFail()->domain;
+            $handoffToken = Crypt::decryptString((string) ($freshData['provisioning_token_encrypted'] ?? ''));
+
+            $verifyResponse->assertRedirect(
+                'http://' . $tenantDomain . '/__velora/provisioning/' . $handoffToken
+            );
+        } else {
+            $verifyResponse->assertOk();
+        }
     }
 }
