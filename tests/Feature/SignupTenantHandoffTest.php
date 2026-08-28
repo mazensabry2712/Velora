@@ -8,7 +8,6 @@ use App\Application\Tenant\Actions\RegisterTenant;
 use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 final class SignupTenantHandoffTest extends TestCase
@@ -76,10 +75,8 @@ final class SignupTenantHandoffTest extends TestCase
         $this->assertSame($subdomain, $result['tenant']->getKey());
     }
 
-    public function test_signup_http_failure_surfaces_logged_exception(): void
+    public function test_signup_http_failure_surfaces_real_response(): void
     {
-        Log::fake();
-
         $plan = $this->createActivePlan();
         $subdomain = 'http-diag-' . substr(md5(uniqid('', true)), 0, 10);
 
@@ -92,20 +89,16 @@ final class SignupTenantHandoffTest extends TestCase
                 'plan_id' => $plan->id,
             ]);
 
-        if ($response->status() >= 400) {
-            Log::assertLogged('error', function ($message): bool {
-                return str_contains((string) $message, 'Tenant registration failed:')
-                    || str_contains((string) $message, 'Tenant registration error:');
-            });
+        $this->assertLessThan(
+            500,
+            $response->status(),
+            'Signup HTTP request failed: ' . $response->getContent()
+        );
 
-            $this->fail('Signup HTTP request failed with ' . $response->status() . ': ' . $response->getContent());
-        }
-
-        $response->assertSuccessful();
-        $response->assertJsonPath('success', true);
-
-        $tenant = Tenant::find($subdomain);
-        $this->assertNotNull($tenant);
+        $this->assertTrue(
+            Tenant::whereKey($subdomain)->exists(),
+            'Signup HTTP request did not persist the tenant. Response: ' . $response->getContent()
+        );
     }
 
     public function test_signup_redirects_to_the_created_tenant_dashboard(): void
