@@ -17,7 +17,9 @@ final class EloquentSubscriptionAccessReader implements SubscriptionAccessReader
             return null;
         }
 
-        $subscription = DB::connection('mysql')
+        $connection = config('tenancy.database.central_connection', config('database.default'));
+
+        $subscription = DB::connection($connection)
             ->table('tenant_subscriptions')
             ->where('tenant_id', $tenantId)
             ->orderByDesc('created_at')
