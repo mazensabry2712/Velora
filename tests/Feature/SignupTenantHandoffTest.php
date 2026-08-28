@@ -6,10 +6,22 @@ namespace Tests\Feature;
 
 use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
+use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
 
 final class SignupTenantHandoffTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Artisan::call('migrate', [
+            '--database' => config('tenancy.database.central_connection', 'sqlite'),
+            '--path' => 'database/migrations',
+            '--force' => true,
+        ]);
+    }
+
     private function centralHost(): string
     {
         return (string) env('APP_DOMAIN', 'velora.test');
