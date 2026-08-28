@@ -17,7 +17,7 @@ final class SupportedLocaleCoreCoverageTest extends TestCase
         self::assertNotEmpty($locales);
 
         foreach ($locales as $locale) {
-            foreach (['auth.php', 'booking.php', 'messages.php', 'pagination.php', 'passwords.php'] as $file) {
+            foreach (['auth.php', 'booking.php', 'messages.php', 'pagination.php', 'passwords.php', 'validation.php'] as $file) {
                 $path = base_path("lang/{$locale}/{$file}");
 
                 self::assertFileExists(
