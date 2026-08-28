@@ -13,6 +13,7 @@ return new class extends Migration
         Schema::create('password_reset_tokens', function (Blueprint $table): void {
             $table->string('email')->primary();
             $table->string('token', 64);
+            $table->string('locale', 10)->nullable();
             $table->timestamp('created_at')->nullable();
         });
     }
