@@ -23,12 +23,17 @@ final class TenantEmailVerificationTest extends TestCase
         $this->assertSame('email/verify/{token}', $route->uri());
         $this->assertContains('GET', $route->methods());
 
-        $action = $route->getAction('uses');
-        $this->assertTrue(is_array($action));
-        $this->assertSame(TenantProvisioningController::class, ltrim((string) ($action[0] ?? ''), '\\'));
-        $this->assertSame('verifyEmail', $action[1] ?? null);
+        $this->assertSame(
+            TenantProvisioningController::class . '@verifyEmail',
+            ltrim($route->getActionName(), '\\')
+        );
 
-        $this->assertNotContains(\Stancl\Tenancy\Middleware\InitializeTenancyByDomain::class, $route->middleware());
+        $middleware = array_map(
+            static fn ($name) => ltrim((string) $name, '\\'),
+            $route->middleware()
+        );
+
+        $this->assertNotContains(\Stancl\Tenancy\Middleware\InitializeTenancyByDomain::class, $middleware);
     }
 
     public function test_resend_verification_route_is_registered_on_central_signup_flow(): void
