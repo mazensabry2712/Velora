@@ -147,6 +147,11 @@ class TenancyServiceProvider extends ServiceProvider
             ->get('/signup/provisioning/{token}/status', [TenantProvisioningController::class, 'status'])
             ->name('signup.provisioning.status');
 
+        Route::middleware(['web', 'maintenance'])
+            ->post('/signup/provisioning/{token}/resend-verification', [TenantProvisioningController::class, 'resendVerification'])
+            ->name('signup.provisioning.resend')
+            ->middleware('throttle:3,1');
+
         Route::middleware([
             'web',
             Middleware\InitializeTenancyByDomain::class,
