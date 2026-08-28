@@ -8,6 +8,7 @@ use App\Application\Tenant\Actions\RegisterTenant;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 final class TenantRegistrationController extends Controller
@@ -18,6 +19,8 @@ final class TenantRegistrationController extends Controller
 
     public function store(Request $request)
     {
+        $supportedLocales = array_values(array_unique(config('localizer.supported_locales', ['ar', 'en'])));
+
         $validated = $request->validate([
             'business_name' => 'required|string|min:2|max:100',
             'business_type' => 'nullable|string|max:60',
@@ -25,7 +28,7 @@ final class TenantRegistrationController extends Controller
             'email'         => 'required|email:rfc,dns|max:191',
             'password'      => 'required|string|min:8|confirmed',
             'country'       => 'nullable|string|size:2',
-            'language'      => 'nullable|string|in:en,ar,fr,es,de,it,pt,ru,zh,ja,tr,hi,ko,nl,id',
+            'language'      => ['nullable', 'string', Rule::in($supportedLocales)],
             'terms'         => 'required|accepted',
             'plan_id'       => 'nullable|integer|exists:subscription_plans,id',
         ], [
