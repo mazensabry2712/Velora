@@ -52,5 +52,6 @@ add_*.php
 /bootstrap/cache/*
 !/bootstrap/cache/.gitignore
 
-database/tenanttest-tenant-*
+# PHPUnit / Tenancy temporary SQLite databases
+database/tenant*
 storage/tenanttest-tenant-*/
