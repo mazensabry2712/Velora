@@ -7,6 +7,16 @@ use App\Models\Tenant;
 
 class TenantSubscription extends Model
 {
+    /**
+     * Tenant subscriptions are billing records owned by the central database.
+     * Keeping this model on the central connection prevents signup from trying
+     * to write billing state into the newly-created tenant database.
+     */
+    public function getConnectionName(): string
+    {
+        return config('tenancy.database.central_connection', parent::getConnectionName() ?? 'mysql');
+    }
+
     protected $fillable = [
         'tenant_id',
         'subscription_plan_id',
@@ -56,7 +66,8 @@ class TenantSubscription extends Model
      * Get the tenant
      */
     public function tenant()
-    {        return $this->belongsTo(Tenant::class, 'tenant_id', 'id');
+    {
+        return $this->belongsTo(Tenant::class, 'tenant_id', 'id');
     }
 
     /**
