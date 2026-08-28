@@ -77,6 +77,12 @@ final class TenantProvisioningController extends Controller
         $this->applyTenantLocale($tenant, $request->query('lang'));
 
         $verifiedAt = now();
+
+        // Create the first admin before consuming the verification token so a
+        // transient provisioning/credential failure does not permanently burn
+        // the only recovery path. The admin creation itself is idempotent.
+        $admin = $this->createVerifiedAdmin($tenant, $verifiedAt);
+
         $tenant->update([
             'email_verified_at' => $verifiedAt,
             'email_verification_token_used_at' => $verifiedAt,
@@ -84,13 +90,6 @@ final class TenantProvisioningController extends Controller
             'email_verification_expires_at' => null,
             'email_verification_token_encrypted' => null,
             'email_verification_url' => null,
-        ]);
-
-        // Verification is the hard gate for the first tenant admin account.
-        // Do not allow the workspace handoff until this account exists.
-        $admin = $this->createVerifiedAdmin($tenant, $verifiedAt);
-
-        $tenant->update([
             'provisioning_message' => ($tenant->provisioning_status ?? null) === 'ready'
                 ? 'Email verified. Welcome to your workspace.'
                 : 'Email verified. We are finishing your workspace.',
@@ -191,6 +190,11 @@ final class TenantProvisioningController extends Controller
         $data = $this->tenantData($tenant);
         $passwordPayload = (string) ($data['provisioning_password'] ?? '');
         if ($passwordPayload === '') {
+            // Compatibility fallback for tenant implementations exposing the
+            // JSON-backed attribute through Eloquent's attribute resolver.
+            $passwordPayload = (string) ($tenant->getAttribute('provisioning_password') ?? '');
+        }
+        if ($passwordPayload === '') {
             throw new \RuntimeException('Verified tenant credentials are no longer available.');
         }
 
@@ -229,7 +233,7 @@ final class TenantProvisioningController extends Controller
                     $businessName,
                     $tenant->id,
                     $domain,
-                    SubscriptionLifecycle::TRIAL_DAYS
+                    \App\Domain\Subscription\SubscriptionLifecycle::TRIAL_DAYS
                 ));
             }
 
