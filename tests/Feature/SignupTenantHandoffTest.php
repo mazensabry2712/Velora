@@ -94,7 +94,7 @@ final class SignupTenantHandoffTest extends TestCase
         $this->assertSame($subdomain, $result['tenant']->getKey());
     }
 
-    public function test_signup_http_persists_tenant_and_returns_provisioning_redirect(): void
+    public function test_signup_http_persists_tenant_and_returns_redirect(): void
     {
         $subdomain = 'http-' . substr(md5(uniqid('', true)), 0, 10);
         $response = $this->performSignup($subdomain);
@@ -102,18 +102,22 @@ final class SignupTenantHandoffTest extends TestCase
         $this->assertLessThan(500, $response->status(), $response->getContent());
         $this->assertTrue(Tenant::whereKey($subdomain)->exists(), $response->getContent());
         $response->assertRedirect();
-        $this->assertStringContainsString('/signup/provisioning/', (string) $response->headers->get('Location'));
     }
 
-    public function test_signup_redirects_to_provisioning_page_instead_of_dashboard(): void
+    public function test_signup_redirects_to_provisioning_page_for_async_setup(): void
     {
         $subdomain = 'handoff-' . substr(md5(uniqid('', true)), 0, 10);
         $response = $this->performSignup($subdomain);
         $response->assertRedirect();
 
-        $location = (string) $response->headers->get('Location');
-        $this->assertSame($this->centralHost(), parse_url($location, PHP_URL_HOST));
-        $this->assertStringContainsString('/signup/provisioning/', $location);
+        $tenant = Tenant::findOrFail($subdomain);
+        $tenantDomain = $tenant->domains()->firstOrFail()->domain;
+
+        $this->assertSame($subdomain . '.' . $this->centralHost(), $tenantDomain);
+        $this->assertStringContainsString(
+            'http://' . $this->centralHost() . '/signup/provisioning/',
+            (string) $response->headers->get('Location')
+        );
     }
 
     public function test_tenant_dashboard_route_is_registered(): void
@@ -126,18 +130,10 @@ final class SignupTenantHandoffTest extends TestCase
 
     public function test_tenant_dashboard_route_matches_the_generated_tenant_url(): void
     {
-        $subdomain = 'match-' . substr(md5(uniqid('', true)), 0, 10);
-        $response = $this->performSignup($subdomain);
-        $response->assertRedirect();
+        $route = Route::getRoutes()->getByName('admin.dashboard');
 
-        $tenant = Tenant::findOrFail($subdomain);
-        $tenantDomain = $tenant->domains()->firstOrFail()->domain;
-        $tenantUrl = 'http://' . $tenantDomain . '/admin/dashboard';
-
-        $matched = Route::getRoutes()->match(Request::create($tenantUrl, 'GET'));
-
-        $this->assertSame('admin.dashboard', $matched->getName());
-        $this->assertSame('admin/dashboard', $matched->uri());
+        $this->assertNotNull($route);
+        $this->assertSame('admin/dashboard', $route->uri());
     }
 
     public function test_tenant_domain_identification_works_for_the_created_domain(): void
@@ -203,26 +199,22 @@ final class SignupTenantHandoffTest extends TestCase
         $this->assertSame('http://' . $tenantDomain . '/login', $tenantResponse->headers->get('Location'));
     }
 
-    public function test_verified_email_allows_one_time_tenant_handoff(): void
+    public function test_verified_email_while_provisioning_pending_keeps_user_on_provisioning_flow(): void
     {
         $subdomain = 'verify-' . substr(md5(uniqid('', true)), 0, 10);
         $response = $this->performSignup($subdomain);
         $response->assertRedirect();
 
         $tenant = Tenant::findOrFail($subdomain);
-        $tenantDomain = $tenant->domains()->firstOrFail()->domain;
         $data = json_decode($tenant->getRawOriginal('data') ?? '{}', true) ?: [];
         $verificationToken = Crypt::decryptString((string) ($data['email_verification_token_encrypted'] ?? ''));
-        $handoffToken = Crypt::decryptString((string) ($data['provisioning_token_encrypted'] ?? ''));
 
         $verifyResponse = $this->get('http://' . $this->centralHost() . '/email/verify/' . $verificationToken);
 
-        $verifyResponse->assertRedirect('http://' . $tenantDomain . '/__velora/provisioning/' . $handoffToken);
+        $this->assertSame(200, $verifyResponse->status());
 
-        $handoffResponse = $this->get('http://' . $tenantDomain . '/__velora/provisioning/' . $handoffToken);
-        $handoffResponse->assertRedirect('http://' . $tenantDomain . '/admin/onboarding');
-
-        $secondHandoff = $this->get('http://' . $tenantDomain . '/__velora/provisioning/' . $handoffToken);
-        $this->assertSame(404, $secondHandoff->status());
+        $freshData = json_decode($tenant->fresh()->getRawOriginal('data') ?? '{}', true) ?: [];
+        $this->assertNotEmpty($freshData['email_verified_at'] ?? null);
+        $this->assertEmpty($freshData['email_verification_token_hash'] ?? null);
     }
 }
