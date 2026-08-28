@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Events\TenantProvisioningRequested;
 use App\Http\Controllers\Auth\TenantProvisioningController;
 use App\Jobs\FinalizeTenantProvisioning;
 use Illuminate\Contracts\Http\Kernel;
@@ -24,28 +25,15 @@ class TenancyServiceProvider extends ServiceProvider
     {
         return [
             Events\CreatingTenant::class => [],
-            Events\TenantCreated::class => [
+            TenantProvisioningRequested::class => [
                 JobPipeline::make([
                     Jobs\CreateDatabase::class,
                     Jobs\MigrateDatabase::class,
                     Jobs\SeedDatabase::class,
                     FinalizeTenantProvisioning::class,
-                ])
-                    ->send(function (Events\TenantCreated $event) {
-                        $tenant = $event->tenant;
-                        $status = (string) ($tenant->provisioning_status ?? '');
-                        $email = (string) ($tenant->provisioning_email ?? '');
-                        $password = (string) ($tenant->provisioning_password ?? '');
-
-                        // Only signup-created tenants enter the provisioning pipeline.
-                        // Ordinary tenant fixtures/creates remain untouched.
-                        if ($status !== 'queued' || $email === '' || $password === '') {
-                            return null;
-                        }
-
-                        return $tenant;
-                    })
-                    ->shouldBeQueued(true),
+                ])->send(function (TenantProvisioningRequested $event) {
+                    return $event->tenant;
+                })->shouldBeQueued(true),
             ],
             Events\SavingTenant::class => [],
             Events\TenantSaved::class => [],
@@ -64,7 +52,7 @@ class TenancyServiceProvider extends ServiceProvider
             Events\SavingDomain::class => [],
             Events\DomainSaved::class => [],
             Events\UpdatingDomain::class => [],
-            Events\TenantUpdated::class => [],
+            Events\DomainUpdated::class => [],
             Events\DeletingDomain::class => [],
             Events\DomainDeleted::class => [],
             Events\DatabaseCreated::class => [],
