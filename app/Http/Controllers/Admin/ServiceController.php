@@ -244,4 +244,19 @@ class ServiceController extends Controller
         $user = User::with('services')->findOrFail($staffId);
         return response()->json(['success' => true, 'data' => $user->services]);
     }
+
+    public function byService(int $serviceId): JsonResponse
+    {
+        $service = Service::findOrFail($serviceId);
+
+        $staff = User::query()
+            ->whereHas('services', fn ($query) => $query->where('services.id', $service->id))
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
+
+        return response()->json([
+            'success' => true,
+            'data' => $staff,
+        ]);
+    }
 }
