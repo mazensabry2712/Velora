@@ -64,7 +64,7 @@ final class SignupClientFlowTest extends TestCase
             'business_name' => 'Client Signup Clinic',
             'business_type' => 'Clinic',
             'subdomain' => $subdomain,
-            'email' => 'signup-' . $subdomain . '@example.com',
+            'email' => 'signup-' . $subdomain . '@gmail.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
             'country' => 'US',
@@ -170,7 +170,7 @@ final class SignupClientFlowTest extends TestCase
             'SERVER_NAME' => $this->centralHost(),
         ])->post('/signup', [
             'subdomain' => $subdomain,
-            'email' => 'missing-' . $this->uniqueSuffix() . '@example.com',
+            'email' => 'missing-' . $this->uniqueSuffix() . '@gmail.com',
         ]);
 
         $response->assertRedirect();
@@ -245,7 +245,7 @@ final class SignupClientFlowTest extends TestCase
         $firstEmail = (string) $firstTenant->provisioning_email;
 
         $duplicateSubdomain = $this->validData($subdomain, 'en');
-        $duplicateSubdomain['email'] = 'another-' . $this->uniqueSuffix() . '@example.com';
+        $duplicateSubdomain['email'] = 'another-' . $this->uniqueSuffix() . '@gmail.com';
 
         $response = $this->withServerVariables([
             'HTTP_HOST' => $this->centralHost(),
@@ -289,7 +289,7 @@ final class SignupClientFlowTest extends TestCase
             'business_name' => 'Default Language Clinic',
             'business_type' => 'Clinic',
             'subdomain' => $subdomain,
-            'email' => 'default-' . $subdomain . '@example.com',
+            'email' => 'default-' . $subdomain . '@gmail.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
             'country' => 'US',
