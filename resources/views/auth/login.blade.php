@@ -110,7 +110,7 @@
 
                     <div class="va-row">
                         <label class="va-check"><input type="checkbox" id="remember"> <span>{{ __('Remember me') }}</span></label>
-                        <a class="va-link" href="{{ route('password.request') }}">{{ __('Forgot your password?') }}</a>
+                        <span class="va-link" aria-disabled="true" title="{{ __('Password reset is not enabled yet') }}">{{ __('Forgot your password?') }}</span>
                     </div>
 
                     <div id="errorMessage" class="va-alert error" hidden></div>
