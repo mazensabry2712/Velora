@@ -5,12 +5,10 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Domain\Subscription\SubscriptionLifecycle;
-use App\Mail\WelcomeTenantMail;
 use App\Models\Setting;
 use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
 use App\Models\TenantSubscription;
-use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -18,8 +16,6 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
-use Spatie\Permission\Models\Role;
 
 final class FinalizeTenantProvisioning implements ShouldQueue
 {
@@ -37,39 +33,19 @@ final class FinalizeTenantProvisioning implements ShouldQueue
         $this->markProvisioning($tenant, 'finalizing');
 
         try {
-            $email = (string) ($tenant->provisioning_email ?? $tenant->email ?? '');
             $businessName = (string) ($tenant->name ?? 'Tenant');
             $language = (string) ($tenant->language ?? 'en');
             $passwordPayload = (string) ($data['provisioning_password'] ?? '');
 
-            if ($email === '' || $passwordPayload === '') {
+            // The admin account is intentionally NOT created here.
+            // Email verification is a hard prerequisite for account creation
+            // and tenant handoff. Keep the encrypted credential only until
+            // verification succeeds, then consume and remove it there.
+            if ($passwordPayload === '') {
                 throw new \RuntimeException('Tenant provisioning credentials are missing.');
             }
 
-            $password = Crypt::decryptString($passwordPayload);
-            $verifiedAt = $tenant->email_verified_at;
-
-            $tenant->run(function () use ($email, $businessName, $language, $verifiedAt, $password): void {
-                $adminRole = Role::firstOrCreate([
-                    'name' => 'Admin Tenant',
-                    'guard_name' => 'web',
-                ]);
-
-                $user = User::firstOrCreate(
-                    ['email' => $email],
-                    [
-                        'name' => $businessName,
-                        'password' => $password,
-                        'email_verified_at' => $verifiedAt,
-                    ]
-                );
-
-                if ($verifiedAt !== null && $user->email_verified_at === null) {
-                    $user->forceFill(['email_verified_at' => $verifiedAt])->save();
-                }
-
-                $user->assignRole($adminRole);
-
+            $tenant->run(function () use ($businessName, $language): void {
                 Setting::firstOrCreate(
                     ['id' => 1],
                     [
@@ -124,24 +100,19 @@ final class FinalizeTenantProvisioning implements ShouldQueue
 
             $tenant->update([
                 'provisioning_status' => 'ready',
-                'provisioning_message' => $verifiedAt
-                    ? 'Workspace ready. Redirecting...'
+                'provisioning_message' => $tenant->email_verified_at !== null
+                    ? 'Workspace ready.'
                     : 'Workspace ready. Please verify your email to continue.',
                 'provisioning_ready_at' => now(),
                 'provisioning_redirect_url' => $handoffUrl,
             ]);
 
-            if ($email !== '') {
-                Mail::to($email)->queue(new WelcomeTenantMail(
-                    $businessName,
-                    $tenant->id,
-                    $domain,
-                    SubscriptionLifecycle::TRIAL_DAYS
-                ));
-            }
-
+            // Keep the encrypted password until the verified email is used to
+            // create the first admin account. The handoff token is no longer
+            // needed in encrypted form because the redirect URL contains it
+            // and the server validates its hash.
             $freshData = $this->tenantData($tenant);
-            unset($freshData['provisioning_password'], $freshData['provisioning_token_encrypted']);
+            unset($freshData['provisioning_token_encrypted']);
             $tenant->update([
                 'data' => json_encode($freshData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ]);
@@ -164,6 +135,7 @@ final class FinalizeTenantProvisioning implements ShouldQueue
         if (is_array($raw)) {
             return $raw;
         }
+
         return is_string($raw) ? (json_decode($raw, true) ?: []) : [];
     }
 
