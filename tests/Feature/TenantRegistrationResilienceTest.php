@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
 use App\Services\TenantRegistrationService;
 use Tests\TestCase;
@@ -23,10 +24,28 @@ final class TenantRegistrationResilienceTest extends TestCase
 
     private function uniqueId(string $prefix): string
     {
-        return $prefix . '-' . bin2hex(random_bytes(6));
+        return $prefix . '-' . bin2hex(random_bytes(4));
     }
 
-    private function validSignupPayload(string $subdomain): array
+    private function createActivePlan(): int
+    {
+        return SubscriptionPlan::create([
+            'name' => $this->uniqueId('Resilience Plan'),
+            'slug' => $this->uniqueId('resilience-plan'),
+            'description' => 'Plan used by tenant registration resilience tests',
+            'price' => 0,
+            'billing_cycle' => 'monthly',
+            'max_users' => null,
+            'max_appointments' => null,
+            'storage_limit' => null,
+            'features' => [],
+            'is_active' => true,
+            'is_popular' => false,
+            'trial_days' => 7,
+        ])->id;
+    }
+
+    private function validSignupPayload(string $subdomain, int $planId): array
     {
         return [
             'business_name' => 'Resilience Test Business',
@@ -38,6 +57,7 @@ final class TenantRegistrationResilienceTest extends TestCase
             'country' => 'US',
             'language' => 'en',
             'terms' => '1',
+            'plan_id' => $planId,
         ];
     }
 
@@ -68,11 +88,12 @@ final class TenantRegistrationResilienceTest extends TestCase
     public function test_soft_deleted_tenant_id_rejects_registration_before_insert(): void
     {
         $subdomain = $this->uniqueId('blocked');
+        $planId = $this->createActivePlan();
 
         $tenant = Tenant::create(['id' => $subdomain]);
         $tenant->delete();
 
-        $response = $this->postSignup($this->validSignupPayload($subdomain));
+        $response = $this->postSignup($this->validSignupPayload($subdomain, $planId));
 
         $response->assertRedirect();
         $errors = $response->getSession()->get('errors');
@@ -85,9 +106,11 @@ final class TenantRegistrationResilienceTest extends TestCase
     public function test_signup_subdomain_collision_does_not_become_generic_server_error(): void
     {
         $subdomain = $this->uniqueId('collision');
+        $planId = $this->createActivePlan();
+
         Tenant::create(['id' => $subdomain]);
 
-        $response = $this->postSignup($this->validSignupPayload($subdomain));
+        $response = $this->postSignup($this->validSignupPayload($subdomain, $planId));
 
         $response->assertRedirect();
         $this->assertNotSame(500, $response->status());
