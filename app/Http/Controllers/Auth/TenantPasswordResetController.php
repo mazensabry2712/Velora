@@ -8,14 +8,12 @@ use App\Http\Controllers\Controller;
 use App\Mail\TenantPasswordResetMail;
 use App\Models\SystemSetting;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
-use Carbon\CarbonImmutable;
 
 final class TenantPasswordResetController extends Controller
 {
@@ -34,9 +32,7 @@ final class TenantPasswordResetController extends Controller
         $key = $this->rateKey($request, $email);
 
         if (RateLimiter::tooManyAttempts($key, 3)) {
-            return back()->withErrors([
-                'email' => __('passwords.throttled'),
-            ])->withInput();
+            return back()->withErrors(['email' => __('passwords.throttled')])->withInput();
         }
 
         RateLimiter::hit($key, 900);
@@ -46,11 +42,9 @@ final class TenantPasswordResetController extends Controller
             return back()->withErrors(['email' => __('passwords.user')])->withInput();
         }
 
-        $user = User::query()
-            ->whereRaw('LOWER(email) = ?', [$email])
-            ->first();
+        $user = User::query()->whereRaw('LOWER(email) = ?', [$email])->first();
 
-        // Do not reveal whether an email exists in this tenant.
+        // Never reveal whether an email exists in this tenant.
         if (! $user || ! $user->email_verified_at) {
             return back()->with('status', __('password_reset.sent'));
         }
@@ -66,10 +60,10 @@ final class TenantPasswordResetController extends Controller
             ],
         );
 
-        $domain = $tenant->domains->first()?->domain ?: request()->getHost();
-        $resetUrl = 'https://' . $domain . route('password.reset', [], false)
-            . '?token=' . urlencode($plainToken)
-            . '&email=' . urlencode($email);
+        $resetUrl = route('password.reset', [
+            'token' => $plainToken,
+            'email' => $email,
+        ]);
 
         Mail::to($user->email)->queue(new TenantPasswordResetMail(
             $user->name,
@@ -86,9 +80,7 @@ final class TenantPasswordResetController extends Controller
         $record = DB::table('password_reset_tokens')->where('email', $email)->first();
 
         if (! $record || ! hash_equals((string) $record->token, hash('sha256', $token)) || $this->expired($record->created_at)) {
-            return redirect()->route('password.request')->withErrors([
-                'email' => __('passwords.token'),
-            ]);
+            return redirect()->route('password.request')->withErrors(['email' => __('passwords.token')]);
         }
 
         return view('auth.reset-password', compact('token', 'email'));
@@ -137,13 +129,15 @@ final class TenantPasswordResetController extends Controller
     private function resolveLocale(User $user, $tenant): string
     {
         $supported = array_values(array_unique(config('localizer.supported_locales', ['ar', 'en'])));
-        if (in_array($user->locale, $supported, true)) {
+        if (is_string($user->locale) && in_array($user->locale, $supported, true)) {
             return $user->locale;
         }
         if (is_string($tenant?->language) && in_array($tenant->language, $supported, true)) {
             return $tenant->language;
         }
         $publicDefault = SystemSetting::get('public_default_locale', 'ar');
-        return in_array($publicDefault, $supported, true) ? $publicDefault : ($supported[0] ?? 'ar');
+        return is_string($publicDefault) && in_array($publicDefault, $supported, true)
+            ? $publicDefault
+            : ($supported[0] ?? 'ar');
     }
 }
