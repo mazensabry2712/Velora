@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\CheckMaintenanceMode;
 use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
 use App\Services\TenantRegistrationService;
@@ -61,14 +62,19 @@ final class TenantRegistrationResilienceTest extends TestCase
         ];
     }
 
+    private function centralRequest(): static
+    {
+        return $this
+            ->withoutMiddleware(CheckMaintenanceMode::class)
+            ->withServerVariables([
+                'HTTP_HOST' => env('APP_DOMAIN', 'velora.test'),
+                'SERVER_NAME' => env('APP_DOMAIN', 'velora.test'),
+            ]);
+    }
+
     private function postSignup(array $payload)
     {
-        $host = (string) env('APP_DOMAIN', 'velora.test');
-
-        return $this->withServerVariables([
-            'HTTP_HOST' => $host,
-            'SERVER_NAME' => $host,
-        ])->post('/signup', $payload);
+        return $this->centralRequest()->post('/signup', $payload);
     }
 
     public function test_soft_deleted_tenant_id_is_treated_as_taken(): void
@@ -95,12 +101,12 @@ final class TenantRegistrationResilienceTest extends TestCase
 
         $response = $this->postSignup($this->validSignupPayload($subdomain, $planId));
 
-        $response->assertRedirect();
-        $errors = $response->getSession()->get('errors');
-
-        $this->assertNotNull($errors);
-        $this->assertTrue($errors->has('subdomain'));
-        $this->assertStringContainsString('already taken', strtolower($errors->first('subdomain')));
+        $response->assertSessionHasErrors('subdomain');
+        $response->assertSessionDoesntHaveErrors('general');
+        $this->assertStringContainsString(
+            'already taken',
+            strtolower($response->getSession()->get('errors')->first('subdomain'))
+        );
     }
 
     public function test_signup_subdomain_collision_does_not_become_generic_server_error(): void
@@ -112,12 +118,12 @@ final class TenantRegistrationResilienceTest extends TestCase
 
         $response = $this->postSignup($this->validSignupPayload($subdomain, $planId));
 
-        $response->assertRedirect();
+        $response->assertSessionHasErrors('subdomain');
+        $response->assertSessionDoesntHaveErrors('general');
         $this->assertNotSame(500, $response->status());
-
-        $errors = $response->getSession()->get('errors');
-        $this->assertNotNull($errors);
-        $this->assertTrue($errors->has('subdomain'));
-        $this->assertStringContainsString('already taken', strtolower($errors->first('subdomain')));
+        $this->assertStringContainsString(
+            'already taken',
+            strtolower($response->getSession()->get('errors')->first('subdomain'))
+        );
     }
 }
