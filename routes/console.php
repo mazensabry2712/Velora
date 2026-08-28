@@ -1,13 +1,10 @@
 <?php
 
-declare(strict_types=1);
-
-use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
+    $this->comment(\Illuminate\Foundation\Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
 /*
@@ -16,13 +13,14 @@ Artisan::command('inspire', function () {
 |--------------------------------------------------------------------------
 */
 
-// Keep trial/read-only/locked transitions deterministic.
+// Keep trial/read-only/locked transitions deterministic under the canonical
+// 27-day lifecycle: 7-day trial + 14-day read-only + 6-day locked.
 Schedule::command('subscriptions:check-status')->hourly();
 
-// Permanently purge tenants after the 30-day locked period.
+// Permanently purge tenants after the 6-day locked period.
 Schedule::command('subscriptions:purge-expired --force')->dailyAt('02:30');
 
-// Canonical lifecycle reminder emails: trial, read-only, and deletion window.
+// Canonical lifecycle reminder emails: trial, read-only, locked, deletion window.
 Schedule::command('subscriptions:send-lifecycle-reminders')->dailyAt('09:00');
 
 // Process appointment reminders every 15 minutes.
