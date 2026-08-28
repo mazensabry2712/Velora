@@ -14,13 +14,13 @@ final class TenantLoginLocaleUiTest extends TestCase
 
         self::assertIsString($view);
         self::assertStringNotContainsString('$isArabic ?', $view);
-        self::assertStringContainsString("__('Login')", $view);
-        self::assertStringContainsString("__('Password')", $view);
-        self::assertStringContainsString("__('Remember me')", $view);
-        self::assertStringContainsString("__('Forgot your password?')", $view);
-        self::assertStringContainsString("@json(__('Logging in...'))", $view);
-        self::assertStringContainsString("@json(__('Login successful!'))", $view);
-        self::assertStringContainsString("@json(__('Invalid credentials'))", $view);
+        self::assertStringContainsString("__('messages.login')", $view);
+        self::assertStringContainsString("__('messages.password')", $view);
+        self::assertStringContainsString("__('messages.remember_me')", $view);
+        self::assertStringContainsString("__('messages.login_to_account')", $view);
+        self::assertStringContainsString("@json(__('messages.loading'))", $view);
+        self::assertStringContainsString("@json(__('messages.login_success'))", $view);
+        self::assertStringContainsString("@json(__('messages.login_failed'))", $view);
     }
 
     public function test_login_view_has_one_language_dropdown_and_no_broken_password_reset_route(): void
@@ -58,13 +58,13 @@ final class TenantLoginLocaleUiTest extends TestCase
             $this->app->setLocale($locale);
 
             foreach ([
-                'Login',
-                'Password',
-                'Remember me',
-                'Forgot your password?',
-                'Logging in...',
-                'Login successful!',
-                'Invalid credentials',
+                'messages.login',
+                'messages.password',
+                'messages.remember_me',
+                'messages.login_to_account',
+                'messages.loading',
+                'messages.login_success',
+                'messages.login_failed',
             ] as $key) {
                 $resolved = __($key);
 
