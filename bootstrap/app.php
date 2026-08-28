@@ -43,6 +43,11 @@ return (new ApplicationBuilder($app))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        then: function (): void {
+            // Tenant routes are loaded separately because they use
+            // domain-based tenancy initialization for *.APP_DOMAIN hosts.
+            require base_path('routes/tenant.php');
+        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(SecurityHeaders::class);
