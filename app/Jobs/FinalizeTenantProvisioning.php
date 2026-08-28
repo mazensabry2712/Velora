@@ -19,7 +19,6 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
 final class FinalizeTenantProvisioning implements ShouldQueue
@@ -41,8 +40,15 @@ final class FinalizeTenantProvisioning implements ShouldQueue
             $email = (string) ($data['provisioning_email'] ?? $data['email'] ?? '');
             $businessName = (string) ($data['name'] ?? $data['business_name'] ?? 'Tenant');
             $language = (string) ($data['language'] ?? 'en');
+            $passwordPayload = (string) ($data['provisioning_password'] ?? '');
 
-            $tenant->run(function () use ($email, $businessName, $language): void {
+            if ($email === '' || $passwordPayload === '') {
+                throw new \RuntimeException('Tenant provisioning credentials are missing.');
+            }
+
+            $verifiedAt = $data['email_verified_at'] ?? null;
+
+            $tenant->run(function () use ($email, $businessName, $language, $verifiedAt, $passwordPayload): void {
                 $adminRole = Role::firstOrCreate([
                     'name' => 'Admin Tenant',
                     'guard_name' => 'web',
@@ -52,9 +58,14 @@ final class FinalizeTenantProvisioning implements ShouldQueue
                     ['email' => $email],
                     [
                         'name' => $businessName,
-                        'password' => $this->decryptPassword(),
+                        'password' => decrypt($passwordPayload),
+                        'email_verified_at' => $verifiedAt,
                     ]
                 );
+
+                if ($verifiedAt !== null && $user->email_verified_at === null) {
+                    $user->forceFill(['email_verified_at' => $verifiedAt])->save();
+                }
 
                 $user->assignRole($adminRole);
 
@@ -103,37 +114,37 @@ final class FinalizeTenantProvisioning implements ShouldQueue
 
             $domainModel = $tenant->domains()->first();
             $domain = (string) ($domainModel?->domain ?? '');
-
             if ($domainModel && str_ends_with($domain, '.test')) {
                 (new LinkTenantDomain($domainModel))->handle();
             }
 
-            $verificationToken = $tenant->id.'.'.Str::random(64);
-            $verificationExpiresAt = now()->addHours(24);
-            $handoffToken = (string) ($data['provisioning_token'] ?? '');
+            $handoffToken = (string) ($data['provisioning_token_plain'] ?? '');
             $handoffUrl = $this->handoffUrl($domain, $handoffToken);
-            $verificationUrl = $this->verificationUrl($domain, $verificationToken);
 
-            $data['email_verification_token_hash'] = hash('sha256', $verificationToken);
-            $data['email_verification_expires_at'] = $verificationExpiresAt->toIso8601String();
-            $data['email_verification_url'] = $verificationUrl;
+            $verificationUrl = (string) ($data['email_verification_url'] ?? '');
+            if ($verificationUrl === '') {
+                $verificationUrl = $this->verificationUrl($data);
+            }
 
             $tenant->update([
                 'provisioning_status' => 'ready',
-                'provisioning_message' => 'Workspace ready. Please verify your email to continue.',
+                'provisioning_message' => $verifiedAt
+                    ? 'Workspace ready. Redirecting...'
+                    : 'Workspace ready. Please verify your email to continue.',
                 'provisioning_ready_at' => now()->toIso8601String(),
                 'provisioning_redirect_url' => $handoffUrl,
-                'data' => json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ]);
 
             if ($email !== '') {
-                Mail::to($email)->queue(new VerifyTenantEmailMail(
-                    $businessName,
-                    $tenant->id,
-                    $domain,
-                    $verificationUrl,
-                    24
-                ));
+                if ($verifiedAt === null) {
+                    Mail::to($email)->queue(new VerifyTenantEmailMail(
+                        $businessName,
+                        $tenant->id,
+                        $domain,
+                        $verificationUrl,
+                        24
+                    ));
+                }
 
                 Mail::to($email)->queue(new WelcomeTenantMail(
                     $businessName,
@@ -143,10 +154,8 @@ final class FinalizeTenantProvisioning implements ShouldQueue
                 ));
             }
 
-            // The encrypted bootstrap password is no longer needed after the
-            // tenant admin has been created. Remove it from central tenant data.
             $freshData = $this->tenantData($tenant);
-            unset($freshData['provisioning_password']);
+            unset($freshData['provisioning_password'], $freshData['provisioning_token_plain']);
             $tenant->update([
                 'data' => json_encode($freshData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ]);
@@ -160,11 +169,6 @@ final class FinalizeTenantProvisioning implements ShouldQueue
 
             throw $e;
         }
-    }
-
-    private function decryptPassword(): string
-    {
-        return decrypt((string) data_get($this->tenantData($this->tenant), 'provisioning_password'));
     }
 
     /** @return array<string, mixed> */
@@ -203,9 +207,10 @@ final class FinalizeTenantProvisioning implements ShouldQueue
         return $scheme.'://'.$domain.'/__velora/provisioning/'.$token;
     }
 
-    private function verificationUrl(string $domain, string $token): string
+    /** @param array<string, mixed> $data */
+    private function verificationUrl(array $data): string
     {
-        $scheme = str_starts_with(config('app.url', 'http://velora.test'), 'https') ? 'https' : 'http';
-        return $scheme.'://'.$domain.'/email/verify/'.$token;
+        $token = (string) ($data['email_verification_token_plain'] ?? '');
+        return $token === '' ? '' : url('/email/verify/'.$token);
     }
 }
