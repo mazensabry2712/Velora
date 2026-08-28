@@ -1,0 +1,4 @@
+<?php
+return [
+    'Book Appointment' => '예약하기','Book your appointment online' => '온라인으로 예약하세요','Full Name' => '성명','Enter your full name' => '성명을 입력하세요','Email' => '이메일','Enter your email' => '이메일을 입력하세요','Phone Number' => '전화번호','Enter your phone number' => '전화번호를 입력하세요','Appointment Date' => '예약 날짜','Appointment Time' => '예약 시간','Select time' => '시간 선택','Preferred Staff' => '선호 직원','Any available staff' => '가능한 직원 누구나','Additional Notes' => '추가 메모','Any special requests or notes...' => '특별 요청 또는 메모...','Booking...' => '예약 중...','Appointment Booked Successfully!' => '예약이 완료되었습니다!','You will receive a confirmation email shortly.' => '곧 확인 이메일을 받으실 수 있습니다.','Booking Failed' => '예약 실패','An error occurred. Please try again.' => '오류가 발생했습니다. 다시 시도해 주세요.','Check Queue Status' => '대기열 상태 확인',
+];
