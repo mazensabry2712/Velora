@@ -38,7 +38,7 @@ class OnboardingController extends Controller
         $scheme      = request()->secure() ? 'https' : 'http';
         $bookingUrl  = "{$scheme}://{$subdomain}.{$domain}/book";
 
-        return view('admin.onboarding.wizard', compact(
+        return view('admin.onboarding.wizard-v2', compact(
             'currentStep',
             'bookingUrl',
             'subdomain',
