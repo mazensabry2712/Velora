@@ -33,7 +33,10 @@ final class TenantEmailVerificationTest extends TestCase
             $route->middleware()
         );
 
-        $this->assertNotContains(\Stancl\Tenancy\Middleware\InitializeTenancyByDomain::class, $middleware);
+        $this->assertNotContains(
+            ltrim(\Stancl\Tenancy\Middleware\InitializeTenancyByDomain::class, '\\'),
+            $middleware
+        );
     }
 
     public function test_resend_verification_route_is_registered_on_central_signup_flow(): void
