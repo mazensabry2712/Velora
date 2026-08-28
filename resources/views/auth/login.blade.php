@@ -1,263 +1,197 @@
-<!DOCTYPE html>
+<!doctype html>
 @php
-    $isArabic = app()->getLocale() === 'ar';
+    $locale = app()->getLocale() ?: config('app.locale', 'en');
+    $isArabic = $locale === 'ar';
+    $isRtl = in_array($locale, ['ar', 'he', 'fa'], true);
     $businessSettings = \App\Models\Setting::where('tenant_id', tenant()->id)->first();
     $businessLogo = $businessSettings?->logo ?? null;
     $businessName = $businessSettings?->business_name ?? null;
     if (is_array($businessName)) {
-        $locale = app()->getLocale();
-        $businessName = $businessName[$locale] ?? ($businessName['en'] ?? (reset($businessName) ?? null));
+        $businessName = $businessName[$locale] ?? ($businessName['en'] ?? (reset($businessName) ?: null));
     }
-    $businessName = is_scalar($businessName) ? (string) $businessName : null;
-    $displayName = $businessName ?: tenant()->name;
+    $displayName = is_scalar($businessName) && (string) $businessName !== ''
+        ? (string) $businessName
+        : tenant()->name;
+    $supportedLocales = config('localizer.supported_locales', ['ar', 'en']);
 @endphp
-<html lang="{{ app()->getLocale() }}" dir="{{ $isArabic ? 'rtl' : 'ltr' }}">
-
+<html lang="{{ $locale }}" dir="{{ $isRtl ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $isArabic ? 'تسجيل الدخول' : 'Login' }} - {{ tenant()->name }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/css/dark-mode-enhancements.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{{ $isArabic ? 'تسجيل الدخول' : 'Sign in' }} · {{ $displayName }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('css/velora-brand.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/velora-auth.css') }}">
     <script>
-        tailwind.config = {
-            darkMode: 'class'
-        }
-    </script>
-    <style>
-        /* .btn-brand is referenced on the submit button below but was never
-           defined for this page (it only existed in super-admin/login.blade.php),
-           leaving the white-on-white button invisible. Defining it here. */
-        .btn-brand {
-            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-            box-shadow: 0 12px 30px rgba(79, 70, 229, 0.35);
-        }
-        .btn-brand:hover {
-            box-shadow: 0 16px 36px rgba(79, 70, 229, 0.45);
-        }
-    </style>
-    <!-- Dark Mode Prevention Script - يمنع وميض الوضع الفاتح -->
-    <script>
-        // يتم تنفيذ هذا الكود فوراً قبل عرض الصفحة
-        (function() {
-            if (localStorage.getItem('darkMode') === 'true' ||
-                (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark');
-            }
+        (function () {
+            const saved = localStorage.getItem('velora-theme');
+            const preferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.documentElement.dataset.theme = saved || (preferred ? 'dark' : 'light');
         })();
     </script>
 </head>
+<body class="va-page">
+<div class="va-shell">
+    <div class="va-bg-orb one"></div>
+    <div class="va-bg-orb two"></div>
 
-<body class="bg-gradient-to-br from-slate-50 to-indigo-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 min-h-screen text-slate-900 dark:text-white overflow-hidden">
+    <div class="va-container">
+        <header class="va-topbar">
+            <a href="{{ route('customer.booking') }}" class="va-brand" aria-label="{{ $displayName }}">
+                @if ($businessLogo)
+                    <img src="{{ asset('storage/' . $businessLogo) }}" alt="{{ $displayName }}">
+                @else
+                    <img src="{{ asset('logo-bais.png') }}" alt="Velora">
+                @endif
+                <span>
+                    <strong>{{ $displayName }}</strong>
+                    <span>{{ $isArabic ? 'إدارة أعمالك بسهولة' : 'Manage your business with clarity' }}</span>
+                </span>
+            </a>
 
-    <!-- Ambient background glow -->
-    <div class="pointer-events-none absolute inset-0 overflow-hidden">
-        <div class="absolute top-[-10%] left-[-5%] w-[480px] h-[480px] rounded-full bg-indigo-400/20 blur-3xl"></div>
-        <div class="absolute bottom-[-10%] right-[-5%] w-[420px] h-[420px] rounded-full bg-cyan-400/15 blur-3xl"></div>
-        <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.08),_transparent_45%)]"></div>
-    </div>
+            <div class="va-tools">
+                <button id="themeToggle" type="button" class="va-tool" aria-label="{{ $isArabic ? 'تغيير المظهر' : 'Toggle theme' }}">◐</button>
+                @foreach ($supportedLocales as $supportedLocale)
+                    <a class="va-tool" href="{{ route('tenant.change.language', ['lang' => $supportedLocale]) }}">{{ strtoupper($supportedLocale) }}</a>
+                @endforeach
+            </div>
+        </header>
 
-    <div class="relative z-10 min-h-screen flex items-center justify-center px-4 py-10">
-        <div class="w-full max-w-6xl">
-            <div class="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] items-center">
-
-                <section class="hidden lg:flex flex-col justify-center rounded-[2rem] bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-white/10 p-10 shadow-2xl shadow-slate-900/10 backdrop-blur-xl">
-                    <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-200">
-                        {{ $isArabic ? 'مرحباً بك في فيلورا' : 'Welcome to Velora' }}
-                    </span>
-                    <h1 class="mt-6 text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
-                        {{ $isArabic ? 'ادخل إلى لوحة التحكم بسرعة وسهولة' : 'Access your dashboard with speed and clarity' }}
+        <main class="va-main">
+            <section class="va-panel copy">
+                <div>
+                    <div class="va-kicker"><span class="va-dot"></span>{{ $isArabic ? 'مساحة عملك' : 'Your workspace' }}</div>
+                    <h1 class="va-title">
+                        {{ $isArabic ? 'أهلاً بك في ' : 'Welcome back to ' }}<span>Velora</span>
                     </h1>
-                    <p class="mt-6 text-lg leading-8 text-slate-600 dark:text-slate-300 max-w-xl">
-                        {{ $isArabic ? 'منصة فيلورا تسهل لك إدارة الحجوزات، العملاء، والمواعيد من مكان واحد.' : 'Velora helps you manage bookings, customers, and schedules from one polished dashboard.' }}
+                    <p class="va-copy">
+                        {{ $isArabic ? 'سجّل الدخول لمتابعة المواعيد، العملاء، الفريق، والحجوزات من مكان واحد.' : 'Sign in to keep your appointments, customers, team and bookings moving from one place.' }}
                     </p>
 
-                    <div class="mt-10 grid gap-4 text-sm text-slate-600 dark:text-slate-300">
-                        <p class="inline-flex items-center gap-3">
-                            <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-200">✓</span>
-                            {{ $isArabic ? 'واجهة أنيقة ومناسبة لجميع الأجهزة' : 'Beautiful, responsive layout on every device' }}
-                        </p>
-                        <p class="inline-flex items-center gap-3">
-                            <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-200">✓</span>
-                            {{ $isArabic ? 'تحكم كامل للشركات والمشرفين' : 'Clear access for company and super admins' }}
-                        </p>
-                        <p class="inline-flex items-center gap-3">
-                            <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-200">✓</span>
-                            {{ $isArabic ? 'دعم اللغة العربية والإنجليزية بسهولة' : 'Easy language switching with instant feedback' }}
-                        </p>
+                    <div class="va-feature-list">
+                        <div class="va-feature"><span class="va-icon">✓</span><div><strong>{{ $isArabic ? 'بياناتك في سياق شركتك' : 'Workspace-aware access' }}</strong><span>{{ $isArabic ? 'يتم الدخول داخل مساحة العمل الصحيحة تلقائيًا.' : 'Your session is opened inside the correct tenant workspace.' }}</span></div></div>
+                        <div class="va-feature"><span class="va-icon">✓</span><div><strong>{{ $isArabic ? 'حماية قبل الوصول' : 'Verification first' }}</strong><span>{{ $isArabic ? 'لا يمكن للحساب غير الموثق الدخول حتى يتم تأكيد البريد.' : 'Unverified accounts are blocked until email verification is complete.' }}</span></div></div>
+                        <div class="va-feature"><span class="va-icon">✓</span><div><strong>{{ $isArabic ? 'واجهة ثنائية اللغة' : 'Bilingual by design' }}</strong><span>{{ $isArabic ? 'يدعم RTL وLTR بشكل متناسق.' : 'RTL and LTR are handled consistently across the experience.' }}</span></div></div>
                     </div>
-                </section>
+                </div>
+                <p class="va-footnote">Velora · {{ date('Y') }} · {{ $isArabic ? 'وصول آمن إلى مساحة العمل' : 'Secure access to your workspace' }}</p>
+            </section>
 
-                <main class="glass-card relative rounded-[2rem] bg-white dark:bg-slate-800/95 shadow-2xl shadow-slate-900/15 border border-slate-200/80 dark:border-slate-700/80 p-8 sm:p-10">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-                        <div class="flex items-center gap-4">
-                            @if ($businessLogo)
-                                <img src="{{ asset('storage/' . $businessLogo) }}" alt="{{ $displayName }}" class="h-14 w-auto rounded-2xl object-contain" />
-                            @else
-                                <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-500/20">
-                                    <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                </div>
-                            @endif
-                            <div>
-                                <p class="text-sm font-semibold uppercase tracking-[0.24em] text-indigo-600 dark:text-indigo-400">
-                                    {{ $isArabic ? 'مرحباً بك في' : 'Sign in to' }}
-                                </p>
-                                <h2 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">{{ $displayName }}</h2>
-                            </div>
-                        </div>
+            <section class="va-panel form">
+                <div class="va-form-head">
+                    <div>
+                        <h2>{{ $isArabic ? 'تسجيل الدخول' : 'Sign in' }}</h2>
+                        <p>{{ $isArabic ? 'استخدم بيانات حسابك لمتابعة العمل.' : 'Use your account credentials to continue.' }}</p>
+                    </div>
+                </div>
 
-                        <div class="flex items-center justify-end gap-3">
-                            <button onclick="toggleDarkMode()"
-                                class="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-slate-50 dark:bg-slate-900 px-4 text-sm font-semibold text-slate-700 dark:text-slate-200 shadow-sm transition hover:bg-slate-100 dark:hover:bg-slate-800">
-                                <span id="dark-mode-icon" class="text-base">🌙</span>
-                                <span class="sr-only">{{ $isArabic ? 'تبديل الوضع الليلي' : 'Toggle dark mode' }}</span>
-                            </button>
-                            <div class="inline-flex rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-slate-50 dark:bg-slate-900 py-1.5">
-                                <a href="{{ url('/login?lang=en') }}"
-                                   class="inline-flex min-w-[60px] items-center justify-center rounded-2xl px-3 text-sm font-semibold transition {{ !$isArabic ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white' }}">
-                                    EN
-                                </a>
-                                <a href="{{ url('/login?lang=ar') }}"
-                                   class="inline-flex min-w-[60px] items-center justify-center rounded-2xl px-3 text-sm font-semibold transition {{ $isArabic ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white' }}">
-                                    عربي
-                                </a>
-                            </div>
-                        </div>
+                <form id="loginForm" class="va-form" novalidate>
+                    @csrf
+                    <div class="va-field">
+                        <label for="email">{{ $isArabic ? 'البريد الإلكتروني' : 'Email address' }}</label>
+                        <input class="va-input" type="email" id="email" name="email" autocomplete="username" required autofocus placeholder="{{ $isArabic ? 'name@example.com' : 'name@example.com' }}">
                     </div>
 
-                    <form id="loginForm" class="space-y-6">
-                        @csrf
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">{{ $isArabic ? 'البريد الإلكتروني' : 'Email' }}</label>
-                                <input type="email" id="email" name="email" required
-                                       class="input-field w-full rounded-2xl border border-slate-200 dark:border-slate-700 px-4 py-3 text-sm placeholder-slate-400 dark:placeholder-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none"
-                                       placeholder="{{ $isArabic ? 'البريد الإلكتروني' : 'Email address' }}">
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">{{ $isArabic ? 'كلمة المرور' : 'Password' }}</label>
-                                <input type="password" id="password" name="password" required
-                                       class="input-field w-full rounded-2xl border border-slate-200 dark:border-slate-700 px-4 py-3 text-sm placeholder-slate-400 dark:placeholder-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none"
-                                       placeholder="{{ $isArabic ? 'كلمة المرور' : 'Password' }}">
-                            </div>
-                        </div>
-
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                            <label class="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                                <input type="checkbox" id="remember" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
-                                {{ $isArabic ? 'تذكرني' : 'Remember me' }}
-                            </label>
-                            <a href="#" class="text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">
-                                {{ $isArabic ? 'نسيت كلمة المرور؟' : 'Forgot password?' }}
-                            </a>
-                        </div>
-
-                        <div id="errorMessage" class="hidden rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/40 dark:text-red-300"></div>
-                        <div id="successMessage" class="hidden rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300"></div>
-
-                        <button type="submit" id="submitBtn"
-                                class="btn-brand w-full rounded-2xl py-4 text-base font-semibold text-white flex items-center justify-center gap-3 transition hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-indigo-500/20">
-                            <span id="btnText">{{ $isArabic ? 'دخول' : 'Login' }}</span>
-                            <svg class="hidden animate-spin w-6 h-6" id="loadingSpinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                        </button>
-                    </form>
-
-                    <div class="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
-                        {{ $isArabic ? 'تسجيل دخول آمن وسريع إلى حسابك.' : 'Secure, fast access to your account.' }}
+                    <div class="va-field">
+                        <label for="password">{{ $isArabic ? 'كلمة المرور' : 'Password' }}</label>
+                        <input class="va-input" type="password" id="password" name="password" autocomplete="current-password" required placeholder="••••••••">
                     </div>
-                </main>
-            </div>
-        </div>
+
+                    <div class="va-row">
+                        <label class="va-check"><input type="checkbox" id="remember"> <span>{{ $isArabic ? 'تذكرني' : 'Remember me' }}</span></label>
+                        <a class="va-link" href="#">{{ $isArabic ? 'نسيت كلمة المرور؟' : 'Forgot password?' }}</a>
+                    </div>
+
+                    <div id="errorMessage" class="va-alert error" hidden></div>
+                    <div id="successMessage" class="va-alert success" hidden></div>
+
+                    <button type="submit" id="submitBtn" class="va-button">
+                        <span id="btnText">{{ $isArabic ? 'دخول' : 'Sign in' }}</span>
+                        <span id="loadingSpinner" hidden aria-hidden="true">◌</span>
+                    </button>
+                </form>
+
+                <div class="va-meta">
+                    {{ $isArabic ? 'لديك شركة أخرى؟ استخدم رابط مساحة العمل الخاصة بها.' : 'Need another workspace? Open its tenant domain and sign in there.' }}
+                </div>
+            </section>
+        </main>
     </div>
+</div>
 
-    <script>
-        const isArabic = {{ $isArabic ? 'true' : 'false' }};
-        const texts = {
-            loggingIn: isArabic ? 'جاري الدخول...' : 'Logging in...',
-            login: isArabic ? 'دخول' : 'Login',
-            loginSuccess: isArabic ? 'تم تسجيل الدخول بنجاح!' : 'Login successful!',
-            loginError: isArabic ? 'بيانات الدخول غير صحيحة' : 'Invalid credentials',
-            errorOccurred: isArabic ? 'حدث خطأ! حاول مرة أخرى' : 'An error occurred! Please try again'
-        };
+<script>
+    const isArabic = @json($isArabic);
+    const texts = {
+        loggingIn: isArabic ? 'جاري تسجيل الدخول...' : 'Signing in...',
+        login: isArabic ? 'دخول' : 'Sign in',
+        loginSuccess: isArabic ? 'تم تسجيل الدخول بنجاح.' : 'Signed in successfully.',
+        loginError: isArabic ? 'بيانات الدخول غير صحيحة.' : 'The provided credentials are incorrect.',
+        errorOccurred: isArabic ? 'حدث خطأ. حاول مرة أخرى.' : 'Something went wrong. Please try again.',
+    };
 
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+    const root = document.documentElement;
+    const themeToggle = document.getElementById('themeToggle');
+    themeToggle.addEventListener('click', () => {
+        const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+        root.dataset.theme = next;
+        localStorage.setItem('velora-theme', next);
+    });
 
-            const errorDiv = document.getElementById('errorMessage');
-            const successDiv = document.getElementById('successMessage');
-            const submitButton = document.getElementById('submitBtn');
-            const btnText = document.getElementById('btnText');
-            const loadingSpinner = document.getElementById('loadingSpinner');
+    document.getElementById('loginForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
 
-            errorDiv.classList.add('hidden');
-            successDiv.classList.add('hidden');
+        const errorDiv = document.getElementById('errorMessage');
+        const successDiv = document.getElementById('successMessage');
+        const submitButton = document.getElementById('submitBtn');
+        const buttonText = document.getElementById('btnText');
+        const spinner = document.getElementById('loadingSpinner');
 
-            submitButton.disabled = true;
-            submitButton.classList.add('opacity-70');
-            btnText.textContent = texts.loggingIn;
-            loadingSpinner.classList.remove('hidden');
+        errorDiv.hidden = true;
+        successDiv.hidden = true;
+        submitButton.disabled = true;
+        buttonText.textContent = texts.loggingIn;
+        spinner.hidden = false;
 
-            const formData = {
-                email: document.getElementById('email').value,
-                password: document.getElementById('password').value,
-                remember: document.getElementById('remember').checked,
-            };
+        try {
+            const response = await fetch('{{ url('/api/auth/login') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    email: document.getElementById('email').value.trim(),
+                    password: document.getElementById('password').value,
+                    remember: document.getElementById('remember').checked,
+                }),
+            });
 
-            try {
-                const response = await fetch('{{ url('/api/auth/login') }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify(formData)
-                });
+            const data = await response.json().catch(() => ({}));
 
-                const data = await response.json();
-
-                if (response.ok && data.success) {
-                    if (data.access_token) {
-                        localStorage.setItem('auth_token', data.access_token);
-                    }
-                    if (data.user) {
-                        localStorage.setItem('user', JSON.stringify(data.user));
-                    }
-
-                    successDiv.classList.remove('hidden');
-                    successDiv.textContent = '✓ ' + texts.loginSuccess;
-
-                    setTimeout(() => {
-                        window.location.replace(data.redirect_to || '/admin/dashboard');
-                    }, 500);
-                } else {
-                    errorDiv.classList.remove('hidden');
-                    errorDiv.textContent = '✕ ' + (data.message || data.error || texts.loginError);
-
-                    submitButton.disabled = false;
-                    submitButton.classList.remove('opacity-70');
-                    btnText.textContent = texts.login;
-                    loadingSpinner.classList.add('hidden');
-                }
-            } catch (error) {
-                errorDiv.classList.remove('hidden');
-                errorDiv.textContent = '✕ ' + texts.errorOccurred;
-
-                submitButton.disabled = false;
-                submitButton.classList.remove('opacity-70');
-                btnText.textContent = texts.login;
-                loadingSpinner.classList.add('hidden');
+            if (!response.ok || !data.success) {
+                const validation = data.errors ? Object.values(data.errors).flat().join(' ') : '';
+                throw new Error(validation || data.message || data.error || texts.loginError);
             }
-        });
-    </script>
-    <script src="/js/dark-mode.js"></script>
-</body>
 
+            if (data.access_token) localStorage.setItem('auth_token', data.access_token);
+            if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
+
+            successDiv.textContent = '✓ ' + texts.loginSuccess;
+            successDiv.hidden = false;
+            window.setTimeout(() => window.location.replace(data.redirect_to || '/admin/dashboard'), 450);
+        } catch (error) {
+            errorDiv.textContent = '✕ ' + (error.message || texts.errorOccurred);
+            errorDiv.hidden = false;
+            submitButton.disabled = false;
+            buttonText.textContent = texts.login;
+            spinner.hidden = true;
+        }
+    });
+</script>
+</body>
 </html>
