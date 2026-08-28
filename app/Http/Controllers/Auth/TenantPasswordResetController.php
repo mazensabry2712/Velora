@@ -10,6 +10,7 @@ use App\Models\SystemSetting;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
@@ -56,6 +57,7 @@ final class TenantPasswordResetController extends Controller
             ['email' => $email],
             [
                 'token' => hash('sha256', $plainToken),
+                'locale' => $locale,
                 'created_at' => now(),
             ],
         );
@@ -83,7 +85,15 @@ final class TenantPasswordResetController extends Controller
             return redirect()->route('password.request')->withErrors(['email' => __('passwords.token')]);
         }
 
-        return view('auth.reset-password', compact('token', 'email'));
+        $locale = $this->normalizeLocale($record->locale);
+        App::setLocale($locale);
+        session()->put('locale', $locale);
+
+        return view('auth.reset-password', [
+            'token' => $token,
+            'email' => $email,
+            'locale' => $locale,
+        ]);
     }
 
     public function update(Request $request, string $token)
@@ -111,7 +121,9 @@ final class TenantPasswordResetController extends Controller
         DB::table('password_reset_tokens')->where('email', $email)->delete();
         RateLimiter::clear($this->rateKey($request, $email));
 
-        session()->put('locale', $this->resolveLocale($user, tenant()));
+        $locale = $this->normalizeLocale($record->locale ?: $user->locale);
+        App::setLocale($locale);
+        session()->put('locale', $locale);
 
         return redirect()->route('login')->with('status', __('password_reset.reset_success'));
     }
@@ -124,6 +136,14 @@ final class TenantPasswordResetController extends Controller
     private function rateKey(Request $request, string $email): string
     {
         return 'tenant-password-reset:' . (tenant()?->id ?? 'unknown') . ':' . $request->ip() . ':' . $email;
+    }
+
+    private function normalizeLocale(?string $locale): string
+    {
+        $supported = array_values(array_unique(config('localizer.supported_locales', ['ar', 'en'])));
+        return is_string($locale) && in_array($locale, $supported, true)
+            ? $locale
+            : ($supported[0] ?? 'ar');
     }
 
     private function resolveLocale(User $user, $tenant): string
