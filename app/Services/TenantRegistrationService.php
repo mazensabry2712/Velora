@@ -67,6 +67,7 @@ final class TenantRegistrationService
                 $subdomain,
                 $provisioningToken,
                 $verificationToken,
+                $verificationUrl,
                 $verificationExpiresAt
             ): Tenant {
                 $tenant = Tenant::create([
