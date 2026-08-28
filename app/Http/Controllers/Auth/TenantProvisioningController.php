@@ -192,10 +192,26 @@ final class TenantProvisioningController extends Controller
             $supported = ['ar', 'en'];
         }
 
-        $default = $tenant->settings?->language;
+        // The tenant's signup language is persisted on the central tenant
+        // record and must be the source of truth for central-domain pages
+        // (verification/provisioning), where tenant DB settings are not yet
+        // initialized as the active connection.
+        $tenantDefault = $tenant->getAttribute('language');
+        if (! is_string($tenantDefault) || $tenantDefault === '') {
+            try {
+                $tenantDefault = $tenant->settings?->language;
+            } catch (\Throwable) {
+                $tenantDefault = null;
+            }
+        }
+
         $locale = is_string($requestedLocale) && in_array($requestedLocale, $supported, true)
             ? $requestedLocale
-            : (is_string($default) && in_array($default, $supported, true) ? $default : 'en');
+            : (is_string($tenantDefault) && in_array($tenantDefault, $supported, true) ? $tenantDefault : config('app.locale', 'en'));
+
+        if (! in_array($locale, $supported, true)) {
+            $locale = $supported[0] ?? 'en';
+        }
 
         App::setLocale($locale);
         session()->put('locale', $locale);
