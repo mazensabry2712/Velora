@@ -50,13 +50,13 @@ final class SendQueueLifecycleNotification implements ShouldQueue
             try {
                 if (($this->data['channel'] ?? 'email') === 'whatsapp') {
                     $this->sendWhatsApp($whatsAppProvider);
-
-                    $delivery->refresh();
-                    if ($delivery->status === 'skipped') {
-                        return;
-                    }
                 } else {
                     $this->sendEmail();
+                }
+
+                $delivery->refresh();
+                if ($delivery->status === 'skipped' || $delivery->sent_at !== null) {
+                    return;
                 }
 
                 $delivery->update([
@@ -95,7 +95,7 @@ final class SendQueueLifecycleNotification implements ShouldQueue
                 updateType: (string) $this->data['update_type'],
                 queueNumber: (string) $this->data['queue_number'],
                 position: isset($this->data['position']) ? (int) $this->data['position'] : null,
-                locale: (string) ($this->data['locale'] ?? config('app.locale', 'ar')),
+                mailLocale: (string) ($this->data['locale'] ?? config('app.locale', 'ar')),
             )
         );
     }
