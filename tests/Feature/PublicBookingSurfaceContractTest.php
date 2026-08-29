@@ -31,6 +31,9 @@ final class PublicBookingSurfaceContractTest extends TenantTestCase
         $response->assertSee('velora-booking.css', false);
         $response->assertSee('dark-mode-booking.js', false);
         $response->assertDontSee('velora-booking-review.js', false);
+        $response->assertDontSee('Appointment Booked Successfully!', false);
+        $response->assertDontSee('id="successMessage"', false);
+        $response->assertSee('id="bookingForm"', false);
     }
 
     #[Test]
