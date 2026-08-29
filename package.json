@@ -3,9 +3,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "test:browser": "playwright test",
+    "test:browser:ui": "playwright test --ui",
+    "test:browser:headed": "playwright test --headed",
+    "test:browser:report": "playwright show-report"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/vite": "^4.1.0",
     "laravel-vite-plugin": "^2.0.0",
     "tailwindcss": "^4.1.0",
