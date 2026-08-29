@@ -1,0 +1,13 @@
+/* Velora Booking guided controls */
+.vb-guided-native-time{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;overflow:hidden!important;}
+.vb-guided-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px;}
+.vb-guided-slot{min-height:56px;padding:10px 12px;border:1px solid var(--velora-line,#E5E7EB);border-radius:14px;background:var(--velora-surface,#fff);color:var(--velora-text,#0D1226);font:inherit;text-align:start;cursor:pointer;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease;}
+.vb-guided-slot:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(13,18,38,.08);}
+.vb-guided-slot[aria-selected="true"]{border-color:var(--velora-primary-blue,#006CFF);box-shadow:0 0 0 4px rgba(0,108,255,.10);}
+.vb-guided-slot strong,.vb-guided-slot span{display:block;}
+.vb-guided-slot strong{font-size:14px;font-weight:850;}
+.vb-guided-slot span{margin-top:3px;font-size:10px;color:var(--velora-text-muted,#687084);}
+.vb-guided-slots-empty{grid-column:1/-1;margin:8px 0;padding:14px;border:1px dashed var(--velora-line,#E5E7EB);border-radius:14px;color:var(--velora-text-muted,#687084);font-size:12px;}
+html.dark .vb-guided-slot{background:#0D1226;border-color:#252E45;color:#F8FAFC;}
+html.dark .vb-guided-slot span,.dark .vb-guided-slot span{color:#A7B0C0;}
+@media(max-width:640px){.vb-guided-slots{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.vb-guided-slot{min-height:54px;padding:9px 10px}.vb-guided-slot strong{font-size:13px;}}
