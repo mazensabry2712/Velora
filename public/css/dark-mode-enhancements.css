@@ -1,34 +1,178 @@
-@import url('/css/velora-booking-v2.css');
+@import url('/css/velora-booking.css');
 
 /**
  * Dark Mode Enhancements
  * تحسينات الوضع المظلم
+ *
+ * هذا الملف يحتوي على تحسينات إضافية لـ Dark Mode
+ * لتحسين التباين والوضوح وتجربة المستخدم
  */
 
-html { transition: background-color .3s ease, color .3s ease; }
-body { transition: background-color .3s ease, color .3s ease; }
-
-.dark {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+/* تحسين الانتقال السلس بين الأوضاع */
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* تحسين وضوح النصوص في الوضع المظلم */
+.dark {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* تحسين تباين الحقول في الوضع المظلم */
 .dark input,
 .dark select,
-.dark textarea { color-scheme: dark; }
+.dark textarea {
+  color-scheme: dark;
+}
 
+/* تحسين وضوح placeholder في الوضع المظلم */
 .dark input::placeholder,
 .dark select::placeholder,
-.dark textarea::placeholder { opacity: .6; }
+.dark textarea::placeholder {
+  opacity: 0.6;
+}
 
-.dark .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0,0,0,.5), 0 4px 6px -2px rgba(0,0,0,.3); }
-.dark .shadow-xl { box-shadow: 0 20px 25px -5px rgba(0,0,0,.5), 0 10px 10px -5px rgba(0,0,0,.3); }
+/* تحسين الظلال في الوضع المظلم */
+.dark .shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+}
 
-.dark ::-webkit-scrollbar { width: 10px; height: 10px; }
-.dark ::-webkit-scrollbar-track { background: rgba(15,23,42,.5); }
-.dark ::-webkit-scrollbar-thumb { background: rgba(100,116,139,.5); border-radius: 5px; }
-.dark ::-webkit-scrollbar-thumb:hover { background: rgba(100,116,139,.7); }
+.dark .shadow-xl {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+}
 
-.dark svg { opacity: .95; }
-.dark .no-dark-enhancement,
-.dark .no-dark-enhancement * { opacity: 1 !important; filter:none !important; }
+/* تحسين وضوح الحدود في الوضع المظلم */
+.dark [class*="border"] {
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+/* تحسين التركيز (focus) في الوضع المظلم */
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus,
+.dark button:focus {
+  outline-color: rgba(99, 102, 241, 0.5);
+}
+
+/* تحسين الأزرار في الوضع المظلم */
+.dark button:not([class*="bg-indigo"]):not([class*="bg-emerald"]):not([class*="bg-red"]) {
+  background-color: rgba(51, 65, 85, 0.8);
+}
+
+.dark button:hover:not([class*="bg-indigo"]):not([class*="bg-emerald"]):not([class*="bg-red"]) {
+  background-color: rgba(51, 65, 85, 1);
+}
+
+/* تحسين الرسائل والتنبيهات في الوضع المظلم */
+.dark .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+}
+
+.dark .bg-red-50 {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+}
+
+.dark .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.1) !important;
+}
+
+/* تحسين الجداول في الوضع المظلم */
+.dark table {
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+.dark th {
+  background-color: rgba(30, 41, 59, 0.5);
+  color: rgba(226, 232, 240, 1);
+}
+
+.dark td {
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+.dark tr:hover {
+  background-color: rgba(51, 65, 85, 0.3);
+}
+
+/* تحسين البطاقات في الوضع المظلم */
+.dark [class*="bg-white"]:not([class*="hover"]) {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+}
+
+/* تحسين scrollbar في الوضع المظلم */
+.dark ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.5);
+  border-radius: 5px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.7);
+}
+
+/* تحسين وضوح الأيقونات في الوضع المظلم */
+.dark svg {
+  opacity: 0.95;
+}
+
+/* تحسين الروابط في الوضع المظلم */
+.dark a:not([class*="bg-"]) {
+  color: rgba(129, 140, 248, 1);
+}
+
+.dark a:not([class*="bg-"]):hover {
+  color: rgba(165, 180, 252, 1);
+}
+
+/* رسوم متحركة سلسة للتبديل */
+@keyframes darkModeTransition {
+  0% { opacity: 0.95; }
+  100% { opacity: 1; }
+}
+
+.dark * {
+  animation: darkModeTransition 0.3s ease;
+}
+
+/* تحسين قابلية القراءة للنصوص */
+.dark p,
+.dark span,
+.dark label,
+.dark div {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* تحسين استجابة العناصر التفاعلية */
+.dark button,
+.dark a,
+.dark input,
+.dark select {
+  transition: all 0.2s ease;
+}
+
+/* تحسين رؤية العناصر المعطلة */
+.dark button:disabled,
+.dark input:disabled,
+.dark select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* إزالة التأثيرات على عناصر محددة */
+.dark .no-dark-enhancement {
+  filter: none !important;
+  opacity: 1 !important;
+}
