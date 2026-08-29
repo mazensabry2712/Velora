@@ -17,12 +17,34 @@ final class PublicBookingAvailabilityController extends Controller
 {
     public function services(): JsonResponse
     {
+        $services = Service::query()
+            ->onlineBookable()
+            ->orderBy('sort_order')
+            ->get([
+                'id',
+                'name',
+                'name_ar',
+                'name_i18n',
+                'duration',
+                'duration_minutes',
+                'price',
+                'description',
+                'sort_order',
+            ])
+            ->map(fn (Service $service): array => [
+                'id' => $service->id,
+                'name' => $service->localized_name,
+                'name_ar' => $service->name_ar,
+                'duration' => $service->duration,
+                'duration_minutes' => $service->duration_minutes ?: $service->duration,
+                'price' => $service->price,
+                'description' => $service->description,
+            ])
+            ->values();
+
         return response()->json([
             'success' => true,
-            'data' => Service::query()
-                ->onlineBookable()
-                ->orderBy('sort_order')
-                ->get(),
+            'data' => $services,
         ]);
     }
 
