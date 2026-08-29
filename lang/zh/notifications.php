@@ -1,7 +1,7 @@
 <?php
 return [
  'appointment_booked'=>['subject'=>'预约确认','greeting'=>'您好，:name：','message'=>'您的预约已成功完成！','details'=>'预约详情：','date'=>'日期：:date','time'=>'时间：:time','tenant'=>'诊所：:tenant','footer'=>'感谢您使用我们的服务！','sms'=>'您好，:name，您已预约 :tenant，时间为 :date :time'],
- 'appointment_reminder'=>['subject'=>'预约提醒','greeting'=>'您好，:name：','message'=>'这是您即将到来的预约提醒！','details'=>'预约详情：','date'=>'日期：:date','time'=>'时间：:time','tenant'=>'诊所：:tenant','footer'=>'期待您的到来！','sms'=>'提醒：您在 :tenant 的预约时间为 :date :time'],
+ 'appointment_reminder'=>['subject'=>'预约提醒','greeting'=>'您好，:name：','message'=>'这是您即将到来的预约提醒！','details'=>'预约详情：','date'=>'日期：:date','time'=>'时间：:time','service'=>'服务：:service','staff'=>'专家：:staff','tenant'=>'诊所：:tenant','queue'=>'排队号码：:number','reference'=>'预约参考号：:reference','tracking'=>'跟踪您的预约：:url','footer'=>'期待您的到来！','sms'=>'提醒：您在 :tenant 的预约时间为 :date :time'],
  'appointment_cancelled'=>['subject'=>'预约已取消','greeting'=>'您好，:name：','message'=>'您的预约已被取消。','details'=>'已取消预约详情：','date'=>'日期：:date','time'=>'时间：:time','tenant'=>'诊所：:tenant','footer'=>'您可以随时重新预约。','sms'=>'您在 :tenant 于 :date :time 的预约已取消'],
  'appointment_confirmed'=>['subject'=>'预约已确认','greeting'=>'您好，:name：','message'=>'您的预约已确认！','details'=>'预约详情：','date'=>'日期：:date','time'=>'时间：:time','tenant'=>'诊所：:tenant','footer'=>'期待您的到来！','sms'=>'您在 :tenant 于 :date :time 的预约已确认'],
  'queue_next'=>['subject'=>'现在轮到您了！','greeting'=>'您好，:name：','message'=>'现在轮到您了！请立即前往服务台。','queue_number'=>'排队号码：:number','footer'=>'感谢您的等待！','sms'=>'您好，:name，现在轮到您了！排队号码：:number。请前往服务台。'],
