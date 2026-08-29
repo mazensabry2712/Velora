@@ -95,7 +95,7 @@ final class TenantPasswordResetFlowTest extends TestCase
 
         Mail::assertQueued(TenantPasswordResetMail::class, function (TenantPasswordResetMail $mail) use ($email, $baseUrl): bool {
             parse_str((string) parse_url($mail->resetUrl, PHP_URL_QUERY), $query);
-            return $mail->locale === 'fr'
+            return $mail->mailLocale === 'fr'
                 && $mail->name === 'Reset User'
                 && ($query['email'] ?? null) === $email
                 && isset($query['token'])
