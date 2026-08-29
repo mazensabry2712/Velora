@@ -46,14 +46,14 @@ class Appointment extends Model
         'ends_at_with_buffer' => 'datetime',
         'confirmed_at'       => 'datetime',
         'completed_at'       => 'datetime',
-        'cancelled_at'       => 'datetime',
-        'no_show_at'         => 'datetime',
+        'cancelled_at'        => 'datetime',
+        'no_show_at'          => 'datetime',
         'reminder_sent_at'    => 'datetime',
         'price'               => 'decimal:2',
         'deposit_paid'        => 'decimal:2',
         'discount_amount'     => 'decimal:2',
-        'metadata'           => 'array',
-        'attendees'          => 'integer',
+        'metadata'            => 'array',
+        'attendees'           => 'integer',
     ];
 
     protected static function booted(): void
@@ -65,7 +65,7 @@ class Appointment extends Model
 
             if (empty($model->public_reference)) {
                 do {
-                    $reference = 'VL-' . strtoupper(Str::random(8));
+                    $reference = 'VL-' . Str::upper(Str::random(8));
                 } while (self::withTrashed()->where('public_reference', $reference)->exists());
 
                 $model->public_reference = $reference;
