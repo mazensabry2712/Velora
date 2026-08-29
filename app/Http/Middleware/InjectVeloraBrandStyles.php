@@ -54,9 +54,6 @@ class InjectVeloraBrandStyles
             $direction = e($language['direction'] ?? 'ltr');
             $active = $locale === $currentLocale;
 
-            // Laravel Localizer owns the locale-aware route generation. Passing
-            // an explicit locale is important so AR resolves to `/` while all
-            // non-default locales resolve to their prefixed URL.
             $href = e(route('landing', ['locale' => $locale]));
 
             $languageOptions .= '<a class="velora-language-item'.($active ? ' is-active' : '').'" href="'.$href.'" lang="'.e($locale).'" dir="'.$direction.'" aria-current="'.($active ? 'true' : 'false').'">'
@@ -86,6 +83,24 @@ class InjectVeloraBrandStyles
 </style>
 CSS;
         $content = str_replace('</head>', $styles."\n</head>", $content);
+
+        $passwordResetUrl = null;
+        try {
+            if (function_exists('tenant') && tenant()) {
+                $passwordResetUrl = route('password.request');
+            }
+        } catch (\Throwable) {
+            $passwordResetUrl = null;
+        }
+
+        if ($passwordResetUrl && str_contains($content, 'aria-disabled="true"') && str_contains($content, 'Forgot your password?')) {
+            $replacement = '<a class="vl-link" href="'.e($passwordResetUrl).'">Forgot your password?</a>';
+            $content = preg_replace(
+                '~<span[^>]*class="vl-link"[^>]*aria-disabled="true"[^>]*>\\s*\\{\\{\\s*__\\(\\x27Forgot your password\\?\\x27\\)\\s*\\}\\}\\s*</span>~s',
+                $replacement,
+                $content
+            ) ?? $content;
+        }
 
         $script = <<<'JS'
 <script id="velora-language-selector-script">
