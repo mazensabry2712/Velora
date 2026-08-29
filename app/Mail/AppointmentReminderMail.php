@@ -21,6 +21,7 @@ final class AppointmentReminderMail extends Mailable
         public readonly Appointment $appointment,
         public readonly User|Customer $customer,
         public readonly string $locale = 'en',
+        public readonly ?string $trackingUrl = null,
     ) {
         $this->appointment->loadMissing([
             'service',
@@ -43,10 +44,10 @@ final class AppointmentReminderMail extends Mailable
             ? $this->customer->full_name
             : $this->customer->name;
 
-        $serviceName = $this->appointment->service_name
-            ?? $this->appointment->service?->name
-            ?? $this->appointment->service_type
-            ?? 'Appointment';
+        $service = $this->appointment->service;
+        $serviceName = $service
+            ? (($this->locale === 'ar' && ! empty($service->name_ar)) ? $service->name_ar : $service->name)
+            : ($this->appointment->service_type ?: 'Appointment');
 
         $staffName = $this->appointment->newStaff?->full_name
             ?? $this->appointment->staff?->name
@@ -60,15 +61,14 @@ final class AppointmentReminderMail extends Mailable
             ?? $this->appointment->time_slot
             ?? '';
 
-        $duration = $this->appointment->service?->duration_minutes
-            ?? $this->appointment->service?->duration
+        $duration = $service?->duration_minutes
+            ?? $service?->duration
             ?? '';
 
         $queueNumber = $this->appointment->queue?->queue_number;
         $reference = (string) ($this->appointment->public_reference ?? '');
-        $trackingUrl = $reference !== ''
-            ? route('customer.queue.status', ['ref' => $reference])
-            : route('customer.queue.status');
+        $canonicalTrackingUrl = $this->trackingUrl
+            ?? ($reference !== '' ? route('customer.queue.status', ['ref' => $reference]) : route('customer.queue.status'));
 
         return new Content(
             markdown: 'emails.appointment-reminder',
@@ -82,7 +82,7 @@ final class AppointmentReminderMail extends Mailable
                 'duration' => (string) $duration,
                 'queueNumber' => $queueNumber !== null ? (string) $queueNumber : '—',
                 'reference' => $reference,
-                'trackingUrl' => $trackingUrl,
+                'trackingUrl' => $canonicalTrackingUrl,
                 'locale' => $this->locale,
             ],
         );
