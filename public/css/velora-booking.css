@@ -1,3 +1,4 @@
 /* Canonical stylesheet for the public booking experience. */
 @import url('/css/velora-booking-final.css');
 @import url('/css/velora-booking-overrides.css');
+@import url('/css/velora-booking-ui-alias.css');
