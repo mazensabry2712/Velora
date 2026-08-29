@@ -9,7 +9,6 @@ use App\Mail\TenantPasswordResetMail;
 use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
 use App\Models\User;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
@@ -20,7 +19,7 @@ final class TenantPasswordResetFlowTest extends TestCase
     {
         parent::setUp();
 
-        Artisan::call('migrate', [
+        $this->artisan('migrate', [
             '--database' => config('tenancy.database.central_connection', 'sqlite'),
             '--path' => 'database/migrations',
             '--force' => true,
@@ -66,26 +65,28 @@ final class TenantPasswordResetFlowTest extends TestCase
     private function createVerifiedUser(Tenant $tenant, string $email, string $locale = 'en'): void
     {
         $tenant->run(function () use ($email, $locale): void {
-            User::create([
+            $user = new User();
+            $user->fill([
                 'name' => 'Reset User',
                 'email' => $email,
                 'password' => 'old-password',
                 'locale' => $locale,
-                'email_verified_at' => now(),
             ]);
+            $user->forceFill(['email_verified_at' => now()]);
+            $user->save();
         });
     }
 
     public function test_verified_user_can_request_and_complete_password_reset(): void
     {
-        Mail::fake();
-
         $subdomain = 'reset-' . substr(md5(uniqid('', true)), 0, 8);
         $email = 'owner-' . $subdomain . '@gmail.com';
         $tenant = $this->tenant($subdomain, 'fr');
         $this->createVerifiedUser($tenant, $email, 'fr');
         $host = $tenant->domains()->firstOrFail()->domain;
         $baseUrl = 'http://' . $host;
+
+        Mail::fake();
 
         $requestReset = $this->post($baseUrl . '/forgot-password', ['email' => $email]);
 
@@ -138,11 +139,11 @@ final class TenantPasswordResetFlowTest extends TestCase
 
     public function test_unknown_email_does_not_disclose_account_existence(): void
     {
-        Mail::fake();
-
         $subdomain = 'reset-unknown-' . substr(md5(uniqid('', true)), 0, 8);
         $tenant = $this->tenant($subdomain);
         $host = $tenant->domains()->firstOrFail()->domain;
+
+        Mail::fake();
 
         $response = $this->post('http://' . $host . '/forgot-password', ['email' => 'does-not-exist@gmail.com']);
 
@@ -153,8 +154,6 @@ final class TenantPasswordResetFlowTest extends TestCase
 
     public function test_reset_token_cannot_be_used_across_tenants(): void
     {
-        Mail::fake();
-
         $tenantA = $this->tenant('reset-a-' . substr(md5(uniqid('', true)), 0, 7));
         $tenantB = $this->tenant('reset-b-' . substr(md5(uniqid('', true)), 0, 7));
 
@@ -164,6 +163,8 @@ final class TenantPasswordResetFlowTest extends TestCase
 
         $hostA = $tenantA->domains()->firstOrFail()->domain;
         $hostB = $tenantB->domains()->firstOrFail()->domain;
+
+        Mail::fake();
 
         $this->post('http://' . $hostA . '/forgot-password', ['email' => $email])->assertRedirect();
 
