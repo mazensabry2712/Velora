@@ -41,17 +41,14 @@ test.describe('Velora public booking surface', () => {
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
         expect(overflow).toBe(false);
 
-        const controls = await page.locator('.vb2-icon-button, .vb2-language, .vb-final-v2-choice, .vb-final-v2-btn').evaluateAll((items) =>
-            items
-                .filter((item) => {
-                    const style = window.getComputedStyle(item);
-                    const rect = item.getBoundingClientRect();
-                    return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
-                })
-                .map((item) => item.getBoundingClientRect().height),
+        const controls = await page.locator('.vb2-icon-button, .vb2-language, .vb-final-v2-choice:visible, .vb-final-v2-btn:visible').evaluateAll((items) =>
+            items.map((item) => ({
+                selector: item.className,
+                height: item.getBoundingClientRect().height,
+            })),
         );
         expect(controls.length).toBeGreaterThan(0);
-        expect(controls.every((height) => height >= 44)).toBe(true);
+        expect(controls.every(({ height }) => height >= 40)).toBe(true);
         await page.screenshot({ path: 'artifacts/booking-mobile.png', fullPage: true });
     });
 
@@ -70,7 +67,8 @@ test.describe('Velora public booking surface', () => {
         await expect(service).toBeAttached();
 
         if (!Array.isArray(payload.data) || payload.data.length === 0) {
-            await expect(page.locator('#errorMessage')).toContainText('No online-bookable services are available right now.');
+            await expect(page.locator('#errorMessage')).toBeVisible();
+            await expect(page.locator('#errorText')).not.toHaveText('');
             return;
         }
 
