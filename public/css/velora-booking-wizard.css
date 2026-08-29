@@ -13,10 +13,9 @@ body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] { order:5; }
 body:has(#bookingForm) #bookingForm > .vb2-step[data-step="6"] { order:6; }
 body:has(#bookingForm) #bookingForm > .vb2-submit-wrap { order:7; }
 
-body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] { display:none; }
-body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"].vb2-wizard-hidden { display:none !important; }
 body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] { display:block; }
 body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"].vb2-wizard-hidden { display:none !important; }
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="6"].vb2-wizard-hidden { display:none !important; }
 
 body:has(#bookingForm) #bookingForm > .vb2-step[data-step="2"] { padding-top:12px; border-top:0; }
 body:has(#bookingForm) #bookingForm > .vb2-step[data-step="2"] .vb2-field { margin-top:12px; }
@@ -42,8 +41,10 @@ body:has(#bookingForm) #timeHint { max-width:680px; margin-top:9px; font-size:11
 .vb2-slot-button { min-height:48px; border:1px solid var(--velora-line,#E5E7EB); border-radius:12px; background:var(--velora-surface,#fff); color:inherit; font:inherit; font-size:13px; font-weight:800; cursor:pointer; transition:.18s ease; }
 .vb2-slot-button:hover { transform:translateY(-1px); border-color:rgba(0,108,255,.35); box-shadow:0 8px 20px rgba(13,18,38,.07); }
 .vb2-slot-button[aria-pressed="true"] { color:#fff; border-color:transparent; background:var(--velora-gradient,linear-gradient(135deg,#006CFF,#6D46FF)); box-shadow:0 8px 20px rgba(0,108,255,.18); }
+.vb2-slots-empty { grid-column:1/-1; margin:0; padding:14px; border:1px dashed var(--velora-line,#E5E7EB); border-radius:12px; color:var(--velora-text-muted,#687084); font-size:12px; }
 
-.vb2-summary-card { margin:0 0 20px; padding:18px; border:1px solid var(--velora-line,#E5E7EB); border-radius:18px; background:var(--velora-surface-muted,#F5F7FA); }
+/* The summary is a real sidebar on desktop and a compact review block on mobile. */
+.vb2-summary-card { margin:0 0 22px; padding:18px; border:1px solid var(--velora-line,#E5E7EB); border-radius:18px; background:var(--velora-surface-muted,#F5F7FA); }
 .vb2-summary-title { font-size:12px; font-weight:900; letter-spacing:.03em; text-transform:uppercase; }
 .vb2-summary-empty { margin-top:6px; color:var(--velora-text-muted,#687084); font-size:11px; line-height:1.6; }
 .vb2-summary-rows { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:12px; }
@@ -52,33 +53,29 @@ body:has(#bookingForm) #timeHint { max-width:680px; margin-top:9px; font-size:11
 .vb2-summary-rows strong { display:block; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
 
 html.dark .vb2-wizard-progress span { background:#10172A; border-color:#252E45; }
-html.dark .vb2-wizard-progress i,
+html.dark .vb2-wizard-progress i { background:#252E45; }
 html.dark .vb2-slot-picker,
-html.dark .vb2-summary-card,
-html.dark .vb2-summary-rows > div,
-html.dark .vb2-slot-button { border-color:#252E45; }
-html.dark .vb2-slot-picker,
-html.dark .vb2-summary-card { background:#10172A; }
+html.dark .vb2-summary-card { background:#10172A; border-color:#252E45; }
 html.dark .vb2-slot-button,
-html.dark .vb2-summary-rows > div { background:#0D1226; color:#F8FAFC; }
+html.dark .vb2-summary-rows > div { background:#0D1226; border-color:#252E45; color:#F8FAFC; }
 
 @media (min-width:861px) {
-    body:has(#bookingForm) #bookingForm { display:grid; grid-template-columns:minmax(0,1fr) minmax(260px,310px); align-items:start; column-gap:24px; }
-    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="2"],
-    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="3"],
-    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="4"],
-    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="5"],
-    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="6"],
-    body:has(#bookingForm) #bookingForm > .vb2-submit-wrap { grid-column:1; }
-    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] { grid-column:2; grid-row:1 / span 7; align-self:stretch; margin:12px 0 0; padding:20px; border:1px solid var(--velora-line,#E5E7EB); border-radius:20px; background:var(--velora-surface-muted,#F5F7FA); }
-    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"]::before { display:none; }
+    body:has(#bookingForm) .vb2-card { display:grid; grid-template-columns:minmax(0,1fr) minmax(260px,310px); align-items:start; column-gap:24px; }
+    body:has(#bookingForm) .vb2-card-head,
+    body:has(#bookingForm) .vb2-wizard-progress,
+    body:has(#bookingForm) #loadingBanner,
+    body:has(#bookingForm) #errorMessage,
+    body:has(#bookingForm) #bookingForm,
+    body:has(#bookingForm) #successMessage { grid-column:1; min-width:0; }
+    body:has(#bookingForm) .vb2-summary-card { grid-column:2; grid-row:2 / span 2; margin:12px 0 0; position:sticky; top:92px; }
+    body:has(#bookingForm) #bookingForm { display:flex; flex-direction:column; }
+    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] { margin-top:12px; padding:20px; border:1px solid var(--velora-line,#E5E7EB); border-radius:20px; background:var(--velora-surface-muted,#F5F7FA); }
     body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] .vb2-fields-personal { display:grid; grid-template-columns:1fr; }
     body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] .vb2-field-full { grid-column:auto; }
     body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] .vb2-required { display:none; }
 }
 
 @media (max-width:860px) {
-    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] { margin-top:4px; padding-top:22px; }
     .vb2-summary-rows { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
 
@@ -91,5 +88,6 @@ html.dark .vb2-summary-rows > div { background:#0D1226; color:#F8FAFC; }
     .vb2-wizard-progress { gap:5px; margin-bottom:15px; }
     .vb2-wizard-progress span { width:25px; height:25px; font-size:10px; }
     .vb2-wizard-progress i { max-width:none; }
-    .vb2-summary-rows { grid-template-columns:1fr; }
+    .vb2-summary-card { margin-bottom:16px; padding:14px; border-radius:15px; }
+    .vb2-summary-rows { grid-template-columns:1fr 1fr; gap:7px; }
 }
