@@ -43,7 +43,10 @@ final class TenantPasswordResetController extends Controller
             return back()->withErrors(['email' => __('passwords.user')])->withInput();
         }
 
-        $user = User::query()->whereRaw('LOWER(email) = ?', [$email])->first();
+        $user = User::query()
+            ->where('tenant_id', $tenant->id)
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->first();
 
         // Never reveal whether an email exists in this tenant.
         if (! $user || ! $user->email_verified_at) {
@@ -52,9 +55,10 @@ final class TenantPasswordResetController extends Controller
 
         $locale = $this->resolveLocale($user, $tenant);
         $plainToken = Str::random(64);
+        $tokenKey = $this->tokenKey($tenant->id, $email);
 
         DB::table('password_reset_tokens')->updateOrInsert(
-            ['email' => $email],
+            ['email' => $tokenKey],
             [
                 'token' => hash('sha256', $plainToken),
                 'locale' => $locale,
@@ -79,9 +83,26 @@ final class TenantPasswordResetController extends Controller
     public function edit(Request $request, string $token)
     {
         $email = Str::lower(trim((string) $request->query('email', '')));
-        $record = DB::table('password_reset_tokens')->where('email', $email)->first();
+        $tenant = tenant();
+
+        if (! $tenant || $email === '') {
+            return redirect()->route('password.request')->withErrors(['email' => __('passwords.token')]);
+        }
+
+        $tokenKey = $this->tokenKey($tenant->id, $email);
+        $record = DB::table('password_reset_tokens')->where('email', $tokenKey)->first();
 
         if (! $record || ! hash_equals((string) $record->token, hash('sha256', $token)) || $this->expired($record->created_at)) {
+            return redirect()->route('password.request')->withErrors(['email' => __('passwords.token')]);
+        }
+
+        $user = User::query()
+            ->where('tenant_id', $tenant->id)
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->first();
+
+        if (! $user) {
+            DB::table('password_reset_tokens')->where('email', $tokenKey)->delete();
             return redirect()->route('password.request')->withErrors(['email' => __('passwords.token')]);
         }
 
@@ -104,21 +125,32 @@ final class TenantPasswordResetController extends Controller
         ]);
 
         $email = Str::lower(trim($data['email']));
-        $record = DB::table('password_reset_tokens')->where('email', $email)->first();
+        $tenant = tenant();
+
+        if (! $tenant) {
+            return back()->withErrors(['email' => __('passwords.token')])->withInput();
+        }
+
+        $tokenKey = $this->tokenKey($tenant->id, $email);
+        $record = DB::table('password_reset_tokens')->where('email', $tokenKey)->first();
 
         if (! $record || ! hash_equals((string) $record->token, hash('sha256', $token)) || $this->expired($record->created_at)) {
             return back()->withErrors(['email' => __('passwords.token')])->withInput();
         }
 
-        $user = User::query()->whereRaw('LOWER(email) = ?', [$email])->first();
+        $user = User::query()
+            ->where('tenant_id', $tenant->id)
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->first();
+
         if (! $user) {
-            DB::table('password_reset_tokens')->where('email', $email)->delete();
+            DB::table('password_reset_tokens')->where('email', $tokenKey)->delete();
             return back()->withErrors(['email' => __('passwords.user')])->withInput();
         }
 
         $user->forceFill(['password' => $data['password']])->save();
         $user->tokens()->delete();
-        DB::table('password_reset_tokens')->where('email', $email)->delete();
+        DB::table('password_reset_tokens')->where('email', $tokenKey)->delete();
         RateLimiter::clear($this->rateKey($request, $email));
 
         $locale = $this->normalizeLocale($record->locale ?: $user->locale);
@@ -126,6 +158,11 @@ final class TenantPasswordResetController extends Controller
         session()->put('locale', $locale);
 
         return redirect()->route('login')->with('status', __('password_reset.reset_success'));
+    }
+
+    private function tokenKey($tenantId, string $email): string
+    {
+        return 'tenant:' . $tenantId . ':' . $email;
     }
 
     private function expired(?string $createdAt): bool
