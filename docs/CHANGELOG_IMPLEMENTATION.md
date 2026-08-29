@@ -117,6 +117,8 @@ The Tenant/Public language scope covers Public/Landing, Tenant Customer, Tenant 
 - Admin queue operations exist.
 - Call-next, serve, complete and return-to-waiting flows exist.
 - Appointment/queue integration tests exist.
+- Queue lifecycle notification events are implemented for position changes, almost-turn transitions and turn-now transitions.
+- Queue lifecycle notification delivery uses the shared NotificationDelivery ledger with email and WhatsApp channels.
 
 ### Administration
 
@@ -211,6 +213,23 @@ The Tenant/Public language scope covers Public/Landing, Tenant Customer, Tenant 
 - The existing `/book` and `/queue/status` routes were not changed as part of this reminder implementation.
 - `AppointmentReminderDeliveryTest` covers 24-hour creation, 1-hour event separation, idempotency, queue dispatch and successful job delivery.
 
+### Queue Lifecycle Notifications
+
+- Queue lifecycle notifications are emitted as tenant-domain events after successful transaction commit.
+- `queue.turn_now` is emitted when a waiting entry moves into `serving`.
+- `queue.almost_turn` is emitted when a waiting entry becomes position 1.
+- `queue.position_changed` is emitted when an existing waiting entry moves to another waiting position.
+- Ordering uses the queue's real business ordering: VIP entries first, then ascending queue record ID.
+- New VIP insertion and waiting-entry removal/update transitions notify only existing entries whose positions changed; the newly inserted queue entry is not sent a false position-change notification.
+- Position 1 receives `almost_turn` instead of an additional generic position-change notification to prevent notification spam.
+- Delivery is created centrally in `CreateQueueLifecycleNotificationDeliveries` and is idempotent through `NotificationDelivery.dedupe_key`.
+- `queue.turn_now` and `queue.almost_turn` dedupe on `event|channel|public_reference`.
+- `queue.position_changed` dedupes on `event|channel|public_reference|event_id`, allowing legitimate future position changes for the same appointment while suppressing duplicate handling of the same event.
+- Email is rendered by `QueueLifecycleNotificationMail` and `emails.queue-lifecycle-update` using the existing translated queue notification catalog.
+- WhatsApp is routed exclusively through the existing `WhatsAppProvider` abstraction; an unconfigured provider returns `skipped` rather than falsely reporting success.
+- The legacy `SendQueueNotification` path is intentionally left unchanged to avoid silently altering legacy behavior outside the new lifecycle contract.
+- The existing `/book` and `/queue/status` routes were not changed as part of this implementation.
+
 ### Signup E2E / Frontend Contract
 
 - `SignupClientFlowTest` covers the client-facing signup lifecycle including validation, duplicates, locale selection/defaulting, verification, expiry, resend throttling, and machine-readable JSON contract behavior.
@@ -227,8 +246,9 @@ The Tenant/Public language scope covers Public/Landing, Tenant Customer, Tenant 
 - `SupportedLocaleCoreCoverageTest` verifies core translation bundle existence, locale direction and notification key/placeholder parity for supported locales.
 - `TenantLoginLocaleUiTest` verifies Tenant Login localization behavior and UI contract across supported locales.
 - `AppointmentReminderDeliveryTest` verifies reminder delivery creation, deduplication, queue dispatch and job completion behavior.
-- User-confirmed local full suite on 2026-08-29: **570 tests, 5624 assertions, 0 failures, 0 errors**.
-- User-confirmed locale coverage test on 2026-08-29: **3 tests, 1201 assertions, 0 failures**.
+- `QueueLifecycleNotificationTest` covers queue lifecycle event generation, position-change semantics, delivery idempotency, email delivery, WhatsApp skipped behavior and final failure handling.
+- User-confirmed local full suite before Queue Lifecycle implementation on 2026-08-29: **570 tests, 5624 assertions, 0 failures, 0 errors**.
+- Queue Lifecycle local validation is pending after the implementation pull.
 
 ## Important Risks Identified
 
@@ -246,7 +266,7 @@ The Tenant/Public language scope covers Public/Landing, Tenant Customer, Tenant 
 7. Subscription state transitions should be decoupled from normal requests where possible.
 8. Database indexes/performance should be reviewed under realistic tenant volume.
 9. Real email delivery needs external SMTP/provider validation; local Mailtrap attempts have previously depended on queue/SMTP configuration.
-10. Queue lifecycle notifications are not implemented yet; planned events are position changed, almost turn and turn now.
+10. Queue lifecycle notifications have been implemented but still require final local regression validation.
 
 ### P2
 
@@ -269,6 +289,51 @@ Every completed task should update this file with:
 - Any follow-up risk.
 
 ## Latest Implementation Entry
+
+### 2026-08-29 — Queue Lifecycle Notifications
+
+Scope:
+- Implement the Queue notification lifecycle without changing `/book` or `/queue/status`.
+- Add event-driven `queue.position_changed`, `queue.almost_turn` and `queue.turn_now` notifications.
+- Reuse the existing NotificationDelivery abstraction, queue jobs, WhatsApp provider contract and localization catalog.
+- Prevent duplicate notifications while still allowing legitimate repeated position changes.
+
+Changed:
+- `app/Domain/Queue/Events/QueueLifecycleNotificationRequested.php`
+- `app/Observers/QueueObserver.php`
+- `app/Infrastructure/Notifications/Listeners/CreateQueueLifecycleNotificationDeliveries.php`
+- `app/Jobs/SendQueueLifecycleNotification.php`
+- `app/Mail/QueueLifecycleNotificationMail.php`
+- `resources/views/emails/queue-lifecycle-update.blade.php`
+- `app/Providers/AppServiceProvider.php`
+- `tests/Feature/QueueLifecycleNotificationTest.php`
+- `docs/PROJECT_STATUS.md`
+- `docs/CHANGELOG_IMPLEMENTATION.md`
+
+Behavior:
+- Queue business ordering is derived from `status=waiting`, `is_vip desc`, then `id asc`.
+- Waiting → serving emits `queue.turn_now` for the served entry.
+- Any existing waiting entry whose position changes to 1 emits `queue.almost_turn`.
+- Other existing waiting entries whose position changes emit `queue.position_changed`.
+- VIP insertion and deletion/update changes notify only affected existing entries.
+- Events implement after-commit dispatch so notification side effects do not survive a rolled-back queue transaction.
+- Delivery records are created for available email and WhatsApp recipients.
+- `queue.turn_now` / `queue.almost_turn` dedupe by event + channel + public reference.
+- `queue.position_changed` includes the event UUID in the dedupe identity so the same appointment can receive distinct legitimate position changes.
+- `SendQueueLifecycleNotification` owns attempts, sending/sent/skipped/queued/failed states and preserves tenant context for tenant-scoped jobs.
+- The Null WhatsApp provider remains an honest no-op and records `skipped` rather than `sent` when no real provider is configured.
+- Email notifications use the existing `queue_next`, `queue_ready` and `queue_position_update` localization bundles; no new translation schema was introduced.
+- Legacy `SendQueueNotification` was not repurposed or removed.
+
+Validation:
+- Implementation test suite added in `tests/Feature/QueueLifecycleNotificationTest.php`.
+- Final local execution of the new queue lifecycle suite is pending the user's pull/run.
+- Previous confirmed baseline remains **570 tests / 5624 assertions / 0 failures** before this phase.
+
+Follow-up:
+- Run the new Queue Lifecycle test file.
+- Run the complete parallel suite.
+- Only after green validation mark Queue Lifecycle as fully verified in project status.
 
 ### 2026-08-29 — Appointment Reminder Delivery & Notification Localization Hardening
 
@@ -322,7 +387,7 @@ Follow-up:
 - Add queue notification jobs/providers using the same NotificationDelivery and localization contracts.
 - Add event-driven queue notification tests without changing `/book` or `/queue/status`.
 
-## Previous Implementation Entry
+### Previous Implementation Entry
 
 ### 2026-08-29 — Application Page Inventory & Scope Clarification
 
