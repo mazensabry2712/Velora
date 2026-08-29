@@ -15,13 +15,13 @@ final class QueueLifecycleNotificationMail extends Mailable
         public readonly string $updateType,
         public readonly string $queueNumber,
         public readonly ?int $position,
-        public readonly string $locale = 'en',
+        public readonly string $mailLocale = 'en',
     ) {}
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: __('notifications.queue_' . $this->updateType . '.subject', [], $this->locale),
+            subject: __('notifications.queue_' . $this->updateType . '.subject', [], $this->mailLocale),
         );
     }
 
@@ -34,8 +34,8 @@ final class QueueLifecycleNotificationMail extends Mailable
                 'updateType' => $this->updateType,
                 'queueNumber' => $this->queueNumber,
                 'position' => $this->position,
-                'locale' => $this->locale,
-                'direction' => $this->locale === 'ar' ? 'rtl' : 'ltr',
+                'locale' => $this->mailLocale,
+                'direction' => $this->mailLocale === 'ar' ? 'rtl' : 'ltr',
                 'tenantName' => tenant()?->name ?? config('app.name', 'Velora'),
             ],
         );
