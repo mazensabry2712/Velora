@@ -1,7 +1,0 @@
-body.vb-final .vb-final-v2-progress { grid-column:1 / -1; }
-body.vb-final .vb-final-v2-summary { grid-column:2; grid-row:2; }
-body.vb-final .vb-final-v2-progress + #bookingForm { grid-column:1; }
-body.vb-final .vb-final-v2-summary + * { grid-column:auto; }
-@media (max-width:900px) {
-  body.vb-final .vb-final-v2-summary { grid-column:1; grid-row:auto; }
-}
