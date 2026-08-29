@@ -1,8 +1,8 @@
-@import url('/css/velora-booking-v2.css');
-
 /**
  * Dark Mode Enhancements
- * تحسينات الوضع المظلم
+ * Shared dark-mode behavior only.
+ * Booking presentation is loaded through the canonical
+ * /css/velora-booking.css entry point.
  */
 
 html { transition: background-color .3s ease, color .3s ease; }
