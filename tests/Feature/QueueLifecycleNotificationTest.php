@@ -12,6 +12,7 @@ use App\Models\Appointment;
 use App\Models\NotificationDelivery;
 use App\Models\Queue;
 use App\Models\User;
+use App\Observers\QueueObserver;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue as QueueBus;
@@ -20,16 +21,6 @@ use Tests\TenantTestCase;
 
 final class QueueLifecycleNotificationTest extends TenantTestCase
 {
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        // TenantTestCase clears Eloquent booted models during teardown. Re-register
-        // the production observer for each test so this feature test remains
-        // isolated without depending on static model state from another test.
-        Queue::observe(\App\Observers\QueueObserver::class);
-    }
-
     #[Test]
     public function waiting_to_serving_emits_turn_now(): void
     {
@@ -261,6 +252,12 @@ final class QueueLifecycleNotificationTest extends TenantTestCase
         self::assertSame('failed', $delivery->status);
         self::assertNotNull($delivery->failed_at);
         self::assertSame('queue provider failed', $delivery->last_error);
+    }
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Queue::observe(QueueObserver::class);
     }
 
     private function makeAppointment(): Appointment
