@@ -2,8 +2,9 @@
 <html lang="{{ app()->getLocale() }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="theme-color" content="#f7f9fc">
     @php
         $businessSettings = \App\Models\Setting::where('tenant_id', tenant()->id)->first();
         $businessName = $businessSettings->business_name ?? tenant()->name ?? config('app.name');
@@ -12,132 +13,235 @@
         }
         $businessName = (string) $businessName;
         $businessLogo = $businessSettings->logo ?? null;
+        $businessHost = request()->getHost();
     @endphp
     <title>{{ __('Book Appointment') }} - {{ $businessName }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>tailwind.config = { darkMode: 'class' };</script>
+    <link rel="stylesheet" href="/css/velora-brand.css">
+    <link rel="stylesheet" href="/css/velora-public.css">
     <link rel="stylesheet" href="/css/dark-mode-enhancements.css">
+    <style>
+        .vb2-fallback-logo { display:none; }
+        .vb2-logo.is-broken { display:none; }
+        .vb2-logo.is-broken + .vb2-fallback-logo { display:flex; }
+    </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-100 text-slate-900 dark:from-slate-950 dark:to-slate-900 dark:text-white">
-    <div class="mx-auto w-full max-w-3xl px-4 py-5 sm:py-8">
-        <header class="mb-6 text-center sm:mb-8">
-            <div class="mb-4 flex items-center justify-end gap-2">
-                <button type="button" onclick="toggleDarkMode()" class="rounded-lg border border-slate-200 bg-white p-2 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700" aria-label="{{ __('Toggle Dark Mode') }}">
+<body class="vb2-page">
+    <div class="vb2-shell">
+        <header class="vb2-header" aria-label="{{ $businessName }}">
+            <a class="vb2-brand" href="{{ url('/') }}" aria-label="{{ $businessName }}">
+                <span class="vb2-logo-wrap" aria-hidden="true">
+                    <img
+                        class="vb2-logo"
+                        src="{{ $businessLogo ? asset('storage/' . $businessLogo) : asset('logo-bais.png') }}"
+                        alt=""
+                        onerror="this.classList.add('is-broken');"
+                    >
+                    <span class="vb2-fallback-logo">
+                        <img src="{{ asset('logo-bais.png') }}" alt="">
+                    </span>
+                </span>
+                <span class="vb2-brand-copy">
+                    <strong>{{ $businessName }}</strong>
+                    <span>{{ $businessHost }}</span>
+                </span>
+            </a>
+
+            <div class="vb2-controls">
+                <button type="button" id="dark-mode-toggle" class="vb2-icon-button" onclick="toggleDarkMode()" aria-label="{{ __('Toggle Dark Mode') }}" title="{{ __('Toggle Dark Mode') }}">
                     <span id="dark-mode-icon">🌙</span>
                 </button>
+
                 @if (is_array($availableLanguages) && count($availableLanguages) > 1)
-                    <div class="flex flex-wrap gap-1 rounded-lg border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                        @php $labels = ['en'=>'EN','ar'=>'عربي','fr'=>'FR','es'=>'ES','de'=>'DE','it'=>'IT','pt'=>'PT','ru'=>'RU','zh'=>'中文','ja'=>'日本']; @endphp
-                        @foreach ($availableLanguages as $code)
-                            @if (isset($labels[$code]))
-                                <button type="button" onclick="changeLanguage('{{ $code }}')" class="rounded-md px-3 py-1.5 text-xs font-semibold {{ app()->getLocale() === $code ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700' }}">{{ $labels[$code] }}</button>
-                            @endif
-                        @endforeach
-                    </div>
+                    @php
+                        $languageNames = [
+                            'ar' => 'العربية', 'de' => 'Deutsch', 'en' => 'English', 'es' => 'Español',
+                            'fr' => 'Français', 'hi' => 'हिन्दी', 'id' => 'Bahasa Indonesia', 'it' => 'Italiano',
+                            'ja' => '日本語', 'ko' => '한국어', 'nl' => 'Nederlands', 'pt' => 'Português',
+                            'ru' => 'Русский', 'tr' => 'Türkçe', 'zh' => '中文'
+                        ];
+                    @endphp
+                    <label class="vb2-language" title="{{ __('Language') }}">
+                        <span class="vb2-globe" aria-hidden="true">◉</span>
+                        <select aria-label="{{ __('Language') }}" onchange="changeLanguage(this.value)">
+                            @foreach ($availableLanguages as $code)
+                                @if (isset($languageNames[$code]))
+                                    <option value="{{ $code }}" @selected(app()->getLocale() === $code)>{{ $languageNames[$code] }}</option>
+                                @endif
+                            @endforeach
+                        </select>
+                    </label>
                 @endif
             </div>
-
-            @if ($businessLogo)
-                <img src="{{ asset('storage/' . $businessLogo) }}" alt="{{ $businessName }}" class="mx-auto mb-3 h-16 w-auto object-contain sm:h-20">
-            @endif
-            <h1 class="text-3xl font-bold tracking-tight sm:text-4xl">{{ $businessName }}</h1>
-            <p class="mt-2 text-sm text-slate-600 dark:text-slate-300 sm:text-base">{{ __('Book your appointment online') }}</p>
         </header>
 
-        <main class="rounded-2xl bg-white/95 p-4 shadow-xl ring-1 ring-slate-200 backdrop-blur dark:bg-slate-900/95 dark:ring-slate-800 sm:p-6 md:p-8">
-            <div id="loadingBanner" class="mb-4 hidden rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700 dark:border-indigo-900 dark:bg-indigo-950/50 dark:text-indigo-200"></div>
-            <div id="errorMessage" class="mb-4 hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
-                <strong>{{ __('Booking Failed') }}</strong>
-                <span id="errorText" class="block mt-1"></span>
+        <section class="vb2-intro">
+            <div class="vb2-kicker"><span></span>{{ __('Book Appointment') }}</div>
+            <h1>{{ __('Book your appointment online') }}</h1>
+            <p>{{ __('Choose a service, find an available time, and confirm your appointment.') }}</p>
+        </section>
+
+        <main class="vb2-card">
+            <div class="vb2-card-head">
+                <div>
+                    <span class="vb2-card-eyebrow">{{ $businessName }}</span>
+                    <h2>{{ __('Appointment details') }}</h2>
+                </div>
+                <span class="vb2-secure"><span aria-hidden="true">✓</span> {{ __('Secure') }}</span>
             </div>
 
-            <form id="bookingForm" class="space-y-5">
+            <div id="loadingBanner" class="vb2-alert vb2-alert-info hidden" role="status"></div>
+            <div id="errorMessage" class="vb2-alert vb2-alert-error hidden" role="alert">
+                <strong>{{ __('Booking Failed') }}</strong>
+                <span id="errorText"></span>
+            </div>
+
+            <form id="bookingForm">
                 @csrf
 
-                <section>
-                    <div class="mb-3 flex items-center justify-between">
-                        <div><span class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">1</span><h2 class="text-lg font-semibold">{{ __('Your Details') }}</h2></div>
-                        <span class="text-xs text-slate-500 dark:text-slate-400">{{ __('Required fields are marked *') }}</span>
+                <section class="vb2-step" data-step="1">
+                    <div class="vb2-step-head">
+                        <div class="vb2-step-title">
+                            <span class="vb2-step-number">1</span>
+                            <div>
+                                <span class="vb2-step-label">{{ __('Your Details') }}</span>
+                                <span class="vb2-step-subtitle">{{ __('Tell us who the appointment is for.') }}</span>
+                            </div>
+                        </div>
+                        <span class="vb2-required">{{ __('Required fields are marked *') }}</span>
                     </div>
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <div class="sm:col-span-2">
-                            <label for="name" class="mb-1.5 block text-sm font-medium">{{ __('Full Name') }} *</label>
-                            <input id="name" name="name" required autocomplete="name" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 outline-none ring-indigo-500 focus:ring-2 dark:border-slate-700 dark:bg-slate-800" placeholder="{{ __('Enter your full name') }}">
+                    <div class="vb2-fields vb2-fields-personal">
+                        <div class="vb2-field vb2-field-full">
+                            <label for="name">{{ __('Full Name') }} *</label>
+                            <input id="name" name="name" required autocomplete="name" inputmode="text" placeholder="{{ __('Enter your full name') }}">
                         </div>
-                        <div>
-                            <label for="email" class="mb-1.5 block text-sm font-medium">{{ __('Email') }} *</label>
-                            <input id="email" name="email" type="email" required autocomplete="email" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 outline-none ring-indigo-500 focus:ring-2 dark:border-slate-700 dark:bg-slate-800" placeholder="{{ __('Enter your email') }}">
+                        <div class="vb2-field">
+                            <label for="email">{{ __('Email') }} *</label>
+                            <input id="email" name="email" type="email" required autocomplete="email" inputmode="email" placeholder="{{ __('Enter your email') }}">
                         </div>
-                        <div>
-                            <label for="phone" class="mb-1.5 block text-sm font-medium">{{ __('Phone Number') }} *</label>
-                            <input id="phone" name="phone" type="tel" required autocomplete="tel" inputmode="tel" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 outline-none ring-indigo-500 focus:ring-2 dark:border-slate-700 dark:bg-slate-800" placeholder="{{ __('Enter your phone number') }}">
+                        <div class="vb2-field">
+                            <label for="phone">{{ __('Phone Number') }} *</label>
+                            <input id="phone" name="phone" type="tel" required autocomplete="tel" inputmode="tel" placeholder="{{ __('Enter your phone number') }}">
                         </div>
                     </div>
                 </section>
 
-                <section class="border-t border-slate-200 pt-5 dark:border-slate-800">
-                    <div class="mb-3"><span class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">2</span><h2 class="text-lg font-semibold">{{ __('Choose Service') }}</h2></div>
-                    <label for="service_id" class="mb-1.5 block text-sm font-medium">{{ __('Service Type') }} *</label>
-                    <select id="service_id" name="service_id" required class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 outline-none ring-indigo-500 focus:ring-2 dark:border-slate-700 dark:bg-slate-800">
-                        <option value="">{{ __('Loading services...') }}</option>
-                    </select>
-                    <p id="serviceHint" class="mt-1.5 hidden text-xs text-slate-500 dark:text-slate-400"></p>
+                <section class="vb2-step" data-step="2">
+                    <div class="vb2-step-head">
+                        <div class="vb2-step-title">
+                            <span class="vb2-step-number">2</span>
+                            <div>
+                                <span class="vb2-step-label">{{ __('Choose Service') }}</span>
+                                <span class="vb2-step-subtitle">{{ __('Select what you would like to book.') }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="vb2-field">
+                        <label for="service_id">{{ __('Service Type') }} *</label>
+                        <select id="service_id" name="service_id" required>
+                            <option value="">{{ __('Loading services...') }}</option>
+                        </select>
+                        <p id="serviceHint" class="vb2-hint hidden"></p>
+                    </div>
                 </section>
 
-                <section id="staffSection" class="hidden border-t border-slate-200 pt-5 dark:border-slate-800">
-                    <div class="mb-3"><span class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">3</span><h2 class="text-lg font-semibold">{{ __('Choose Staff') }}</h2></div>
-                    <label for="staff_id" class="mb-1.5 block text-sm font-medium">{{ __('Select Staff') }} *</label>
-                    <select id="staff_id" name="staff_id" required class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 outline-none ring-indigo-500 focus:ring-2 dark:border-slate-700 dark:bg-slate-800">
-                        <option value="">{{ __('Select Staff Member') }}</option>
-                    </select>
+                <section id="staffSection" class="vb2-step hidden" data-step="3">
+                    <div class="vb2-step-head">
+                        <div class="vb2-step-title">
+                            <span class="vb2-step-number">3</span>
+                            <div>
+                                <span class="vb2-step-label">{{ __('Choose Staff') }}</span>
+                                <span class="vb2-step-subtitle">{{ __('Choose your preferred staff member.') }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="vb2-field">
+                        <label for="staff_id">{{ __('Select Staff') }} *</label>
+                        <select id="staff_id" name="staff_id" required>
+                            <option value="">{{ __('Select Staff Member') }}</option>
+                        </select>
+                    </div>
                 </section>
 
-                <section id="dateSection" class="hidden border-t border-slate-200 pt-5 dark:border-slate-800">
-                    <div class="mb-3"><span class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">4</span><h2 class="text-lg font-semibold">{{ __('Choose Date') }}</h2></div>
-                    <label for="appointment_date" class="mb-1.5 block text-sm font-medium">{{ __('Appointment Date') }} *</label>
-                    <input id="appointment_date" name="appointment_date" type="date" required min="{{ now()->toDateString() }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 outline-none ring-indigo-500 focus:ring-2 dark:border-slate-700 dark:bg-slate-800">
-                    <p id="dateHint" class="mt-2 text-xs text-slate-500 dark:text-slate-400">{{ __('Select a date to see live availability.') }}</p>
+                <section id="dateSection" class="vb2-step hidden" data-step="4">
+                    <div class="vb2-step-head">
+                        <div class="vb2-step-title">
+                            <span class="vb2-step-number">4</span>
+                            <div>
+                                <span class="vb2-step-label">{{ __('Choose Date') }}</span>
+                                <span class="vb2-step-subtitle">{{ __('Pick the day that works for you.') }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="vb2-field">
+                        <label for="appointment_date">{{ __('Appointment Date') }} *</label>
+                        <input id="appointment_date" name="appointment_date" type="date" required min="{{ now()->toDateString() }}">
+                        <p id="dateHint" class="vb2-hint">{{ __('Select a date to see live availability.') }}</p>
+                    </div>
                 </section>
 
-                <section id="timeSection" class="hidden border-t border-slate-200 pt-5 dark:border-slate-800">
-                    <div class="mb-3"><span class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">5</span><h2 class="text-lg font-semibold">{{ __('Choose Time') }}</h2></div>
-                    <label for="appointment_time" class="mb-1.5 block text-sm font-medium">{{ __('Appointment Time') }} *</label>
-                    <select id="appointment_time" name="appointment_time" required class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 outline-none ring-indigo-500 focus:ring-2 dark:border-slate-700 dark:bg-slate-800">
-                        <option value="">{{ __('Select time') }}</option>
-                    </select>
-                    <p id="timeHint" class="mt-2 text-xs text-slate-500 dark:text-slate-400"></p>
+                <section id="timeSection" class="vb2-step hidden" data-step="5">
+                    <div class="vb2-step-head">
+                        <div class="vb2-step-title">
+                            <span class="vb2-step-number">5</span>
+                            <div>
+                                <span class="vb2-step-label">{{ __('Choose Time') }}</span>
+                                <span class="vb2-step-subtitle">{{ __('Only available times are shown.') }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="vb2-field">
+                        <label for="appointment_time">{{ __('Appointment Time') }} *</label>
+                        <select id="appointment_time" name="appointment_time" required>
+                            <option value="">{{ __('Select time') }}</option>
+                        </select>
+                        <p id="timeHint" class="vb2-hint"></p>
+                    </div>
                 </section>
 
-                <section id="notesSection" class="hidden border-t border-slate-200 pt-5 dark:border-slate-800">
-                    <div class="mb-3"><span class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">6</span><h2 class="text-lg font-semibold">{{ __('Final Details') }}</h2></div>
-                    <label for="notes" class="mb-1.5 block text-sm font-medium">{{ __('Additional Notes') }}</label>
-                    <textarea id="notes" name="notes" rows="3" maxlength="1000" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 outline-none ring-indigo-500 focus:ring-2 dark:border-slate-700 dark:bg-slate-800" placeholder="{{ __('Any special requests or notes...') }}"></textarea>
+                <section id="notesSection" class="vb2-step hidden" data-step="6">
+                    <div class="vb2-step-head">
+                        <div class="vb2-step-title">
+                            <span class="vb2-step-number">6</span>
+                            <div>
+                                <span class="vb2-step-label">{{ __('Final Details') }}</span>
+                                <span class="vb2-step-subtitle">{{ __('Anything else we should know?') }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="vb2-field">
+                        <label for="notes">{{ __('Additional Notes') }}</label>
+                        <textarea id="notes" name="notes" rows="4" maxlength="1000" placeholder="{{ __('Any special requests or notes...') }}"></textarea>
+                    </div>
                 </section>
 
-                <button type="submit" id="submitBtn" disabled class="hidden w-full rounded-lg bg-indigo-600 px-4 py-3.5 font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-600">
-                    {{ __('Book Appointment') }}
-                </button>
+                <div class="vb2-submit-wrap">
+                    <button type="submit" id="submitBtn" disabled class="vb2-submit hidden">
+                        <span>{{ __('Book Appointment') }}</span>
+                        <span aria-hidden="true">→</span>
+                    </button>
+                    <p class="vb2-submit-note">{{ __('Your appointment will be confirmed instantly after submission.') }}</p>
+                </div>
             </form>
 
-            <section id="successMessage" class="hidden mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-900 dark:bg-emerald-950/30">
-                <div class="flex gap-3">
-                    <div class="mt-0.5 text-xl">✅</div>
-                    <div class="flex-1">
-                        <h2 class="font-bold text-emerald-800 dark:text-emerald-200">{{ __('Appointment Booked Successfully!') }}</h2>
-                        <p class="mt-1 text-sm text-emerald-700 dark:text-emerald-300">{{ __('Keep the queue number below so you can follow your turn.') }}</p>
-                        <div id="queueNumberDisplay" class="mt-4 rounded-lg bg-white p-4 text-center shadow-sm dark:bg-slate-900">
-                            <p class="text-xs font-semibold uppercase tracking-widest text-slate-500">{{ __('Your Queue Number') }}</p>
-                            <p id="queueNumberText" class="mt-1 text-4xl font-black text-indigo-600 dark:text-indigo-400"></p>
-                            <a href="{{ route('customer.queue.status') }}" class="mt-2 inline-block text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-400">{{ __('Check Queue Status') }} →</a>
-                        </div>
-                        <button type="button" onclick="window.location.reload()" class="mt-4 w-full rounded-lg border border-emerald-300 bg-white px-4 py-2.5 text-sm font-semibold text-emerald-800 hover:bg-emerald-50 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200">{{ __('Book another appointment') }}</button>
+            <section id="successMessage" class="vb2-success hidden">
+                <div class="vb2-success-icon" aria-hidden="true">✓</div>
+                <div class="vb2-success-copy">
+                    <span class="vb2-card-eyebrow">{{ __('Confirmed') }}</span>
+                    <h2>{{ __('Appointment Booked Successfully!') }}</h2>
+                    <p>{{ __('Keep the queue number below so you can follow your turn.') }}</p>
+                    <div id="queueNumberDisplay" class="vb2-queue-card">
+                        <span>{{ __('Your Queue Number') }}</span>
+                        <strong id="queueNumberText">—</strong>
+                        <a href="{{ route('customer.queue.status') }}">{{ __('Check Queue Status') }} →</a>
                     </div>
+                    <button type="button" onclick="window.location.reload()" class="vb2-secondary-action">{{ __('Book another appointment') }}</button>
                 </div>
             </section>
         </main>
 
-        <footer class="mt-6 text-center">
-            <a href="{{ route('customer.queue.status') }}" class="text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400">{{ __('Check Queue Status') }} →</a>
+        <footer class="vb2-footer">
+            <a href="{{ route('customer.queue.status') }}">{{ __('Check Queue Status') }} →</a>
+            <span>Velora · {{ date('Y') }}</span>
         </footer>
     </div>
 
@@ -212,6 +316,7 @@
                 els.timeSection.classList.add('hidden');
                 els.time.innerHTML = `<option value="">${text.selectTime}</option>`;
                 els.notesSection.classList.add('hidden');
+                els.submit.classList.add('hidden');
                 els.submit.disabled = true;
             }
         }
@@ -233,9 +338,7 @@
                     els.service.appendChild(option);
                 });
 
-                if (!payload.data.length) {
-                    showError(@json(__('No online-bookable services are available right now.')));
-                }
+                if (!payload.data.length) showError(@json(__('No online-bookable services are available right now.')));
             } catch (error) {
                 showError(text.network);
             } finally {
@@ -266,6 +369,7 @@
                     els.staff.appendChild(option);
                 });
                 els.staffSection.classList.remove('hidden');
+                els.staff.focus();
             } catch (error) {
                 showError(text.network);
             } finally {
@@ -307,9 +411,8 @@
 
                 els.timeSection.classList.remove('hidden');
                 els.dateHint.textContent = payload.data?.length ? text.chooseTime : text.noSlots;
-                if (!payload.data?.length) {
-                    els.time.innerHTML = `<option value="">${text.noSlots}</option>`;
-                }
+                if (!payload.data?.length) els.time.innerHTML = `<option value="">${text.noSlots}</option>`;
+                else els.time.focus();
             } catch (error) {
                 els.dateHint.textContent = text.network;
                 showError(text.network);
@@ -319,16 +422,18 @@
         });
 
         els.time.addEventListener('change', () => {
-            els.notesSection.classList.toggle('hidden', !els.time.value);
-            els.submit.classList.toggle('hidden', !els.time.value);
-            els.submit.disabled = !els.time.value;
+            const hasTime = Boolean(els.time.value);
+            els.notesSection.classList.toggle('hidden', !hasTime);
+            els.submit.classList.toggle('hidden', !hasTime);
+            els.submit.disabled = !hasTime;
+            if (hasTime) els.notes.focus();
         });
 
         els.form.addEventListener('submit', async (event) => {
             event.preventDefault();
             hideError();
             els.submit.disabled = true;
-            els.submit.textContent = text.booking;
+            els.submit.querySelector('span:first-child').textContent = text.booking;
 
             const form = new FormData(event.currentTarget);
             const body = {
@@ -374,7 +479,7 @@
                 showError(@json(__('Unable to complete the booking right now. Please try again.')));
             } finally {
                 els.submit.disabled = false;
-                els.submit.textContent = text.book;
+                els.submit.querySelector('span:first-child').textContent = text.book;
             }
         });
 
