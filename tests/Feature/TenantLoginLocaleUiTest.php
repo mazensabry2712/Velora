@@ -23,14 +23,14 @@ final class TenantLoginLocaleUiTest extends TestCase
         self::assertStringContainsString("@json(__('messages.login_failed'))", $view);
     }
 
-    public function test_login_view_has_one_language_dropdown_and_no_broken_password_reset_route(): void
+    public function test_login_view_has_one_language_dropdown_and_working_password_reset_link(): void
     {
         $view = file_get_contents(base_path('resources/views/auth/login.blade.php'));
 
         self::assertIsString($view);
         self::assertSame(1, substr_count($view, 'id="languageToggle"'));
         self::assertSame(1, substr_count($view, 'id="languageMenu"'));
-        self::assertStringNotContainsString("route('password.request')", $view);
+        self::assertStringContainsString("route('password.request')", $view);
         self::assertStringContainsString('aria-haspopup="listbox"', $view);
         self::assertStringContainsString("route('tenant.change.language'", $view);
     }
