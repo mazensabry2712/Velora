@@ -42,11 +42,14 @@ test.describe('Velora public booking V3', () => {
     test('loads services and moves to specialist step', async ({ page }) => {
         const serviceSelect = page.locator('#service_id');
         const serviceOptions = serviceSelect.locator('option[value]:not([value=""])');
-        await expect.poll(async () => serviceOptions.count(), { timeout: 10000 }).toBeGreaterThanOrEqual(0);
-        if (await serviceOptions.count() === 0) {
-            await expect(page.locator('#errorMessage')).toBeVisible();
+
+        await page.locator('#serviceCards .booking-empty').waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
+        const serviceCount = await serviceOptions.count();
+        if (serviceCount === 0) {
+            await expect(page.locator('#serviceCards')).toContainText(/No online-bookable services|لا توجد خدمات متاحة/);
             return;
         }
+
         await page.locator('#serviceCards .booking-choice').first().click();
         await expect(page.locator('[data-step="2"]')).toBeVisible();
         await expect(page.locator('#staffCards')).toBeVisible();
@@ -55,8 +58,9 @@ test.describe('Velora public booking V3', () => {
     test('booking flow exposes real time slots when availability exists', async ({ page }) => {
         const service = page.locator('#service_id');
         const serviceOptions = service.locator('option[value]:not([value=""])');
-        await expect.poll(async () => serviceOptions.count(), { timeout: 10000 }).toBeGreaterThanOrEqual(0);
-        if (await serviceOptions.count() === 0) {
+        const serviceCount = await serviceOptions.count();
+
+        if (serviceCount === 0) {
             test.skip(true, 'Tenant has no online-bookable services.');
         }
 
