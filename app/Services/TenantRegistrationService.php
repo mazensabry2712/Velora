@@ -150,6 +150,16 @@ final class TenantRegistrationService
             return ['available' => false, 'message' => 'Subdomain must be 3-32 lowercase alphanumeric characters or hyphens.'];
         }
 
+        $loginUrl = $this->resolveTenantLoginUrl($subdomain);
+
+        if ($loginUrl !== null) {
+            return [
+                'available' => false,
+                'message' => 'This subdomain is already taken.',
+                'login_url' => $loginUrl,
+            ];
+        }
+
         if (Tenant::withTrashed()->whereKey($subdomain)->exists()) {
             return ['available' => false, 'message' => 'This subdomain is already taken.'];
         }
@@ -162,6 +172,40 @@ final class TenantRegistrationService
         }
 
         return ['available' => true, 'message' => 'Great! This subdomain is available.'];
+    }
+
+    public function resolveTenantLoginUrl(string $subdomain): ?string
+    {
+        $subdomain = strtolower(trim($subdomain));
+
+        if (! preg_match('/^[a-z0-9][a-z0-9\-]{1,30}[a-z0-9]$/', $subdomain)) {
+            return null;
+        }
+
+        $expectedDomain = $this->buildSubdomain($subdomain);
+        $domain = \Stancl\Tenancy\Database\Models\Domain::where('domain', $expectedDomain)->first();
+
+        if ($domain) {
+            $tenant = $domain->tenant;
+            if (! $tenant || ! $tenant->active || (method_exists($tenant, 'trashed') && $tenant->trashed())) {
+                return null;
+            }
+
+            $resolvedDomain = $domain->domain;
+        } else {
+            $tenant = Tenant::query()->whereKey($subdomain)->first();
+            if (! $tenant || ! $tenant->active) {
+                return null;
+            }
+
+            $resolvedDomain = $tenant->domain !== 'unknown'
+                ? $tenant->domain
+                : $expectedDomain;
+        }
+
+        $scheme = request()->isSecure() ? 'https' : 'http';
+
+        return $scheme.'://'.$resolvedDomain.'/login';
     }
 
     private function validateUniqueness(string $subdomain, string $email): void
