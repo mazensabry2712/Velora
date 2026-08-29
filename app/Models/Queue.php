@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Observers\QueueObserver;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
@@ -26,8 +25,6 @@ class Queue extends Model
 
     protected static function booted()
     {
-        static::observe(QueueObserver::class);
-
         static::updating(function ($queue) {
             if ($queue->isDirty('status') && $queue->appointment) {
                 $newStatus = $queue->status;
