@@ -29,6 +29,7 @@ use App\Http\Controllers\Auth\TenantProvisioningController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\Tenant\AppointmentController;
 use App\Http\Controllers\Tenant\InvoiceController;
+use App\Http\Controllers\Tenant\PublicBookingAvailabilityController;
 use App\Http\Controllers\Web\AssistantController;
 use App\Http\Controllers\Web\CustomerController;
 use App\Http\Controllers\Web\ProfileController;
@@ -95,13 +96,17 @@ Route::middleware([
             Route::post('/logout', [TenantAuthController::class, 'logout'])->middleware('auth');
         });
 
+        // Public booking API: read-only catalog + availability only.
+        // Booking creation remains the dedicated /api/appointments endpoint.
         Route::prefix('api/booking')->group(function () {
-            Route::get('/services', [ServiceController::class, 'index']);
+            Route::get('/services', [PublicBookingAvailabilityController::class, 'services']);
+            Route::get('/available-timeslots', [PublicBookingAvailabilityController::class, 'availableTimeSlots']);
+            Route::get('/staff/by-service/{serviceId}', [PublicBookingAvailabilityController::class, 'staffByService']);
+
+            // Compatibility endpoints retained for existing internal consumers.
             Route::get('/timeslots', [ServiceController::class, 'timeSlots']);
-            Route::get('/available-timeslots', [ServiceController::class, 'availableTimeSlots']);
             Route::get('/workingdays', [ServiceController::class, 'workingDays']);
             Route::get('/staff/{id}/services', [StaffController::class, 'staffServices']);
-            Route::get('/staff/by-service/{serviceId}', [ServiceController::class, 'byService']);
             Route::get('/staff/{id}/schedule', [StaffController::class, 'schedule']);
         });
 
