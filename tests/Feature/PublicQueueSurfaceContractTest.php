@@ -42,6 +42,6 @@ final class PublicQueueSurfaceContractTest extends TenantTestCase
 
         $response->assertOk()
             ->assertSee('VL-NOT-FOUND', false)
-            ->assertSee('Track your appointment', false);
+            ->assertSee('Track appointment', false);
     }
 }
