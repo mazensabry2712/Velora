@@ -17,15 +17,20 @@ CreatePublicBooking transaction
         +--> public_reference
         |
         v
-NotificationDelivery (queued)
+NotificationDelivery (per channel)
         |
-        v
-SendPublicAppointmentConfirmationEmail
+        +--> Email job
+        |      +--> sending
+        |      +--> sent
+        |      +--> queued + retry on failure
+        |      +--> failed after final attempt
         |
-        +--> sending
-        +--> sent
-        +--> queued + retry on failure
-        +--> failed after final attempt
+        +--> WhatsApp job (when enabled)
+               +--> sending
+               +--> sent
+               +--> skipped when provider is not configured
+               +--> queued + retry on provider failure
+               +--> failed after final attempt
 ```
 
 ## Delivery record
@@ -38,13 +43,31 @@ Tracked fields include event, channel, recipient, provider, status, attempts, la
 
 The public confirmation email uses scalar payload data only. The message contains the tenant name, customer name, service, staff, date, time, duration, queue number, public reference and canonical tracking URL.
 
-The Mailable is not itself queued. The queue boundary is the `SendPublicAppointmentConfirmationEmail` job. This prevents double-queue behavior and keeps delivery status observable.
+The Mailable is rendered by `SendPublicAppointmentConfirmationEmail`. The queue boundary is the job, which updates the delivery row around the actual send operation.
 
-## Failure policy
+## Email failure policy
 
 A mail failure updates the delivery row with the error and rethrows so Laravel can retry the job. The job retries three times with a one-minute backoff. After the final failure, `failed()` marks the row as `failed`.
 
 The public booking response remains successful even when notification dispatch or delivery fails.
+
+## WhatsApp
+
+WhatsApp uses the same delivery model and event key pattern:
+
+```text
+appointment.booked|whatsapp|<public_reference>
+```
+
+The application depends on `App\Domain\Notifications\Contracts\WhatsAppProvider` rather than a concrete provider. The default implementation is `NullWhatsAppProvider`, which returns `skipped` when no provider is configured. It intentionally never reports a false `sent` state.
+
+The `SendPublicAppointmentConfirmationWhatsApp` job owns the retry/status lifecycle. A real provider can later be bound to the interface without changing the booking controller or public booking flow.
+
+Enablement is controlled separately from the booking transaction through:
+
+```text
+services.whatsapp.enabled
+```
 
 ## Idempotency
 
@@ -54,7 +77,13 @@ Email deliveries use:
 appointment.booked|email|<public_reference>
 ```
 
-The delivery row is created with `firstOrCreate`. A sent delivery is not sent again by the job.
+WhatsApp deliveries use:
+
+```text
+appointment.booked|whatsapp|<public_reference>
+```
+
+Each delivery is created with `firstOrCreate`. A sent delivery is not sent again by its job.
 
 ## Public security contract
 
@@ -66,20 +95,17 @@ Customer links must use the public reference only:
 
 Do not put internal appointment, customer, staff or queue IDs in customer-facing links.
 
-## WhatsApp extension
-
-WhatsApp should use the same delivery model and event key pattern:
+## Current notification contract
 
 ```text
-appointment.booked|whatsapp|<public_reference>
+appointment.booked
+  Email      implemented
+  WhatsApp   abstraction implemented; provider not configured by default
 ```
-
-The provider should be implemented behind a dedicated interface and must not be called from `PublicBookingController`. Provider failures must be retryable and must not fail the booking transaction.
 
 ## Future events
 
 ```text
-appointment.booked
 appointment.reminder
 appointment.confirmed
 appointment.rescheduled
