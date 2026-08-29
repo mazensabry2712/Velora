@@ -14,5 +14,8 @@ interface CustomerReader
 
     public function findWithStats(int $customerId): Customer;
 
+    /** @return array<string, mixed> */
+    public function getStatistics(int $customerId): array;
+
     public function paginateAppointments(int $customerId, int $perPage = 15): LengthAwarePaginator;
 }
