@@ -27,13 +27,10 @@
         <div class="booking-controls">
             <button id="dark-mode-toggle" class="booking-control" type="button" aria-label="{{ __('Toggle Dark Mode') }}"><span id="darkModeIcon">🌙</span></button>
             @if(count($languages) > 1)
-                <label class="booking-control booking-language">
-                    <span aria-hidden="true">◎</span>
+                <label class="booking-control booking-language"><span aria-hidden="true">◎</span>
                     <select aria-label="{{ __('Language') }}" onchange="changeLanguage(this.value)">
                         @foreach($languages as $code)
-                            @if(isset($languageNames[$code]))
-                                <option value="{{ $code }}" @selected(app()->getLocale() === $code)>{{ $languageNames[$code] }}</option>
-                            @endif
+                            @if(isset($languageNames[$code]))<option value="{{ $code }}" @selected(app()->getLocale() === $code)>{{ $languageNames[$code] }}</option>@endif
                         @endforeach
                     </select>
                 </label>
@@ -61,10 +58,10 @@
 
             <form id="bookingForm" novalidate>
                 @csrf
-                <input id="service_id" name="service_id" class="booking-hidden-field" aria-hidden="true" tabindex="-1">
-                <input id="staff_id" name="staff_id" class="booking-hidden-field" aria-hidden="true" tabindex="-1">
-                <input id="appointment_date" name="appointment_date" class="booking-hidden-field" aria-hidden="true" tabindex="-1">
-                <input id="appointment_time" name="appointment_time" class="booking-hidden-field" aria-hidden="true" tabindex="-1">
+                <select id="service_id" name="service_id" class="booking-hidden-field" aria-hidden="true" tabindex="-1"></select>
+                <select id="staff_id" name="staff_id" class="booking-hidden-field" aria-hidden="true" tabindex="-1"></select>
+                <select id="appointment_date" name="appointment_date" class="booking-hidden-field" aria-hidden="true" tabindex="-1"></select>
+                <select id="appointment_time" name="appointment_time" class="booking-hidden-field" aria-hidden="true" tabindex="-1"></select>
 
                 <section class="booking-step active" data-step="1">
                     <div class="booking-step-head"><span class="booking-step-number">1</span><div><h2>{{ __('Choose a service') }}</h2><p>{{ __('Start with the service you want to book.') }}</p></div></div>
@@ -73,7 +70,7 @@
                 </section>
 
                 <section class="booking-step" data-step="2">
-                    <div class="booking-step-head"><span class="booking-step-number">2</span><div><h2>{{ __('Choose a specialist') }}</h2><p>{{ __('Choose someone specific or let us find the earliest suitable option.') }}</p></div></div>
+                    <div class="booking-step-head"><span class="booking-step-number">2</span><div><h2>{{ __('Choose a specialist') }}</h2><p>{{ __('Choose a specific specialist or let us find the earliest suitable option.') }}</p></div></div>
                     <div id="staffCards" class="booking-cards" aria-live="polite"></div>
                     <div class="booking-actions"><button type="button" class="booking-btn secondary" data-back-to="1">{{ __('Back') }}</button><button type="button" class="booking-btn primary" id="staffNext" disabled>{{ __('Continue') }} <span aria-hidden="true">→</span></button></div>
                 </section>
