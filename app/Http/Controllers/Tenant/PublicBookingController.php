@@ -49,7 +49,7 @@ final class PublicBookingController extends Controller
                 $serviceName = (string) ($appointment->service_name ?? $appointment->service?->name ?? 'Appointment');
                 $staffName = (string) ($appointment->newStaff?->full_name ?? trim(($appointment->newStaff?->first_name ?? '') . ' ' . ($appointment->newStaff?->last_name ?? '')));
                 $tenantName = (string) (tenant()?->name ?? config('app.name'));
-                $locale = app()->getLocale() ?: 'en';
+                $mailLocale = app()->getLocale() ?: 'en';
 
                 if ($customer->email) {
                     Mail::to($customer->email)->queue(new PublicAppointmentConfirmationMail(
@@ -63,7 +63,7 @@ final class PublicBookingController extends Controller
                         queueNumber: (string) $queue->queue_number,
                         reference: $reference,
                         trackingUrl: $trackingUrl,
-                        locale: $locale,
+                        mailLocale: $mailLocale,
                     ));
                 }
             } catch (\Throwable $notificationException) {
