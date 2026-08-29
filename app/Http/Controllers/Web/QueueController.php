@@ -3,9 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
-use App\Models\Appointment;
 use App\Models\Queue;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 
 class QueueController extends Controller
@@ -48,12 +46,15 @@ class QueueController extends Controller
     }
 
     /**
-     * Public queue lookup accepts either the legacy queue number or the new
+     * Public queue lookup accepts either a legacy queue number or the
      * unguessable public appointment reference (VL-XXXXXXXX).
+     * A public reference reveals the customer's booking details; a queue
+     * number alone remains intentionally privacy-limited.
      */
     public function getQueueStatus(string $identifier)
     {
         $rateLimitKey = 'public-queue-status:' . tenant()?->getTenantKey() . ':' . request()->ip();
+        $isReference = str_starts_with(strtoupper($identifier), 'VL-');
 
         if (RateLimiter::tooManyAttempts($rateLimitKey, 60)) {
             return response()->json([
@@ -72,7 +73,7 @@ class QueueController extends Controller
                 'appointment.newCustomer',
             ]);
 
-            if (str_starts_with(strtoupper($identifier), 'VL-')) {
+            if ($isReference) {
                 $query->whereHas('appointment', fn ($appointment) =>
                     $appointment->where('public_reference', strtoupper(trim($identifier)))
                 );
@@ -93,10 +94,6 @@ class QueueController extends Controller
             $staffName = $appointment?->newStaff?->full_name
                 ?: $appointment?->staff?->name
                 ?: 'N/A';
-            $customer = $appointment?->newCustomer;
-            $customerName = $customer
-                ? trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? ''))
-                : null;
 
             $ahead = null;
             if (in_array($queue->status, ['waiting', 'serving'], true)) {
@@ -113,22 +110,30 @@ class QueueController extends Controller
                     ->count();
             }
 
+            $data = [
+                'reference' => $isReference ? $appointment?->public_reference : null,
+                'queue_number' => $queue->queue_number,
+                'service' => $appointment?->service?->name ?? 'N/A',
+                'staff_name' => $staffName,
+                'status' => $queue->status,
+                'is_vip' => $queue->is_vip,
+                'queue_date' => $queue->queue_date?->format('Y-m-d') ?? null,
+                'appointment_date' => $appointment?->starts_at?->format('Y-m-d'),
+                'appointment_time' => $appointment?->starts_at?->format('H:i'),
+                'duration_minutes' => $appointment?->service?->duration_minutes,
+                'people_ahead' => $ahead,
+            ];
+
+            if ($isReference) {
+                $customer = $appointment?->newCustomer;
+                $data['customer_name'] = $customer
+                    ? trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? ''))
+                    : null;
+            }
+
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'reference' => $appointment?->public_reference,
-                    'queue_number' => $queue->queue_number,
-                    'service' => $appointment?->service?->name ?? 'N/A',
-                    'staff_name' => $staffName,
-                    'status' => $queue->status,
-                    'is_vip' => $queue->is_vip,
-                    'queue_date' => $queue->queue_date?->format('Y-m-d') ?? null,
-                    'appointment_date' => $appointment?->starts_at?->format('Y-m-d'),
-                    'appointment_time' => $appointment?->starts_at?->format('H:i'),
-                    'duration_minutes' => $appointment?->service?->duration_minutes,
-                    'customer_name' => $customerName,
-                    'people_ahead' => $ahead,
-                ],
+                'data' => $data,
             ]);
         } catch (\Throwable $e) {
             \Log::error('Error in getQueueStatus: ' . $e->getMessage());
