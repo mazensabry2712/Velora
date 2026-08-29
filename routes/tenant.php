@@ -39,6 +39,7 @@ use App\Http\Controllers\Web\WaitingListController;
 use App\Http\Middleware\EnsureSubscriptionIsValid;
 use App\Http\Middleware\SetTenantLocale;
 use App\Models\Setting;
+use App\Support\TenantBranding;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
@@ -52,17 +53,26 @@ Route::middleware([
     Route::get('/__velora/provisioning/{token}', [TenantProvisioningController::class, 'handoff'])
         ->name('tenant.provisioning.handoff');
 
-    Route::get('/change-language/{lang}', function ($lang) {
+    Route::get('/change-language/{lang}', function (string $lang) {
         $supported = array_values(array_unique(config('localizer.supported_locales', ['ar', 'en'])));
+        $tenantLanguages = Setting::where('tenant_id', tenant()->id)->value('available_languages');
+
+        if (is_array($tenantLanguages) && $tenantLanguages !== []) {
+            $supported = array_values(array_intersect($supported, $tenantLanguages));
+        }
+
         if (! in_array($lang, $supported, true)) {
             return redirect()->back();
         }
+
         if (auth()->check()) {
             auth()->user()->forceFill(['locale' => $lang])->save();
         }
+
         session()->put('locale', $lang);
         session()->save();
         App::setLocale($lang);
+
         return redirect()->back();
     })->name('tenant.change.language');
 
@@ -72,7 +82,16 @@ Route::middleware([
         Route::get('/book', function () {
             $settings = Setting::where('tenant_id', tenant()->id)->first();
             $availableLanguages = $settings?->available_languages ?? config('localizer.supported_locales', ['ar', 'en']);
-            return view('customer.booking', compact('availableLanguages'));
+            $branding = TenantBranding::resolve();
+
+            return view('customer.booking', [
+                'availableLanguages' => array_values(array_intersect(
+                    config('localizer.supported_locales', ['ar', 'en']),
+                    is_array($availableLanguages) ? $availableLanguages : ['ar', 'en'],
+                )),
+                'businessName' => $branding['name'],
+                'businessLogo' => $branding['logo'],
+            ]);
         })->name('customer.booking');
 
         Route::get('/queue/status', fn () => view('customer.queue-status'))->name('customer.queue.status');
