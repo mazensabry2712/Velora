@@ -40,29 +40,20 @@ test.describe('Velora public booking V3', () => {
     });
 
     test('loads services and moves to specialist step', async ({ page }) => {
-        const serviceSelect = page.locator('#service_id');
-        const serviceOptions = serviceSelect.locator('option[value]:not([value=""])');
-
+        const serviceOptions = page.locator('#service_id option[value]:not([value=""])');
         await page.locator('#serviceCards .booking-empty').waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
-        const serviceCount = await serviceOptions.count();
-        if (serviceCount === 0) {
+        if ((await serviceOptions.count()) === 0) {
             await expect(page.locator('#serviceCards')).toContainText(/No online-bookable services|لا توجد خدمات متاحة/);
             return;
         }
-
         await page.locator('#serviceCards .booking-choice').first().click();
         await expect(page.locator('[data-step="2"]')).toBeVisible();
         await expect(page.locator('#staffCards')).toBeVisible();
     });
 
     test('booking flow exposes real time slots when availability exists', async ({ page }) => {
-        const service = page.locator('#service_id');
-        const serviceOptions = service.locator('option[value]:not([value=""])');
-        const serviceCount = await serviceOptions.count();
-
-        if (serviceCount === 0) {
-            test.skip(true, 'Tenant has no online-bookable services.');
-        }
+        const serviceOptions = page.locator('#service_id option[value]:not([value=""])');
+        if ((await serviceOptions.count()) === 0) test.skip(true, 'Tenant has no online-bookable services.');
 
         await page.locator('#serviceCards .booking-choice').first().click();
         await expect(page.locator('#staffCards .booking-choice').first()).toBeVisible({ timeout: 5000 });
@@ -72,22 +63,49 @@ test.describe('Velora public booking V3', () => {
         await expect(dates.first()).toBeVisible();
         const slots = page.locator('#timeOptions .booking-slot');
         let found = false;
-
         for (let i = 0; i < Math.min(await dates.count(), 7); i += 1) {
             await dates.nth(i).click();
-            try {
-                await expect(slots.first()).toBeVisible({ timeout: 1800 });
-                found = true;
-                break;
-            } catch {}
+            try { await expect(slots.first()).toBeVisible({ timeout: 1800 }); found = true; break; } catch {}
         }
-
         test.skip(!found, 'No available slot in the displayed date window.');
         await slots.first().click();
         await page.locator('#name').fill('Browser Test Customer');
         await page.locator('#phone').fill('01000000000');
         await page.locator('#email').fill(`browser-test-${Date.now()}@example.test`);
         await expect(page.locator('#bookingStepDetails')).toHaveClass(/active/);
+        await expect(page.locator('#submitBtn')).toBeEnabled();
+    });
+
+    test('booking UI reaches review with a mocked available slot', async ({ page }) => {
+        await page.route('**/api/booking/available-timeslots?**', async (route) => {
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    success: true,
+                    data: [
+                        { start_time: '10:00:00', label: '10:00 AM' },
+                        { start_time: '10:30:00', label: '10:30 AM' },
+                    ],
+                }),
+            });
+        });
+
+        const serviceOptions = page.locator('#service_id option[value]:not([value=""])');
+        if ((await serviceOptions.count()) === 0) test.skip(true, 'Tenant has no online-bookable services.');
+        await page.locator('#serviceCards .booking-choice').first().click();
+        await expect(page.locator('#staffCards .booking-choice').first()).toBeVisible({ timeout: 5000 });
+        await page.locator('#staffCards .booking-choice').first().click();
+        await page.locator('#dateChoices .booking-date').first().click();
+        await expect(page.locator('#timeOptions .booking-slot').first()).toBeVisible({ timeout: 5000 });
+        await page.locator('#timeOptions .booking-slot').first().click();
+        await page.locator('#name').fill('Browser Test Customer');
+        await page.locator('#phone').fill('01000000000');
+        await page.locator('#email').fill(`browser-test-${Date.now()}@example.test`);
+        await expect(page.locator('#bookingStepDetails')).toHaveClass(/active/);
+        await expect(page.locator('#reviewService')).not.toHaveText('—');
+        await expect(page.locator('#reviewDate')).not.toHaveText('—');
+        await expect(page.locator('#reviewTime')).not.toHaveText('—');
         await expect(page.locator('#submitBtn')).toBeEnabled();
     });
 });
