@@ -1,80 +1,87 @@
-# Public Booking Notifications
+# Public Booking Notification Delivery
 
-## Scope
+## Purpose
 
-This document defines customer-facing notifications emitted after a public appointment is successfully committed.
+Public booking notifications are delivered after the appointment and queue transaction succeeds. Notification delivery must never decide whether the booking itself succeeds.
 
-## Canonical flow
+## Current flow
 
 ```text
 POST /api/appointments
-        ↓
-CreatePublicBooking transaction commits
-        ↓
-PublicAppointmentConfirmationMail queued
-        ↓
-Customer opens tracking_url
-        ↓
-/queue/status?ref=VL-XXXXXXXX
+        |
+        v
+CreatePublicBooking transaction
+        |
+        +--> Appointment
+        +--> Queue
+        +--> public_reference
+        |
+        v
+NotificationDelivery (queued)
+        |
+        v
+SendPublicAppointmentConfirmationEmail
+        |
+        +--> sending
+        +--> sent
+        +--> queued + retry on failure
+        +--> failed after final attempt
 ```
 
-The notification layer must never make a committed booking appear failed when an external notification provider is unavailable.
+## Delivery record
 
-## Booking confirmation email
+`notification_deliveries` lives in the tenant database and is keyed by a unique `dedupe_key` so the same event/channel/reference is not registered twice.
 
-The canonical email is `PublicAppointmentConfirmationMail` and implements Laravel's `ShouldQueue` contract.
+Tracked fields include event, channel, recipient, provider, status, attempts, last error and timestamps.
 
-It receives only scalar customer-facing data:
+## Email
 
-- tenant name
-- customer name
-- service name
-- specialist name
-- appointment date/time
-- duration
-- queue number
-- public reference
-- tracking URL
-- locale
+The public confirmation email uses scalar payload data only. The message contains the tenant name, customer name, service, staff, date, time, duration, queue number, public reference and canonical tracking URL.
 
-This avoids serializing tenant-bound Eloquent models into the asynchronous job.
-
-The tracking button must point to the tenant booking host:
-
-```text
-/queue/status?ref={public_reference}
-```
-
-The email must not expose internal appointment, customer, staff, tenant, payment, or database identifiers.
+The Mailable is not itself queued. The queue boundary is the `SendPublicAppointmentConfirmationEmail` job. This prevents double-queue behavior and keeps delivery status observable.
 
 ## Failure policy
 
-Email queueing is attempted only after `CreatePublicBooking` returns successfully, which means the booking transaction has already committed.
+A mail failure updates the delivery row with the error and rethrows so Laravel can retry the job. The job retries three times with a one-minute backoff. After the final failure, `failed()` marks the row as `failed`.
 
-If queueing the email fails, the exception is logged with the tenant key and public reference and the booking response remains successful.
+The public booking response remains successful even when notification dispatch or delivery fails.
 
-## Localization
+## Idempotency
 
-Notification copy is resolved using the locale active for the public booking request. English and Arabic copy are maintained independently in:
+Email deliveries use:
 
 ```text
-lang/en/public_booking.php
-lang/ar/public_booking.php
+appointment.booked|email|<public_reference>
 ```
 
-Future tenant-supported languages should follow the same keys.
+The delivery row is created with `firstOrCreate`. A sent delivery is not sent again by the job.
 
-## WhatsApp
+## Public security contract
 
-WhatsApp is intentionally not coupled to the booking controller yet. The next implementation stage should add a provider interface and queue-backed channel using the same scalar notification payload and tracking URL.
+Customer links must use the public reference only:
 
-A provider outage must follow the same failure policy as email: the appointment remains committed and the failure is observable through logs/notification status, not surfaced as a booking failure.
+```text
+/queue/status?ref=VL-XXXXXXXX
+```
 
-## Planned lifecycle events
+Do not put internal appointment, customer, staff or queue IDs in customer-facing links.
+
+## WhatsApp extension
+
+WhatsApp should use the same delivery model and event key pattern:
+
+```text
+appointment.booked|whatsapp|<public_reference>
+```
+
+The provider should be implemented behind a dedicated interface and must not be called from `PublicBookingController`. Provider failures must be retryable and must not fail the booking transaction.
+
+## Future events
 
 ```text
 appointment.booked
 appointment.reminder
+appointment.confirmed
 appointment.rescheduled
 appointment.cancelled
 queue.position_changed
@@ -83,18 +90,4 @@ queue.turn_now
 appointment.completed
 ```
 
-The first production event is `appointment.booked`. Queue alerts and reminders should be added only after their operational triggers are defined.
-
-## Testing
-
-Feature coverage must verify:
-
-1. A successful public booking creates the appointment and queue.
-2. A confirmation email is queued with the generated public reference.
-3. The tracking URL contains the public reference and tenant queue path.
-4. Notification failures do not turn a committed booking into an API failure.
-5. No internal IDs are included in the public notification payload.
-
-## Related contracts
-
-See `docs/PUBLIC_BOOKING_REFERENCE.md` for the public reference and tracking contract.
+Each channel gets its own delivery record, allowing Email and WhatsApp to succeed or fail independently.

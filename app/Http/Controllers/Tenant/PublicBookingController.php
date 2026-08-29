@@ -9,10 +9,10 @@ use App\Application\Booking\DTOs\PublicBookingData;
 use App\Domain\Booking\Exceptions\SlotUnavailableException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\PublicBookingRequest;
-use App\Mail\PublicAppointmentConfirmationMail;
+use App\Jobs\SendPublicAppointmentConfirmationEmail;
+use App\Models\NotificationDelivery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 final class PublicBookingController extends Controller
@@ -45,26 +45,48 @@ final class PublicBookingController extends Controller
 
             try {
                 $appointment->loadMissing(['service', 'newStaff']);
+                $tenant = tenant();
+                $tenantName = (string) ($tenant?->name ?? config('app.name'));
+                $locale = app()->getLocale() ?: 'en';
+                $recipient = trim((string) $customer->email);
 
-                $serviceName = (string) ($appointment->service_name ?? $appointment->service?->name ?? 'Appointment');
-                $staffName = (string) ($appointment->newStaff?->full_name ?? trim(($appointment->newStaff?->first_name ?? '') . ' ' . ($appointment->newStaff?->last_name ?? '')));
-                $tenantName = (string) (tenant()?->name ?? config('app.name'));
-                $mailLocale = app()->getLocale() ?: 'en';
+                if ($recipient !== '') {
+                    $delivery = NotificationDelivery::firstOrCreate(
+                        ['dedupe_key' => sprintf('appointment.booked|email|%s', $reference)],
+                        [
+                            'appointment_id' => $appointment->id,
+                            'public_reference' => $reference,
+                            'event' => 'appointment.booked',
+                            'channel' => 'email',
+                            'recipient' => $recipient,
+                            'provider' => 'mail',
+                            'status' => 'queued',
+                            'attempts' => 0,
+                            'queued_at' => now(),
+                            'metadata' => ['tenant' => $tenantName],
+                        ]
+                    );
 
-                if ($customer->email) {
-                    Mail::to($customer->email)->queue(new PublicAppointmentConfirmationMail(
-                        tenantName: $tenantName,
-                        customerName: trim($customer->first_name . ' ' . $customer->last_name),
-                        serviceName: $serviceName,
-                        staffName: $staffName !== '' ? $staffName : '—',
-                        appointmentDate: $appointment->date?->format('Y-m-d') ?? '',
-                        appointmentTime: $appointment->time_slot ?? '',
-                        duration: (string) ($appointment->service?->duration ?? $appointment->service?->duration_minutes ?? ''),
-                        queueNumber: (string) $queue->queue_number,
-                        reference: $reference,
-                        trackingUrl: $trackingUrl,
-                        mailLocale: $mailLocale,
-                    ));
+                    if (! $delivery->sent_at) {
+                        SendPublicAppointmentConfirmationEmail::dispatch(
+                            tenant: $tenant,
+                            deliveryId: (int) $delivery->id,
+                            data: [
+                                'tenant_name' => $tenantName,
+                                'customer_name' => trim($customer->first_name . ' ' . $customer->last_name),
+                                'service_name' => (string) ($appointment->service_name ?? $appointment->service?->name ?? 'Appointment'),
+                                'staff_name' => (string) ($appointment->newStaff?->full_name ?? trim(($appointment->newStaff?->first_name ?? '') . ' ' . ($appointment->newStaff?->last_name ?? '')) ?: '—'),
+                                'appointment_date' => $appointment->date?->format('Y-m-d') ?? '',
+                                'appointment_time' => $appointment->time_slot ?? '',
+                                'duration' => (string) ($appointment->service?->duration_minutes ?? $appointment->service?->duration ?? ''),
+                                'queue_number' => (string) $queue->queue_number,
+                                'reference' => $reference,
+                                'tracking_url' => $trackingUrl,
+                                'locale' => $locale,
+                                'recipient' => $recipient,
+                            ],
+                        );
+                    }
                 }
             } catch (\Throwable $notificationException) {
                 Log::warning('Public appointment confirmation email could not be queued.', [
