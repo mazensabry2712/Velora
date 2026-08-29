@@ -19,6 +19,7 @@ use App\Domain\Notifications\Contracts\WhatsAppProvider;
 use App\Domain\Pricing\Contracts\CountryPriceSelector;
 use App\Domain\Queue\Contracts\QueueReader;
 use App\Domain\Queue\Contracts\QueueRepository as DomainQueueRepository;
+use App\Domain\Queue\Events\QueueLifecycleNotificationRequested;
 use App\Domain\Reporting\Contracts\ReportReader;
 use App\Domain\Shared\Contracts\PaymentGatewayResolver;
 use App\Domain\Staff\Contracts\StaffWriter;
@@ -35,6 +36,7 @@ use App\Infrastructure\Billing\PaymentGatewayCheckoutSessionCreator;
 use App\Infrastructure\Booking\EloquentAppointmentReader;
 use App\Infrastructure\Customer\EloquentCustomerReader;
 use App\Infrastructure\Landing\LegacyLandingSettingsReader;
+use App\Infrastructure\Notifications\Listeners\CreateQueueLifecycleNotificationDeliveries;
 use App\Infrastructure\Notifications\NullWhatsAppProvider;
 use App\Infrastructure\Payments\Moyasar\MoyasarWebhookProcessor;
 use App\Infrastructure\Payments\PaymentGatewayRouter;
@@ -48,7 +50,9 @@ use App\Infrastructure\Subscription\EloquentSubscriptionAccessReader;
 use App\Infrastructure\Subscription\Listeners\SendUpgradeRequestNotifications;
 use App\Infrastructure\Tenancy\LegacyTenantRegistrar;
 use App\Models\Appointment;
+use App\Models\Queue;
 use App\Observers\AppointmentObserver;
+use App\Observers\QueueObserver;
 use App\Payments\PaymentGatewayManager;
 use App\Repositories\Eloquent\QueueRepository;
 use App\View\Composers\AdminLayoutComposer;
@@ -93,7 +97,13 @@ class AppServiceProvider extends ServiceProvider
             SendUpgradeRequestNotifications::class,
         );
 
+        Event::listen(
+            QueueLifecycleNotificationRequested::class,
+            CreateQueueLifecycleNotificationDeliveries::class,
+        );
+
         Appointment::observe(AppointmentObserver::class);
+        Queue::observe(QueueObserver::class);
 
         ViewFacade::composer('layouts.landing', LandingLayoutComposer::class);
         ViewFacade::composer('layouts.admin', AdminLayoutComposer::class);
