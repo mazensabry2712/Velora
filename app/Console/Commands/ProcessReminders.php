@@ -224,14 +224,23 @@ final class ProcessReminders extends Command
 
     private function trackingUrl(Tenant $tenant, string $reference): string
     {
-        $domain = $tenant->domains()->first()?->domain;
+        try {
+            $domain = $tenant->domains()->first()?->domain;
 
-        if (is_string($domain) && $domain !== '') {
-            $scheme = parse_url((string) config('app.url'), PHP_URL_SCHEME) ?: 'https';
-            return $scheme . '://' . $domain . '/queue/status?ref=' . rawurlencode($reference);
+            if (is_string($domain) && $domain !== '') {
+                $scheme = parse_url((string) config('app.url'), PHP_URL_SCHEME) ?: 'https';
+
+                return $scheme . '://' . $domain . '/queue/status?ref=' . rawurlencode($reference);
+            }
+        } catch (\Throwable $e) {
+            Log::notice(
+                "ProcessReminders: failed to resolve tenant domain for [{$tenant->id}]: {$e->getMessage()}"
+            );
         }
 
-        return route('customer.queue.status', ['ref' => $reference]);
+        $baseUrl = rtrim((string) config('app.url', 'http://localhost'), '/');
+
+        return $baseUrl . '/queue/status?ref=' . rawurlencode($reference);
     }
 
     private function isUniqueConstraintViolation(QueryException $exception): bool
