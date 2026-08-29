@@ -7,7 +7,7 @@ namespace App\Observers;
 use App\Domain\Queue\Events\QueueLifecycleNotificationRequested;
 use App\Models\Customer;
 use App\Models\Queue;
-use App\Models\User;
+use App\Support\TenantContext;
 use Illuminate\Support\Str;
 
 final class QueueObserver
@@ -33,7 +33,7 @@ final class QueueObserver
         $before = $this->beforePositions[spl_object_id($queue)] ?? [];
         $after = $this->positions();
 
-        $this->dispatchChangedWaitingEntries($queue, $before, $after);
+        $this->dispatchChangedWaitingEntries($before, $after);
         unset($this->beforePositions[spl_object_id($queue)]);
     }
 
@@ -59,19 +59,16 @@ final class QueueObserver
         $newStatus = (string) $queue->status;
 
         if ($oldStatus === 'waiting' && $newStatus === 'serving') {
-            $oldPosition = $before[(int) $queue->getKey()] ?? null;
-
             $this->dispatchForQueue(
                 queue: $queue,
                 event: 'queue.turn_now',
                 updateType: 'next',
                 position: null,
-                oldPosition: $oldPosition,
+                oldPosition: $before[(int) $queue->getKey()] ?? null,
             );
         }
 
-        $this->dispatchChangedWaitingEntries($queue, $before, $after);
-
+        $this->dispatchChangedWaitingEntries($before, $after);
         unset($this->beforePositions[spl_object_id($queue)]);
     }
 
@@ -89,7 +86,7 @@ final class QueueObserver
         $before = $this->beforePositions[spl_object_id($queue)] ?? [];
         $after = $this->positions();
 
-        $this->dispatchChangedWaitingEntries($queue, $before, $after);
+        $this->dispatchChangedWaitingEntries($before, $after);
         unset($this->beforePositions[spl_object_id($queue)]);
     }
 
@@ -109,14 +106,10 @@ final class QueueObserver
     }
 
     /**
-     * Notify only entries whose waiting position really changed.
-     * An entry moving into position 1 gets the stronger `almost_turn`
-     * event instead of an additional generic `position_changed` message.
-     *
      * @param array<int, int> $before
      * @param array<int, int> $after
      */
-    private function dispatchChangedWaitingEntries(Queue $trigger, array $before, array $after): void
+    private function dispatchChangedWaitingEntries(array $before, array $after): void
     {
         $ids = array_values(array_intersect(array_keys($before), array_keys($after)));
 
@@ -151,7 +144,6 @@ final class QueueObserver
                     position: 1,
                     oldPosition: $oldPosition,
                 );
-
                 continue;
             }
 
@@ -199,7 +191,12 @@ final class QueueObserver
             ? ($customer->language ?: null)
             : ($customer->locale ?: null);
 
-        $locale ??= $tenant->settings?->language;
+        // Do not query Tenant->settings here: queue lifecycle observers also run in
+        // lightweight tenant tests where that optional relation/table is absent.
+        $tenantData = method_exists($tenant, 'getAttribute')
+            ? (array) ($tenant->getAttribute('data') ?? [])
+            : [];
+        $locale ??= $tenantData['language'] ?? null;
         $locale ??= config('app.locale', 'ar');
 
         event(new QueueLifecycleNotificationRequested(
