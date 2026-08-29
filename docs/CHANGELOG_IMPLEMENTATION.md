@@ -197,6 +197,20 @@ The Tenant/Public language scope covers Public/Landing, Tenant Customer, Tenant 
 - Translation bundle coverage is a core infrastructure milestone, not a claim that every Tenant-facing screen is fully translated.
 - Remaining translation work includes feature-specific dashboard/admin copy, hard-coded Blade/JavaScript strings, emails and generated documents.
 
+### Notification Delivery / Appointment Reminders
+
+- Appointment reminder delivery was moved behind the shared `NotificationDelivery` ledger instead of sending email directly from the discovery command.
+- `appointment.reminder_24h` and `appointment.reminder_1h` are distinct events.
+- Each reminder delivery uses `event|channel|public_reference` as its dedupe identity and relies on the unique delivery ledger key to prevent duplicate scheduler sends.
+- Reminder discovery is handled by `reminders:process`; the command does not perform external email I/O directly.
+- `SendAppointmentReminderEmail` is the queue boundary and owns delivery status transitions, attempts, retry behavior and final failure handling.
+- Delivery and legacy `ReminderLog` status are synchronized on success and failure.
+- Reminder processing respects tenant context and avoids breaking tenant-scoped test transactions.
+- Reminder eligibility excludes cancelled, completed and no-show appointments and requires a customer email plus public appointment reference.
+- Customer locale is carried into the queued delivery and tracking URLs are preserved in delivery metadata.
+- The existing `/book` and `/queue/status` routes were not changed as part of this reminder implementation.
+- `AppointmentReminderDeliveryTest` covers 24-hour creation, 1-hour event separation, idempotency, queue dispatch and successful job delivery.
+
 ### Signup E2E / Frontend Contract
 
 - `SignupClientFlowTest` covers the client-facing signup lifecycle including validation, duplicates, locale selection/defaulting, verification, expiry, resend throttling, and machine-readable JSON contract behavior.
@@ -212,7 +226,9 @@ The Tenant/Public language scope covers Public/Landing, Tenant Customer, Tenant 
 - Dedicated test base classes exist for tenant and super-admin scenarios.
 - `SupportedLocaleCoreCoverageTest` verifies core translation bundle existence, locale direction and notification key/placeholder parity for supported locales.
 - `TenantLoginLocaleUiTest` verifies Tenant Login localization behavior and UI contract across supported locales.
-- Last confirmed user-reported local full suite: **537 tests, 4311 assertions, 0 failures, 0 errors**.
+- `AppointmentReminderDeliveryTest` verifies reminder delivery creation, deduplication, queue dispatch and job completion behavior.
+- User-confirmed local full suite on 2026-08-29: **570 tests, 5624 assertions, 0 failures, 0 errors**.
+- User-confirmed locale coverage test on 2026-08-29: **3 tests, 1201 assertions, 0 failures**.
 
 ## Important Risks Identified
 
@@ -230,15 +246,16 @@ The Tenant/Public language scope covers Public/Landing, Tenant Customer, Tenant 
 7. Subscription state transitions should be decoupled from normal requests where possible.
 8. Database indexes/performance should be reviewed under realistic tenant volume.
 9. Real email delivery needs external SMTP/provider validation; local Mailtrap attempts have previously depended on queue/SMTP configuration.
+10. Queue lifecycle notifications are not implemented yet; planned events are position changed, almost turn and turn now.
 
 ### P2
 
-10. Dashboard analytics should be refactored and optimized further.
-11. Remaining hard-coded translations should be localized.
-12. Browser/mobile/RTL visual QA should be completed across the Tenant language lifecycle.
-13. Forgot Password / Reset Password should be implemented as a complete Tenant-aware flow.
-14. Generated emails/PDFs/documents should be reviewed for locale completeness.
-15. Production operations/documentation should be completed.
+11. Dashboard analytics should be refactored and optimized further.
+12. Remaining hard-coded translations should be localized.
+13. Browser/mobile/RTL visual QA should be completed across the Tenant language lifecycle.
+14. Forgot Password / Reset Password should be implemented as a complete Tenant-aware flow.
+15. Generated emails/PDFs/documents should be reviewed for locale completeness.
+16. Production operations/documentation should be completed.
 
 ## Execution Rule
 
@@ -252,6 +269,60 @@ Every completed task should update this file with:
 - Any follow-up risk.
 
 ## Latest Implementation Entry
+
+### 2026-08-29 — Appointment Reminder Delivery & Notification Localization Hardening
+
+Scope:
+- Finish the first appointment reminder lifecycle milestone without changing `/book` or `/queue/status`.
+- Introduce queue-backed reminder delivery for 24-hour and 1-hour reminders.
+- Preserve idempotency through NotificationDelivery dedupe keys.
+- Synchronize NotificationDelivery and legacy ReminderLog state.
+- Resolve tenant-context behavior correctly for tenant-scoped scheduler processing.
+- Enforce notification translation key and placeholder parity across all 15 supported locales.
+
+Changed:
+- `app/Console/Commands/ProcessReminders.php`
+- `app/Jobs/SendAppointmentReminderEmail.php`
+- `tests/Feature/AppointmentReminderDeliveryTest.php`
+- `tests/TenantTestCase.php` (tenant-context behavior exercised by reminder tests)
+- `lang/es/notifications.php`
+- `lang/de/notifications.php`
+- `lang/it/notifications.php`
+- `lang/pt/notifications.php`
+- `lang/ru/notifications.php`
+- `lang/zh/notifications.php`
+- `lang/ja/notifications.php`
+- `lang/tr/notifications.php`
+- `lang/hi/notifications.php`
+- `lang/ko/notifications.php`
+- `lang/nl/notifications.php`
+- `lang/id/notifications.php`
+- `lang/fr/notifications.php`
+- `docs/PROJECT_STATUS.md`
+- `docs/CHANGELOG_IMPLEMENTATION.md`
+
+Behavior:
+- 24-hour reminders resolve to `appointment.reminder_24h`.
+- 1-hour reminders resolve to `appointment.reminder_1h`.
+- Delivery dedupe identity is `event|email|public_reference`.
+- Existing delivery records prevent duplicate scheduler dispatch.
+- Reminder discovery creates a queued `NotificationDelivery` record and dispatches `SendAppointmentReminderEmail`.
+- The reminder job increments delivery attempts, transitions through `sending`, `sent`, retryable `queued`, and final `failed` states, and keeps `ReminderLog` synchronized.
+- Cancellation/completion/no-show appointments are excluded from reminder processing.
+- Tenant processing preserves the active tenant context when one is already initialized, avoiding loss of tenant-scoped test transactions.
+- All supported notification catalogs expose the same flattened key set and placeholder contract as English.
+
+Validation:
+- `php artisan test tests/Feature/AppointmentReminderDeliveryTest.php --compact` → **3 tests, 16 assertions, 0 failures**.
+- `php artisan test tests/Feature/SupportedLocaleCoreCoverageTest.php --compact` → **3 tests, 1201 assertions, 0 failures**.
+- `php artisan test --parallel --processes=12` → **570 tests, 5624 assertions, 0 failures, 0 errors**.
+
+Follow-up:
+- Implement Queue Lifecycle Notifications: position changed, almost turn and turn now.
+- Add queue notification jobs/providers using the same NotificationDelivery and localization contracts.
+- Add event-driven queue notification tests without changing `/book` or `/queue/status`.
+
+## Previous Implementation Entry
 
 ### 2026-08-29 — Application Page Inventory & Scope Clarification
 
