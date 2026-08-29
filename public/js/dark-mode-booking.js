@@ -3,6 +3,7 @@
 
     const STORAGE_KEY = 'bookingDarkMode';
     const ANY_STAFF = '__any__';
+    const BOOKING_REFERENCE_KEY = 'veloraBookingReference';
 
     function apply(isDark) {
         document.documentElement.classList.toggle('dark', isDark);
@@ -31,50 +32,56 @@
         });
     }
 
-    function observeBookingResult() {
-        const success = document.getElementById('successMessage');
-        if (!success) return;
+    function interceptBookingSuccess() {
+        if (window.__veloraBookingFetchWrapped) return;
+        window.__veloraBookingFetchWrapped = true;
 
-        const sync = () => {
-            const reference = window.__veloraBookingReference;
-            if (!reference || success.classList.contains('hidden')) return;
-
-            const target = `/queue/status?ref=${encodeURIComponent(reference)}`;
-            success.querySelectorAll('a').forEach((link) => {
-                if (link.textContent.toLowerCase().includes('queue')) link.href = target;
-            });
-
-            if (!window.__veloraBookingRedirected) {
-                window.__veloraBookingRedirected = true;
-                window.location.assign(target);
-            }
-        };
-
-        new MutationObserver(sync).observe(success, { attributes: true, attributeFilter: ['class'], childList: true, subtree: true });
-        new MutationObserver(sync).observe(document.getElementById('queueNumberText') || success, { childList: true, characterData: true, subtree: true });
-        sync();
-    }
-
-    function installBookingResponseObserver() {
-        if (window.__veloraBookingFetchWrapped || typeof window.fetch !== 'function') return;
         const nativeFetch = window.fetch.bind(window);
-        window.fetch = async (...args) => {
+        window.fetch = async function (...args) {
             const response = await nativeFetch(...args);
             try {
-                const input = args[0];
-                const init = args[1] || {};
-                const url = typeof input === 'string' ? input : input?.url || '';
-                const method = String(init.method || (typeof input === 'object' && input?.method) || 'GET').toUpperCase();
-                if (method === 'POST' && url.includes('/api/appointments') && response.ok) {
+                const request = args[0] instanceof Request ? args[0] : null;
+                const url = request ? request.url : String(args[0] || '');
+                const method = request ? request.method : String(args[1]?.method || 'GET');
+
+                if (method.toUpperCase() === 'POST' && /\/api\/appointments(?:\?|$)/.test(url)) {
                     const payload = await response.clone().json();
-                    window.__veloraBookingReference = payload?.data?.appointment?.public_reference || null;
+                    const reference = payload?.success ? payload?.data?.appointment?.public_reference : null;
+                    if (reference) {
+                        sessionStorage.setItem(BOOKING_REFERENCE_KEY, String(reference));
+                        window.__veloraBookingReference = String(reference);
+                    }
                 }
             } catch (_) {
-                // Never interfere with the original fetch response.
+                // Never interfere with the original booking response.
             }
+
             return response;
         };
-        window.__veloraBookingFetchWrapped = true;
+    }
+
+    function redirectToBookingStatus() {
+        const success = document.getElementById('successMessage');
+        if (!success || success.dataset.redirectBound === '1') return;
+        success.dataset.redirectBound = '1';
+
+        const observer = new MutationObserver(() => {
+            if (success.classList.contains('hidden')) return;
+            const reference = window.__veloraBookingReference || sessionStorage.getItem(BOOKING_REFERENCE_KEY);
+            if (!reference || window.__veloraBookingRedirected) return;
+
+            window.__veloraBookingRedirected = true;
+            const statusUrl = '/queue/status?ref=' + encodeURIComponent(reference);
+            success.querySelectorAll('a').forEach((link) => {
+                link.href = statusUrl;
+            });
+
+            window.setTimeout(() => {
+                window.location.assign(statusUrl);
+            }, 120);
+        });
+
+        observer.observe(success, { attributes: true, attributeFilter: ['class'] });
     }
 
     function initBookingEnhancements() {
@@ -139,6 +146,7 @@
             chooseTime: 'Choose an available time to continue.',
             noSlots: 'No times are available for the selected date.',
             selectTime: 'Select time',
+            network: 'Unable to load availability. Please try again.',
         };
 
         function selectedText(select) { return select?.selectedOptions?.[0]?.textContent?.trim() || '—'; }
@@ -286,7 +294,6 @@
             reveal(stepDate);
         });
         date.addEventListener('change', () => {
-            resetFrom(2);
             refreshSummary();
             setProgress('time');
             if (staff.value === ANY_STAFF) loadAnyStaffAvailability();
@@ -316,9 +323,6 @@
         updateDetailsVisibility();
         refreshSummary();
         renderSlots();
-        normalizeBrandFallback();
-        installBookingResponseObserver();
-        observeBookingResult();
     }
 
     function hideDetailsUntilTime() {
@@ -330,6 +334,15 @@
     function init() {
         apply(readPreference());
         normalizeBrandFallback();
+        interceptBookingSuccess();
+        const success = document.getElementById('successMessage');
+        if (success) redirectToBookingStatus();
+        const media = window.matchMedia('(prefers-color-scheme: dark)');
+        const handleSystemChange = (event) => {
+            if (localStorage.getItem(STORAGE_KEY) === null) apply(event.matches);
+        };
+        if (typeof media.addEventListener === 'function') media.addEventListener('change', handleSystemChange);
+        else if (typeof media.addListener === 'function') media.addListener(handleSystemChange);
         initBookingEnhancements();
     }
 
