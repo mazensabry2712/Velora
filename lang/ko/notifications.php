@@ -1,7 +1,7 @@
 <?php
 return [
  'appointment_booked'=>['subject'=>'예약 확인','greeting'=>':name님, 안녕하세요.','message'=>'예약이 성공적으로 완료되었습니다!','details'=>'예약 상세:','date'=>'날짜: :date','time'=>'시간: :time','tenant'=>'클리닉: :tenant','footer'=>'서비스를 이용해 주셔서 감사합니다!','sms'=>':name님, :tenant에서 :date :time에 예약되었습니다.'],
- 'appointment_reminder'=>['subject'=>'예약 알림','greeting'=>':name님, 안녕하세요.','message'=>'다가오는 예약에 대한 알림입니다!','details'=>'예약 상세:','date'=>'날짜: :date','time'=>'시간: :time','tenant'=>'클리닉: :tenant','footer'=>'방문을 기다리고 있습니다!','sms'=>'알림: :tenant에서 :date :time에 예약이 있습니다.'],
+ 'appointment_reminder'=>['subject'=>'예약 알림','greeting'=>':name님, 안녕하세요.','message'=>'다가오는 예약에 대한 알림입니다!','details'=>'예약 상세:','date'=>'날짜: :date','time'=>'시간: :time','service'=>'서비스: :service','staff'=>'전문가: :staff','tenant'=>'클리닉: :tenant','queue'=>'대기 번호: :number','reference'=>'예약 참조: :reference','tracking'=>'예약 추적: :url','footer'=>'방문을 기다리고 있습니다!','sms'=>'알림: :tenant에서 :date :time에 예약이 있습니다.'],
  'appointment_cancelled'=>['subject'=>'예약 취소','greeting'=>':name님, 안녕하세요.','message'=>'예약이 취소되었습니다.','details'=>'취소된 예약 상세:','date'=>'날짜: :date','time'=>'시간: :time','tenant'=>'클리닉: :tenant','footer'=>'언제든지 다른 예약을 할 수 있습니다.','sms'=>':tenant의 :date :time 예약이 취소되었습니다.'],
  'appointment_confirmed'=>['subject'=>'예약 확정','greeting'=>':name님, 안녕하세요.','message'=>'예약이 확정되었습니다!','details'=>'예약 상세:','date'=>'날짜: :date','time'=>'시간: :time','tenant'=>'클리닉: :tenant','footer'=>'방문을 기다리고 있습니다!','sms'=>':tenant의 :date :time 예약이 확정되었습니다.'],
  'queue_next'=>['subject'=>'지금 차례입니다!','greeting'=>':name님, 안녕하세요.','message'=>'지금 차례입니다! 안내 데스크로 이동해 주세요.','queue_number'=>'대기 번호: :number','footer'=>'기다려 주셔서 감사합니다!','sms'=>':name님, 지금 차례입니다! 대기 번호: :number. 안내 데스크로 이동해 주세요.'],
