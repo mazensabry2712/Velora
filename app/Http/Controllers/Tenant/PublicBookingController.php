@@ -107,7 +107,7 @@ final class PublicBookingController extends Controller
                             'event' => 'appointment.booked',
                             'channel' => 'whatsapp',
                             'recipient' => $phone,
-                            'provider' => app(WhatsAppProvider::class)::class,
+                            'provider' => get_class(app(WhatsAppProvider::class)),
                             'status' => 'queued',
                             'attempts' => 0,
                             'queued_at' => now(),
@@ -115,7 +115,7 @@ final class PublicBookingController extends Controller
                         ]
                     );
 
-                    if (! $delivery->sent_at) {
+                    if (! $delivery->sent_at && $delivery->status !== 'skipped') {
                         SendPublicAppointmentConfirmationWhatsApp::dispatch(
                             tenant: $tenant,
                             deliveryId: (int) $delivery->id,
