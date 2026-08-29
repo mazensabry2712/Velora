@@ -14,9 +14,9 @@
         $lookup = request('ref') ?: request('queue_number');
     @endphp
     <title>{{ __('Queue status') }} · {{ $businessName }}</title>
-    <link rel="stylesheet" href="{{ asset('css/velora-brand.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/velora-public.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/velora-queue.css') }}">
+    <link rel="stylesheet" href="{{ global_asset('css/velora-brand.css') }}">
+    <link rel="stylesheet" href="{{ global_asset('css/velora-public.css') }}">
+    <link rel="stylesheet" href="{{ global_asset('css/velora-queue.css') }}">
 </head>
 <body class="queue-page">
 <div class="queue-shell">
@@ -87,6 +87,6 @@
 
     <footer class="queue-footer"><a href="{{ route('customer.booking') }}">← {{ __('Back to booking') }}</a><span>{{ $businessName }}</span></footer>
 </div>
-<script src="{{ asset('js/velora-queue-v3.js') }}"></script>
+<script src="{{ global_asset('js/velora-queue-v3.js') }}"></script>
 </body>
 </html>
