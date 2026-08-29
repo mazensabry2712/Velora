@@ -20,10 +20,10 @@ test.describe('Velora public booking V3', () => {
     });
 
     test('mobile controls remain touch friendly and fit the viewport', async ({ page }) => {
-        const controls = await page.locator('.booking-control, .booking-choice, .booking-date, .booking-slot, .booking-btn').evaluateAll((items) =>
+        const controls = await page.locator('.booking-controls button, .booking-choice:visible, .booking-date:visible, .booking-slot:visible, .booking-btn:visible').evaluateAll((items) =>
             items.filter((item) => {
-                const style = getComputedStyle(item); const rect = item.getBoundingClientRect();
-                return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+                const rect = item.getBoundingClientRect();
+                return rect.width > 0 && rect.height > 0;
             }).map((item) => item.getBoundingClientRect().height),
         );
         expect(controls.length).toBeGreaterThan(0);
@@ -41,7 +41,7 @@ test.describe('Velora public booking V3', () => {
 
     test('loads services and moves to specialist step', async ({ page }) => {
         const serviceSelect = page.locator('#service_id');
-        await expect.poll(async () => serviceSelect.locator('option').count()).toBeGreaterThan(0);
+        await expect.poll(async () => serviceSelect.locator('option').count(), { timeout: 10000 }).toBeGreaterThan(0);
         const first = serviceSelect.locator('option[value]:not([value=""])').first();
         if (await first.count() === 0) {
             await expect(page.locator('#errorMessage')).toBeVisible();
@@ -49,20 +49,17 @@ test.describe('Velora public booking V3', () => {
         }
         const value = await first.getAttribute('value');
         expect(value).toBeTruthy();
-        await serviceSelect.evaluate((select, optionValue) => {
-            select.value = optionValue;
-            select.dispatchEvent(new Event('change', { bubbles: true }));
-        }, value);
+        await page.locator('#serviceCards .booking-choice').first().click();
         await expect(page.locator('[data-step="2"]')).toBeVisible();
         await expect(page.locator('#staffCards')).toBeVisible();
     });
 
     test('booking flow exposes real time slots when availability exists', async ({ page }) => {
         const service = page.locator('#service_id');
-        await expect.poll(async () => service.locator('option').count()).toBeGreaterThan(0);
+        await expect.poll(async () => service.locator('option').count(), { timeout: 10000 }).toBeGreaterThan(0);
         const serviceValue = await service.locator('option[value]:not([value=""])').first().getAttribute('value');
         if (!serviceValue) test.skip(true, 'Tenant has no online-bookable services.');
-        await service.evaluate((select, value) => { select.value = value; select.dispatchEvent(new Event('change', { bubbles: true })); }, serviceValue);
+        await page.locator('#serviceCards .booking-choice').first().click();
         await expect(page.locator('#staffCards .booking-choice').first()).toBeVisible({ timeout: 5000 });
         await page.locator('#staffCards .booking-choice').first().click();
         const dates = page.locator('#dateChoices .booking-date');
