@@ -15,26 +15,30 @@ VL-AB12CD34
 ```text
 /book
   ↓
-Service
+Choose service
   ↓
-Staff / Any available
+Choose specialist / Any available
   ↓
-Date
+Choose date
   ↓
-Available time
+Choose available time
   ↓
-Customer details
+Enter customer details
+  ↓
+Confirm appointment
   ↓
 POST /api/appointments
   ↓
-Appointment + Queue + public_reference
+public_reference + queue
   ↓
 /queue/status?ref=VL-XXXXXXXX
   ↓
-Live appointment + queue tracking
+Customer ticket + live queue tracking
 ```
 
-The same public reference is the identifier the customer uses after booking. The queue number remains a separate operational ticket for the current queue day.
+`/book` is intentionally a booking-only surface. It does not render the final ticket or queue dashboard.
+
+`/queue/status` is the reusable customer ticket and tracking surface.
 
 ## Identifier rules
 
@@ -62,13 +66,13 @@ Preferred query:
 /queue/status?ref=VL-XXXXXXXX
 ```
 
-Legacy compatibility query:
+Legacy compatibility query may still be accepted by the public API:
 
 ```text
 /queue/status?queue_number=A-027
 ```
 
-The reference form is the canonical customer journey. Queue-number lookup remains available for existing public queue usage and is intentionally privacy-limited.
+The reference form is the canonical customer journey.
 
 API endpoint:
 
@@ -92,7 +96,9 @@ For a valid public reference, the API returns only information required for the 
 - Queue status
 - Priority flag
 - Number of people ahead when it can be calculated
+- Estimated wait when queue duration rules permit it
 - Customer display name
+- Customer tracking URL
 
 For a legacy queue-number lookup, customer identity fields remain excluded.
 
@@ -100,32 +106,75 @@ Customer private notes, internal notes, authentication secrets, payment secrets,
 
 ## Tenant isolation
 
-The route and API execute inside the current tenant domain context. Public reference lookup must resolve against the current tenant's appointment data. A reference belonging to another tenant must never return another tenant's appointment.
+The route and API execute inside the current tenant domain context. Public reference lookup resolves only against the current tenant's appointment data. A reference belonging to another tenant must never return another tenant's appointment.
 
 ## Rate limiting
 
 Public queue lookup remains rate-limited per tenant and client IP. A public reference does not bypass the protection.
 
+## V3 UI contract
+
+Booking implementation:
+
+```text
+resources/views/customer/booking.blade.php
+public/css/velora-booking.css
+public/js/velora-booking-v3.js
+```
+
+Queue implementation:
+
+```text
+resources/views/customer/queue-status.blade.php
+public/css/velora-queue.css
+public/js/velora-queue-v3.js
+```
+
+Both surfaces are tenant-branded, RTL/LTR aware, responsive, and independent from the global dark-mode enhancement stylesheet.
+
+The booking surface keeps only the backend identifiers required by the booking contract:
+
+```text
+bookingForm
+service_id
+staff_id
+appointment_date
+appointment_time
+notes
+submitBtn
+```
+
+The public UI uses cards for service, specialist, date, and time selection instead of presenting the customer with a long legacy form.
+
 ## Confirmation experience
 
-`/queue/status?ref=...` serves two roles:
+After a successful `POST /api/appointments`, the browser reads:
 
-1. Immediate appointment confirmation after a successful online booking.
-2. Long-lived appointment and queue tracking from a saved link.
+```text
+data.appointment.public_reference
+```
 
-The booking page captures the `data.appointment.public_reference` value from the successful booking response and redirects to the status page. The status page then owns the confirmation, ticket, appointment details, and queue position display.
+and redirects immediately to:
+
+```text
+/queue/status?ref={public_reference}
+```
+
+The old inline booking success panel is intentionally removed from `/book`.
 
 ## Queue position
 
 The public status payload exposes `people_ahead` for active waiting/serving queues when the position can be calculated from the current queue ordering.
 
-An estimated wait duration is deliberately not part of the current contract. It should be introduced only after the queue-time calculation rules are defined and validated for VIP priority, service durations, breaks, and active service state.
+The current implementation also exposes `estimated_wait_minutes` when the number of people ahead and the configured service duration allow a deterministic estimate.
+
+Future queue timing logic must account for VIP priority, breaks, service durations, active service state, and other operational rules before becoming a strict SLA/ETA.
 
 ## Notification integration
 
 Email and WhatsApp are planned integrations and are **not** considered implemented solely by this contract.
 
-When implemented, they should use the same public reference and link:
+When implemented, they should use the same public reference and tracking URL:
 
 ```text
 {tenant-booking-host}/queue/status?ref={public_reference}
@@ -136,39 +185,28 @@ Delivery must be asynchronous and must never turn a successfully committed appoi
 Recommended notification events:
 
 - Appointment confirmed
+- Appointment reminder
 - Appointment moved/rescheduled
 - Appointment cancelled
 - Almost your turn
 - Your turn
 - Appointment completed
 
-## Booking page behavior
+## Files and verification
 
-The existing booking form keeps its current API and field contract. After a successful `POST /api/appointments`, the response contains the public reference under:
-
-```text
- data.appointment.public_reference
-```
-
-The browser stores the reference for the current confirmation transition and redirects to:
+Core booking backend:
 
 ```text
-/queue/status?ref={public_reference}
-```
-
-This keeps `/book` focused on booking and `/queue/status` focused on the customer's ticket/tracking experience.
-
-## Files
-
-Core implementation:
-
-```text
-app/Models/Appointment.php
+app/Application/Booking/Actions/CreatePublicBooking.php
+app/Application/Booking/DTOs/PublicBookingData.php
+app/Http/Requests/Tenant/PublicBookingRequest.php
 app/Http/Controllers/Tenant/PublicBookingController.php
+```
+
+Public queue backend:
+
+```text
 app/Http/Controllers/Web/QueueController.php
-resources/views/customer/booking.blade.php
-resources/views/customer/queue-status.blade.php
-public/js/dark-mode-booking.js
 ```
 
 Schema:
@@ -177,17 +215,19 @@ Schema:
 database/migrations/tenant/2026_08_29_000101_add_public_reference_to_appointments_table.php
 ```
 
-Tests:
+Feature tests:
 
 ```text
 tests/Feature/PublicAppointmentReferenceTest.php
 tests/Feature/PublicBookingSurfaceContractTest.php
+tests/Feature/PublicQueueSurfaceContractTest.php
 tests/Feature/PublicBookingTest.php
 tests/Feature/CustomerBookingJourneyTest.php
 ```
 
-## Future messaging integration
+Browser tests:
 
-Email/WhatsApp providers should be implemented behind application-level notification contracts. The public reference is the only customer-facing appointment identifier required by those channels.
-
-Provider-specific code belongs to infrastructure/integration layers and must not be embedded into booking domain logic.
+```text
+tests/browser/booking.spec.js
+tests/browser/queue.spec.js
+```
