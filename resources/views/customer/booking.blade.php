@@ -13,9 +13,9 @@
         $languageNames = ['ar'=>'العربية','de'=>'Deutsch','en'=>'English','es'=>'Español','fr'=>'Français','hi'=>'हिन्दी','id'=>'Bahasa Indonesia','it'=>'Italiano','ja'=>'日本語','ko'=>'한국어','nl'=>'Nederlands','pt'=>'Português','ru'=>'Русский','tr'=>'Türkçe','zh'=>'中文'];
     @endphp
     <title>{{ __('Book Appointment') }} · {{ $businessName }}</title>
-    <link rel="stylesheet" href="{{ asset('css/velora-brand.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/velora-public.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/velora-booking.css') }}">
+    <link rel="stylesheet" href="{{ global_asset('css/velora-brand.css') }}">
+    <link rel="stylesheet" href="{{ global_asset('css/velora-public.css') }}">
+    <link rel="stylesheet" href="{{ global_asset('css/velora-booking.css') }}">
 </head>
 <body class="booking-page">
 <div class="booking-shell">
@@ -116,6 +116,6 @@
 
     <footer class="booking-footer"><a href="{{ url('/') }}">{{ __('Back to website') }}</a><span>{{ $businessName }}</span></footer>
 </div>
-<script src="{{ asset('js/velora-booking-v3.js') }}"></script>
+<script src="{{ global_asset('js/velora-booking-v3.js') }}"></script>
 </body>
 </html>
