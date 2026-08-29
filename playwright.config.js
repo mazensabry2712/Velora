@@ -10,7 +10,7 @@ export default defineConfig({
     use: {
         baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://rasha.velora.test',
         trace: 'retain-on-failure',
-        screenshot: 'on',
+        screenshot: 'only-on-failure',
         video: 'retain-on-failure',
         actionTimeout: 10000,
         navigationTimeout: 15000,
@@ -26,7 +26,7 @@ export default defineConfig({
         {
             name: 'chromium-mobile',
             use: {
-                ...devices['iPhone 15'],
+                ...devices['Pixel 7'],
             },
         },
     ],
