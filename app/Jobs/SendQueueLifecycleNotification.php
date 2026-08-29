@@ -50,6 +50,11 @@ final class SendQueueLifecycleNotification implements ShouldQueue
             try {
                 if (($this->data['channel'] ?? 'email') === 'whatsapp') {
                     $this->sendWhatsApp($whatsAppProvider);
+
+                    $delivery->refresh();
+                    if ($delivery->status === 'skipped') {
+                        return;
+                    }
                 } else {
                     $this->sendEmail();
                 }
