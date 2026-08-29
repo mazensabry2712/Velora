@@ -32,7 +32,7 @@ final class PublicAppointmentConfirmationMail extends Mailable implements Should
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: __('notifications.public_booking_confirmation.subject', [], $this->locale),
+            subject: __('public_booking.confirmation.subject', ['tenant' => $this->tenantName], $this->locale),
         );
     }
 

@@ -9,8 +9,10 @@ use App\Application\Booking\DTOs\PublicBookingData;
 use App\Domain\Booking\Exceptions\SlotUnavailableException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\PublicBookingRequest;
+use App\Mail\PublicAppointmentConfirmationMail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 final class PublicBookingController extends Controller
@@ -39,6 +41,38 @@ final class PublicBookingController extends Controller
             $queue = $result['queue'];
             $customer = $result['customer'];
             $reference = (string) $appointment->public_reference;
+            $trackingUrl = route('customer.queue.status', ['ref' => $reference]);
+
+            try {
+                $appointment->loadMissing(['service', 'newStaff']);
+
+                $serviceName = (string) ($appointment->service_name ?? $appointment->service?->name ?? 'Appointment');
+                $staffName = (string) ($appointment->newStaff?->full_name ?? trim(($appointment->newStaff?->first_name ?? '') . ' ' . ($appointment->newStaff?->last_name ?? '')));
+                $tenantName = (string) (tenant()?->name ?? config('app.name'));
+                $locale = app()->getLocale() ?: 'en';
+
+                if ($customer->email) {
+                    Mail::to($customer->email)->queue(new PublicAppointmentConfirmationMail(
+                        tenantName: $tenantName,
+                        customerName: trim($customer->first_name . ' ' . $customer->last_name),
+                        serviceName: $serviceName,
+                        staffName: $staffName !== '' ? $staffName : '—',
+                        appointmentDate: $appointment->date?->format('Y-m-d') ?? '',
+                        appointmentTime: $appointment->time_slot ?? '',
+                        duration: (string) ($appointment->service?->duration ?? $appointment->service?->duration_minutes ?? ''),
+                        queueNumber: (string) $queue->queue_number,
+                        reference: $reference,
+                        trackingUrl: $trackingUrl,
+                        locale: $locale,
+                    ));
+                }
+            } catch (\Throwable $notificationException) {
+                Log::warning('Public appointment confirmation email could not be queued.', [
+                    'tenant_id' => tenant()?->getTenantKey(),
+                    'public_reference' => $reference,
+                    'message' => $notificationException->getMessage(),
+                ]);
+            }
 
             return response()->json([
                 'success' => true,
@@ -54,7 +88,7 @@ final class PublicBookingController extends Controller
                         'status' => $appointment->status,
                         'source' => $appointment->source,
                     ],
-                    'tracking_url' => route('customer.queue.status', ['ref' => $reference]),
+                    'tracking_url' => $trackingUrl,
                     'queue_number' => $queue->queue_number,
                     'queue' => [
                         'queue_number' => $queue->queue_number,

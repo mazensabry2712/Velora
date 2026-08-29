@@ -1,25 +1,25 @@
 @component('mail::message')
-# {{ __('notifications.public_booking_confirmation.title', [], $locale) }}
+# {{ __('public_booking.confirmation.title', [], $locale) }}
 
-{{ __('notifications.public_booking_confirmation.greeting', ['name' => $customerName], $locale) }}
+{{ __('public_booking.confirmation.greeting', ['name' => $customerName], $locale) }}
 
-{{ __('notifications.public_booking_confirmation.message', [], $locale) }}
+{{ __('public_booking.confirmation.message', [], $locale) }}
 
-## {{ __('notifications.public_booking_confirmation.details', [], $locale) }}
+## {{ __('public_booking.confirmation.details', [], $locale) }}
 
-**{{ __('notifications.public_booking_confirmation.service', [], $locale) }}:** {{ $serviceName }}  
-**{{ __('notifications.public_booking_confirmation.staff', [], $locale) }}:** {{ $staffName }}  
-**{{ __('notifications.public_booking_confirmation.date', [], $locale) }}:** {{ $appointmentDate }}  
-**{{ __('notifications.public_booking_confirmation.time', [], $locale) }}:** {{ $appointmentTime }}  
-**{{ __('notifications.public_booking_confirmation.duration', [], $locale) }}:** {{ $duration }}  
-**{{ __('notifications.public_booking_confirmation.queue', [], $locale) }}:** {{ $queueNumber }}  
-**{{ __('notifications.public_booking_confirmation.reference', [], $locale) }}:** `{{ $reference }}`
+**{{ __('public_booking.confirmation.service', [], $locale) }}:** {{ $serviceName }}  
+**{{ __('public_booking.confirmation.staff', [], $locale) }}:** {{ $staffName }}  
+**{{ __('public_booking.confirmation.date', [], $locale) }}:** {{ $appointmentDate }}  
+**{{ __('public_booking.confirmation.time', [], $locale) }}:** {{ $appointmentTime }}  
+**{{ __('public_booking.confirmation.duration', [], $locale) }}:** {{ $duration }}  
+**{{ __('public_booking.confirmation.queue', [], $locale) }}:** {{ $queueNumber }}  
+**{{ __('public_booking.confirmation.reference', [], $locale) }}:** `{{ $reference }}`
 
 @component('mail::button', ['url' => $trackingUrl])
-{{ __('notifications.public_booking_confirmation.track', [], $locale) }}
+{{ __('public_booking.confirmation.track', [], $locale) }}
 @endcomponent
 
-{{ __('notifications.public_booking_confirmation.keep_reference', [], $locale) }}
+{{ __('public_booking.confirmation.keep_reference', [], $locale) }}
 
 {{ __('notifications.regards', [], $locale) }},  
 {{ $tenantName }}
