@@ -145,4 +145,89 @@ return [
     'signup_isolated_data' => 'Your data is isolated in a private, dedicated database — never shared with other businesses.',
     'signup_type_salon' => 'Salon', 'signup_type_barber' => 'Barbershop', 'signup_type_clinic' => 'Clinic', 'signup_type_spa' => 'Spa',
     'signup_type_gym' => 'Gym', 'signup_type_restaurant' => 'Restaurant', 'signup_type_studio' => 'Studio', 'signup_type_school' => 'School', 'signup_type_other' => 'Other',
+
+    'workspace_finder' => [
+        'en' => [
+            'title' => 'Find your workspace',
+            'subtitle' => 'Enter your business workspace name to continue.',
+            'label' => 'Workspace name',
+            'placeholder' => 'yourbusiness',
+            'button' => 'Continue',
+            'no_account' => "Don't have an account?",
+            'checking' => 'Checking workspace…',
+            'found' => 'Workspace found',
+            'not_found' => 'Workspace not found. Please check the business domain and try again.',
+            'verify_error' => 'We could not verify that workspace right now. Please try again.',
+            'invalid' => 'Please enter a valid business domain.',
+        ],
+        'ar' => [
+            'title' => 'ابحث عن مساحة عملك',
+            'subtitle' => 'أدخل اسم مساحة العمل الخاصة بنشاطك للمتابعة.',
+            'label' => 'اسم مساحة العمل',
+            'placeholder' => 'اسم_نشاطك',
+            'button' => 'متابعة',
+            'no_account' => 'ليس لديك حساب؟',
+            'checking' => 'جارٍ البحث عن مساحة العمل…',
+            'found' => 'تم العثور على مساحة العمل',
+            'not_found' => 'لم يتم العثور على مساحة العمل. تحقق من اسم النطاق وحاول مرة أخرى.',
+            'verify_error' => 'تعذر التحقق من مساحة العمل الآن. حاول مرة أخرى.',
+            'invalid' => 'أدخل اسم نطاق صالحًا للنشاط.',
+        ],
+        'de' => [
+            'title' => 'Workspace finden', 'subtitle' => 'Geben Sie den Namen Ihres Business-Workspace ein, um fortzufahren.', 'label' => 'Workspace-Name', 'placeholder' => 'ihrunternehmen', 'button' => 'Weiter', 'no_account' => 'Noch kein Konto?', 'checking' => 'Workspace wird gesucht…', 'found' => 'Workspace gefunden', 'not_found' => 'Workspace nicht gefunden. Prüfen Sie die Unternehmensdomain und versuchen Sie es erneut.', 'verify_error' => 'Der Workspace konnte derzeit nicht überprüft werden. Bitte versuchen Sie es erneut.', 'invalid' => 'Geben Sie eine gültige Unternehmensdomain ein.'
+        ],
+        'es' => [
+            'title' => 'Encuentra tu espacio de trabajo', 'subtitle' => 'Introduce el nombre del espacio de trabajo de tu empresa para continuar.', 'label' => 'Nombre del espacio de trabajo', 'placeholder' => 'tuempresa', 'button' => 'Continuar', 'no_account' => '¿No tienes una cuenta?', 'checking' => 'Buscando espacio de trabajo…', 'found' => 'Espacio de trabajo encontrado', 'not_found' => 'No se encontró el espacio de trabajo. Comprueba el dominio de la empresa e inténtalo de nuevo.', 'verify_error' => 'No se ha podido verificar el espacio de trabajo. Inténtalo de nuevo.', 'invalid' => 'Introduce un dominio empresarial válido.'
+        ],
+        'fr' => [
+            'title' => 'Retrouvez votre espace de travail', 'subtitle' => 'Saisissez le nom de l’espace de travail de votre entreprise pour continuer.', 'label' => 'Nom de l’espace de travail', 'placeholder' => 'votreentreprise', 'button' => 'Continuer', 'no_account' => 'Vous n’avez pas de compte ?', 'checking' => 'Recherche de l’espace de travail…', 'found' => 'Espace de travail trouvé', 'not_found' => 'Espace de travail introuvable. Vérifiez le domaine de votre entreprise et réessayez.', 'verify_error' => 'Impossible de vérifier l’espace de travail pour le moment. Réessayez.', 'invalid' => 'Saisissez un domaine d’entreprise valide.'
+        ],
+        'hi' => [
+            'title' => 'अपना वर्कस्पेस खोजें', 'subtitle' => 'जारी रखने के लिए अपने व्यवसाय के वर्कस्पेस का नाम दर्ज करें।', 'label' => 'वर्कस्पेस का नाम', 'placeholder' => 'yourbusiness', 'button' => 'जारी रखें', 'no_account' => 'क्या आपका खाता नहीं है?', 'checking' => 'वर्कस्पेस खोजा जा रहा है…', 'found' => 'वर्कस्पेस मिल गया', 'not_found' => 'वर्कस्पेस नहीं मिला। व्यवसाय डोमेन जांचकर फिर प्रयास करें।', 'verify_error' => 'वर्कस्पेस की पुष्टि अभी नहीं हो सकी। कृपया फिर प्रयास करें।', 'invalid' => 'कृपया मान्य व्यवसाय डोमेन दर्ज करें।'
+        ],
+        'id' => [
+            'title' => 'Temukan workspace Anda', 'subtitle' => 'Masukkan nama workspace bisnis Anda untuk melanjutkan.', 'label' => 'Nama workspace', 'placeholder' => 'bisnisanda', 'button' => 'Lanjutkan', 'no_account' => 'Belum punya akun?', 'checking' => 'Memeriksa workspace…', 'found' => 'Workspace ditemukan', 'not_found' => 'Workspace tidak ditemukan. Periksa domain bisnis Anda dan coba lagi.', 'verify_error' => 'Workspace tidak dapat diverifikasi saat ini. Silakan coba lagi.', 'invalid' => 'Masukkan domain bisnis yang valid.'
+        ],
+        'it' => [
+            'title' => 'Trova il tuo workspace', 'subtitle' => 'Inserisci il nome del workspace della tua attività per continuare.', 'label' => 'Nome del workspace', 'placeholder' => 'tuaattivita', 'button' => 'Continua', 'no_account' => 'Non hai un account?', 'checking' => 'Ricerca del workspace…', 'found' => 'Workspace trovato', 'not_found' => 'Workspace non trovato. Controlla il dominio della tua attività e riprova.', 'verify_error' => 'Non è stato possibile verificare il workspace. Riprova.', 'invalid' => 'Inserisci un dominio aziendale valido.'
+        ],
+        'ja' => [
+            'title' => 'ワークスペースを検索', 'subtitle' => '続行するには、ビジネスのワークスペース名を入力してください。', 'label' => 'ワークスペース名', 'placeholder' => 'yourbusiness', 'button' => '続行', 'no_account' => 'アカウントをお持ちではありませんか？', 'checking' => 'ワークスペースを確認しています…', 'found' => 'ワークスペースが見つかりました', 'not_found' => 'ワークスペースが見つかりません。ビジネスドメインを確認して、もう一度お試しください。', 'verify_error' => '現在ワークスペースを確認できません。もう一度お試しください。', 'invalid' => '有効なビジネスドメインを入力してください。'
+        ],
+        'ko' => [
+            'title' => '워크스페이스 찾기', 'subtitle' => '계속하려면 비즈니스 워크스페이스 이름을 입력하세요.', 'label' => '워크스페이스 이름', 'placeholder' => 'yourbusiness', 'button' => '계속', 'no_account' => '계정이 없으신가요?', 'checking' => '워크스페이스를 확인하는 중…', 'found' => '워크스페이스를 찾았습니다', 'not_found' => '워크스페이스를 찾을 수 없습니다. 비즈니스 도메인을 확인한 후 다시 시도하세요.', 'verify_error' => '지금은 워크스페이스를 확인할 수 없습니다. 다시 시도하세요.', 'invalid' => '유효한 비즈니스 도메인을 입력하세요.'
+        ],
+        'nl' => [
+            'title' => 'Vind je workspace', 'subtitle' => 'Voer de naam van de workspace van je bedrijf in om door te gaan.', 'label' => 'Workspacenaam', 'placeholder' => 'jouwbedrijf', 'button' => 'Doorgaan', 'no_account' => 'Heb je nog geen account?', 'checking' => 'Workspace wordt gecontroleerd…', 'found' => 'Workspace gevonden', 'not_found' => 'Workspace niet gevonden. Controleer het bedrijfsdomein en probeer het opnieuw.', 'verify_error' => 'De workspace kon momenteel niet worden gecontroleerd. Probeer het opnieuw.', 'invalid' => 'Voer een geldig bedrijfsdomein in.'
+        ],
+        'pt' => [
+            'title' => 'Encontre seu workspace', 'subtitle' => 'Digite o nome do workspace da sua empresa para continuar.', 'label' => 'Nome do workspace', 'placeholder' => 'suaempresa', 'button' => 'Continuar', 'no_account' => 'Ainda não tem uma conta?', 'checking' => 'Verificando workspace…', 'found' => 'Workspace encontrado', 'not_found' => 'Workspace não encontrado. Verifique o domínio da empresa e tente novamente.', 'verify_error' => 'Não foi possível verificar o workspace agora. Tente novamente.', 'invalid' => 'Digite um domínio empresarial válido.'
+        ],
+        'ru' => [
+            'title' => 'Найдите своё рабочее пространство', 'subtitle' => 'Введите название рабочего пространства вашей компании, чтобы продолжить.', 'label' => 'Название рабочего пространства', 'placeholder' => 'вашабизнес', 'button' => 'Продолжить', 'no_account' => 'Нет аккаунта?', 'checking' => 'Проверяем рабочее пространство…', 'found' => 'Рабочее пространство найдено', 'not_found' => 'Рабочее пространство не найдено. Проверьте домен компании и попробуйте снова.', 'verify_error' => 'Не удалось проверить рабочее пространство. Попробуйте снова.', 'invalid' => 'Введите корректный домен компании.'
+        ],
+        'tr' => [
+            'title' => 'Çalışma alanınızı bulun', 'subtitle' => 'Devam etmek için işletmenizin çalışma alanı adını girin.', 'label' => 'Çalışma alanı adı', 'placeholder' => 'isletmeniz', 'button' => 'Devam et', 'no_account' => 'Hesabınız yok mu?', 'checking' => 'Çalışma alanı kontrol ediliyor…', 'found' => 'Çalışma alanı bulundu', 'not_found' => 'Çalışma alanı bulunamadı. İşletme alan adını kontrol edip tekrar deneyin.', 'verify_error' => 'Çalışma alanı şu anda doğrulanamadı. Lütfen tekrar deneyin.', 'invalid' => 'Geçerli bir işletme alan adı girin.'
+        ],
+        'zh' => [
+            'title' => '查找您的工作区', 'subtitle' => '输入您的企业工作区名称以继续。', 'label' => '工作区名称', 'placeholder' => 'yourbusiness', 'button' => '继续', 'no_account' => '还没有账户？', 'checking' => '正在查找工作区…', 'found' => '已找到工作区', 'not_found' => '未找到工作区。请检查企业域名后重试。', 'verify_error' => '暂时无法验证工作区，请重试。', 'invalid' => '请输入有效的企业域名。'
+        ],
+    ],
+    'workspace_ui' => [
+        'en' => ['back_to_home'=>'Back to home','secure_sign_in'=>'Secure business sign-in','encrypted'=>'End-to-end encrypted','instant_access'=>'Instant access','start_trial'=>'Start free trial','super_admin'=>'Super admin sign in','active_workspaces'=>'Active workspaces','uptime'=>'Uptime','support'=>'Support','countries'=>'Countries'],
+        'ar' => ['back_to_home'=>'العودة للرئيسية','secure_sign_in'=>'دخول آمن لأصحاب الأعمال','encrypted'=>'تشفير من طرف إلى طرف','instant_access'=>'دخول فوري','start_trial'=>'ابدأ التجربة المجانية','super_admin'=>'دخول مسؤول النظام','active_workspaces'=>'مساحات العمل النشطة','uptime'=>'وقت التشغيل','support'=>'الدعم','countries'=>'الدول'],
+        'de' => ['back_to_home'=>'Zur Startseite','secure_sign_in'=>'Sicherer Business-Login','encrypted'=>'Ende-zu-Ende-verschlüsselt','instant_access'=>'Sofortiger Zugriff','start_trial'=>'Kostenlose Testversion starten','super_admin'=>'Super-Admin anmelden','active_workspaces'=>'Aktive Workspaces','uptime'=>'Verfügbarkeit','support'=>'Support','countries'=>'Länder'],
+        'es' => ['back_to_home'=>'Volver al inicio','secure_sign_in'=>'Acceso empresarial seguro','encrypted'=>'Cifrado de extremo a extremo','instant_access'=>'Acceso instantáneo','start_trial'=>'Iniciar prueba gratuita','super_admin'=>'Acceso de superadministrador','active_workspaces'=>'Espacios de trabajo activos','uptime'=>'Disponibilidad','support'=>'Soporte','countries'=>'Países'],
+        'fr' => ['back_to_home'=>"Retour à l’accueil",'secure_sign_in'=>'Connexion professionnelle sécurisée','encrypted'=>'Chiffrement de bout en bout','instant_access'=>'Accès instantané','start_trial'=>'Démarrer l’essai gratuit','super_admin'=>'Connexion super administrateur','active_workspaces'=>'Espaces de travail actifs','uptime'=>'Disponibilité','support'=>'Assistance','countries'=>'Pays'],
+        'hi' => ['back_to_home'=>'होम पर वापस जाएँ','secure_sign_in'=>'सुरक्षित बिज़नेस साइन-इन','encrypted'=>'एंड-टू-एंड एन्क्रिप्टेड','instant_access'=>'तुरंत एक्सेस','start_trial'=>'निःशुल्क ट्रायल शुरू करें','super_admin'=>'सुपर एडमिन साइन-इन','active_workspaces'=>'सक्रिय वर्कस्पेस','uptime'=>'अपटाइम','support'=>'सहायता','countries'=>'देश'],
+        'id' => ['back_to_home'=>'Kembali ke beranda','secure_sign_in'=>'Login bisnis yang aman','encrypted'=>'Dienkripsi end-to-end','instant_access'=>'Akses instan','start_trial'=>'Mulai uji coba gratis','super_admin'=>'Login super admin','active_workspaces'=>'Workspace aktif','uptime'=>'Waktu aktif','support'=>'Dukungan','countries'=>'Negara'],
+        'it' => ['back_to_home'=>'Torna alla home','secure_sign_in'=>'Accesso aziendale sicuro','encrypted'=>'Crittografia end-to-end','instant_access'=>'Accesso immediato','start_trial'=>'Inizia la prova gratuita','super_admin'=>'Accesso super amministratore','active_workspaces'=>'Workspace attivi','uptime'=>'Disponibilità','support'=>'Supporto','countries'=>'Paesi'],
+        'ja' => ['back_to_home'=>'ホームに戻る','secure_sign_in'=>'安全なビジネスサインイン','encrypted'=>'エンドツーエンド暗号化','instant_access'=>'すぐにアクセス','start_trial'=>'無料トライアルを開始','super_admin'=>'スーパー管理者としてサインイン','active_workspaces'=>'アクティブなワークスペース','uptime'=>'稼働時間','support'=>'サポート','countries'=>'国'],
+        'ko' => ['back_to_home'=>'홈으로 돌아가기','secure_sign_in'=>'안전한 비즈니스 로그인','encrypted'=>'종단 간 암호화','instant_access'=>'즉시 액세스','start_trial'=>'무료 체험 시작','super_admin'=>'슈퍼 관리자 로그인','active_workspaces'=>'활성 워크스페이스','uptime'=>'가동 시간','support'=>'지원','countries'=>'국가'],
+        'nl' => ['back_to_home'=>'Terug naar home','secure_sign_in'=>'Veilige zakelijke aanmelding','encrypted'=>'End-to-end versleuteld','instant_access'=>'Directe toegang','start_trial'=>'Gratis proefperiode starten','super_admin'=>'Superadmin aanmelden','active_workspaces'=>'Actieve workspaces','uptime'=>'Beschikbaarheid','support'=>'Ondersteuning','countries'=>'Landen'],
+        'pt' => ['back_to_home'=>'Voltar ao início','secure_sign_in'=>'Login empresarial seguro','encrypted'=>'Criptografia de ponta a ponta','instant_access'=>'Acesso instantâneo','start_trial'=>'Iniciar teste gratuito','super_admin'=>'Login de superadministrador','active_workspaces'=>'Workspaces ativos','uptime'=>'Disponibilidade','support'=>'Suporte','countries'=>'Países'],
+        'ru' => ['back_to_home'=>'Вернуться на главную','secure_sign_in'=>'Безопасный вход для бизнеса','encrypted'=>'Сквозное шифрование','instant_access'=>'Мгновенный доступ','start_trial'=>'Начать бесплатный пробный период','super_admin'=>'Вход супер-администратора','active_workspaces'=>'Активные рабочие пространства','uptime'=>'Доступность','support'=>'Поддержка','countries'=>'Страны'],
+        'tr' => ['back_to_home'=>'Ana sayfaya dön','secure_sign_in'=>'Güvenli işletme girişi','encrypted'=>'Uçtan uca şifreli','instant_access'=>'Anında erişim','start_trial'=>'Ücretsiz denemeyi başlat','super_admin'=>'Süper yönetici girişi','active_workspaces'=>'Aktif çalışma alanları','uptime'=>'Çalışma süresi','support'=>'Destek','countries'=>'Ülkeler'],
+        'zh' => ['back_to_home'=>'返回首页','secure_sign_in'=>'安全的企业登录','encrypted'=>'端到端加密','instant_access'=>'即时访问','start_trial'=>'开始免费试用','super_admin'=>'超级管理员登录','active_workspaces'=>'活跃工作区','uptime'=>'正常运行时间','support'=>'支持','countries'=>'国家'],
+    ],
 ];

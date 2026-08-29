@@ -10,7 +10,6 @@ final class WorkspaceFinderTranslationTest extends TestCase
 {
     public function test_workspace_finder_has_complete_localized_copy_for_every_supported_locale(): void
     {
-        $translations = require base_path('lang/workspace.php');
         $supportedLocales = array_keys(config('locales.languages', []));
 
         self::assertNotEmpty($supportedLocales);
@@ -30,21 +29,23 @@ final class WorkspaceFinderTranslationTest extends TestCase
         ];
 
         foreach ($supportedLocales as $locale) {
-            self::assertArrayHasKey($locale, $translations, "Missing workspace translation locale [{$locale}].");
+            $landing = require base_path("lang/{$locale}/landing.php");
+            self::assertArrayHasKey('workspace_finder', $landing, "Missing landing workspace translations for locale [{$locale}].");
+            self::assertArrayHasKey($locale, $landing['workspace_finder'], "Missing workspace translation locale [{$locale}].");
 
             foreach ($requiredKeys as $key) {
-                self::assertArrayHasKey($key, $translations[$locale], "Missing workspace translation key [{$key}] for locale [{$locale}].");
-                self::assertNotSame('', trim((string) $translations[$locale][$key]), "Empty workspace translation key [{$key}] for locale [{$locale}].");
+                self::assertArrayHasKey($key, $landing['workspace_finder'][$locale], "Missing workspace translation key [{$key}] for locale [{$locale}].");
+                self::assertNotSame('', trim((string) $landing['workspace_finder'][$locale][$key]), "Empty workspace translation key [{$key}] for locale [{$locale}].");
             }
 
             self::assertStringNotContainsString(
                 'Enter your email',
-                (string) $translations[$locale]['subtitle'],
+                (string) $landing['workspace_finder'][$locale]['subtitle'],
                 "Workspace finder locale [{$locale}] still contains the obsolete email copy."
             );
             self::assertStringNotContainsString(
                 'Email address',
-                (string) $translations[$locale]['label'],
+                (string) $landing['workspace_finder'][$locale]['label'],
                 "Workspace finder locale [{$locale}] still uses an email label."
             );
         }

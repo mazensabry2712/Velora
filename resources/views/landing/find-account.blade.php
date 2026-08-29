@@ -1,14 +1,12 @@
 @extends('layouts.landing')
 @php
     $locale = app()->getLocale() ?: config('app.locale', 'ar');
-    $workspaceTranslations = require base_path('lang/workspace.php');
-    $workspace = $workspaceTranslations[$locale] ?? $workspaceTranslations['en'];
-    $workspaceUiTranslations = require base_path('lang/workspace_ui.php');
-    $workspaceUi = $workspaceUiTranslations[$locale] ?? $workspaceUiTranslations['en'];
+    $workspace = __('landing.workspace_finder.' . $locale);
+    $workspaceUi = __('landing.workspace_ui.' . $locale);
 @endphp
 
 @section('content')
-<div class="relative min-h-screen pt-16 bg-surface overflow-hidden">
+<div class="relative min-h-screen pt-8 bg-surface overflow-hidden">
     <div class="pointer-events-none absolute inset-0 overflow-hidden">
         <div class="absolute -left-24 top-24 h-96 w-96 rounded-full bg-brand-500/15 blur-3xl"></div>
         <div class="absolute right-0 top-1/3 h-[28rem] w-[28rem] rounded-full bg-violet-500/10 blur-3xl"></div>
@@ -16,7 +14,7 @@
     </div>
 
     <div class="relative z-10 min-h-[calc(100vh-4rem)] flex items-center">
-        <div class="w-full max-w-7xl mx-auto px-6 py-14 sm:px-10 lg:px-16">
+        <div class="w-full max-w-7xl mx-auto px-6 py-10 sm:px-10 sm:py-12 lg:px-16 lg:py-12">
             <div class="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] items-center">
                 <div class="max-w-xl">
                     <a href="{{ route('landing') }}" class="inline-flex items-center gap-2 text-gray-400 hover:text-white text-sm mb-8 transition-colors group">

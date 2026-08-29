@@ -74,4 +74,34 @@ return [
     'signup_isolated_data' => 'بياناتك معزولة في قاعدة بيانات خاصة ومستقلة — ولا تتم مشاركتها مع أي نشاط آخر أبدًا.',
     'signup_type_salon' => 'صالون', 'signup_type_barber' => 'صالون حلاقة', 'signup_type_clinic' => 'عيادة', 'signup_type_spa' => 'سبا', 'signup_type_gym' => 'نادي رياضي', 'signup_type_restaurant' => 'مطعم', 'signup_type_studio' => 'استوديو', 'signup_type_school' => 'مدرسة', 'signup_type_other' => 'أخرى',
     'meta_title' => 'فيلورا — حجز المواعيد وإدارة الطوابير', 'meta_description' => 'منصة ذكية لحجز المواعيد وإدارة الطوابير للأعمال الصغيرة.',
+
+    'workspace_finder' => [
+        'ar' => [
+            'title' => 'ابحث عن مساحة عملك',
+            'subtitle' => 'أدخل اسم مساحة العمل الخاصة بنشاطك للمتابعة.',
+            'label' => 'اسم مساحة العمل',
+            'placeholder' => 'اسم_نشاطك',
+            'button' => 'متابعة',
+            'no_account' => 'ليس لديك حساب؟',
+            'checking' => 'جارٍ البحث عن مساحة العمل…',
+            'found' => 'تم العثور على مساحة العمل',
+            'not_found' => 'لم يتم العثور على مساحة العمل. تحقق من اسم النطاق وحاول مرة أخرى.',
+            'verify_error' => 'تعذر التحقق من مساحة العمل الآن. حاول مرة أخرى.',
+            'invalid' => 'أدخل اسم نطاق صالحًا للنشاط.',
+        ],
+    ],
+    'workspace_ui' => [
+        'ar' => [
+            'back_to_home' => 'العودة للرئيسية',
+            'secure_sign_in' => 'دخول آمن لأصحاب الأعمال',
+            'encrypted' => 'تشفير من طرف إلى طرف',
+            'instant_access' => 'دخول فوري',
+            'start_trial' => 'ابدأ التجربة المجانية',
+            'super_admin' => 'دخول مسؤول النظام',
+            'active_workspaces' => 'مساحات العمل النشطة',
+            'uptime' => 'وقت التشغيل',
+            'support' => 'الدعم',
+            'countries' => 'الدول',
+        ],
+    ],
 ];
