@@ -32,6 +32,7 @@ final class PublicBookingSurfaceContractTest extends TenantTestCase
         $response->assertSee('value="en"', false);
         $response->assertSee('velora-booking.css', false);
         $response->assertSee('dark-mode-booking.js', false);
+        $response->assertSee('velora-booking-review.js', false);
     }
 
     #[Test]
