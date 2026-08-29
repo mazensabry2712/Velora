@@ -8,9 +8,10 @@ use App\Domain\Queue\Events\QueueLifecycleNotificationRequested;
 use App\Jobs\SendQueueLifecycleNotification;
 use App\Models\NotificationDelivery;
 use App\Models\Tenant;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 use Illuminate\Database\QueryException;
 
-final class CreateQueueLifecycleNotificationDeliveries
+final class CreateQueueLifecycleNotificationDeliveries implements ShouldHandleEventsAfterCommit
 {
     public function handle(QueueLifecycleNotificationRequested $event): void
     {
