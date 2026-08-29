@@ -265,3 +265,137 @@ body:has(#findAccountForm) .to-violet-500 { --tw-gradient-to:#8A5CFF !important;
 html[dir="rtl"] .va-title,
 html[dir="rtl"] .tl-heading h1,
 html[dir="rtl"] .vpr-heading h1 { letter-spacing:0; }
+
+/* Final responsive pass: borrow the landing's proportions without making auth look like marketing. */
+.tl-header,
+.vpr-topbar {
+    width:100% !important;
+    margin-inline:auto !important;
+    margin-bottom:0 !important;
+}
+.tl-header-name span,
+.vpr-brand-copy small,
+.vpr-brand-copy span { display:none !important; }
+.tl-header-brand,
+.vpr-brand { min-width:0 !important; }
+.tl-header-name,
+.vpr-brand-copy { min-width:0 !important; }
+.tl-header-name strong,
+.vpr-brand-copy strong { max-width:34vw !important; }
+.tl-language-menu,
+.vpr-menu { max-height:min(420px,calc(100dvh - 120px)) !important; overflow:hidden !important; }
+.vpr-menu-list { max-height:min(360px,calc(100dvh - 170px)) !important; overflow:auto !important; scrollbar-width:thin; }
+.tl-language-menu,
+.vpr-menu { inset-inline-end:0 !important; }
+.vpr-main,
+.tl-main { min-height:calc(100dvh - 88px) !important; place-items:center !important; }
+.vpr-card,
+.tl-card { margin-inline:auto !important; }
+.vpr-card-content,
+.tl-card-content { min-width:0; }
+
+/* The landing uses a floating glass navbar; auth keeps the same silhouette, spacing and controls. */
+.tl-header,
+.vpr-topbar {
+    background:color-mix(in srgb,var(--va-surface) 94%,transparent) !important;
+    border-color:var(--va-line) !important;
+    box-shadow:0 12px 34px rgba(13,18,38,.08) !important;
+}
+html[data-theme="dark"] .tl-header,
+html[data-theme="dark"] .vpr-topbar { box-shadow:0 14px 42px rgba(0,0,0,.24) !important; }
+
+/* Two-column language menu on larger screens prevents an unnecessarily tall dropdown. */
+.vpr-menu-list,
+.tl-language-menu > div:not(.tl-language-menu-head) { display:grid; grid-template-columns:1fr 1fr; gap:2px; }
+.vpr-menu-head { grid-column:1 / -1; }
+.vpr-menu-list a,
+.tl-language-menu a { min-width:0 !important; }
+
+@media (max-width:980px) {
+    .tl-header-name strong,
+    .vpr-brand-copy strong { max-width:28vw !important; }
+}
+
+@media (max-width:680px) {
+    .tl-shell,
+    .vpr-shell {
+        width:calc(100% - 24px) !important;
+        padding-top:8px !important;
+        padding-bottom:14px !important;
+    }
+    .tl-header,
+    .vpr-topbar {
+        min-height:58px !important;
+        padding:8px 10px !important;
+        border-radius:16px !important;
+    }
+    .tl-header-brand img,
+    .vpr-brand img { width:36px !important; height:36px !important; }
+    .tl-header-name strong,
+    .vpr-brand-copy strong { max-width:42vw !important; font-size:12px !important; }
+    .tl-main,
+    .vpr-main {
+        min-height:calc(100dvh - 72px) !important;
+        padding:18px 0 18px !important;
+    }
+    .tl-card,
+    .vpr-card {
+        width:min(100%,430px) !important;
+        border-radius:20px !important;
+    }
+    .tl-card-content,
+    .vpr-inner { padding:22px 19px !important; }
+    .tl-heading h1,
+    .vpr-heading h1 { font-size:25px !important; }
+    .tl-heading p,
+    .vpr-heading p { font-size:11px !important; line-height:1.65 !important; }
+    .tl-input,
+    .vpr-input { height:52px !important; }
+    .tl-submit,
+    .vpr-submit { min-height:52px !important; }
+    .vpr-menu,
+    .tl-language-menu {
+        width:min(300px,calc(100vw - 28px)) !important;
+        inset-inline-end:0 !important;
+        border-radius:16px !important;
+        padding:7px !important;
+    }
+    .vpr-menu-list,
+    .tl-language-menu > div:not(.tl-language-menu-head) {
+        grid-template-columns:1fr 1fr !important;
+        max-height:min(350px,calc(100dvh - 140px)) !important;
+    }
+    .vpr-menu a,
+    .tl-language-menu a { min-height:38px !important; font-size:10px !important; }
+}
+
+@media (max-width:430px) {
+    .tl-shell,
+    .vpr-shell { width:calc(100% - 16px) !important; }
+    .tl-header,
+    .vpr-topbar { padding-inline:8px !important; }
+    .tl-header-actions,
+    .vpr-tools { gap:4px !important; }
+    .tl-control,
+    .vpr-tool,
+    .vpr-control { min-width:37px !important; width:37px !important; height:37px !important; min-height:37px !important; }
+    .tl-header-name strong,
+    .vpr-brand-copy strong { max-width:38vw !important; }
+    .tl-card-content,
+    .vpr-inner { padding:20px 16px !important; }
+}
+
+@media (max-width:360px) {
+    .tl-header-name,
+    .vpr-brand-copy { display:none !important; }
+    .tl-header-brand,
+    .vpr-brand { flex:0 0 auto !important; }
+    .tl-header,
+    .vpr-topbar { justify-content:space-between !important; }
+    .tl-card-content,
+    .vpr-inner { padding-inline:14px !important; }
+}
+
+@media (prefers-reduced-motion:reduce) {
+    *,*::before,*::after { transition:none !important; animation:none !important; }
+}
