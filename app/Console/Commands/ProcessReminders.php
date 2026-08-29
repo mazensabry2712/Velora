@@ -159,6 +159,7 @@ final class ProcessReminders extends Command
         $locale = $customer instanceof Customer && is_string($customer->language) && $customer->language !== ''
             ? $customer->language
             : (app()->getLocale() ?: 'en');
+        $trackingUrl = $this->trackingUrl($tenant, $appointment->public_reference);
 
         $log = ReminderLog::create([
             'appointment_id' => $appointment->id,
@@ -185,6 +186,7 @@ final class ProcessReminders extends Command
                     'rule_id' => $rule->id,
                     'trigger_minutes' => (int) $rule->trigger_minutes,
                     'reminder_log_id' => $log->id,
+                    'tracking_url' => $trackingUrl,
                 ],
             ]);
 
@@ -198,6 +200,7 @@ final class ProcessReminders extends Command
                     'reminder_log_id' => $log->id,
                     'recipient' => $recipient,
                     'locale' => $locale,
+                    'tracking_url' => $trackingUrl,
                 ],
             );
 
@@ -217,6 +220,18 @@ final class ProcessReminders extends Command
 
             throw $e;
         }
+    }
+
+    private function trackingUrl(Tenant $tenant, string $reference): string
+    {
+        $domain = $tenant->domains()->first()?->domain;
+
+        if (is_string($domain) && $domain !== '') {
+            $scheme = parse_url((string) config('app.url'), PHP_URL_SCHEME) ?: 'https';
+            return $scheme . '://' . $domain . '/queue/status?ref=' . rawurlencode($reference);
+        }
+
+        return route('customer.queue.status', ['ref' => $reference]);
     }
 
     private function isUniqueConstraintViolation(QueryException $exception): bool
