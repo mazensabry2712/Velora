@@ -1,0 +1,35 @@
+/* Velora Auth — opaque language dropdown safety layer. */
+.tl-language,
+.vpr-language{position:relative!important;z-index:999999!important;isolation:isolate!important}
+.tl-language-menu,
+.vpr-menu{position:absolute!important;z-index:2147483647!important;display:block!important;opacity:1!important;visibility:visible!important;overflow:hidden!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;mix-blend-mode:normal!important;background:#fff!important;background-color:#fff!important;border:1px solid #E5E7EB!important;box-shadow:0 24px 70px rgba(13,18,38,.20)!important;isolation:isolate!important;contain:paint!important;pointer-events:auto!important}
+.tl-language-menu[hidden],
+.vpr-menu[hidden]{display:none!important}
+.tl-language-menu::before,
+.vpr-menu::before{content:"";position:absolute;inset:0;background:#fff;z-index:-1;pointer-events:none}
+.tl-language-menu *,
+.vpr-menu *{opacity:1!important;mix-blend-mode:normal!important}
+.tl-language-menu a,
+.vpr-menu a{position:relative!important;z-index:1!important;background:transparent!important;color:#4B5563!important}
+.tl-language-menu a:hover,
+.tl-language-menu a.active,
+.vpr-menu a:hover,
+.vpr-menu a.active{background:#F0F6FF!important;color:#006CFF!important}
+html[data-theme="dark"] .tl-language-menu,
+html[data-theme="dark"] .vpr-menu{background:#0D1226!important;background-color:#0D1226!important;border-color:#252E45!important;box-shadow:0 28px 80px rgba(0,0,0,.42)!important}
+html[data-theme="dark"] .tl-language-menu::before,
+html[data-theme="dark"] .vpr-menu::before{background:#0D1226}
+html[data-theme="dark"] .tl-language-menu a,
+html[data-theme="dark"] .vpr-menu a{color:#A7B0C0!important}
+html[data-theme="dark"] .tl-language-menu a:hover,
+html[data-theme="dark"] .tl-language-menu a.active,
+html[data-theme="dark"] .vpr-menu a:hover,
+html[data-theme="dark"] .vpr-menu a.active{background:#16213A!important;color:#66A3FF!important}
+@media(max-width:680px){
+ .tl-header,.vpr-topbar{overflow:visible!important}
+ .tl-language,.vpr-language{overflow:visible!important}
+ .tl-language-menu,.vpr-menu{position:fixed!important;top:auto!important;bottom:auto!important;inset-inline-end:12px!important;inset-inline-start:auto!important;width:min(292px,calc(100vw - 24px))!important;max-width:calc(100vw - 24px)!important;max-height:68dvh!important;overflow:hidden!important}
+ .vpr-menu-list{max-height:calc(68dvh - 42px)!important;overflow:auto!important;background:transparent!important}
+ .tl-language-menu>div:not(.tl-language-menu-head){max-height:calc(68dvh - 20px)!important;overflow:auto!important;background:transparent!important}
+}
+@media(max-width:360px){.tl-language-menu,.vpr-menu{inset-inline-end:8px!important;width:calc(100vw - 16px)!important;max-width:calc(100vw - 16px)!important}}
