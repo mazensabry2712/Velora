@@ -20,7 +20,7 @@ final class AppointmentReminderMail extends Mailable
     public function __construct(
         public readonly Appointment $appointment,
         public readonly User|Customer $customer,
-        public readonly string $locale = 'en',
+        public readonly string $reminderLocale = 'en',
         public readonly ?string $trackingUrl = null,
     ) {
         $this->appointment->loadMissing([
@@ -34,7 +34,7 @@ final class AppointmentReminderMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: __('notifications.appointment_reminder.subject', [], $this->locale),
+            subject: __('notifications.appointment_reminder.subject', [], $this->reminderLocale),
         );
     }
 
@@ -46,7 +46,7 @@ final class AppointmentReminderMail extends Mailable
 
         $service = $this->appointment->service;
         $serviceName = $service
-            ? (($this->locale === 'ar' && ! empty($service->name_ar)) ? $service->name_ar : $service->name)
+            ? (($this->reminderLocale === 'ar' && ! empty($service->name_ar)) ? $service->name_ar : $service->name)
             : ($this->appointment->service_type ?: 'Appointment');
 
         $staffName = $this->appointment->newStaff?->full_name
@@ -83,7 +83,7 @@ final class AppointmentReminderMail extends Mailable
                 'queueNumber' => $queueNumber !== null ? (string) $queueNumber : '—',
                 'reference' => $reference,
                 'trackingUrl' => $canonicalTrackingUrl,
-                'locale' => $this->locale,
+                'locale' => $this->reminderLocale,
             ],
         );
     }
