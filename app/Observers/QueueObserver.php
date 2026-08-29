@@ -7,43 +7,20 @@ namespace App\Observers;
 use App\Domain\Queue\Events\QueueLifecycleNotificationRequested;
 use App\Models\Customer;
 use App\Models\Queue;
-use App\Support\TenantContext;
 use Illuminate\Support\Str;
 
 final class QueueObserver
 {
-    /** @var array<int, array<int, int>> */
-    private array $beforePositions = [];
-
-    public function creating(Queue $queue): void
-    {
-        if ($queue->status !== 'waiting') {
-            return;
-        }
-
-        $this->beforePositions[spl_object_id($queue)] = $this->positions();
-    }
-
     public function created(Queue $queue): void
     {
         if ($queue->status !== 'waiting') {
             return;
         }
 
-        $before = $this->beforePositions[spl_object_id($queue)] ?? [];
+        $before = $this->positionsBeforeCreation($queue);
         $after = $this->positions();
 
         $this->dispatchChangedWaitingEntries($before, $after);
-        unset($this->beforePositions[spl_object_id($queue)]);
-    }
-
-    public function updating(Queue $queue): void
-    {
-        if (! $queue->isDirty(['status', 'is_vip', 'queue_number'])) {
-            return;
-        }
-
-        $this->beforePositions[spl_object_id($queue)] = $this->positions();
     }
 
     public function updated(Queue $queue): void
@@ -52,7 +29,7 @@ final class QueueObserver
             return;
         }
 
-        $before = $this->beforePositions[spl_object_id($queue)] ?? [];
+        $before = $this->positionsBeforeUpdate($queue);
         $after = $this->positions();
 
         $oldStatus = (string) $queue->getRawOriginal('status');
@@ -69,25 +46,19 @@ final class QueueObserver
         }
 
         $this->dispatchChangedWaitingEntries($before, $after);
-        unset($this->beforePositions[spl_object_id($queue)]);
-    }
-
-    public function deleting(Queue $queue): void
-    {
-        if ($queue->status !== 'waiting') {
-            return;
-        }
-
-        $this->beforePositions[spl_object_id($queue)] = $this->positions();
     }
 
     public function deleted(Queue $queue): void
     {
-        $before = $this->beforePositions[spl_object_id($queue)] ?? [];
+        $oldStatus = (string) $queue->getRawOriginal('status');
+        if ($oldStatus !== 'waiting') {
+            return;
+        }
+
+        $before = $this->positionsBeforeDeletion($queue);
         $after = $this->positions();
 
         $this->dispatchChangedWaitingEntries($before, $after);
-        unset($this->beforePositions[spl_object_id($queue)]);
     }
 
     /** @return array<int, int> queue id => one-based position */
@@ -101,6 +72,101 @@ final class QueueObserver
             ->values()
             ->mapWithKeys(static fn ($id, $index): array => [
                 (int) $id => $index + 1,
+            ])
+            ->all();
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function positionsBeforeCreation(Queue $created): array
+    {
+        return Queue::query()
+            ->where('status', 'waiting')
+            ->whereKeyNot($created->getKey())
+            ->orderByDesc('is_vip')
+            ->orderBy('id')
+            ->pluck('id')
+            ->values()
+            ->mapWithKeys(static fn ($id, $index): array => [
+                (int) $id => $index + 1,
+            ])
+            ->all();
+    }
+
+    /**
+     * Reconstruct the waiting order immediately before an existing queue row
+     * was updated, using its original status/is_vip values and current values
+     * for all other rows. This keeps the observer stateless and deterministic.
+     *
+     * @return array<int, int>
+     */
+    private function positionsBeforeUpdate(Queue $updated): array
+    {
+        $id = (int) $updated->getKey();
+        $oldStatus = (string) $updated->getRawOriginal('status');
+        $oldIsVip = (bool) $updated->getRawOriginal('is_vip');
+
+        $rows = Queue::query()
+            ->where('status', 'waiting')
+            ->whereKeyNot($id)
+            ->get(['id', 'is_vip']);
+
+        if ($oldStatus !== 'waiting') {
+            return $rows
+                ->sortBy([
+                    ['is_vip', 'desc'],
+                    ['id', 'asc'],
+                ])
+                ->values()
+                ->mapWithKeys(static fn ($row, $index): array => [
+                    (int) $row->id => $index + 1,
+                ])
+                ->all();
+        }
+
+        $rows->push((object) [
+            'id' => $id,
+            'is_vip' => $oldIsVip,
+        ]);
+
+        return $rows
+            ->sortBy([
+                ['is_vip', 'desc'],
+                ['id', 'asc'],
+            ])
+            ->values()
+            ->mapWithKeys(static fn ($row, $index): array => [
+                (int) $row->id => $index + 1,
+            ])
+            ->all();
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function positionsBeforeDeletion(Queue $deleted): array
+    {
+        $id = (int) $deleted->getKey();
+
+        $rows = Queue::query()
+            ->where('status', 'waiting')
+            ->get(['id', 'is_vip'])
+            ->filter(static fn ($row): bool => (int) $row->id !== $id);
+
+        $rows->push((object) [
+            'id' => $id,
+            'is_vip' => (bool) $deleted->getRawOriginal('is_vip'),
+        ]);
+
+        return $rows
+            ->sortBy([
+                ['is_vip', 'desc'],
+                ['id', 'asc'],
+            ])
+            ->values()
+            ->mapWithKeys(static fn ($row, $index): array => [
+                (int) $row->id => $index + 1,
             ])
             ->all();
     }
@@ -191,8 +257,6 @@ final class QueueObserver
             ? ($customer->language ?: null)
             : ($customer->locale ?: null);
 
-        // Do not query Tenant->settings here: queue lifecycle observers also run in
-        // lightweight tenant tests where that optional relation/table is absent.
         $tenantData = method_exists($tenant, 'getAttribute')
             ? (array) ($tenant->getAttribute('data') ?? [])
             : [];
