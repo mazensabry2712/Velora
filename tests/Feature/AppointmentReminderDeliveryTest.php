@@ -169,6 +169,8 @@ final class AppointmentReminderDeliveryTest extends TenantTestCase
         Artisan::call('reminders:process', [
             '--tenant' => $this->tenant->id,
         ]);
+
+        tenancy()->initialize($this->tenant);
     }
 
     private function makeRule(int $triggerMinutes): ReminderRule
