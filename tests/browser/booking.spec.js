@@ -27,7 +27,6 @@ test.describe('Velora public booking surface', () => {
 
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
         expect(overflow).toBe(false);
-
         await page.screenshot({ path: 'artifacts/booking-desktop.png', fullPage: true });
     });
 
@@ -41,10 +40,7 @@ test.describe('Velora public booking surface', () => {
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
         expect(overflow).toBe(false);
 
-        const controls = await page.locator('.vb2-icon-button, .vb2-language, .vb-final-v2-choice, .vb-final-v2-btn').evaluateAll((items) =>
-            items.map((item) => item.getBoundingClientRect().height),
-        );
-
+        const controls = await page.locator('.vb2-icon-button, .vb2-language, .vb-final-v2-choice, .vb-final-v2-btn').evaluateAll((items) => items.map((item) => item.getBoundingClientRect().height));
         expect(controls.length).toBeGreaterThan(0);
         expect(controls.every((height) => height >= 40)).toBe(true);
         await page.screenshot({ path: 'artifacts/booking-mobile.png', fullPage: true });
@@ -52,10 +48,8 @@ test.describe('Velora public booking surface', () => {
 
     test('tenant language control renders configured language choices', async ({ page }) => {
         await page.goto(bookingUrl, { waitUntil: 'networkidle' });
-
         const languageSelect = page.locator('.vb2-language select');
         await expect(languageSelect).toBeVisible();
-
         const languageValues = await languageSelect.locator('option').evaluateAll((options) => options.map((option) => option.value));
         expect(languageValues.length).toBeGreaterThanOrEqual(1);
         expect(languageValues).toContain(await languageSelect.inputValue());
@@ -74,7 +68,6 @@ test.describe('Velora public booking surface', () => {
         const first = service.locator('option[value]:not([value=""])').first();
         await expect(first).toBeAttached();
         await service.selectOption(await first.getAttribute('value'));
-
         await expect(page.locator('#staffSection')).toHaveClass(/vb-final-v2-active/);
         await expect(page.locator('#staffCards')).toBeVisible();
     });
@@ -88,47 +81,41 @@ test.describe('Velora public booking surface', () => {
         const service = page.locator('#service_id');
         await service.selectOption(await service.locator('option[value]:not([value=""])').first().getAttribute('value'));
         await expect(page.locator('#staffCards .vb-final-v2-choice').first()).toBeVisible();
-        await page.locator('#staffCards .vb-final-v2-choice').nth(1).click().catch(async () => {
-            await page.locator('#staffCards .vb-final-v2-choice').first().click();
-        });
+
+        const staffChoices = page.locator('#staffCards .vb-final-v2-choice');
+        if (await staffChoices.count() > 1) await staffChoices.nth(1).click();
+        else await staffChoices.first().click();
 
         const date = page.locator('#appointment_date');
-        const time = page.locator('#appointment_time');
+        const slotCards = page.locator('#vbFinalSlots .vb-final-v2-slot');
         let foundSlot = false;
 
         for (let offset = 0; offset < 14 && !foundSlot; offset += 1) {
             const candidate = await page.evaluate((days) => {
-                const date = new Date();
-                date.setDate(date.getDate() + days);
-                return date.toISOString().slice(0, 10);
+                const value = new Date();
+                value.setDate(value.getDate() + days);
+                return value.toISOString().slice(0, 10);
             }, offset);
 
             await date.fill(candidate);
             await date.dispatchEvent('change');
-
             try {
-                await expect(time.locator('option[value]:not([value=""])').first()).toBeAttached({ timeout: 1500 });
+                await expect(slotCards.first()).toBeVisible({ timeout: 2000 });
                 foundSlot = true;
-            } catch {
-                // Try the next date.
-            }
+            } catch {}
         }
 
         test.skip(!foundSlot, 'No available slot found in the next 14 days.');
-
-        const slot = page.locator('#vbFinalSlots .vb-final-v2-slot').first();
-        await expect(slot).toBeVisible();
-        await slot.click();
+        await slotCards.first().click();
+        await expect(page.locator('[data-step-panel="4"]')).toHaveClass(/vb-final-v2-active/);
 
         await page.locator('#name').fill('Browser Test Customer');
         await page.locator('#email').fill(`browser-test-${Date.now()}@example.test`);
         await page.locator('#phone').fill('01000000000');
 
-        await expect(page.locator('#detailsSection, [data-step-panel="4"]')).toHaveClass(/vb-final-v2-active/);
         await expect(page.locator('#notes')).toBeAttached();
         await expect(page.locator('#submitBtn')).toBeVisible();
         await expect(page.locator('#submitBtn')).toBeEnabled();
-
         await page.screenshot({ path: 'artifacts/booking-ready-to-submit.png', fullPage: true });
     });
 });
