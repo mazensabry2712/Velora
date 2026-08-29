@@ -12,7 +12,6 @@ class Appointment extends Model
 {
     use SoftDeletes;
 
-    // ── Status constants ─────────────────────────────────────────────────
     public const STATUS_PENDING   = 'pending';
     public const STATUS_CONFIRMED = 'confirmed';
     public const STATUS_COMPLETED = 'completed';
@@ -28,12 +27,9 @@ class Appointment extends Model
     ];
 
     protected $fillable = [
-        // Legacy fields (kept for backward compatibility)
         'customer_id', 'staff_id', 'date', 'time_slot', 'service_type',
         'rating', 'rating_comment', 'rated_at',
-        // Core
-        'ulid', 'service_id', 'status', 'notes',
-        // New booking engine fields
+        'ulid', 'public_reference', 'service_id', 'status', 'notes',
         'customer_id_new', 'staff_id_new', 'resource_id', 'group_id', 'recurring_id',
         'starts_at', 'ends_at', 'ends_at_with_buffer', 'timezone',
         'price', 'deposit_paid', 'discount_amount', 'discount_reason', 'attendees',
@@ -60,15 +56,19 @@ class Appointment extends Model
         'attendees'          => 'integer',
     ];
 
-    // ── Boot ─────────────────────────────────────────────────────────────
-
     protected static function booted(): void
     {
-        // Auto-assign ULID on create and keep legacy appointment columns
-        // synchronized when a booking-engine appointment is created directly.
         static::creating(function (self $model) {
             if (empty($model->ulid)) {
                 $model->ulid = (string) Str::ulid();
+            }
+
+            if (empty($model->public_reference)) {
+                do {
+                    $reference = 'VL-' . strtoupper(Str::random(8));
+                } while (self::withTrashed()->where('public_reference', $reference)->exists());
+
+                $model->public_reference = $reference;
             }
 
             if ($model->starts_at) {
@@ -86,35 +86,23 @@ class Appointment extends Model
             }
         });
 
-        // When appointment is deleted, delete associated queue entry
         static::deleting(function ($appointment) {
             $appointment->queue()?->delete();
         });
 
-        // When appointment status changes, sync with queue
         static::updating(function ($appointment) {
             if ($appointment->isDirty('status') && $appointment->queue) {
                 $newStatus = $appointment->status;
-
-                // Use withoutEvents to prevent circular update loop between Appointment and Queue observers
                 $queue = $appointment->queue;
                 if ($newStatus === 'cancelled') {
-                    \Illuminate\Database\Eloquent\Model::withoutEvents(fn () =>
-                        $queue->update(['status' => 'skipped'])
-                    );
+                    \Illuminate\Database\Eloquent\Model::withoutEvents(fn () => $queue->update(['status' => 'skipped']));
                 } elseif ($newStatus === 'completed') {
-                    \Illuminate\Database\Eloquent\Model::withoutEvents(fn () =>
-                        $queue->update(['status' => 'completed'])
-                    );
+                    \Illuminate\Database\Eloquent\Model::withoutEvents(fn () => $queue->update(['status' => 'completed']));
                 } elseif ($newStatus === 'confirmed' && in_array($queue->status, ['cancelled', 'skipped'])) {
-                    // If re-confirming a cancelled/skipped appointment, reactivate queue
-                    \Illuminate\Database\Eloquent\Model::withoutEvents(fn () =>
-                        $queue->update(['status' => 'waiting'])
-                    );
+                    \Illuminate\Database\Eloquent\Model::withoutEvents(fn () => $queue->update(['status' => 'waiting']));
                 }
             }
 
-            // Log status history for every status transition
             if ($appointment->isDirty('status')) {
                 try {
                     AppointmentStatusHistory::create([
@@ -130,8 +118,6 @@ class Appointment extends Model
             }
         });
 
-        // After status changes, auto-create in-app notifications for legacy authenticated customers
-        // and auto-generate invoices for both legacy and new booking-engine customers.
         static::updated(function ($appointment) {
             if (!$appointment->wasChanged('status')) {
                 return;
@@ -139,8 +125,6 @@ class Appointment extends Model
 
             $newStatus = $appointment->status;
 
-            // Legacy notifications are stored against the users table, so only create them
-            // when this appointment still has the legacy customer_id populated.
             if ($appointment->customer_id) {
                 $messages = [
                     'confirmed' => [
@@ -175,8 +159,6 @@ class Appointment extends Model
                 }
             }
 
-            // Auto-generate invoice when appointment is completed and service has a price.
-            // New public bookings use customer_id_new; legacy appointments use customer_id.
             if ($newStatus === 'completed') {
                 $invoiceCustomerId = $appointment->customer_id ?: $appointment->customer_id_new;
 
@@ -201,176 +183,37 @@ class Appointment extends Model
         });
     }
 
-    // ── Relationships ────────────────────────────────────────────────────
+    public function tenant() { return $this->belongsTo(Tenant::class); }
+    public function customer(): BelongsTo { return $this->belongsTo(User::class, 'customer_id'); }
+    public function newCustomer(): BelongsTo { return $this->belongsTo(Customer::class, 'customer_id_new'); }
+    public function customerNew(): BelongsTo { return $this->newCustomer(); }
+    public function staff(): BelongsTo { return $this->belongsTo(User::class, 'staff_id'); }
+    public function newStaff(): BelongsTo { return $this->belongsTo(Staff::class, 'staff_id_new'); }
+    public function staffNew(): BelongsTo { return $this->newStaff(); }
+    public function service(): BelongsTo { return $this->belongsTo(Service::class); }
+    public function resource(): BelongsTo { return $this->belongsTo(Resource::class); }
+    public function recurringRule(): BelongsTo { return $this->belongsTo(RecurringRule::class, 'recurring_id'); }
+    public function queue() { return $this->hasOne(Queue::class); }
+    public function statusHistory(): HasMany { return $this->hasMany(AppointmentStatusHistory::class)->orderBy('created_at'); }
+    public function reminders(): HasMany { return $this->hasMany(ReminderLog::class); }
 
-    public function tenant()
-    {
-        return $this->belongsTo(Tenant::class);
-    }
+    public function scopeToday($query) { return $query->whereDate('date', today()); }
+    public function scopeUpcoming($query) { return $query->where('date', '>=', today())->whereNotIn('status', ['cancelled', 'completed']); }
+    public function scopePending($query) { return $query->where('status', 'pending'); }
+    public function scopeConfirmed($query) { return $query->where('status', 'confirmed'); }
+    public function scopeInQueue($query) { return $query->whereHas('queue', fn ($q) => $q->whereIn('status', ['waiting', 'serving'])); }
 
-    /** Legacy: customer via users table */
-    public function customer(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'customer_id');
-    }
-
-    /** New: customer via dedicated customers table */
-    public function newCustomer(): BelongsTo
-    {
-        return $this->belongsTo(Customer::class, 'customer_id_new');
-    }
-
-    /** Backward-compatible alias used by API consumers/controllers. */
-    public function customerNew(): BelongsTo
-    {
-        return $this->newCustomer();
-    }
-
-    /** Legacy: staff via users table */
-    public function staff(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'staff_id');
-    }
-
-    /** New: staff via dedicated staff table */
-    public function newStaff(): BelongsTo
-    {
-        return $this->belongsTo(Staff::class, 'staff_id_new');
-    }
-
-    /** Backward-compatible alias used by API consumers/controllers. */
-    public function staffNew(): BelongsTo
-    {
-        return $this->newStaff();
-    }
-
-    public function service(): BelongsTo
-    {
-        return $this->belongsTo(Service::class);
-    }
-
-    public function resource(): BelongsTo
-    {
-        return $this->belongsTo(Resource::class);
-    }
-
-    public function recurringRule(): BelongsTo
-    {
-        return $this->belongsTo(RecurringRule::class, 'recurring_id');
-    }
-
-    public function queue()
-    {
-        return $this->hasOne(Queue::class);
-    }
-
-    public function statusHistory(): HasMany
-    {
-        return $this->hasMany(AppointmentStatusHistory::class)->orderBy('created_at');
-    }
-
-    public function reminders(): HasMany
-    {
-        return $this->hasMany(ReminderLog::class);
-    }
-
-    // Scopes
-    public function scopeToday($query)
-    {
-        return $query->whereDate('date', today());
-    }
-
-    public function scopeUpcoming($query)
-    {
-        return $query->where('date', '>=', today())
-            ->whereNotIn('status', ['cancelled', 'completed']);
-    }
-
-    public function scopePending($query)
-    {
-        return $query->where('status', 'pending');
-    }
-
-    public function scopeConfirmed($query)
-    {
-        return $query->where('status', 'confirmed');
-    }
-
-    public function scopeInQueue($query)
-    {
-        return $query->whereHas('queue', function ($q) {
-            $q->whereIn('status', ['waiting', 'serving']);
-        });
-    }
-
-    // Helper Methods
-    public function canBeAddedToQueue(): bool
-    {
-        // Can't add if already in queue
-        if ($this->queue) {
-            return false;
-        }
-
-        // Can't add cancelled or completed appointments
-        if (in_array($this->status, ['cancelled', 'completed'])) {
-            return false;
-        }
-
-        return true;
-    }
-
-    public function isOverdue(): bool
-    {
-        return $this->date < today() && $this->status !== 'completed';
-    }
-
-    public function isSoon(): bool
-    {
+    public function canBeAddedToQueue(): bool { return !$this->queue && !in_array($this->status, ['cancelled', 'completed']); }
+    public function isOverdue(): bool { return $this->date < today() && $this->status !== 'completed'; }
+    public function isSoon(): bool {
         $now = now();
         $appointmentDate = \Carbon\Carbon::parse($this->date);
-
-        return $appointmentDate->isToday() &&
-               $appointmentDate->diffInHours($now) <= 2 &&
-               $appointmentDate > $now;
+        return $appointmentDate->isToday() && $appointmentDate->diffInHours($now) <= 2 && $appointmentDate > $now;
     }
-
-    /**
-     * Get service name (from service relation or service_type field)
-     */
-    public function getServiceNameAttribute()
-    {
-        if ($this->service) {
-            return app()->getLocale() === 'ar' && $this->service->name_ar
-                ? $this->service->name_ar
-                : $this->service->name;
-        }
-        return $this->service_type;
-    }
-
-    // ── New helper methods ────────────────────────────────────────────────
-
-    public function canTransitionTo(string $newStatus): bool
-    {
-        return in_array($newStatus, self::VALID_TRANSITIONS[$this->status] ?? [], true);
-    }
-
-    public function getNetPriceAttribute(): float
-    {
-        return max(0, (float) $this->price - (float) $this->discount_amount);
-    }
-
-    public function scopeOnDate($query, \Carbon\Carbon $date)
-    {
-        return $query->whereDate('starts_at', $date->toDateString());
-    }
-
-    public function scopeForStaff($query, int $staffId)
-    {
-        return $query->where('staff_id_new', $staffId);
-    }
-
-    public function scopeForNewCustomer($query, int $customerId)
-    {
-        return $query->where('customer_id_new', $customerId);
-    }
+    public function getServiceNameAttribute() { return $this->service ? (app()->getLocale() === 'ar' && $this->service->name_ar ? $this->service->name_ar : $this->service->name) : $this->service_type; }
+    public function canTransitionTo(string $newStatus): bool { return in_array($newStatus, self::VALID_TRANSITIONS[$this->status] ?? [], true); }
+    public function getNetPriceAttribute(): float { return max(0, (float) $this->price - (float) $this->discount_amount); }
+    public function scopeOnDate($query, \Carbon\Carbon $date) { return $query->whereDate('starts_at', $date->toDateString()); }
+    public function scopeForStaff($query, int $staffId) { return $query->where('staff_id_new', $staffId); }
+    public function scopeForNewCustomer($query, int $customerId) { return $query->where('customer_id_new', $customerId); }
 }
