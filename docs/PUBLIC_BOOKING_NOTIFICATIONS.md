@@ -19,13 +19,13 @@ CreatePublicBooking transaction
         v
 NotificationDelivery (per channel)
         |
-        +--> Email job
+        +--> Email confirmation job
         |      +--> sending
         |      +--> sent
         |      +--> queued + retry on failure
         |      +--> failed after final attempt
         |
-        +--> WhatsApp job (when enabled)
+        +--> WhatsApp confirmation job (when enabled)
                +--> sending
                +--> sent
                +--> skipped when provider is not configured
@@ -39,11 +39,11 @@ NotificationDelivery (per channel)
 
 Tracked fields include event, channel, recipient, provider, status, attempts, last error and timestamps.
 
-## Email
+## Email confirmation
 
 The public confirmation email uses scalar payload data only. The message contains the tenant name, customer name, service, staff, date, time, duration, queue number, public reference and canonical tracking URL.
 
-The Mailable is rendered by `SendPublicAppointmentConfirmationEmail`. The queue boundary is the job, which updates the delivery row around the actual send operation.
+The Mailable is render-only. `SendPublicAppointmentConfirmationEmail` owns the queue boundary and delivery state changes.
 
 ## Email failure policy
 
@@ -51,7 +51,7 @@ A mail failure updates the delivery row with the error and rethrows so Laravel c
 
 The public booking response remains successful even when notification dispatch or delivery fails.
 
-## WhatsApp
+## WhatsApp confirmation
 
 WhatsApp uses the same delivery model and event key pattern:
 
@@ -69,21 +69,67 @@ Enablement is controlled separately from the booking transaction through:
 services.whatsapp.enabled
 ```
 
+## Appointment reminders
+
+The scheduled reminder command runs every 15 minutes and is a dispatcher only. It does not send external mail itself.
+
+For active customer-email reminder rules, the command:
+
+1. Finds eligible upcoming appointments inside a ±7 minute trigger window.
+2. Resolves the new `Customer` relationship first, with the legacy `User` relationship as fallback.
+3. Creates a `ReminderLog` for legacy/admin reporting compatibility.
+4. Creates one `NotificationDelivery` using an event-specific idempotency key.
+5. Dispatches `SendAppointmentReminderEmail`.
+
+Canonical events currently are:
+
+```text
+1440 minutes -> appointment.reminder_24h
+60 minutes   -> appointment.reminder_1h
+other values -> appointment.reminder_<minutes>m
+```
+
+Email delivery keys are:
+
+```text
+appointment.reminder_24h|email|<public_reference>
+appointment.reminder_1h|email|<public_reference>
+```
+
+The delivery job owns the external I/O and synchronizes the corresponding `ReminderLog` after success/final failure. This keeps retries independent from the scheduler and prevents duplicate reminder creation when the scheduler runs more than once.
+
+The reminder email uses the same public tracking contract as booking confirmation:
+
+```text
+/queue/status?ref=VL-XXXXXXXX
+```
+
+No internal appointment, customer, staff or queue IDs are exposed in customer-facing links.
+
+## Time and legacy compatibility
+
+The reminder scanner supports both the current `starts_at` representation and legacy `date + time_slot` records. Cancelled, completed and no-show appointments are excluded.
+
+The scheduler remains:
+
+```text
+reminders:process -> every 15 minutes
+```
+
 ## Idempotency
 
-Email deliveries use:
+Every notification channel gets its own `NotificationDelivery` record and its own unique dedupe key.
+
+Examples:
 
 ```text
 appointment.booked|email|<public_reference>
-```
-
-WhatsApp deliveries use:
-
-```text
 appointment.booked|whatsapp|<public_reference>
+appointment.reminder_24h|email|<public_reference>
+appointment.reminder_1h|email|<public_reference>
 ```
 
-Each delivery is created with `firstOrCreate`. A sent delivery is not sent again by its job.
+A delivery that already exists is not registered again. A sent delivery is not sent again by its job.
 
 ## Public security contract
 
@@ -101,12 +147,17 @@ Do not put internal appointment, customer, staff or queue IDs in customer-facing
 appointment.booked
   Email      implemented
   WhatsApp   abstraction implemented; provider not configured by default
+
+appointment.reminder_24h
+  Email      implemented
+
+appointment.reminder_1h
+  Email      implemented
 ```
 
 ## Future events
 
 ```text
-appointment.reminder
 appointment.confirmed
 appointment.rescheduled
 appointment.cancelled
