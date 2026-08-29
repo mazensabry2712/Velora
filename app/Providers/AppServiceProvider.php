@@ -52,7 +52,6 @@ use App\Infrastructure\Tenancy\LegacyTenantRegistrar;
 use App\Models\Appointment;
 use App\Models\Queue;
 use App\Observers\AppointmentObserver;
-use App\Observers\QueueObserver;
 use App\Payments\PaymentGatewayManager;
 use App\Repositories\Eloquent\QueueRepository;
 use App\View\Composers\AdminLayoutComposer;
@@ -103,7 +102,6 @@ class AppServiceProvider extends ServiceProvider
         );
 
         Appointment::observe(AppointmentObserver::class);
-        Queue::observe(QueueObserver::class);
 
         ViewFacade::composer('layouts.landing', LandingLayoutComposer::class);
         ViewFacade::composer('layouts.admin', AdminLayoutComposer::class);
