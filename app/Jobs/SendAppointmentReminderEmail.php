@@ -85,7 +85,7 @@ final class SendAppointmentReminderEmail implements ShouldQueue
                 $reminderLogId = (int) ($this->data['reminder_log_id'] ?? 0);
                 if ($reminderLogId > 0) {
                     ReminderLog::query()->whereKey($reminderLogId)->update([
-                        'status' => 'failed',
+                        'status' => 'pending',
                         'error' => $error,
                     ]);
                 }
