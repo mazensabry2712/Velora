@@ -181,3 +181,39 @@ body:has(.v-home) {
     color: #E7ECF5 !important;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), 0 12px 30px rgba(0, 0, 0, .28) !important;
 }
+
+/* Find-account browser chrome: use Velora brand colors instead of OS/browser red accents. */
+.animate-float span.bg-red-400\/70 {
+    background: #8A5CFF !important;
+}
+
+.animate-float span.bg-amber-400\/70 {
+    background: #006CFF !important;
+}
+
+.animate-float span.bg-emerald-400\/70 {
+    background: #00B8FF !important;
+}
+
+/* Strong explicit selector for the address bar so inline Tailwind utility colors cannot win. */
+.animate-float .ms-3.flex-1.rounded-full {
+    background: linear-gradient(135deg, #11172A 0%, #17213D 55%, #14294A 100%) !important;
+    border: 1px solid rgba(109, 70, 255, .42) !important;
+    color: #EAF0FF !important;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, .25);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .06),
+        0 0 0 1px rgba(0, 108, 255, .08),
+        0 10px 26px rgba(13, 18, 38, .24) !important;
+}
+
+.dark .animate-float .ms-3.flex-1.rounded-full,
+[data-theme="dark"] .animate-float .ms-3.flex-1.rounded-full {
+    background: linear-gradient(135deg, #090E1C 0%, #0F1830 55%, #102544 100%) !important;
+    border-color: rgba(138, 92, 255, .48) !important;
+    color: #F3F6FF !important;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .055),
+        0 0 0 1px rgba(0, 184, 255, .10),
+        0 12px 32px rgba(0, 0, 0, .30) !important;
+}
