@@ -28,12 +28,10 @@ class QueueController extends Controller
 
         $current = $queues->where('status', 'serving')->first();
 
-        $waitingQueues = $queues->where('status', 'waiting')->map(function ($queue) {
-            return [
-                'queue_number' => $queue->queue_number,
-                'status' => $queue->status,
-            ];
-        })->values();
+        $waitingQueues = $queues->where('status', 'waiting')->map(fn ($queue) => [
+            'queue_number' => $queue->queue_number,
+            'status' => $queue->status,
+        ])->values();
 
         return response()->json([
             'success' => true,
@@ -46,15 +44,14 @@ class QueueController extends Controller
     }
 
     /**
-     * Public queue lookup accepts either a legacy queue number or the
-     * unguessable public appointment reference (VL-XXXXXXXX).
-     * A public reference reveals the customer's booking details; a queue
-     * number alone remains intentionally privacy-limited.
+     * Public queue lookup accepts a public Appointment reference (preferred)
+     * or the legacy queue number. A reference may expose the customer's own
+     * appointment details; queue-number lookup remains privacy-limited.
      */
     public function getQueueStatus(string $identifier)
     {
         $rateLimitKey = 'public-queue-status:' . tenant()?->getTenantKey() . ':' . request()->ip();
-        $isReference = str_starts_with(strtoupper($identifier), 'VL-');
+        $isReference = str_starts_with(strtoupper(trim($identifier)), 'VL-');
 
         if (RateLimiter::tooManyAttempts($rateLimitKey, 60)) {
             return response()->json([
@@ -86,7 +83,7 @@ class QueueController extends Controller
             if (!$queue) {
                 return response()->json([
                     'success' => false,
-                    'message' => __('Queue number not found'),
+                    'message' => __('Appointment reference not found'),
                 ], 404);
             }
 
@@ -95,19 +92,21 @@ class QueueController extends Controller
                 ?: $appointment?->staff?->name
                 ?: 'N/A';
 
-            $ahead = null;
+            $peopleAhead = null;
             if (in_array($queue->status, ['waiting', 'serving'], true)) {
-                $ahead = Queue::query()
+                $active = Queue::query()
                     ->where('queue_date', $queue->queue_date)
-                    ->where('status', 'waiting')
-                    ->where(function ($q) use ($queue) {
-                        $q->where('is_vip', '>', (int) $queue->is_vip)
-                            ->orWhere(function ($samePriority) use ($queue) {
-                                $samePriority->where('is_vip', (int) $queue->is_vip)
-                                    ->where('queue_number', '<', $queue->queue_number);
-                            });
-                    })
-                    ->count();
+                    ->whereIn('status', ['waiting', 'serving'])
+                    ->orderBy('is_vip', 'desc')
+                    ->orderBy('id', 'asc')
+                    ->get(['id', 'status']);
+
+                if ($queue->status === 'serving') {
+                    $peopleAhead = 0;
+                } else {
+                    $position = $active->search(fn ($item) => $item->id === $queue->id);
+                    $peopleAhead = $position === false ? 0 : $active->slice(0, $position)->where('status', 'waiting')->count();
+                }
             }
 
             $data = [
@@ -116,12 +115,12 @@ class QueueController extends Controller
                 'service' => $appointment?->service?->name ?? 'N/A',
                 'staff_name' => $staffName,
                 'status' => $queue->status,
-                'is_vip' => $queue->is_vip,
+                'is_vip' => (bool) $queue->is_vip,
                 'queue_date' => $queue->queue_date?->format('Y-m-d') ?? null,
                 'appointment_date' => $appointment?->starts_at?->format('Y-m-d'),
                 'appointment_time' => $appointment?->starts_at?->format('H:i'),
                 'duration_minutes' => $appointment?->service?->duration_minutes,
-                'people_ahead' => $ahead,
+                'people_ahead' => $peopleAhead,
             ];
 
             if ($isReference) {
@@ -136,7 +135,9 @@ class QueueController extends Controller
                 'data' => $data,
             ]);
         } catch (\Throwable $e) {
-            \Log::error('Error in getQueueStatus: ' . $e->getMessage());
+            \Log::error('Error in getQueueStatus: ' . $e->getMessage(), [
+                'tenant_id' => tenant()?->getTenantKey(),
+            ]);
 
             return response()->json([
                 'success' => false,
