@@ -59,6 +59,7 @@ final class SendAppointmentReminderEmail implements ShouldQueue
                         $appointment,
                         $customer,
                         (string) ($this->data['locale'] ?? 'en'),
+                        isset($this->data['tracking_url']) ? (string) $this->data['tracking_url'] : null,
                     )
                 );
 
