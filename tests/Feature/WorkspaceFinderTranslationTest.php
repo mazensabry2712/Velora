@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use Illuminate\Support\Facades\Lang;
 use Tests\TestCase;
 
 final class WorkspaceFinderTranslationTest extends TestCase
@@ -28,26 +29,48 @@ final class WorkspaceFinderTranslationTest extends TestCase
             'invalid',
         ];
 
-        foreach ($supportedLocales as $locale) {
-            $landing = require base_path("lang/{$locale}/landing.php");
-            self::assertArrayHasKey('workspace_finder', $landing, "Missing landing workspace translations for locale [{$locale}].");
-            self::assertArrayHasKey($locale, $landing['workspace_finder'], "Missing workspace translation locale [{$locale}].");
+        $originalLocale = app()->getLocale();
 
-            foreach ($requiredKeys as $key) {
-                self::assertArrayHasKey($key, $landing['workspace_finder'][$locale], "Missing workspace translation key [{$key}] for locale [{$locale}].");
-                self::assertNotSame('', trim((string) $landing['workspace_finder'][$locale][$key]), "Empty workspace translation key [{$key}] for locale [{$locale}].");
+        try {
+            foreach ($supportedLocales as $locale) {
+                app()->setLocale($locale);
+
+                // Resolve the translation through Laravel so locale files that
+                // intentionally inherit the canonical landing dictionary are
+                // validated the same way the actual view resolves them.
+                $workspace = Lang::get("landing.workspace_finder.{$locale}");
+
+                self::assertIsArray(
+                    $workspace,
+                    "Missing resolved landing workspace translations for locale [{$locale}]."
+                );
+
+                foreach ($requiredKeys as $key) {
+                    self::assertArrayHasKey(
+                        $key,
+                        $workspace,
+                        "Missing workspace translation key [{$key}] for locale [{$locale}]."
+                    );
+                    self::assertNotSame(
+                        '',
+                        trim((string) $workspace[$key]),
+                        "Empty workspace translation key [{$key}] for locale [{$locale}]."
+                    );
+                }
+
+                self::assertStringNotContainsString(
+                    'Enter your email',
+                    (string) $workspace['subtitle'],
+                    "Workspace finder locale [{$locale}] still contains the obsolete email copy."
+                );
+                self::assertStringNotContainsString(
+                    'Email address',
+                    (string) $workspace['label'],
+                    "Workspace finder locale [{$locale}] still uses an email label."
+                );
             }
-
-            self::assertStringNotContainsString(
-                'Enter your email',
-                (string) $landing['workspace_finder'][$locale]['subtitle'],
-                "Workspace finder locale [{$locale}] still contains the obsolete email copy."
-            );
-            self::assertStringNotContainsString(
-                'Email address',
-                (string) $landing['workspace_finder'][$locale]['label'],
-                "Workspace finder locale [{$locale}] still uses an email label."
-            );
+        } finally {
+            app()->setLocale($originalLocale);
         }
     }
 }
