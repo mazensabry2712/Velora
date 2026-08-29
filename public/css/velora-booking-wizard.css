@@ -1,0 +1,143 @@
+/*
+ * Velora Booking — guided customer flow.
+ * Presentation only: preserves existing IDs, fields and booking API.
+ */
+
+body:has(#bookingForm) .vb2-card {
+    max-width: 980px;
+}
+
+body:has(#bookingForm) #bookingForm {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Put the customer's decision path first, while preserving the existing DOM contract. */
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="2"] { order: 1; }
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="3"] { order: 2; }
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="4"] { order: 3; }
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="5"] { order: 4; }
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] { order: 5; }
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="6"] { order: 6; }
+body:has(#bookingForm) #bookingForm > .vb2-submit-wrap { order: 7; }
+
+/* Only the current decision is prominent; later steps remain progressive. */
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] {
+    display: none;
+}
+
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"]:has(#name:valid):has(#email:valid):has(#phone:valid) {
+    display: block;
+}
+
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="6"] {
+    margin-top: 4px;
+}
+
+/* Service selection becomes the visual starting point. */
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="2"] {
+    padding-top: 12px;
+    border-top: 0;
+}
+
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="2"] .vb2-field {
+    margin-top: 12px;
+}
+
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="2"] select,
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="3"] select,
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="5"] select,
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="4"] input {
+    min-height: 60px !important;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+/* Turn the date control into a stronger touch target. */
+body:has(#bookingForm) #appointment_date {
+    padding-inline: 16px !important;
+}
+
+/* Final confirmation should read as one compact action area. */
+body:has(#bookingForm) .vb2-submit-wrap {
+    padding-top: 20px;
+    margin-top: 8px;
+    border-top: 1px solid var(--velora-line, #E5E7EB);
+}
+
+/* Selection summary hints. */
+body:has(#bookingForm) #serviceHint,
+body:has(#bookingForm) #dateHint,
+body:has(#bookingForm) #timeHint {
+    max-width: 680px;
+    margin-top: 9px;
+    font-size: 11px;
+    line-height: 1.6;
+}
+
+@media (min-width: 861px) {
+    body:has(#bookingForm) #bookingForm {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(260px, 310px);
+        align-items: start;
+        column-gap: 24px;
+    }
+
+    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="2"],
+    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="3"],
+    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="4"],
+    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="5"],
+    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="6"],
+    body:has(#bookingForm) #bookingForm > .vb2-submit-wrap {
+        grid-column: 1;
+    }
+
+    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] {
+        grid-column: 2;
+        grid-row: 1 / span 7;
+        align-self: stretch;
+        margin: 12px 0 0;
+        padding: 20px;
+        border: 1px solid var(--velora-line, #E5E7EB);
+        border-radius: 20px;
+        background: var(--velora-surface-muted, #F5F7FA);
+    }
+
+    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"]::before {
+        display: none;
+    }
+
+    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] .vb2-fields-personal {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] .vb2-field-full {
+        grid-column: auto;
+    }
+
+    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] .vb2-required {
+        display: none;
+    }
+}
+
+@media (max-width: 860px) {
+    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] {
+        margin-top: 4px;
+        padding-top: 22px;
+    }
+}
+
+@media (max-width: 520px) {
+    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="2"] select,
+    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="3"] select,
+    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="5"] select,
+    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="4"] input {
+        min-height: 56px !important;
+    }
+}
+
+html.dark body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] {
+    background: #10172A;
+    border-color: #252E45;
+}
