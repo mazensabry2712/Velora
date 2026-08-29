@@ -45,6 +45,19 @@ class InjectVeloraBrandStyles
             );
         }
 
+        /*
+         * Booking keeps a dedicated scoped visual layer. Inject it only for
+         * the tenant booking page so other public/admin pages never download
+         * or inherit booking-specific presentation rules.
+         */
+        if ($request->is('book') && ! str_contains($content, '/css/velora-booking.css')) {
+            $content = str_replace(
+                '</head>',
+                '<link rel="stylesheet" href="'.e(asset('css/velora-booking.css')).'">' . "\n</head>",
+                $content
+            );
+        }
+
         $languages = config('locales.languages', []);
         $currentLocale = app()->getLocale();
         $languageOptions = '';
