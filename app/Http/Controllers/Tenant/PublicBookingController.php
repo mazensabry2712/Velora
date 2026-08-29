@@ -11,17 +11,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\PublicBookingRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 final class PublicBookingController extends Controller
 {
-    public function __construct(
-        private readonly CreatePublicBooking $createPublicBooking,
-    ) {}
+    public function __construct(private readonly CreatePublicBooking $createPublicBooking) {}
 
     public function store(PublicBookingRequest $request): JsonResponse
     {
-        $tenantId = (string) tenant()->getTenantKey();
-
         try {
             $validated = $request->validated();
             $data = new PublicBookingData(
@@ -41,13 +38,14 @@ final class PublicBookingController extends Controller
             $appointment = $result['appointment'];
             $queue = $result['queue'];
             $customer = $result['customer'];
+            $reference = (string) $appointment->public_reference;
 
             return response()->json([
                 'success' => true,
-                'message' => 'Appointment booked successfully',
+                'message' => __('Appointment booked successfully'),
                 'data' => [
                     'appointment' => [
-                        'public_reference' => $appointment->public_reference,
+                        'public_reference' => $reference,
                         'service_id' => $appointment->service_id,
                         'staff_id' => $appointment->staff_id_new,
                         'starts_at' => $appointment->starts_at?->toIso8601String(),
@@ -56,6 +54,7 @@ final class PublicBookingController extends Controller
                         'status' => $appointment->status,
                         'source' => $appointment->source,
                     ],
+                    'tracking_url' => route('customer.queue.status', ['ref' => $reference]),
                     'queue_number' => $queue->queue_number,
                     'queue' => [
                         'queue_number' => $queue->queue_number,
@@ -67,28 +66,16 @@ final class PublicBookingController extends Controller
                     ],
                 ],
             ], 201);
-        } catch (\Illuminate\Validation\ValidationException $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $exception->errors(),
-            ], 422);
+        } catch (ValidationException $exception) {
+            return response()->json(['success' => false, 'message' => __('Validation error'), 'errors' => $exception->errors()], 422);
         } catch (SlotUnavailableException $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Slot not available',
-                'reason' => $exception->getMessage(),
-            ], 409);
+            return response()->json(['success' => false, 'message' => __('Slot not available'), 'reason' => $exception->getMessage()], 409);
         } catch (\Throwable $exception) {
-            Log::error('Public booking error: ' . $exception->getMessage(), [
-                'tenant_id' => $tenantId,
-                'trace' => $exception->getTraceAsString(),
+            Log::error('Public booking error', [
+                'tenant_id' => tenant()?->getTenantKey(),
+                'message' => $exception->getMessage(),
             ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'An error occurred while booking the appointment',
-            ], 500);
+            return response()->json(['success' => false, 'message' => __('An error occurred while booking the appointment')], 500);
         }
     }
 }
