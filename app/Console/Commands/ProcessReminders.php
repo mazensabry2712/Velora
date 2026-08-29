@@ -1,146 +1,228 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
+use App\Jobs\SendAppointmentReminderEmail;
 use App\Models\Appointment;
+use App\Models\Customer;
+use App\Models\NotificationDelivery;
 use App\Models\ReminderLog;
 use App\Models\ReminderRule;
 use App\Models\Tenant;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Log;
 
 /**
- * ProcessReminders — scans active reminder_rules and dispatches reminders.
+ * Scan active appointment reminder rules and dispatch idempotent delivery jobs.
  *
- * Runs every 15 minutes via schedule.
- * For each active rule (trigger_type = before_appointment):
- *   1. Finds appointments whose time is exactly `trigger_minutes` ahead (±7 min window)
- *   2. Skips if a reminder for same (appointment_id, rule_id, channel) was already sent
- *   3. Sends email via AppointmentReminderMail
- *   4. Logs the send in reminder_logs
+ * Runs every 15 minutes via the application scheduler. Delivery itself is
+ * handled by SendAppointmentReminderEmail so this command never performs
+ * external I/O directly.
  */
-class ProcessReminders extends Command
+final class ProcessReminders extends Command
 {
-    protected $signature   = 'reminders:process {--tenant= : Run for a specific tenant ID}';
-    protected $description = 'Send scheduled appointment reminders based on reminder_rules';
+    protected $signature = 'reminders:process {--tenant= : Run for a specific tenant ID}';
+
+    protected $description = 'Dispatch scheduled appointment reminders';
 
     public function handle(): int
     {
         $tenantId = $this->option('tenant');
-
         $tenants = $tenantId
-            ? Tenant::where('id', $tenantId)->get()
-            : Tenant::all();
+            ? Tenant::query()->whereKey($tenantId)->get()
+            : Tenant::query()->get();
 
-        $totalSent   = 0;
+        $totalQueued = 0;
+        $totalSkipped = 0;
         $totalFailed = 0;
 
         foreach ($tenants as $tenant) {
             try {
                 tenancy()->initialize($tenant);
-                [$sent, $failed] = $this->processTenant();
-                $totalSent   += $sent;
+                [$queued, $skipped, $failed] = $this->processTenant($tenant);
+                $totalQueued += $queued;
+                $totalSkipped += $skipped;
                 $totalFailed += $failed;
-                tenancy()->end();
             } catch (\Throwable $e) {
-                Log::error("ProcessReminders: tenant [{$tenant->id}] error: " . $e->getMessage());
+                $totalFailed++;
+                Log::error("ProcessReminders: tenant [{$tenant->id}] error: {$e->getMessage()}");
+            } finally {
                 tenancy()->end();
             }
         }
 
-        $this->info("Reminders processed. Sent: {$totalSent}, Failed: {$totalFailed}");
+        $this->info(
+            "Appointment reminders processed. Queued: {$totalQueued}, Skipped: {$totalSkipped}, Failed: {$totalFailed}"
+        );
 
-        return self::SUCCESS;
+        return $totalFailed > 0 ? self::FAILURE : self::SUCCESS;
     }
 
-    /**
-     * Process reminders for the current tenant context.
-     *
-     * @return array{int, int} [$sent, $failed]
-     */
-    private function processTenant(): array
+    /** @return array{int, int, int} [$queued, $skipped, $failed] */
+    private function processTenant(Tenant $tenant): array
     {
-        $now    = Carbon::now();
-        $window = 7; // minutes tolerance (±7 min around trigger_minutes)
-        $sent   = 0;
+        $now = Carbon::now();
+        $window = 7;
+        $queued = 0;
+        $skipped = 0;
         $failed = 0;
 
-        /** @var \Illuminate\Support\Collection<ReminderRule> $rules */
         $rules = ReminderRule::active()
             ->where('trigger_type', 'before_appointment')
             ->where('channel', 'email')
+            ->where('send_to_customer', true)
             ->get();
 
         foreach ($rules as $rule) {
-            // target window: appointments that start between (now + trigger_minutes - window) and (now + trigger_minutes + window)
-            $windowStart = $now->copy()->addMinutes($rule->trigger_minutes - $window);
-            $windowEnd   = $now->copy()->addMinutes($rule->trigger_minutes + $window);
+            $windowStart = $now->copy()->addMinutes((int) $rule->trigger_minutes - $window);
+            $windowEnd = $now->copy()->addMinutes((int) $rule->trigger_minutes + $window);
 
-            $appointments = Appointment::with(['customer', 'service', 'staff'])
-                ->whereNotIn('status', ['cancelled', 'completed', 'no_show'])
-                ->where(function ($q) use ($windowStart, $windowEnd) {
-                    // Support both date+time_slot format (legacy) and starts_at (V2)
-                    $q->whereBetween('starts_at', [$windowStart, $windowEnd])
-                      ->orWhere(function ($q2) use ($windowStart, $windowEnd) {
-                          $q2->whereNull('starts_at')
-                             ->whereDate('date', $windowStart->toDateString())
-                             ->whereRaw("CAST(CONCAT(date, ' ', time_slot) AS DATETIME) BETWEEN ? AND ?", [
-                                 $windowStart->toDateTimeString(),
-                                 $windowEnd->toDateTimeString(),
-                             ]);
-                      });
+            $appointments = Appointment::with([
+                'customer',
+                'newCustomer',
+                'service',
+                'staff',
+                'newStaff',
+                'queue',
+            ])
+                ->whereNotIn('status', [
+                    Appointment::STATUS_CANCELLED,
+                    Appointment::STATUS_COMPLETED,
+                    Appointment::STATUS_NO_SHOW,
+                ])
+                ->where(function ($query) use ($windowStart, $windowEnd): void {
+                    $query->whereBetween('starts_at', [$windowStart, $windowEnd])
+                        ->orWhere(function ($legacy) use ($windowStart, $windowEnd): void {
+                            $legacy->whereNull('starts_at')
+                                ->whereDate('date', $windowStart->toDateString())
+                                ->whereRaw(
+                                    "CAST(CONCAT(date, ' ', time_slot) AS DATETIME) BETWEEN ? AND ?",
+                                    [
+                                        $windowStart->toDateTimeString(),
+                                        $windowEnd->toDateTimeString(),
+                                    ]
+                                );
+                        });
                 })
                 ->get();
 
             foreach ($appointments as $appointment) {
-                // Dedup: skip if already sent for this rule + appointment
-                $alreadySent = ReminderLog::where('appointment_id', $appointment->id)
-                    ->where('rule_id', $rule->id)
-                    ->where('status', 'sent')
-                    ->exists();
-
-                if ($alreadySent) {
-                    continue;
+                try {
+                    if ($this->dispatchReminder($appointment, $rule, $tenant)) {
+                        $queued++;
+                    } else {
+                        $skipped++;
+                    }
+                } catch (\Throwable $e) {
+                    $failed++;
+                    Log::warning(
+                        "ProcessReminders: appointment [{$appointment->id}] failed: {$e->getMessage()}"
+                    );
                 }
-
-                $this->sendReminder($appointment, $rule, $sent, $failed);
             }
         }
 
-        return [$sent, $failed];
+        return [$queued, $skipped, $failed];
     }
 
-    private function sendReminder(Appointment $appointment, ReminderRule $rule, int &$sent, int &$failed): void
-    {
-        $customer = $appointment->customer;
+    private function dispatchReminder(
+        Appointment $appointment,
+        ReminderRule $rule,
+        Tenant $tenant,
+    ): bool {
+        $customer = $appointment->newCustomer ?: $appointment->customer;
 
-        if (! $customer || ! $customer->email) {
-            return;
+        if (! $customer || ! $customer->email || ! $appointment->public_reference) {
+            return false;
         }
+
+        $event = match ((int) $rule->trigger_minutes) {
+            1440 => 'appointment.reminder_24h',
+            60 => 'appointment.reminder_1h',
+            default => 'appointment.reminder_' . (int) $rule->trigger_minutes . 'm',
+        };
+
+        $dedupeKey = "{$event}|email|{$appointment->public_reference}";
+
+        if (NotificationDelivery::query()->where('dedupe_key', $dedupeKey)->exists()) {
+            return false;
+        }
+
+        $recipient = (string) $customer->email;
+        $customerType = $customer instanceof User ? 'user' : 'customer';
+        $customerId = (int) $customer->getKey();
+        $locale = $customer instanceof Customer && is_string($customer->language) && $customer->language !== ''
+            ? $customer->language
+            : (app()->getLocale() ?: 'en');
 
         $log = ReminderLog::create([
             'appointment_id' => $appointment->id,
-            'rule_id'        => $rule->id,
-            'channel'        => 'email',
-            'recipient'      => $customer->email,
-            'status'         => 'pending',
-            'scheduled_at'   => now(),
+            'rule_id' => $rule->id,
+            'channel' => 'email',
+            'recipient' => $recipient,
+            'status' => 'pending',
+            'scheduled_at' => now(),
         ]);
 
         try {
-            Mail::to($customer->email)->send(
-                new \App\Mail\AppointmentReminderMail($appointment, $customer, app()->getLocale())
+            $delivery = NotificationDelivery::create([
+                'appointment_id' => $appointment->id,
+                'public_reference' => $appointment->public_reference,
+                'event' => $event,
+                'channel' => 'email',
+                'recipient' => $recipient,
+                'provider' => 'mail',
+                'status' => 'queued',
+                'attempts' => 0,
+                'dedupe_key' => $dedupeKey,
+                'queued_at' => now(),
+                'metadata' => [
+                    'rule_id' => $rule->id,
+                    'trigger_minutes' => (int) $rule->trigger_minutes,
+                    'reminder_log_id' => $log->id,
+                ],
+            ]);
+
+            SendAppointmentReminderEmail::dispatch(
+                tenant: $tenant,
+                deliveryId: (int) $delivery->id,
+                data: [
+                    'appointment_id' => $appointment->id,
+                    'customer_id' => $customerId,
+                    'customer_type' => $customerType,
+                    'reminder_log_id' => $log->id,
+                    'recipient' => $recipient,
+                    'locale' => $locale,
+                ],
             );
 
-            $log->update(['status' => 'sent', 'sent_at' => now()]);
-            $sent++;
+            return true;
+        } catch (QueryException $e) {
+            if ($this->isUniqueConstraintViolation($e)) {
+                $log->delete();
+                return false;
+            }
 
+            throw $e;
         } catch (\Throwable $e) {
-            $log->update(['status' => 'failed', 'error' => $e->getMessage()]);
-            Log::warning("ProcessReminders: failed to send reminder for appointment [{$appointment->id}]: " . $e->getMessage());
-            $failed++;
+            $log->update([
+                'status' => 'failed',
+                'error' => mb_substr($e->getMessage(), 0, 5000),
+            ]);
+
+            throw $e;
         }
+    }
+
+    private function isUniqueConstraintViolation(QueryException $exception): bool
+    {
+        $message = strtolower($exception->getMessage());
+
+        return str_contains($message, 'unique') || str_contains($message, 'duplicate');
     }
 }
