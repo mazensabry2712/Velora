@@ -1,6 +1,6 @@
 # Velora — Project Status
 
-> **Snapshot:** Main branch reviewed on 2026-08-28.
+> **Snapshot:** Main branch reviewed on 2026-08-29.
 >
 > This document records what is already implemented in the repository and what still needs to be completed before calling Velora fully production-ready.
 
@@ -86,6 +86,21 @@ The project is built around:
 - [x] Move-to-next-day flow.
 - [x] Priority handling.
 - [x] Print / export support.
+- [ ] Queue lifecycle notification events: position changed, almost turn, turn now.
+
+### Appointment Notifications
+
+- [x] Notification delivery ledger with event/channel/dedupe identity.
+- [x] Email reminder delivery is queue-backed and isolated from reminder discovery.
+- [x] `appointment.reminder_24h` flow.
+- [x] `appointment.reminder_1h` flow.
+- [x] Reminder deduplication by event + channel + public appointment reference.
+- [x] Delivery attempt/status tracking and retry/final-failure handling.
+- [x] ReminderLog synchronization with NotificationDelivery.
+- [x] Tenant-aware reminder processing without breaking tenant test transaction context.
+- [x] Scheduler remains the existing `reminders:process` entry point.
+- [x] Supported notification locales satisfy English notification key and placeholder parity.
+- [ ] Queue lifecycle notifications remain the next implementation phase.
 
 ### Admin
 
@@ -126,7 +141,9 @@ The project is built around:
 - [x] Multi-region / tenancy-oriented tests.
 - [x] Super-admin test structure.
 - [x] Signup / verification / tenant-handoff regression tests.
-- [x] Latest local full suite: **509 tests, 2665 assertions, 0 failures, 0 errors**.
+- [x] Appointment reminder delivery tests.
+- [x] Notification locale key/placeholder parity tests.
+- [x] Latest local full suite: **570 tests, 5624 assertions, 0 failures, 0 errors**.
 
 ## 4. Known Incomplete / Risk Areas
 
@@ -160,7 +177,7 @@ These are not cosmetic tasks. They affect production readiness.
 
 Velora has a strong core SaaS implementation, but this repository should currently be treated as **production-candidate**, not as a system that has already passed a complete security, billing and deployment certification.
 
-The latest local automated regression baseline is green at **509 tests / 2665 assertions**.
+The latest local automated regression baseline is green at **570 tests / 5624 assertions**.
 
 The most important next objective is to reduce the gap between:
 
