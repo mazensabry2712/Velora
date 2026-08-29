@@ -131,6 +131,56 @@ CSS;
 JS;
         $content = str_replace('</body>', $script."\n</body>", $content);
 
+        if ($request->is('login')) {
+            $resolverScript = <<<'JS'
+<script id="velora-tenant-login-resolver">
+(function(){
+    const form=document.getElementById('findAccountForm');
+    const input=document.getElementById('subdomain');
+    const status=document.getElementById('status-msg');
+    const error=document.getElementById('error-msg');
+    const button=document.getElementById('submit-btn');
+    const buttonText=document.getElementById('submit-btn-text');
+    if(!form||!input)return;
+    form.onsubmit=async function(e){
+        e.preventDefault();
+        const value=(input.value||'').trim().toLowerCase();
+        error.classList.add('hidden');
+        if(!/^[a-z0-9][a-z0-9\-]{1,30}[a-z0-9]$/.test(value)){
+            error.textContent='Please enter a valid business domain.';
+            error.classList.remove('hidden');
+            input.focus();
+            return;
+        }
+        button.disabled=true;
+        button.classList.add('opacity-60','cursor-wait');
+        buttonText.textContent='Checking...';
+        try{
+            const response=await fetch('/signup/check-subdomain?subdomain='+encodeURIComponent(value),{headers:{Accept:'application/json'},credentials:'same-origin'});
+            const data=await response.json();
+            if(response.ok&&data.login_url){
+                window.open(data.login_url,'_blank','noopener');
+                return;
+            }
+            error.textContent='Workspace not found. Please check the business domain and try again.';
+            error.classList.remove('hidden');
+            status.classList.add('hidden');
+            input.focus();
+        }catch(_){
+            error.textContent='We could not verify that workspace right now. Please try again.';
+            error.classList.remove('hidden');
+        }finally{
+            button.disabled=false;
+            button.classList.remove('opacity-60','cursor-wait');
+            buttonText.textContent='Continue';
+        }
+    };
+})();
+</script>
+JS;
+            $content = str_replace('</body>', $resolverScript."\n</body>", $content);
+        }
+
         $response->setContent($content);
         return $response;
     }
