@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Queue\Events;
 
-use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
-
-final readonly class QueueLifecycleNotificationRequested implements ShouldDispatchAfterCommit
+final readonly class QueueLifecycleNotificationRequested
 {
     public function __construct(
         public string $tenantId,
