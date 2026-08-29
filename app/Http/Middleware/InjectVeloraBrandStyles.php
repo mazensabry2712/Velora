@@ -4,12 +4,19 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Lang;
 use Symfony\Component\HttpFoundation\Response;
 
 class InjectVeloraBrandStyles
 {
     public function handle(Request $request, Closure $next): Response
     {
+        $currentLocale = app()->getLocale();
+        $workspaceTranslations = require base_path('lang/workspace.php');
+        if (isset($workspaceTranslations[$currentLocale])) {
+            Lang::add($workspaceTranslations[$currentLocale], $currentLocale, 'landing');
+        }
+
         if (app()->runningUnitTests()) {
             return $next($request);
         }
