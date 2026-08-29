@@ -1,50 +1,36 @@
-/**
- * Dark Mode Toggle Handler - Booking Page Only
- * نظام التبديل بين الوضع النهاري والليلي - مخصص لصفحة الحجز العامة
- *
- * يستخدم localStorage key: 'bookingDarkMode'
- * منفصل تماماً عن Dark Mode الخاص بالداشبورد
- */
+(function () {
+    'use strict';
+    const STORAGE_KEY = 'bookingDarkMode';
 
-/**
- * تبديل وضع الدارك مود - صفحة الحجز
- */
-function toggleDarkMode() {
-    const isDark = document.documentElement.classList.toggle('dark');
-    localStorage.setItem('bookingDarkMode', String(isDark));
-
-    // تحديث أيقونة الزر إذا كانت موجودة
-    const icon = document.getElementById('dark-mode-icon');
-    if (icon) {
-        icon.textContent = isDark ? '☀️' : '🌙';
+    function apply(isDark) {
+        document.documentElement.classList.toggle('dark', isDark);
+        const icon = document.getElementById('dark-mode-icon');
+        if (icon) icon.textContent = isDark ? '☀️' : '🌙';
     }
-}
 
-/**
- * تحديث أيقونة الزر عند تحميل الصفحة
- */
-document.addEventListener('DOMContentLoaded', function() {
-    const icon = document.getElementById('dark-mode-icon');
-    if (icon) {
-        const isDark = document.documentElement.classList.contains('dark');
-        icon.textContent = isDark ? '☀️' : '🌙';
+    function readPreference() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved === 'true') return true;
+        if (saved === 'false') return false;
+        return window.matchMedia('(prefers-color-scheme: dark)').matches;
     }
-});
 
-/**
- * الاستماع لتغيير تفضيلات النظام
- */
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-    const savedMode = localStorage.getItem('bookingDarkMode');
-    if (savedMode === null) {
-        if (e.matches) {
-            document.documentElement.classList.add('dark');
-            const icon = document.getElementById('dark-mode-icon');
-            if (icon) icon.textContent = '☀️';
-        } else {
-            document.documentElement.classList.remove('dark');
-            const icon = document.getElementById('dark-mode-icon');
-            if (icon) icon.textContent = '🌙';
-        }
+    window.toggleDarkMode = function () {
+        const isDark = !document.documentElement.classList.contains('dark');
+        localStorage.setItem(STORAGE_KEY, String(isDark));
+        apply(isDark);
+    };
+
+    function init() {
+        apply(readPreference());
+        const media = window.matchMedia('(prefers-color-scheme: dark)');
+        const handleSystemChange = (event) => {
+            if (localStorage.getItem(STORAGE_KEY) === null) apply(event.matches);
+        };
+        if (typeof media.addEventListener === 'function') media.addEventListener('change', handleSystemChange);
+        else if (typeof media.addListener === 'function') media.addListener(handleSystemChange);
     }
-});
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
+    else init();
+})();
