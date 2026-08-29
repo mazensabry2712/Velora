@@ -9,25 +9,25 @@
         $businessName = $businessName ?? tenant()->name ?? config('app.name');
         $businessLogo = $businessLogo ?? null;
         $businessHost = request()->getHost();
+        $tenantLogoUrl = $businessLogo ? asset('storage/' . $businessLogo) : null;
+        $fallbackLogoUrl = global_asset('logo-bais.png');
     @endphp
     <title>{{ __('Book Appointment') }} - {{ $businessName }}</title>
     <link rel="stylesheet" href="/css/velora-brand.css">
     <link rel="stylesheet" href="/css/velora-public.css">
     <link rel="stylesheet" href="/css/dark-mode-enhancements.css">
     <link rel="stylesheet" href="/css/velora-booking.css">
-    <style>
-        .vb2-fallback-logo { display:none; }
-        .vb2-logo.is-broken { display:none; }
-        .vb2-logo.is-broken + .vb2-fallback-logo { display:flex; }
-    </style>
 </head>
 <body class="vb2-page">
     <div class="vb2-shell">
         <header class="vb2-header" aria-label="{{ $businessName }}">
             <a class="vb2-brand" href="{{ url('/') }}" aria-label="{{ $businessName }}">
                 <span class="vb2-logo-wrap" aria-hidden="true">
-                    <img class="vb2-logo" src="{{ $businessLogo ? asset('storage/' . $businessLogo) : asset('logo-bais.png') }}" alt="" onerror="this.classList.add('is-broken');">
-                    <span class="vb2-fallback-logo"><img src="{{ asset('logo-bais.png') }}" alt=""></span>
+                    @if ($tenantLogoUrl)
+                        <img class="vb2-logo" src="{{ $tenantLogoUrl }}" alt="" onerror="this.src='{{ $fallbackLogoUrl }}'; this.removeAttribute('onerror');">
+                    @else
+                        <img class="vb2-logo" src="{{ $fallbackLogoUrl }}" alt="">
+                    @endif
                 </span>
                 <span class="vb2-brand-copy"><strong>{{ $businessName }}</strong><span>{{ $businessHost }}</span></span>
             </a>
@@ -87,6 +87,5 @@
         loadServices();
     </script>
     <script src="/js/dark-mode-booking.js"></script>
-    <script src="/js/velora-booking-review.js"></script>
 </body>
 </html>
