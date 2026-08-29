@@ -31,6 +31,52 @@
         });
     }
 
+    function observeBookingResult() {
+        const success = document.getElementById('successMessage');
+        if (!success) return;
+
+        const sync = () => {
+            const reference = window.__veloraBookingReference;
+            if (!reference || success.classList.contains('hidden')) return;
+
+            const target = `/queue/status?ref=${encodeURIComponent(reference)}`;
+            success.querySelectorAll('a').forEach((link) => {
+                if (link.textContent.toLowerCase().includes('queue')) link.href = target;
+            });
+
+            if (!window.__veloraBookingRedirected) {
+                window.__veloraBookingRedirected = true;
+                window.location.assign(target);
+            }
+        };
+
+        new MutationObserver(sync).observe(success, { attributes: true, attributeFilter: ['class'], childList: true, subtree: true });
+        new MutationObserver(sync).observe(document.getElementById('queueNumberText') || success, { childList: true, characterData: true, subtree: true });
+        sync();
+    }
+
+    function installBookingResponseObserver() {
+        if (window.__veloraBookingFetchWrapped || typeof window.fetch !== 'function') return;
+        const nativeFetch = window.fetch.bind(window);
+        window.fetch = async (...args) => {
+            const response = await nativeFetch(...args);
+            try {
+                const input = args[0];
+                const init = args[1] || {};
+                const url = typeof input === 'string' ? input : input?.url || '';
+                const method = String(init.method || (typeof input === 'object' && input?.method) || 'GET').toUpperCase();
+                if (method === 'POST' && url.includes('/api/appointments') && response.ok) {
+                    const payload = await response.clone().json();
+                    window.__veloraBookingReference = payload?.data?.appointment?.public_reference || null;
+                }
+            } catch (_) {
+                // Never interfere with the original fetch response.
+            }
+            return response;
+        };
+        window.__veloraBookingFetchWrapped = true;
+    }
+
     function initBookingEnhancements() {
         const form = document.getElementById('bookingForm');
         if (!form) return;
@@ -271,6 +317,8 @@
         refreshSummary();
         renderSlots();
         normalizeBrandFallback();
+        installBookingResponseObserver();
+        observeBookingResult();
     }
 
     function hideDetailsUntilTime() {
@@ -282,12 +330,6 @@
     function init() {
         apply(readPreference());
         normalizeBrandFallback();
-        const media = window.matchMedia('(prefers-color-scheme: dark)');
-        const handleSystemChange = (event) => {
-            if (localStorage.getItem(STORAGE_KEY) === null) apply(event.matches);
-        };
-        if (typeof media.addEventListener === 'function') media.addEventListener('change', handleSystemChange);
-        else if (typeof media.addListener === 'function') media.addListener(handleSystemChange);
         initBookingEnhancements();
     }
 
