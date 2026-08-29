@@ -26,13 +26,13 @@ final class PublicAppointmentConfirmationMail extends Mailable implements Should
         public readonly string $queueNumber,
         public readonly string $reference,
         public readonly string $trackingUrl,
-        public readonly string $locale = 'en',
+        public readonly string $mailLocale = 'en',
     ) {}
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: __('public_booking.confirmation.subject', ['tenant' => $this->tenantName], $this->locale),
+            subject: __('public_booking.confirmation.subject', ['tenant' => $this->tenantName], $this->mailLocale),
         );
     }
 
@@ -51,7 +51,7 @@ final class PublicAppointmentConfirmationMail extends Mailable implements Should
                 'queueNumber' => $this->queueNumber,
                 'reference' => $this->reference,
                 'trackingUrl' => $this->trackingUrl,
-                'locale' => $this->locale,
+                'locale' => $this->mailLocale,
             ],
         );
     }
