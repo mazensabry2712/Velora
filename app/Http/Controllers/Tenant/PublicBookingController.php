@@ -7,9 +7,11 @@ namespace App\Http\Controllers\Tenant;
 use App\Application\Booking\Actions\CreatePublicBooking;
 use App\Application\Booking\DTOs\PublicBookingData;
 use App\Domain\Booking\Exceptions\SlotUnavailableException;
+use App\Domain\Notifications\Contracts\WhatsAppProvider;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\PublicBookingRequest;
 use App\Jobs\SendPublicAppointmentConfirmationEmail;
+use App\Jobs\SendPublicAppointmentConfirmationWhatsApp;
 use App\Models\NotificationDelivery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -48,8 +50,27 @@ final class PublicBookingController extends Controller
                 $tenant = tenant();
                 $tenantName = (string) ($tenant?->name ?? config('app.name'));
                 $locale = app()->getLocale() ?: 'en';
-                $recipient = trim((string) $customer->email);
+                $customerName = trim($customer->first_name . ' ' . $customer->last_name);
+                $serviceName = (string) ($appointment->service_name ?? $appointment->service?->name ?? 'Appointment');
+                $staffName = (string) ($appointment->newStaff?->full_name ?? trim(($appointment->newStaff?->first_name ?? '') . ' ' . ($appointment->newStaff?->last_name ?? '')) ?: '—');
+                $appointmentDate = $appointment->date?->format('Y-m-d') ?? '';
+                $appointmentTime = $appointment->time_slot ?? '';
+                $duration = (string) ($appointment->service?->duration_minutes ?? $appointment->service?->duration ?? '');
+                $notificationData = [
+                    'tenant_name' => $tenantName,
+                    'customer_name' => $customerName,
+                    'service_name' => $serviceName,
+                    'staff_name' => $staffName,
+                    'appointment_date' => $appointmentDate,
+                    'appointment_time' => $appointmentTime,
+                    'duration' => $duration,
+                    'queue_number' => (string) $queue->queue_number,
+                    'reference' => $reference,
+                    'tracking_url' => $trackingUrl,
+                    'locale' => $locale,
+                ];
 
+                $recipient = trim((string) $customer->email);
                 if ($recipient !== '') {
                     $delivery = NotificationDelivery::firstOrCreate(
                         ['dedupe_key' => sprintf('appointment.booked|email|%s', $reference)],
@@ -71,25 +92,39 @@ final class PublicBookingController extends Controller
                         SendPublicAppointmentConfirmationEmail::dispatch(
                             tenant: $tenant,
                             deliveryId: (int) $delivery->id,
-                            data: [
-                                'tenant_name' => $tenantName,
-                                'customer_name' => trim($customer->first_name . ' ' . $customer->last_name),
-                                'service_name' => (string) ($appointment->service_name ?? $appointment->service?->name ?? 'Appointment'),
-                                'staff_name' => (string) ($appointment->newStaff?->full_name ?? trim(($appointment->newStaff?->first_name ?? '') . ' ' . ($appointment->newStaff?->last_name ?? '')) ?: '—'),
-                                'appointment_date' => $appointment->date?->format('Y-m-d') ?? '',
-                                'appointment_time' => $appointment->time_slot ?? '',
-                                'duration' => (string) ($appointment->service?->duration_minutes ?? $appointment->service?->duration ?? ''),
-                                'queue_number' => (string) $queue->queue_number,
-                                'reference' => $reference,
-                                'tracking_url' => $trackingUrl,
-                                'locale' => $locale,
-                                'recipient' => $recipient,
-                            ],
+                            data: $notificationData + ['recipient' => $recipient],
+                        );
+                    }
+                }
+
+                $phone = trim((string) $customer->phone);
+                if ($phone !== '' && (bool) config('services.whatsapp.enabled', false)) {
+                    $delivery = NotificationDelivery::firstOrCreate(
+                        ['dedupe_key' => sprintf('appointment.booked|whatsapp|%s', $reference)],
+                        [
+                            'appointment_id' => $appointment->id,
+                            'public_reference' => $reference,
+                            'event' => 'appointment.booked',
+                            'channel' => 'whatsapp',
+                            'recipient' => $phone,
+                            'provider' => app(WhatsAppProvider::class)::class,
+                            'status' => 'queued',
+                            'attempts' => 0,
+                            'queued_at' => now(),
+                            'metadata' => ['tenant' => $tenantName],
+                        ]
+                    );
+
+                    if (! $delivery->sent_at) {
+                        SendPublicAppointmentConfirmationWhatsApp::dispatch(
+                            tenant: $tenant,
+                            deliveryId: (int) $delivery->id,
+                            data: $notificationData + ['recipient' => $phone],
                         );
                     }
                 }
             } catch (\Throwable $notificationException) {
-                Log::warning('Public appointment confirmation email could not be queued.', [
+                Log::warning('Public appointment confirmation notification could not be queued.', [
                     'tenant_id' => tenant()?->getTenantKey(),
                     'public_reference' => $reference,
                     'message' => $notificationException->getMessage(),
