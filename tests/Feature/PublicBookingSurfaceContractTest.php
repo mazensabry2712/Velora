@@ -9,7 +9,7 @@ use Tests\TenantTestCase;
 final class PublicBookingSurfaceContractTest extends TenantTestCase
 {
     #[Test]
-    public function booking_surface_uses_tenant_branding_and_only_tenant_languages(): void
+    public function booking_surface_uses_tenant_branding_and_v3_contract(): void
     {
         Setting::updateOrCreate(
             ['tenant_id' => $this->tenant->id],
@@ -23,17 +23,23 @@ final class PublicBookingSurfaceContractTest extends TenantTestCase
 
         $response = $this->get(route('customer.booking'));
 
-        $response->assertOk();
-        $response->assertSee('Rasha Clinic', false);
-        $response->assertSee('storage/logos/' . $this->tenant->id . '/rasha.svg', false);
-        $response->assertSee('value="ar"', false);
-        $response->assertSee('value="en"', false);
-        $response->assertSee('velora-booking.css', false);
-        $response->assertSee('dark-mode-booking.js', false);
-        $response->assertDontSee('velora-booking-review.js', false);
-        $response->assertDontSee('Appointment Booked Successfully!', false);
-        $response->assertDontSee('id="successMessage"', false);
-        $response->assertSee('id="bookingForm"', false);
+        $response->assertOk()
+            ->assertSee('Rasha Clinic', false)
+            ->assertSee('storage/logos/' . $this->tenant->id . '/rasha.svg', false)
+            ->assertSee('value="ar"', false)
+            ->assertSee('value="en"', false)
+            ->assertSee('velora-booking.css', false)
+            ->assertSee('velora-booking-v3.js', false)
+            ->assertSee('id="bookingForm"', false)
+            ->assertSee('id="serviceCards"', false)
+            ->assertSee('id="staffCards"', false)
+            ->assertSee('id="dateChoices"', false)
+            ->assertSee('id="timeOptions"', false)
+            ->assertDontSee('id="successMessage"', false)
+            ->assertDontSee('Appointment Booked Successfully!', false)
+            ->assertDontSee('Your Queue Number', false)
+            ->assertDontSee('vb-final-v2-', false)
+            ->assertDontSee('vb2-card', false);
     }
 
     #[Test]
@@ -41,14 +47,10 @@ final class PublicBookingSurfaceContractTest extends TenantTestCase
     {
         Setting::updateOrCreate(
             ['tenant_id' => $this->tenant->id],
-            [
-                'language' => 'ar',
-                'available_languages' => ['ar', 'en'],
-            ],
+            ['language' => 'ar', 'available_languages' => ['ar', 'en']],
         );
 
         $response = $this->get(route('tenant.change.language', ['lang' => 'fr']));
-
         $response->assertRedirect();
     }
 
@@ -68,13 +70,7 @@ final class PublicBookingSurfaceContractTest extends TenantTestCase
             ->assertJsonPath('success', true)
             ->assertJsonStructure([
                 'data' => [[
-                    'id',
-                    'name',
-                    'name_ar',
-                    'duration',
-                    'duration_minutes',
-                    'price',
-                    'description',
+                    'id', 'name', 'name_ar', 'duration', 'duration_minutes', 'price', 'description',
                 ]],
             ]);
 
@@ -96,9 +92,7 @@ final class PublicBookingSurfaceContractTest extends TenantTestCase
             ->assertJsonPath('success', true)
             ->assertJsonStructure([
                 'data' => [[
-                    'id',
-                    'staff_id',
-                    'name',
+                    'id', 'staff_id', 'name',
                 ]],
             ]);
 
