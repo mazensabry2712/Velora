@@ -1,5 +1,6 @@
 /* Velora Brand System — Source of Truth: docs/VELORA_BRAND_GUIDELINES.md */
 @import url('./velora-public.css');
+@import url('./velora-auth-overlay.css');
 
 :root {
     --velora-primary-purple: #6D46FF;
