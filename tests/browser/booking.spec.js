@@ -4,13 +4,14 @@ const bookingUrl = '/book';
 
 test.describe('Velora public booking surface', () => {
     async function loadServices(page) {
-        const servicesResponsePromise = page.waitForResponse((response) =>
-            response.url().includes('/api/booking/services') && response.request().method() === 'GET',
-        );
-
-        await page.goto(bookingUrl, { waitUntil: 'domcontentloaded' });
-        const servicesResponse = await servicesResponsePromise;
-        return servicesResponse.json();
+        await page.goto(bookingUrl, { waitUntil: 'networkidle' });
+        const service = page.locator('#service_id');
+        await expect(service).toBeAttached();
+        await expect.poll(async () => service.locator('option').count(), { timeout: 10000 }).toBeGreaterThan(0);
+        return page.evaluate(async () => {
+            const response = await fetch('/api/booking/services', { headers: { Accept: 'application/json' } });
+            return response.json();
+        });
     }
 
     test('booking page renders tenant branding and has no horizontal overflow', async ({ page }) => {
@@ -18,7 +19,7 @@ test.describe('Velora public booking surface', () => {
 
         await expect(page.locator('#bookingForm')).toBeVisible();
         await expect(page.locator('.vb2-brand')).toBeVisible();
-        await expect(page.locator('.vb2-logo, .vb2-fallback-logo img').first()).toBeVisible();
+        await expect(page.locator('.vb2-logo')).toBeVisible();
         await expect(page.locator('.vb2-intro h1')).toBeVisible();
         await expect(page.locator('#service_id')).toBeAttached();
         await expect(page.locator('#successMessage')).toHaveCount(0);
@@ -40,9 +41,17 @@ test.describe('Velora public booking surface', () => {
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
         expect(overflow).toBe(false);
 
-        const controls = await page.locator('.vb2-icon-button, .vb2-language, .vb-final-v2-choice, .vb-final-v2-btn').evaluateAll((items) => items.map((item) => item.getBoundingClientRect().height));
+        const controls = await page.locator('.vb2-icon-button, .vb2-language, .vb-final-v2-choice, .vb-final-v2-btn').evaluateAll((items) =>
+            items
+                .filter((item) => {
+                    const style = window.getComputedStyle(item);
+                    const rect = item.getBoundingClientRect();
+                    return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+                })
+                .map((item) => item.getBoundingClientRect().height),
+        );
         expect(controls.length).toBeGreaterThan(0);
-        expect(controls.every((height) => height >= 40)).toBe(true);
+        expect(controls.every((height) => height >= 44)).toBe(true);
         await page.screenshot({ path: 'artifacts/booking-mobile.png', fullPage: true });
     });
 
@@ -65,9 +74,9 @@ test.describe('Velora public booking surface', () => {
             return;
         }
 
-        const first = service.locator('option[value]:not([value=""])').first();
-        await expect(first).toBeAttached();
-        await service.selectOption(await first.getAttribute('value'));
+        const firstValue = await service.locator('option[value]:not([value=""])').first().getAttribute('value');
+        expect(firstValue).toBeTruthy();
+        await service.selectOption(firstValue);
         await expect(page.locator('#staffSection')).toHaveClass(/vb-final-v2-active/);
         await expect(page.locator('#staffCards')).toBeVisible();
     });
@@ -79,12 +88,13 @@ test.describe('Velora public booking surface', () => {
         }
 
         const service = page.locator('#service_id');
-        await service.selectOption(await service.locator('option[value]:not([value=""])').first().getAttribute('value'));
+        const serviceValue = await service.locator('option[value]:not([value=""])').first().getAttribute('value');
+        expect(serviceValue).toBeTruthy();
+        await service.selectOption(serviceValue);
         await expect(page.locator('#staffCards .vb-final-v2-choice').first()).toBeVisible();
 
         const staffChoices = page.locator('#staffCards .vb-final-v2-choice');
-        if (await staffChoices.count() > 1) await staffChoices.nth(1).click();
-        else await staffChoices.first().click();
+        await staffChoices.first().click();
 
         const date = page.locator('#appointment_date');
         const slotCards = page.locator('#vbFinalSlots .vb-final-v2-slot');
