@@ -7,9 +7,7 @@ use App\Http\Requests\Admin\StoreServiceRequest;
 use App\Domain\Booking\Services\SlotEngine;
 use App\Models\Service;
 use App\Models\Staff;
-use App\Models\StaffSchedule;
 use App\Models\TimeSlot;
-use App\Models\User;
 use App\Models\WorkingDay;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -118,118 +116,82 @@ class ServiceController extends Controller
         }
     }
 
+    /**
+     * Public booking availability.
+     *
+     * Staff IDs exposed to the browser are User IDs because the booking
+     * submit contract uses the staff user's identifier. Internally we resolve
+     * that identifier to the canonical Staff aggregate before asking SlotEngine
+     * for availability.
+     */
     public function availableTimeSlots(Request $request): JsonResponse
     {
+        $validated = $request->validate([
+            'date'       => ['required', 'date_format:Y-m-d'],
+            'staff_id'   => ['required', 'integer'],
+            'service_id' => ['required', 'integer'],
+            'timezone'   => ['nullable', 'timezone'],
+        ]);
+
+        $service = Service::query()
+            ->whereKey((int) $validated['service_id'])
+            ->where('is_active', true)
+            ->where('is_online_bookable', true)
+            ->first();
+
+        $requestedStaffId = (int) $validated['staff_id'];
+        $staff = Staff::query()
+            ->where('user_id', $requestedStaffId)
+            ->bookable()
+            ->with(['workingHours', 'breaks', 'timeOff'])
+            ->first();
+
+        if (! $service || ! $staff || ! $staff->services()->whereKey($service->id)->exists()) {
+            return response()->json([
+                'success' => true,
+                'data' => [],
+                'reason' => 'invalid_booking_selection',
+            ]);
+        }
+
         try {
-            if ($request->filled(['date', 'staff_id', 'service_id'])) {
-                $validated = $request->validate([
-                    'date'       => ['required', 'date_format:Y-m-d'],
-                    'staff_id'   => ['required', 'integer'],
-                    'service_id' => ['required', 'integer'],
-                    'timezone'   => ['nullable', 'timezone'],
-                ]);
+            $timezone = $staff->timezone ?: config('app.timezone');
+            $slots = app(SlotEngine::class)->getAvailableSlots(
+                $service,
+                $staff,
+                Carbon::createFromFormat('Y-m-d', $validated['date'], $timezone),
+                $timezone,
+            );
 
-                $service = Service::query()
-                    ->whereKey((int) $validated['service_id'])
-                    ->where('is_active', true)
-                    ->where('is_online_bookable', true)
-                    ->first();
-
-                // The public booking UI uses the dedicated Staff primary key.
-                // Keep accepting the legacy User id so existing API consumers do
-                // not break while the identifier migration is in progress.
-                $requestedStaffId = (int) $validated['staff_id'];
-                $staff = Staff::query()
-                    ->where(function ($query) use ($requestedStaffId) {
-                        $query->whereKey($requestedStaffId)
-                            ->orWhere('user_id', $requestedStaffId);
-                    })
-                    ->bookable()
-                    ->with(['workingHours', 'breaks', 'timeOff'])
-                    ->first();
-
-                if (! $service || ! $staff || ! $staff->services()->whereKey($service->id)->exists()) {
-                    return response()->json([
-                        'success' => true,
-                        'data' => [],
-                        'reason' => 'invalid_booking_selection',
-                    ]);
-                }
-
-                // The business/staff calendar is authoritative. The browser timezone
-                // is metadata only and cannot shift the date selected by the customer.
-                $timezone = $staff->timezone ?: config('app.timezone');
-                $slots = app(SlotEngine::class)->getAvailableSlots(
-                    $service,
-                    $staff,
-                    Carbon::createFromFormat('Y-m-d', $validated['date'], $timezone),
-                    $timezone,
-                );
-
-                return response()->json([
-                    'success' => true,
-                    'timezone' => $timezone,
-                    'data' => $slots->map(fn ($slot) => [
-                        'start_time' => $slot->startsAt->format('H:i'),
-                        'end_time' => $slot->endsAt->format('H:i'),
-                        'label' => $slot->startsAt->format('g:i A'),
-                    ])->values(),
-                ]);
-            }
-
-            // Legacy compatibility for existing internal consumers.
-            $date    = $request->input('date');
-            $staffId = $request->input('staff_id');
-            $exclude = $request->input('exclude_appointment_id');
-
-            if (strtotime($date) < strtotime(date('Y-m-d'))) {
-                return response()->json(['success' => true, 'data' => [], 'reason' => 'past_date']);
-            }
-
-            $allSlots    = TimeSlot::active()->orderBy('start_time')->get();
-            $dayOfWeek   = date('w', strtotime($date));
-            $staffSchedule = StaffSchedule::where('user_id', $staffId)
-                ->where('day_of_week', $dayOfWeek)
-                ->where('is_active', true)
-                ->first();
-
-            if (!$staffSchedule) {
-                return response()->json(['success' => true, 'data' => [], 'reason' => 'staff_not_working']);
-            }
-
-            $bookedSlots = \App\Models\Appointment::where('date', $date)
-                ->where('staff_id', $staffId)
-                ->whereNotIn('status', ['cancelled'])
-                ->when($exclude, fn ($q) => $q->where('id', '!=', $exclude))
-                ->pluck('time_slot')
-                ->toArray();
-
-            $available = $allSlots->filter(function ($slot) use ($bookedSlots, $staffSchedule) {
-                if (in_array($slot->start_time, $bookedSlots)) {
-                    return false;
-                }
-                return $slot->start_time >= $staffSchedule->start_time
-                    && $slot->start_time < $staffSchedule->end_time;
-            })->values();
-
-            return response()->json(['success' => true, 'data' => $available]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            throw $e;
-        } catch (\Exception $e) {
+            return response()->json([
+                'success' => true,
+                'timezone' => $timezone,
+                'data' => $slots->map(fn ($slot) => [
+                    'start_time' => $slot->startsAt->format('H:i'),
+                    'end_time' => $slot->endsAt->format('H:i'),
+                    'label' => $slot->startsAt->format('g:i A'),
+                ])->values(),
+            ]);
+        } catch (\Throwable $e) {
             Log::error('availableTimeSlots: ' . $e->getMessage());
-            return response()->json(['success' => false, 'data' => [], 'message' => $e->getMessage()], 500);
+
+            return response()->json([
+                'success' => false,
+                'data' => [],
+                'message' => __('Unable to load availability.'),
+            ], 500);
         }
     }
 
     public function toggleStaffService(Request $request): JsonResponse
     {
         try {
-            $user = User::findOrFail($request->staff_id);
+            $staff = Staff::where('user_id', (int) $request->staff_id)->firstOrFail();
 
             if ($request->boolean('attach')) {
-                $user->services()->syncWithoutDetaching([$request->service_id]);
+                $staff->services()->syncWithoutDetaching([(int) $request->service_id]);
             } else {
-                $user->services()->detach($request->service_id);
+                $staff->services()->detach((int) $request->service_id);
             }
 
             return response()->json(['success' => true]);
@@ -241,18 +203,33 @@ class ServiceController extends Controller
 
     public function staffServices(int $staffId): JsonResponse
     {
-        $user = User::with('services')->findOrFail($staffId);
-        return response()->json(['success' => true, 'data' => $user->services]);
+        $staff = Staff::with('services')->where('user_id', $staffId)->firstOrFail();
+
+        return response()->json(['success' => true, 'data' => $staff->services]);
     }
 
     public function byService(int $serviceId): JsonResponse
     {
-        $service = Service::findOrFail($serviceId);
+        $service = Service::query()
+            ->whereKey($serviceId)
+            ->where('is_active', true)
+            ->where('is_online_bookable', true)
+            ->firstOrFail();
 
-        $staff = User::query()
-            ->whereHas('services', fn ($query) => $query->where('services.id', $service->id))
-            ->orderBy('name')
-            ->get(['id', 'name', 'email']);
+        $staff = Staff::query()
+            ->bookable()
+            ->whereHas('services', fn ($query) => $query->whereKey($service->id))
+            ->with('user:id,name,email')
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Staff $staff) => [
+                'id' => $staff->user_id,
+                'staff_id' => $staff->id,
+                'name' => $staff->full_name ?: $staff->user?->name,
+                'email' => $staff->email ?: $staff->user?->email,
+            ])
+            ->values();
 
         return response()->json([
             'success' => true,
