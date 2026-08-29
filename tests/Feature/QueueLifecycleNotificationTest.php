@@ -20,6 +20,16 @@ use Tests\TenantTestCase;
 
 final class QueueLifecycleNotificationTest extends TenantTestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // TenantTestCase clears Eloquent booted models during teardown. Re-register
+        // the production observer for each test so this feature test remains
+        // isolated without depending on static model state from another test.
+        Queue::observe(\App\Observers\QueueObserver::class);
+    }
+
     #[Test]
     public function waiting_to_serving_emits_turn_now(): void
     {
