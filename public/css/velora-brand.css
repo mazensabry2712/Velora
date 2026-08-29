@@ -25,7 +25,6 @@
     --velora-border: #E5E7EB;
     --velora-white: #FFFFFF;
 
-    /* Semantic surface aliases. */
     --velora-bg: var(--velora-white);
     --velora-surface: var(--velora-white);
     --velora-surface-muted: var(--velora-light-gray);
@@ -36,7 +35,6 @@
     --velora-accent-strong: var(--velora-primary-purple);
     --velora-accent-glow: rgba(0, 108, 255, .18);
 
-    /* Legacy aliases used by existing templates. */
     --v-ink: var(--velora-deep-navy);
     --v-ink-soft: var(--velora-gray-dark);
     --v-canvas: var(--velora-light-gray);
@@ -49,7 +47,6 @@
     --v-teal-50: #F7F8FF;
 }
 
-/* Explicit dark theme. Add .dark to the root or any page shell that owns the theme. */
 .dark,
 [data-theme="dark"] {
     --velora-bg: #080B18;
@@ -63,157 +60,42 @@
     --velora-accent-glow: rgba(22, 119, 255, .22);
 }
 
-/* Components should consume tokens, not invent their own brand shades. */
 .velora-brand-gradient,
-.gradient-text {
-    background-image: var(--velora-gradient) !important;
-}
+.gradient-text { background-image: var(--velora-gradient) !important; }
 
 .nav-cta,
-.btn-primary {
-    background: var(--velora-gradient) !important;
-    color: var(--velora-white) !important;
-    box-shadow: 0 10px 28px var(--velora-accent-glow) !important;
-}
-
+.btn-primary { background: var(--velora-gradient) !important; color: var(--velora-white) !important; box-shadow: 0 10px 28px var(--velora-accent-glow) !important; }
 .nav-cta:hover,
-.btn-primary:hover {
-    box-shadow: 0 14px 34px rgba(109, 70, 255, .24) !important;
-}
+.btn-primary:hover { box-shadow: 0 14px 34px rgba(109, 70, 255, .24) !important; }
+.velora-brand-ink { color: var(--velora-deep-navy) !important; }
+.velora-brand-accent { color: var(--velora-primary-blue) !important; }
+.glass-light { border-color: rgba(13, 18, 38, .12) !important; }
+.card-hover:hover { box-shadow: 0 20px 55px rgba(13, 18, 38, .10) !important; }
+#admin-scroll-progress { background: var(--velora-gradient) !important; }
+.back-top-ring::before { border-color: var(--velora-primary-blue) !important; }
+::-webkit-scrollbar-thumb:hover { background: var(--velora-primary-blue) !important; }
+*:focus-visible { outline-color: var(--velora-primary-blue) !important; }
 
-.velora-brand-ink {
-    color: var(--velora-deep-navy) !important;
-}
-
-.velora-brand-accent {
-    color: var(--velora-primary-blue) !important;
-}
-
-.glass-light {
-    border-color: rgba(13, 18, 38, .12) !important;
-}
-
-.card-hover:hover {
-    box-shadow: 0 20px 55px rgba(13, 18, 38, .10) !important;
-}
-
-#admin-scroll-progress {
-    background: var(--velora-gradient) !important;
-}
-
-.back-top-ring::before {
-    border-color: var(--velora-primary-blue) !important;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: var(--velora-primary-blue) !important;
-}
-
-*:focus-visible {
-    outline-color: var(--velora-primary-blue) !important;
-}
-
-/* Replace legacy utility-brand colors with the official Velora system. */
 .text-indigo-400, .text-indigo-500, .text-indigo-600, .text-indigo-700,
-.text-purple-400, .text-purple-500, .text-purple-600, .text-purple-700 {
-    color: var(--velora-primary-purple) !important;
-}
-
-.text-blue-500, .text-blue-600, .text-blue-700 {
-    color: var(--velora-sky-blue) !important;
-}
-
+.text-purple-400, .text-purple-500, .text-purple-600, .text-purple-700 { color: var(--velora-primary-purple) !important; }
+.text-blue-500, .text-blue-600, .text-blue-700 { color: var(--velora-sky-blue) !important; }
 .bg-indigo-500, .bg-indigo-600, .bg-indigo-700,
 .bg-purple-500, .bg-purple-600, .bg-purple-700,
-.bg-blue-500, .bg-blue-600, .bg-blue-700 {
-    background: var(--velora-gradient) !important;
-}
-
+.bg-blue-500, .bg-blue-600, .bg-blue-700 { background: var(--velora-gradient) !important; }
 .border-indigo-400, .border-indigo-500, .border-indigo-600,
 .border-purple-400, .border-purple-500, .border-purple-600,
-.border-blue-400, .border-blue-500, .border-blue-600 {
-    border-color: var(--velora-primary-blue) !important;
-}
+.border-blue-400, .border-blue-500, .border-blue-600 { border-color: var(--velora-primary-blue) !important; }
 
-/* Dark-mode surface helpers for templates that already expose these classes. */
 .dark .velora-surface,
-[data-theme="dark"] .velora-surface {
-    background: var(--velora-surface) !important;
-    color: var(--velora-text) !important;
-    border-color: var(--velora-line) !important;
-}
-
+[data-theme="dark"] .velora-surface { background: var(--velora-surface) !important; color: var(--velora-text) !important; border-color: var(--velora-line) !important; }
 .dark .velora-page,
-[data-theme="dark"] .velora-page {
-    background: var(--velora-bg) !important;
-    color: var(--velora-text) !important;
-}
-
+[data-theme="dark"] .velora-page { background: var(--velora-bg) !important; color: var(--velora-text) !important; }
 .dark .velora-muted,
-[data-theme="dark"] .velora-muted {
-    color: var(--velora-text-muted) !important;
-}
+[data-theme="dark"] .velora-muted { color: var(--velora-text-muted) !important; }
 
-/* Landing shell follows the official system in both themes. */
-body:has(.v-home) {
-    background: var(--velora-bg) !important;
-    color: var(--velora-text) !important;
-}
-
+body:has(.v-home) { background: var(--velora-bg) !important; color: var(--velora-text) !important; }
 .dark body:has(.v-home),
-[data-theme="dark"] body:has(.v-home) {
-    background: #080B18 !important;
-    color: #F8FAFC !important;
-}
+[data-theme="dark"] body:has(.v-home) { background: #080B18 !important; color: #F8FAFC !important; }
 
-/* Find-account browser mockup: premium address-bar treatment for yourbusiness.velora.test. */
-.animate-float div[class*="bg-gray-900/70"][class*="text-gray-500"][class*="rounded-full"] {
-    background: linear-gradient(135deg, rgba(13, 18, 38, .96), rgba(21, 28, 50, .92)) !important;
-    border-color: rgba(138, 92, 255, .28) !important;
-    color: #D9E1F0 !important;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .045), 0 10px 28px rgba(13, 18, 38, .20) !important;
-}
-
-.dark .animate-float div[class*="bg-gray-900/70"][class*="text-gray-500"][class*="rounded-full"],
-[data-theme="dark"] .animate-float div[class*="bg-gray-900/70"][class*="text-gray-500"][class*="rounded-full"] {
-    background: linear-gradient(135deg, #0A0F1E, #121A30) !important;
-    border-color: rgba(138, 92, 255, .34) !important;
-    color: #E7ECF5 !important;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), 0 12px 30px rgba(0, 0, 0, .28) !important;
-}
-
-/* Find-account browser chrome: use Velora brand colors instead of OS/browser red accents. */
-.animate-float span.bg-red-400\/70 {
-    background: #8A5CFF !important;
-}
-
-.animate-float span.bg-amber-400\/70 {
-    background: #006CFF !important;
-}
-
-.animate-float span.bg-emerald-400\/70 {
-    background: #00B8FF !important;
-}
-
-/* Strong explicit selector for the address bar so inline Tailwind utility colors cannot win. */
-.animate-float .ms-3.flex-1.rounded-full {
-    background: linear-gradient(135deg, #11172A 0%, #17213D 55%, #14294A 100%) !important;
-    border: 1px solid rgba(109, 70, 255, .42) !important;
-    color: #EAF0FF !important;
-    text-shadow: 0 1px 0 rgba(0, 0, 0, .25);
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, .06),
-        0 0 0 1px rgba(0, 108, 255, .08),
-        0 10px 26px rgba(13, 18, 38, .24) !important;
-}
-
-.dark .animate-float .ms-3.flex-1.rounded-full,
-[data-theme="dark"] .animate-float .ms-3.flex-1.rounded-full {
-    background: linear-gradient(135deg, #090E1C 0%, #0F1830 55%, #102544 100%) !important;
-    border-color: rgba(138, 92, 255, .48) !important;
-    color: #F3F6FF !important;
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, .055),
-        0 0 0 1px rgba(0, 184, 255, .10),
-        0 12px 32px rgba(0, 0, 0, .30) !important;
-}
+/* The demo browser chrome is intentionally hidden; keep the mockup focused on workspaces. */
+.animate-float > div.flex.items-center.gap-2.mb-5.px-1 { display: none !important; }
