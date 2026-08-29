@@ -1,66 +1,93 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Mail;
 
+use App\Models\Appointment;
+use App\Models\Customer;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
-use App\Models\Appointment;
-use App\Models\User;
 
-class AppointmentReminderMail extends Mailable implements ShouldQueue
+final class AppointmentReminderMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $appointment;
-    public $user;
-    public $locale;
-
-    /**
-     * Create a new message instance.
-     */
-    public function __construct(Appointment $appointment, User $user, string $locale = 'en')
-    {
-        $this->appointment = $appointment;
-        $this->user = $user;
-        $this->locale = $locale;
+    public function __construct(
+        public readonly Appointment $appointment,
+        public readonly User|Customer $customer,
+        public readonly string $locale = 'en',
+    ) {
+        $this->appointment->loadMissing([
+            'service',
+            'newStaff',
+            'staff',
+            'queue',
+        ]);
     }
 
-    /**
-     * Get the message envelope.
-     */
     public function envelope(): Envelope
     {
-        $subject = __('notifications.appointment_reminder.subject', [], $this->locale);
-
         return new Envelope(
-            subject: $subject,
+            subject: __('notifications.appointment_reminder.subject', [], $this->locale),
         );
     }
 
-    /**
-     * Get the message content definition.
-     */
     public function content(): Content
     {
+        $customerName = $this->customer instanceof Customer
+            ? $this->customer->full_name
+            : $this->customer->name;
+
+        $serviceName = $this->appointment->service_name
+            ?? $this->appointment->service?->name
+            ?? $this->appointment->service_type
+            ?? 'Appointment';
+
+        $staffName = $this->appointment->newStaff?->full_name
+            ?? $this->appointment->staff?->name
+            ?? '—';
+
+        $appointmentDate = $this->appointment->starts_at?->format('Y-m-d')
+            ?? $this->appointment->date?->format('Y-m-d')
+            ?? '';
+
+        $appointmentTime = $this->appointment->starts_at?->format('H:i')
+            ?? $this->appointment->time_slot
+            ?? '';
+
+        $duration = $this->appointment->service?->duration_minutes
+            ?? $this->appointment->service?->duration
+            ?? '';
+
+        $queueNumber = $this->appointment->queue?->queue_number;
+        $reference = (string) ($this->appointment->public_reference ?? '');
+        $trackingUrl = $reference !== ''
+            ? route('customer.queue.status', ['ref' => $reference])
+            : route('customer.queue.status');
+
         return new Content(
             markdown: 'emails.appointment-reminder',
             with: [
                 'appointment' => $this->appointment,
-                'user' => $this->user,
+                'customerName' => $customerName,
+                'serviceName' => $serviceName,
+                'staffName' => $staffName,
+                'appointmentDate' => $appointmentDate,
+                'appointmentTime' => $appointmentTime,
+                'duration' => (string) $duration,
+                'queueNumber' => $queueNumber !== null ? (string) $queueNumber : '—',
+                'reference' => $reference,
+                'trackingUrl' => $trackingUrl,
                 'locale' => $this->locale,
-            ]
+            ],
         );
     }
 
-    /**
-     * Get the attachments for the message.
-     *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
-     */
     public function attachments(): array
     {
         return [];
