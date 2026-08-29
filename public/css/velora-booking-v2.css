@@ -1,467 +1,405 @@
-/* Velora Booking v2 — product-grade booking UI. Scoped only to #bookingForm page. */
+/* Velora Booking v2 — product-grade, mobile-first booking surface. */
 
 body:has(#bookingForm) {
     --vb2-bg: var(--velora-bg, #f7f9fc);
     --vb2-surface: var(--velora-surface, #ffffff);
-    --vb2-surface-2: var(--velora-surface-muted, #f1f5fa);
+    --vb2-surface-2: var(--velora-surface-muted, #f3f6fa);
     --vb2-text: var(--velora-text, #0d1226);
     --vb2-muted: var(--velora-text-muted, #687084);
     --vb2-line: var(--velora-line, #e6ebf2);
     --vb2-primary: var(--velora-primary-blue, #006cff);
     --vb2-accent: var(--velora-accent-strong, #6d46ff);
     --vb2-gradient: var(--velora-gradient, linear-gradient(135deg,#006cff,#6d46ff));
-    --vb2-radius-sm: 12px;
-    --vb2-radius-md: 16px;
-    --vb2-radius-lg: 22px;
-    --vb2-shadow: 0 24px 70px rgba(13,18,38,.08);
-    --vb2-shadow-soft: 0 10px 30px rgba(13,18,38,.06);
     background: var(--vb2-bg) !important;
     color: var(--vb2-text) !important;
+    min-height: 100dvh;
 }
 
-body:has(#bookingForm) > div {
-    width: min(1180px, calc(100% - 40px)) !important;
-    max-width: none !important;
-    margin-inline: auto !important;
-    padding: 24px 0 40px !important;
+body:has(#bookingForm) .vb2-shell {
+    width: min(1180px, calc(100% - 40px));
+    margin-inline: auto;
+    padding: 24px 0 42px;
 }
 
-/* Header */
-body:has(#bookingForm) header {
-    position: relative;
-    max-width: 100% !important;
-    margin: 0 0 22px !important;
-    padding: 18px 20px !important;
-    display: grid;
-    grid-template-columns: minmax(0,1fr) auto;
+.vb2-header {
+    min-height: 74px;
+    display: flex;
     align-items: center;
-    gap: 24px;
-    text-align: start !important;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 14px 16px;
+    margin-bottom: 28px;
     border: 1px solid var(--vb2-line);
-    border-radius: var(--vb2-radius-lg);
-    background: var(--vb2-surface) !important;
-    box-shadow: var(--vb2-shadow-soft);
+    border-radius: 20px;
+    background: var(--vb2-surface);
+    box-shadow: 0 10px 30px rgba(13,18,38,.06);
 }
 
-body:has(#bookingForm) header > div:first-child {
-    grid-column: 2;
-    grid-row: 1;
-    position: static !important;
-    display: flex !important;
+.vb2-brand {
+    min-width: 0;
+    display: inline-flex;
     align-items: center;
-    justify-content: flex-end;
-    gap: 8px !important;
-    margin: 0 !important;
-    z-index: 20;
+    gap: 12px;
+    color: inherit;
+    text-decoration: none;
 }
 
-body:has(#bookingForm) header > div:first-child > button {
-    width: 42px !important;
-    min-width: 42px;
-    height: 42px !important;
-    min-height: 42px !important;
-    padding: 0 !important;
-    border-radius: 12px !important;
-    display: inline-flex !important;
+.vb2-logo-wrap {
+    width: 46px;
+    height: 46px;
+    flex: 0 0 46px;
+    display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--vb2-line) !important;
-    background: var(--vb2-surface) !important;
-}
-
-/* Current language control becomes a compact, readable language strip. */
-body:has(#bookingForm) header > div:first-child > div {
-    display: flex !important;
-    align-items: center;
-    gap: 2px !important;
-    min-height: 42px !important;
-    max-width: 245px;
-    padding: 3px !important;
-    overflow-x: auto;
-    overflow-y: hidden;
     border: 1px solid var(--vb2-line);
-    border-radius: 12px;
-    background: var(--vb2-surface-2) !important;
-    scrollbar-width: none;
+    border-radius: 13px;
+    background: var(--vb2-surface-2);
+    overflow: hidden;
 }
 
-body:has(#bookingForm) header > div:first-child > div::-webkit-scrollbar { display: none; }
-
-body:has(#bookingForm) header > div:first-child > div button {
-    flex: 0 0 auto;
-    min-width: 42px;
-    min-height: 34px !important;
-    padding: 7px 10px !important;
-    border-radius: 9px !important;
-    border: 0 !important;
-    white-space: nowrap;
-    font-size: 11px !important;
-    font-weight: 800 !important;
-}
-
-body:has(#bookingForm) header > div:first-child > div button:hover {
-    background: var(--vb2-surface) !important;
-}
-
-body:has(#bookingForm) header > div:first-child > div button[class*="bg-indigo"] {
-    background: var(--vb2-gradient) !important;
-    color: #fff !important;
-    box-shadow: 0 5px 14px rgba(0,108,255,.18);
-}
-
-body:has(#bookingForm) header > img,
-body:has(#bookingForm) header > img:first-of-type {
-    grid-column: 1;
-    grid-row: 1;
-}
-
-body:has(#bookingForm) header img {
-    width: auto;
-    height: 52px;
-    max-width: 150px;
-    margin: 0 0 9px !important;
-    display: block;
+.vb2-logo-wrap img {
+    width: 100%;
+    height: 100%;
+    padding: 7px;
     object-fit: contain;
 }
 
-body:has(#bookingForm) header > h1 {
-    grid-column: 1;
-    grid-row: 1;
-    align-self: end;
-    margin: 0 !important;
-    padding-top: 0;
-    max-width: calc(100% - 24px);
-    font-size: clamp(22px, 3vw, 30px) !important;
-    line-height: 1.12 !important;
-    letter-spacing: -.025em;
+.vb2-fallback-logo {
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+}
+
+.vb2-brand-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.vb2-brand-copy strong {
+    max-width: min(48vw, 420px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--vb2-text);
+    font-size: 15px;
+    font-weight: 900;
+    line-height: 1.2;
+}
+
+.vb2-brand-copy span {
+    max-width: min(48vw, 420px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--vb2-muted);
+    font-size: 11px;
+    line-height: 1.2;
+}
+
+.vb2-controls {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vb2-icon-button,
+.vb2-language {
+    min-height: 42px;
+    border: 1px solid var(--vb2-line);
+    border-radius: 12px;
+    background: var(--vb2-surface);
+}
+
+.vb2-icon-button {
+    width: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+}
+
+.vb2-language {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 10px;
+    background: var(--vb2-surface-2);
+}
+
+.vb2-globe {
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 10px;
+    color: var(--vb2-primary);
+}
+
+.vb2-language select {
+    min-width: 92px;
+    max-width: 132px;
+    border: 0 !important;
+    outline: 0 !important;
+    background: transparent !important;
     color: var(--vb2-text) !important;
-    overflow-wrap: anywhere;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    cursor: pointer;
 }
 
-body:has(#bookingForm) header > p {
-    grid-column: 1;
-    grid-row: 1;
-    align-self: end;
-    margin: 0 0 -1px !important;
-    padding-inline-start: 178px;
-    color: var(--vb2-muted) !important;
-    font-size: 12px !important;
+.vb2-intro {
+    width: min(900px,100%);
+    margin: 0 auto 18px;
 }
 
-/* Main layout */
-body:has(#bookingForm) main {
-    width: min(900px,100%) !important;
-    margin-inline: auto !important;
-    padding: 32px !important;
-    border: 1px solid var(--vb2-line) !important;
-    border-radius: 26px !important;
-    background: var(--vb2-surface) !important;
-    box-shadow: var(--vb2-shadow) !important;
-    backdrop-filter: none !important;
-}
-
-body:has(#bookingForm) #bookingForm {
-    display: block !important;
-}
-
-body:has(#bookingForm) #bookingForm > section {
-    padding: 26px 0 !important;
-    margin: 0 !important;
-    border-top: 1px solid var(--vb2-line) !important;
-}
-
-body:has(#bookingForm) #bookingForm > section:first-of-type {
-    border-top: 0 !important;
-    padding-top: 0 !important;
-}
-
-body:has(#bookingForm) #bookingForm > section > div:first-child {
-    display: flex !important;
+.vb2-kicker {
+    display: inline-flex;
     align-items: center;
+    gap: 8px;
+    padding: 7px 11px;
+    border: 1px solid rgba(109,70,255,.14);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--vb2-surface) 90%, var(--vb2-accent));
+    color: var(--vb2-primary);
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+}
+
+.vb2-kicker span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--vb2-gradient);
+}
+
+.vb2-intro h1 {
+    margin: 12px 0 5px;
+    font-size: clamp(28px, 4vw, 44px);
+    line-height: 1.05;
+    letter-spacing: -.04em;
+    color: var(--vb2-text);
+    font-weight: 900;
+}
+
+.vb2-intro p {
+    margin: 0;
+    color: var(--vb2-muted);
+    font-size: 13px;
+    line-height: 1.65;
+}
+
+.vb2-card {
+    width: min(900px,100%);
+    margin: 0 auto;
+    padding: 30px;
+    border: 1px solid var(--vb2-line);
+    border-radius: 26px;
+    background: var(--vb2-surface);
+    box-shadow: 0 24px 70px rgba(13,18,38,.08);
+}
+
+.vb2-card-head {
+    display: flex;
+    align-items: flex-start;
     justify-content: space-between;
-    gap: 14px;
-    margin-bottom: 18px !important;
+    gap: 16px;
+    margin-bottom: 6px;
 }
 
-body:has(#bookingForm) #bookingForm > section > div:first-child > div:first-child {
-    display: flex !important;
+.vb2-card-eyebrow {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--vb2-primary);
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+}
+
+.vb2-card-head h2,
+.vb2-success-copy h2 {
+    margin: 0;
+    color: var(--vb2-text);
+    font-size: 20px;
+    font-weight: 900;
+    line-height: 1.25;
+}
+
+.vb2-secure {
+    display: inline-flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
+    padding: 7px 9px;
+    border-radius: 999px;
+    background: #eefbf4;
+    color: #138a4b;
+    font-size: 10px;
+    font-weight: 900;
+    white-space: nowrap;
 }
 
-body:has(#bookingForm) #bookingForm > section > div:first-child > div:first-child > span {
-    width: 30px !important;
-    height: 30px !important;
+.vb2-alert {
+    margin: 15px 0 0;
+    padding: 13px 15px;
+    border-radius: 14px;
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+.vb2-alert-error { border: 1px solid #f2caca; background: #fff5f5; color: #a43b3b; }
+.vb2-alert-info { border: 1px solid #cadcff; background: #f4f8ff; color: #25579b; }
+.vb2-alert strong { display:block; margin-bottom: 3px; }
+.vb2-alert span { display:block; }
+
+.vb2-step {
+    padding: 25px 0;
+    margin: 0;
+    border-top: 1px solid var(--vb2-line);
+}
+
+.vb2-step:first-child { padding-top: 18px; border-top: 0; }
+
+.vb2-step-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 17px;
+}
+
+.vb2-step-title { display: flex; align-items: center; gap: 10px; }
+
+.vb2-step-number {
+    width: 30px;
+    height: 30px;
     flex: 0 0 30px;
-    display: inline-flex !important;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     border-radius: 9px;
-    background: var(--vb2-gradient) !important;
-    color: #fff !important;
-    font-size: 10px !important;
-    font-weight: 900 !important;
+    background: var(--vb2-gradient);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 900;
 }
 
-body:has(#bookingForm) #bookingForm h2 {
-    margin: 0 !important;
-    font-size: 16px !important;
-    font-weight: 800 !important;
-    line-height: 1.3 !important;
-    color: var(--vb2-text) !important;
+.vb2-step-label { display:block; color:var(--vb2-text); font-size:14px; font-weight:900; }
+.vb2-step-subtitle { display:block; margin-top:2px; color:var(--vb2-muted); font-size:10px; line-height:1.4; }
+.vb2-required,.vb2-hint,.vb2-submit-note { color:var(--vb2-muted); font-size:10px; line-height:1.5; }
+.vb2-fields { display:grid; gap:14px; }
+.vb2-fields-personal { grid-template-columns:1fr 1fr; }
+.vb2-field-full { grid-column:1 / -1; }
+.vb2-field label { display:block; margin-bottom:7px; color:var(--vb2-text); font-size:11px; font-weight:900; }
+.vb2-field input,.vb2-field select,.vb2-field textarea {
+    width:100%; min-height:52px; box-sizing:border-box; padding:0 14px;
+    border:1px solid var(--vb2-line) !important; border-radius:14px !important; outline:none !important;
+    background:var(--vb2-surface-2) !important; color:var(--vb2-text) !important; font:inherit;
+    transition:border-color .18s ease,box-shadow .18s ease,background .18s ease;
+}
+.vb2-field textarea { min-height:116px; padding-block:13px; resize:vertical; }
+.vb2-field input:focus,.vb2-field select:focus,.vb2-field textarea:focus {
+    border-color:rgba(0,108,255,.48) !important; background:var(--vb2-surface) !important;
+    box-shadow:0 0 0 4px rgba(0,108,255,.08) !important;
+}
+.vb2-field input::placeholder,.vb2-field textarea::placeholder { color:var(--vb2-muted); opacity:.72; }
+.vb2-submit-wrap { padding-top:7px; }
+.vb2-submit {
+    width:100%; min-height:56px; display:inline-flex; align-items:center; justify-content:center; gap:10px;
+    border:0; border-radius:15px; background:var(--vb2-gradient); color:#fff; font-size:13px; font-weight:900; cursor:pointer;
+    box-shadow:0 16px 34px rgba(0,108,255,.19); transition:transform .18s ease,box-shadow .18s ease;
+}
+.vb2-submit:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 20px 40px rgba(0,108,255,.23); }
+.vb2-submit:disabled { opacity:.58; cursor:not-allowed; }
+.vb2-submit-note { margin:9px 0 0; text-align:center; }
+.vb2-success { display:flex; align-items:flex-start; gap:16px; padding:6px 0 0; }
+.vb2-success-icon { width:46px;height:46px;flex:0 0 46px;display:inline-flex;align-items:center;justify-content:center;border-radius:14px;background:#e9faf1;color:#14884c;font-size:20px;font-weight:900; }
+.vb2-success-copy p { margin:7px 0 0; color:var(--vb2-muted); font-size:12px; line-height:1.6; }
+.vb2-queue-card { margin-top:18px; padding:22px; text-align:center; border:1px solid var(--vb2-line); border-radius:18px; background:var(--vb2-surface); }
+.vb2-queue-card > span { display:block;color:var(--vb2-muted);font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.12em; }
+.vb2-queue-card strong { display:block;margin:8px 0 12px;color:var(--vb2-primary);font-size:56px;line-height:1;font-weight:950; }
+.vb2-queue-card a { color:var(--vb2-primary);font-size:11px;font-weight:900;text-decoration:none; }
+.vb2-secondary-action { width:100%;min-height:48px;margin-top:12px;border:1px solid var(--vb2-line);border-radius:13px;background:var(--vb2-surface);color:var(--vb2-text);font-size:12px;font-weight:900;cursor:pointer; }
+.vb2-footer { width:min(900px,100%);margin:16px auto 0;display:flex;justify-content:space-between;gap:12px;color:var(--vb2-muted);font-size:10px; }
+.vb2-footer a { color:var(--vb2-primary);font-weight:800;text-decoration:none; }
+
+@media (max-width:760px) {
+    body:has(#bookingForm) .vb2-shell { width:calc(100% - 20px); padding-top:10px; }
+    .vb2-header { margin-bottom:18px; padding:12px; border-radius:17px; }
+    .vb2-brand-copy strong,.vb2-brand-copy span { max-width:52vw; }
+    .vb2-intro h1 { font-size:30px; }
+    .vb2-card { padding:20px; border-radius:21px; }
 }
 
-body:has(#bookingForm) #bookingForm label {
-    margin-bottom: 8px !important;
-    font-size: 12px !important;
-    font-weight: 800 !important;
-    color: var(--vb2-text) !important;
+@media (max-width:520px) {
+    body:has(#bookingForm) .vb2-shell { width:calc(100% - 12px); padding-bottom:24px; }
+    .vb2-header { min-height:66px; gap:10px; padding:10px; }
+    .vb2-logo-wrap { width:40px;height:40px;flex-basis:40px;border-radius:11px; }
+    .vb2-logo-wrap img { padding:6px; }
+    .vb2-brand-copy strong { max-width:39vw; font-size:13px; }
+    .vb2-brand-copy span { max-width:39vw; font-size:9px; }
+    .vb2-controls { gap:6px; }
+    .vb2-icon-button { width:38px;min-width:38px;height:38px;min-height:38px;border-radius:11px; }
+    .vb2-language { min-height:38px;padding:0 7px;border-radius:11px; }
+    .vb2-language select { min-width:70px;max-width:92px;font-size:9px !important; }
+    .vb2-intro { margin-bottom:12px; }
+    .vb2-kicker { font-size:9px;padding:6px 9px; }
+    .vb2-intro h1 { font-size:27px;margin-top:10px; }
+    .vb2-intro p { font-size:11px; }
+    .vb2-card { padding:15px;border-radius:18px; }
+    .vb2-card-head { align-items:center;gap:10px; }
+    .vb2-card-head h2 { font-size:17px; }
+    .vb2-secure { font-size:9px;padding:6px 8px; }
+    .vb2-step { padding:20px 0; }
+    .vb2-step-head { display:block;margin-bottom:15px; }
+    .vb2-required { display:block;margin-top:7px; }
+    .vb2-fields-personal { grid-template-columns:1fr; }
+    .vb2-field-full { grid-column:auto; }
+    .vb2-field input,.vb2-field select,.vb2-field textarea { min-height:50px;border-radius:13px !important; }
+    .vb2-footer { flex-direction:column;align-items:center;text-align:center;margin-top:13px; }
+    .vb2-success { gap:12px; }
+    .vb2-success-icon { width:40px;height:40px;flex-basis:40px;border-radius:12px; }
+    .vb2-queue-card strong { font-size:48px; }
 }
 
-body:has(#bookingForm) #bookingForm input,
-body:has(#bookingForm) #bookingForm select,
-body:has(#bookingForm) #bookingForm textarea {
-    width: 100% !important;
-    min-height: 52px !important;
-    border: 1px solid var(--vb2-line) !important;
-    border-radius: 14px !important;
-    background: var(--vb2-surface-2) !important;
-    color: var(--vb2-text) !important;
-    box-shadow: none !important;
+@media (max-width:380px) {
+    .vb2-brand-copy strong { max-width:31vw;font-size:12px; }
+    .vb2-brand-copy span { max-width:31vw; }
+    .vb2-language select { min-width:58px;max-width:70px; }
+    .vb2-globe { display:none; }
+    .vb2-card { padding:13px; }
 }
 
-body:has(#bookingForm) #bookingForm input:focus,
-body:has(#bookingForm) #bookingForm select:focus,
-body:has(#bookingForm) #bookingForm textarea:focus {
-    border-color: rgba(0,108,255,.5) !important;
-    box-shadow: 0 0 0 4px rgba(0,108,255,.08) !important;
-    background: var(--vb2-surface) !important;
+html.dark body:has(#bookingForm), body.dark:has(#bookingForm) {
+    --vb2-bg:#080b18; --vb2-surface:#10172a; --vb2-surface-2:#0d1226; --vb2-text:#f3f6fc; --vb2-muted:#a7b0c0; --vb2-line:#252e45;
 }
 
-body:has(#bookingForm) #bookingForm textarea {
-    min-height: 116px !important;
-    resize: vertical;
-}
+html.dark body:has(#bookingForm) .vb2-header,
+body.dark:has(#bookingForm) .vb2-header,
+html.dark body:has(#bookingForm) .vb2-card,
+body.dark:has(#bookingForm) .vb2-card,
+html.dark body:has(#bookingForm) .vb2-icon-button,
+body.dark:has(#bookingForm) .vb2-icon-button,
+html.dark body:has(#bookingForm) .vb2-language,
+body.dark:has(#bookingForm) .vb2-language { background:var(--vb2-surface) !important;border-color:var(--vb2-line) !important; }
 
-/* Make service/time selections feel like product controls. */
-body:has(#bookingForm) #service_id,
-body:has(#bookingForm) #staff_id,
-body:has(#bookingForm) #appointment_time {
-    cursor: pointer;
-    font-weight: 700;
-}
+html.dark body:has(#bookingForm) .vb2-language,
+body.dark:has(#bookingForm) .vb2-language { background:var(--vb2-surface-2) !important; }
 
-/* Alerts */
-body:has(#bookingForm) #loadingBanner,
-body:has(#bookingForm) #errorMessage {
-    border-radius: 14px !important;
-    padding: 14px 16px !important;
-}
+html.dark body:has(#bookingForm) .vb2-language select,
+body.dark:has(#bookingForm) .vb2-language select { color:var(--vb2-text) !important; }
 
-/* CTA */
-body:has(#bookingForm) #submitBtn {
-    min-height: 56px !important;
-    margin-top: 16px;
-    border: 0 !important;
-    border-radius: 15px !important;
-    background: var(--vb2-gradient) !important;
-    box-shadow: 0 16px 34px rgba(0,108,255,.20) !important;
-    font-size: 14px !important;
-    font-weight: 900 !important;
-    letter-spacing: -.01em;
-}
+html.dark body:has(#bookingForm) .vb2-field input,body.dark:has(#bookingForm) .vb2-field input,
+html.dark body:has(#bookingForm) .vb2-field select,body.dark:has(#bookingForm) .vb2-field select,
+html.dark body:has(#bookingForm) .vb2-field textarea,body.dark:has(#bookingForm) .vb2-field textarea,
+html.dark body:has(#bookingForm) .vb2-queue-card,body.dark:has(#bookingForm) .vb2-queue-card { background:var(--vb2-surface-2) !important;border-color:var(--vb2-line) !important; }
 
-body:has(#bookingForm) #submitBtn:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 20px 40px rgba(0,108,255,.24) !important;
-}
-
-body:has(#bookingForm) #submitBtn:disabled {
-    filter: saturate(.6);
-}
-
-/* Success state */
-body:has(#bookingForm) #successMessage {
-    margin-top: 24px !important;
-    padding: 24px !important;
-    border-radius: 20px !important;
-}
-
-body:has(#bookingForm) #queueNumberDisplay {
-    margin-top: 18px !important;
-    padding: 24px !important;
-    border: 1px solid var(--vb2-line) !important;
-    border-radius: 18px !important;
-    background: var(--vb2-surface) !important;
-}
-
-body:has(#bookingForm) #queueNumberText {
-    font-size: clamp(42px, 8vw, 64px) !important;
-    line-height: 1 !important;
-    margin: 8px 0 12px !important;
-}
-
-body:has(#bookingForm) footer {
-    margin-top: 18px !important;
-    text-align: center;
-}
-
-/* Mobile-first refinements */
-@media (max-width: 760px) {
-    body:has(#bookingForm) > div {
-        width: calc(100% - 20px) !important;
-        padding: 10px 0 24px !important;
-    }
-
-    body:has(#bookingForm) header {
-        grid-template-columns: 1fr auto;
-        gap: 14px;
-        padding: 14px !important;
-        border-radius: 18px;
-    }
-
-    body:has(#bookingForm) header > div:first-child {
-        grid-column: 1 / -1;
-        grid-row: 1;
-        justify-content: space-between !important;
-        width: 100%;
-    }
-
-    body:has(#bookingForm) header img {
-        grid-column: 1;
-        grid-row: 2;
-        height: 42px;
-        max-width: 120px;
-        margin: 0 0 7px !important;
-    }
-
-    body:has(#bookingForm) header > h1 {
-        grid-column: 1;
-        grid-row: 2;
-        align-self: end;
-        padding-inline-start: 130px;
-        margin-bottom: 1px !important;
-        font-size: 21px !important;
-    }
-
-    body:has(#bookingForm) header > p {
-        grid-column: 1 / -1;
-        grid-row: 3;
-        padding: 0 !important;
-        margin: 0 !important;
-        font-size: 11px !important;
-    }
-
-    body:has(#bookingForm) header > div:first-child > div {
-        flex: 1 1 auto;
-        width: auto;
-        max-width: calc(100vw - 76px);
-    }
-
-    body:has(#bookingForm) main {
-        padding: 18px !important;
-        border-radius: 20px !important;
-    }
-
-    body:has(#bookingForm) #bookingForm > section {
-        padding: 20px 0 !important;
-    }
-
-    body:has(#bookingForm) #bookingForm > section > div:first-child {
-        align-items: flex-start;
-    }
-
-    body:has(#bookingForm) #bookingForm > section > div:first-child > span {
-        max-width: 45%;
-        text-align: end;
-        line-height: 1.4;
-    }
-}
-
-@media (max-width: 480px) {
-    body:has(#bookingForm) > div {
-        width: calc(100% - 14px) !important;
-    }
-
-    body:has(#bookingForm) header > div:first-child > div {
-        max-width: calc(100vw - 72px);
-        min-height: 40px !important;
-    }
-
-    body:has(#bookingForm) header > div:first-child > div button {
-        min-width: 40px;
-        padding-inline: 8px !important;
-        font-size: 10px !important;
-    }
-
-    body:has(#bookingForm) header > div:first-child > button {
-        width: 40px !important;
-        min-width: 40px;
-        height: 40px !important;
-    }
-
-    body:has(#bookingForm) header img {
-        max-width: 102px;
-    }
-
-    body:has(#bookingForm) header > h1 {
-        padding-inline-start: 112px;
-        font-size: 18px !important;
-    }
-
-    body:has(#bookingForm) main {
-        padding: 14px !important;
-        border-radius: 18px !important;
-    }
-
-    body:has(#bookingForm) #bookingForm > section > div:first-child {
-        display: block !important;
-    }
-
-    body:has(#bookingForm) #bookingForm > section > div:first-child > span {
-        display: block;
-        max-width: 100%;
-        margin-top: 6px;
-        text-align: start;
-    }
-
-    body:has(#bookingForm) #submitBtn {
-        min-height: 54px !important;
-    }
-}
-
-/* Dark mode: booking surfaces stay opaque and calm. */
-html.dark body:has(#bookingForm),
-body.dark:has(#bookingForm) {
-    --vb2-bg: #080b18;
-    --vb2-surface: #10172a;
-    --vb2-surface-2: #0d1226;
-    --vb2-text: #f3f6fc;
-    --vb2-muted: #a7b0c0;
-    --vb2-line: #252e45;
-}
-
-html.dark body:has(#bookingForm) header,
-body.dark:has(#bookingForm) header,
-html.dark body:has(#bookingForm) main,
-body.dark:has(#bookingForm) main {
-    background: var(--vb2-surface) !important;
-    border-color: var(--vb2-line) !important;
-    box-shadow: 0 28px 80px rgba(0,0,0,.28) !important;
-}
-
-html.dark body:has(#bookingForm) header > div:first-child > div,
-body.dark:has(#bookingForm) header > div:first-child > div {
-    background: #0d1226 !important;
-    border-color: var(--vb2-line) !important;
-}
-
-html.dark body:has(#bookingForm) #bookingForm input,
-body.dark:has(#bookingForm) #bookingForm input,
-html.dark body:has(#bookingForm) #bookingForm select,
-body.dark:has(#bookingForm) #bookingForm select,
-html.dark body:has(#bookingForm) #bookingForm textarea,
-body.dark:has(#bookingForm) #bookingForm textarea {
-    background: #0d1226 !important;
-    border-color: var(--vb2-line) !important;
-}
+@media (prefers-reduced-motion:reduce) { .vb2-submit,.vb2-field input,.vb2-field select,.vb2-field textarea { transition:none; } }
