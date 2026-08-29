@@ -2,6 +2,58 @@ import { test, expect } from '@playwright/test';
 
 const bookingUrl = '/book';
 
+const mockServices = {
+    success: true,
+    data: [{ id: 101, name: 'General Consultation', duration_minutes: 30 }],
+};
+
+const mockStaff = {
+    success: true,
+    data: [{ id: 202, name: 'Dr. Browser Test' }],
+};
+
+const mockSlots = {
+    success: true,
+    data: [
+        { start_time: '10:00:00', label: '10:00 AM' },
+        { start_time: '10:30:00', label: '10:30 AM' },
+    ],
+};
+
+async function installDeterministicBookingMocks(page, { mockSubmit = false } = {}) {
+    await page.route('**/api/booking/services', async (route) => {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(mockServices) });
+    });
+    await page.route('**/api/booking/staff/by-service/*', async (route) => {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(mockStaff) });
+    });
+    await page.route('**/api/booking/available-timeslots?**', async (route) => {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(mockSlots) });
+    });
+    if (mockSubmit) {
+        await page.route('**/api/appointments', async (route) => {
+            await route.fulfill({
+                status: 201,
+                contentType: 'application/json',
+                body: JSON.stringify({ success: true, data: { appointment: { public_reference: 'VL-BROWSER01' } } }),
+            });
+        });
+    }
+}
+
+async function completeDeterministicBooking(page) {
+    await expect(page.locator('#serviceCards .booking-choice').first()).toBeVisible({ timeout: 5000 });
+    await page.locator('#serviceCards .booking-choice').first().click();
+    await expect(page.locator('#staffCards .booking-choice').first()).toBeVisible({ timeout: 5000 });
+    await page.locator('#staffCards .booking-choice').first().click();
+    await page.locator('#dateChoices .booking-date').first().click();
+    await expect(page.locator('#timeOptions .booking-slot').first()).toBeVisible({ timeout: 5000 });
+    await page.locator('#timeOptions .booking-slot').first().click();
+    await page.locator('#name').fill('Browser Test Customer');
+    await page.locator('#phone').fill('01000000000');
+    await page.locator('#email').fill(`browser-test-${Date.now()}@example.test`);
+}
+
 test.describe('Velora public booking V3', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto(bookingUrl, { waitUntil: 'networkidle' });
@@ -39,15 +91,8 @@ test.describe('Velora public booking V3', () => {
         expect(values).toContain(await select.inputValue());
     });
 
-    async function waitForServices(page) {
-        const serviceOptions = page.locator('#service_id option[value]:not([value=""])');
-        await page.locator('#serviceCards .booking-empty').waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
-        await expect.poll(async () => serviceOptions.count(), { timeout: 10000 }).toBeGreaterThanOrEqual(0);
-        return serviceOptions;
-    }
-
     test('loads services and moves to specialist step', async ({ page }) => {
-        const serviceOptions = await waitForServices(page);
+        const serviceOptions = page.locator('#service_id option[value]:not([value=""])');
         if ((await serviceOptions.count()) === 0) {
             await expect(page.locator('#serviceCards')).toContainText(/No online-bookable services|لا توجد خدمات متاحة/);
             return;
@@ -58,7 +103,7 @@ test.describe('Velora public booking V3', () => {
     });
 
     test('booking flow exposes real time slots when availability exists', async ({ page }) => {
-        const serviceOptions = await waitForServices(page);
+        const serviceOptions = page.locator('#service_id option[value]:not([value=""])');
         if ((await serviceOptions.count()) === 0) test.skip(true, 'Tenant has no online-bookable services.');
 
         await page.locator('#serviceCards .booking-choice').first().click();
@@ -82,36 +127,24 @@ test.describe('Velora public booking V3', () => {
         await expect(page.locator('#submitBtn')).toBeEnabled();
     });
 
-    test('booking UI reaches review with a mocked available slot', async ({ page }) => {
-        await page.route('**/api/booking/available-timeslots?**', async (route) => {
-            await route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify({
-                    success: true,
-                    data: [
-                        { start_time: '10:00:00', label: '10:00 AM' },
-                        { start_time: '10:30:00', label: '10:30 AM' },
-                    ],
-                }),
-            });
-        });
-
-        const serviceOptions = await waitForServices(page);
-        if ((await serviceOptions.count()) === 0) test.skip(true, 'Tenant has no online-bookable services.');
-        await page.locator('#serviceCards .booking-choice').first().click();
-        await expect(page.locator('#staffCards .booking-choice').first()).toBeVisible({ timeout: 5000 });
-        await page.locator('#staffCards .booking-choice').first().click();
-        await page.locator('#dateChoices .booking-date').first().click();
-        await expect(page.locator('#timeOptions .booking-slot').first()).toBeVisible({ timeout: 5000 });
-        await page.locator('#timeOptions .booking-slot').first().click();
-        await page.locator('#name').fill('Browser Test Customer');
-        await page.locator('#phone').fill('01000000000');
-        await page.locator('#email').fill(`browser-test-${Date.now()}@example.test`);
+    test('deterministic booking UI reaches review with mocked booking data', async ({ page }) => {
+        await installDeterministicBookingMocks(page);
+        await page.reload({ waitUntil: 'networkidle' });
+        await completeDeterministicBooking(page);
         await expect(page.locator('#bookingStepDetails')).toHaveClass(/active/);
         await expect(page.locator('#reviewService')).not.toHaveText('—');
         await expect(page.locator('#reviewDate')).not.toHaveText('—');
         await expect(page.locator('#reviewTime')).not.toHaveText('—');
         await expect(page.locator('#submitBtn')).toBeEnabled();
+    });
+
+    test('deterministic booking submit redirects to public queue reference', async ({ page }) => {
+        await installDeterministicBookingMocks(page, { mockSubmit: true });
+        await page.reload({ waitUntil: 'networkidle' });
+        await completeDeterministicBooking(page);
+        await expect(page.locator('#submitBtn')).toBeEnabled();
+        await page.locator('#submitBtn').click();
+        await page.waitForURL('**/queue/status?ref=VL-BROWSER01');
+        await expect(page.locator('#lookup')).toHaveValue('VL-BROWSER01');
     });
 });
