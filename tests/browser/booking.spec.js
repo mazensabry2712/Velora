@@ -39,20 +39,26 @@ test.describe('Velora public booking V3', () => {
         expect(values).toContain(await select.inputValue());
     });
 
-    test('loads services and moves to specialist step', async ({ page }) => {
+    async function waitForServices(page) {
         const serviceOptions = page.locator('#service_id option[value]:not([value=""])');
         await page.locator('#serviceCards .booking-empty').waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
+        await expect.poll(async () => serviceOptions.count(), { timeout: 10000 }).toBeGreaterThanOrEqual(0);
+        return serviceOptions;
+    }
+
+    test('loads services and moves to specialist step', async ({ page }) => {
+        const serviceOptions = await waitForServices(page);
         if ((await serviceOptions.count()) === 0) {
             await expect(page.locator('#serviceCards')).toContainText(/No online-bookable services|لا توجد خدمات متاحة/);
             return;
         }
         await page.locator('#serviceCards .booking-choice').first().click();
-        await expect(page.locator('[data-step="2"]')).toBeVisible();
+        await expect(page.locator('[data-step="2"]')).toHaveClass(/active/);
         await expect(page.locator('#staffCards')).toBeVisible();
     });
 
     test('booking flow exposes real time slots when availability exists', async ({ page }) => {
-        const serviceOptions = page.locator('#service_id option[value]:not([value=""])');
+        const serviceOptions = await waitForServices(page);
         if ((await serviceOptions.count()) === 0) test.skip(true, 'Tenant has no online-bookable services.');
 
         await page.locator('#serviceCards .booking-choice').first().click();
@@ -91,7 +97,7 @@ test.describe('Velora public booking V3', () => {
             });
         });
 
-        const serviceOptions = page.locator('#service_id option[value]:not([value=""])');
+        const serviceOptions = await waitForServices(page);
         if ((await serviceOptions.count()) === 0) test.skip(true, 'Tenant has no online-bookable services.');
         await page.locator('#serviceCards .booking-choice').first().click();
         await expect(page.locator('#staffCards .booking-choice').first()).toBeVisible({ timeout: 5000 });
