@@ -76,14 +76,12 @@ final class QueueObserver
             ->all();
     }
 
-    /**
-     * @return array<int, int>
-     */
+    /** @return array<int, int> */
     private function positionsBeforeCreation(Queue $created): array
     {
         return Queue::query()
             ->where('status', 'waiting')
-            ->whereKeyNot($created->getKey())
+            ->where('id', '!=', $created->getKey())
             ->orderByDesc('is_vip')
             ->orderBy('id')
             ->pluck('id')
@@ -94,13 +92,7 @@ final class QueueObserver
             ->all();
     }
 
-    /**
-     * Reconstruct the waiting order immediately before an existing queue row
-     * was updated, using its original status/is_vip values and current values
-     * for all other rows. This keeps the observer stateless and deterministic.
-     *
-     * @return array<int, int>
-     */
+    /** @return array<int, int> */
     private function positionsBeforeUpdate(Queue $updated): array
     {
         $id = (int) $updated->getKey();
@@ -109,20 +101,11 @@ final class QueueObserver
 
         $rows = Queue::query()
             ->where('status', 'waiting')
-            ->whereKeyNot($id)
+            ->where('id', '!=', $id)
             ->get(['id', 'is_vip']);
 
         if ($oldStatus !== 'waiting') {
-            return $rows
-                ->sortBy([
-                    ['is_vip', 'desc'],
-                    ['id', 'asc'],
-                ])
-                ->values()
-                ->mapWithKeys(static fn ($row, $index): array => [
-                    (int) $row->id => $index + 1,
-                ])
-                ->all();
+            return $this->sortPositions($rows);
         }
 
         $rows->push((object) [
@@ -130,35 +113,33 @@ final class QueueObserver
             'is_vip' => $oldIsVip,
         ]);
 
-        return $rows
-            ->sortBy([
-                ['is_vip', 'desc'],
-                ['id', 'asc'],
-            ])
-            ->values()
-            ->mapWithKeys(static fn ($row, $index): array => [
-                (int) $row->id => $index + 1,
-            ])
-            ->all();
+        return $this->sortPositions($rows);
     }
 
-    /**
-     * @return array<int, int>
-     */
+    /** @return array<int, int> */
     private function positionsBeforeDeletion(Queue $deleted): array
     {
         $id = (int) $deleted->getKey();
 
         $rows = Queue::query()
             ->where('status', 'waiting')
-            ->get(['id', 'is_vip'])
-            ->filter(static fn ($row): bool => (int) $row->id !== $id);
+            ->where('id', '!=', $id)
+            ->get(['id', 'is_vip']);
 
         $rows->push((object) [
             'id' => $id,
             'is_vip' => (bool) $deleted->getRawOriginal('is_vip'),
         ]);
 
+        return $this->sortPositions($rows);
+    }
+
+    /**
+     * @param \Illuminate\Support\Collection<int, object> $rows
+     * @return array<int, int>
+     */
+    private function sortPositions($rows): array
+    {
         return $rows
             ->sortBy([
                 ['is_vip', 'desc'],
