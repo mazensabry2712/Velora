@@ -21,17 +21,17 @@ body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] { order: 5; }
 body:has(#bookingForm) #bookingForm > .vb2-step[data-step="6"] { order: 6; }
 body:has(#bookingForm) #bookingForm > .vb2-submit-wrap { order: 7; }
 
-/* Only the current decision is prominent; later steps remain progressive. */
+/* Customer details are revealed after a real time choice is available. */
 body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] {
     display: none;
 }
 
-body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"]:has(#name:valid):has(#email:valid):has(#phone:valid) {
-    display: block;
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"]:has(#name:valid) {
+    display: none;
 }
 
-body:has(#bookingForm) #bookingForm > .vb2-step[data-step="6"] {
-    margin-top: 4px;
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"]:has(#appointment_time option:checked:not([value=""])) {
+    display: block;
 }
 
 /* Service selection becomes the visual starting point. */
@@ -53,19 +53,16 @@ body:has(#bookingForm) #bookingForm > .vb2-step[data-step="4"] input {
     font-weight: 700;
 }
 
-/* Turn the date control into a stronger touch target. */
 body:has(#bookingForm) #appointment_date {
     padding-inline: 16px !important;
 }
 
-/* Final confirmation should read as one compact action area. */
 body:has(#bookingForm) .vb2-submit-wrap {
     padding-top: 20px;
     margin-top: 8px;
     border-top: 1px solid var(--velora-line, #E5E7EB);
 }
 
-/* Selection summary hints. */
 body:has(#bookingForm) #serviceHint,
 body:has(#bookingForm) #dateHint,
 body:has(#bookingForm) #timeHint {
