@@ -42,8 +42,13 @@ final class ProcessReminders extends Command
         $totalFailed = 0;
 
         foreach ($tenants as $tenant) {
+            $manageTenancy = ! $this->isCurrentTenant($tenant);
+
             try {
-                tenancy()->initialize($tenant);
+                if ($manageTenancy) {
+                    tenancy()->initialize($tenant);
+                }
+
                 [$queued, $skipped, $failed] = $this->processTenant($tenant);
                 $totalQueued += $queued;
                 $totalSkipped += $skipped;
@@ -52,7 +57,9 @@ final class ProcessReminders extends Command
                 $totalFailed++;
                 Log::error("ProcessReminders: tenant [{$tenant->id}] error: {$e->getMessage()}");
             } finally {
-                tenancy()->end();
+                if ($manageTenancy) {
+                    tenancy()->end();
+                }
             }
         }
 
@@ -61,6 +68,18 @@ final class ProcessReminders extends Command
         );
 
         return $totalFailed > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    private function isCurrentTenant(Tenant $tenant): bool
+    {
+        try {
+            $currentTenant = tenant();
+
+            return $currentTenant instanceof Tenant
+                && $currentTenant->getKey() === $tenant->getKey();
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     /** @return array{int, int, int} [$queued, $skipped, $failed] */
