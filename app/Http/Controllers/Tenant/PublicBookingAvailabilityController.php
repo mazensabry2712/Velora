@@ -21,15 +21,9 @@ final class PublicBookingAvailabilityController extends Controller
             ->onlineBookable()
             ->orderBy('sort_order')
             ->get([
-                'id',
-                'name',
-                'name_ar',
-                'name_i18n',
-                'duration',
-                'duration_minutes',
-                'price',
-                'description',
-                'sort_order',
+                'id', 'name', 'name_ar', 'name_i18n',
+                'duration', 'duration_minutes', 'price',
+                'description', 'sort_order',
             ])
             ->map(fn (Service $service): array => [
                 'id' => $service->id,
@@ -42,10 +36,7 @@ final class PublicBookingAvailabilityController extends Controller
             ])
             ->values();
 
-        return response()->json([
-            'success' => true,
-            'data' => $services,
-        ]);
+        return response()->json(['success' => true, 'data' => $services]);
     }
 
     public function staffByService(int $serviceId): JsonResponse
@@ -58,22 +49,22 @@ final class PublicBookingAvailabilityController extends Controller
 
         $staff = Staff::query()
             ->bookable()
-            ->whereHas('services', fn ($query) => $query->whereKey($service->id))
+            ->where(function ($query) use ($service): void {
+                $query->whereHas('services', fn ($q) => $q->whereKey($service->id))
+                    ->orWhereHas('user.services', fn ($q) => $q->whereKey($service->id));
+            })
             ->with('user:id,name')
             ->orderBy('sort_order')
             ->orderBy('id')
             ->get()
-            ->map(fn (Staff $staff) => [
+            ->map(fn (Staff $staff): array => [
                 'id' => $staff->user_id,
                 'staff_id' => $staff->id,
                 'name' => $staff->full_name ?: $staff->user?->name,
             ])
             ->values();
 
-        return response()->json([
-            'success' => true,
-            'data' => $staff,
-        ]);
+        return response()->json(['success' => true, 'data' => $staff]);
     }
 
     public function availableTimeSlots(Request $request): JsonResponse
@@ -91,13 +82,28 @@ final class PublicBookingAvailabilityController extends Controller
             ->where('is_online_bookable', true)
             ->first();
 
+        $requestedStaffId = (int) $validated['staff_id'];
         $staff = Staff::query()
-            ->where('user_id', (int) $validated['staff_id'])
+            ->where(function ($query) use ($requestedStaffId): void {
+                $query->whereKey($requestedStaffId)
+                    ->orWhere('user_id', $requestedStaffId);
+            })
             ->bookable()
             ->with(['workingHours', 'breaks', 'timeOff'])
             ->first();
 
-        if (! $service || ! $staff || ! $staff->services()->whereKey($service->id)->exists()) {
+        if (! $service || ! $staff) {
+            return response()->json([
+                'success' => true,
+                'data' => [],
+                'reason' => 'invalid_booking_selection',
+            ]);
+        }
+
+        $hasStaffService = $staff->services()->whereKey($service->id)->exists();
+        $hasLegacyUserService = $staff->user?->services()->whereKey($service->id)->exists();
+
+        if (! $hasStaffService && ! $hasLegacyUserService) {
             return response()->json([
                 'success' => true,
                 'data' => [],
