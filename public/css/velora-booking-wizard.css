@@ -3,138 +3,93 @@
  * Presentation only: preserves existing IDs, fields and booking API.
  */
 
-body:has(#bookingForm) .vb2-card {
-    max-width: 980px;
-}
+body:has(#bookingForm) .vb2-card { max-width: 980px; }
+body:has(#bookingForm) #bookingForm { display:flex; flex-direction:column; }
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="2"] { order:1; }
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="3"] { order:2; }
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="4"] { order:3; }
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="5"] { order:4; }
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] { order:5; }
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="6"] { order:6; }
+body:has(#bookingForm) #bookingForm > .vb2-submit-wrap { order:7; }
 
-body:has(#bookingForm) #bookingForm {
-    display: flex;
-    flex-direction: column;
-}
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] { display:none; }
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"].vb2-wizard-hidden { display:none !important; }
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] { display:block; }
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"].vb2-wizard-hidden { display:none !important; }
 
-/* Put the customer's decision path first, while preserving the existing DOM contract. */
-body:has(#bookingForm) #bookingForm > .vb2-step[data-step="2"] { order: 1; }
-body:has(#bookingForm) #bookingForm > .vb2-step[data-step="3"] { order: 2; }
-body:has(#bookingForm) #bookingForm > .vb2-step[data-step="4"] { order: 3; }
-body:has(#bookingForm) #bookingForm > .vb2-step[data-step="5"] { order: 4; }
-body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] { order: 5; }
-body:has(#bookingForm) #bookingForm > .vb2-step[data-step="6"] { order: 6; }
-body:has(#bookingForm) #bookingForm > .vb2-submit-wrap { order: 7; }
-
-/* Customer details are revealed after a real time choice is available. */
-body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] {
-    display: none;
-}
-
-body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"]:has(#name:valid) {
-    display: none;
-}
-
-body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"]:has(#appointment_time option:checked:not([value=""])) {
-    display: block;
-}
-
-/* Service selection becomes the visual starting point. */
-body:has(#bookingForm) #bookingForm > .vb2-step[data-step="2"] {
-    padding-top: 12px;
-    border-top: 0;
-}
-
-body:has(#bookingForm) #bookingForm > .vb2-step[data-step="2"] .vb2-field {
-    margin-top: 12px;
-}
-
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="2"] { padding-top:12px; border-top:0; }
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="2"] .vb2-field { margin-top:12px; }
 body:has(#bookingForm) #bookingForm > .vb2-step[data-step="2"] select,
 body:has(#bookingForm) #bookingForm > .vb2-step[data-step="3"] select,
-body:has(#bookingForm) #bookingForm > .vb2-step[data-step="5"] select,
-body:has(#bookingForm) #bookingForm > .vb2-step[data-step="4"] input {
-    min-height: 60px !important;
-    font-size: 15px;
-    font-weight: 700;
-}
-
-body:has(#bookingForm) #appointment_date {
-    padding-inline: 16px !important;
-}
-
-body:has(#bookingForm) .vb2-submit-wrap {
-    padding-top: 20px;
-    margin-top: 8px;
-    border-top: 1px solid var(--velora-line, #E5E7EB);
-}
-
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="4"] input,
+body:has(#bookingForm) #bookingForm > .vb2-step[data-step="5"] select { min-height:60px !important; font-size:15px; font-weight:700; }
+body:has(#bookingForm) #appointment_date { padding-inline:16px !important; }
+body:has(#bookingForm) .vb2-submit-wrap { padding-top:20px; margin-top:8px; border-top:1px solid var(--velora-line,#E5E7EB); }
 body:has(#bookingForm) #serviceHint,
 body:has(#bookingForm) #dateHint,
-body:has(#bookingForm) #timeHint {
-    max-width: 680px;
-    margin-top: 9px;
-    font-size: 11px;
-    line-height: 1.6;
-}
+body:has(#bookingForm) #timeHint { max-width:680px; margin-top:9px; font-size:11px; line-height:1.6; }
 
-@media (min-width: 861px) {
-    body:has(#bookingForm) #bookingForm {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(260px, 310px);
-        align-items: start;
-        column-gap: 24px;
-    }
+.vb2-wizard-progress { display:flex; align-items:center; gap:8px; margin:0 0 20px; padding:0 2px; }
+.vb2-wizard-progress span { width:28px; height:28px; display:grid; place-items:center; border-radius:999px; border:1px solid var(--velora-line,#E5E7EB); color:var(--velora-text-muted,#687084); background:var(--velora-surface-muted,#F5F7FA); font-size:11px; font-weight:900; transition:.2s ease; }
+.vb2-wizard-progress span.is-active { color:#fff; border-color:transparent; background:var(--velora-gradient,linear-gradient(135deg,#006CFF,#6D46FF)); box-shadow:0 6px 18px rgba(0,108,255,.18); }
+.vb2-wizard-progress span.is-complete { color:var(--velora-primary-blue,#006CFF); border-color:rgba(0,108,255,.25); }
+.vb2-wizard-progress i { flex:1; max-width:72px; height:1px; background:var(--velora-line,#E5E7EB); }
 
+.vb2-slot-picker { margin-top:14px; padding:15px; border:1px solid var(--velora-line,#E5E7EB); border-radius:16px; background:var(--velora-surface-muted,#F5F7FA); }
+.vb2-slot-picker-title { margin-bottom:10px; font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:.05em; color:var(--velora-text-muted,#687084); }
+.vb2-slot-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; }
+.vb2-slot-button { min-height:48px; border:1px solid var(--velora-line,#E5E7EB); border-radius:12px; background:var(--velora-surface,#fff); color:inherit; font:inherit; font-size:13px; font-weight:800; cursor:pointer; transition:.18s ease; }
+.vb2-slot-button:hover { transform:translateY(-1px); border-color:rgba(0,108,255,.35); box-shadow:0 8px 20px rgba(13,18,38,.07); }
+.vb2-slot-button[aria-pressed="true"] { color:#fff; border-color:transparent; background:var(--velora-gradient,linear-gradient(135deg,#006CFF,#6D46FF)); box-shadow:0 8px 20px rgba(0,108,255,.18); }
+
+.vb2-summary-card { margin:0 0 20px; padding:18px; border:1px solid var(--velora-line,#E5E7EB); border-radius:18px; background:var(--velora-surface-muted,#F5F7FA); }
+.vb2-summary-title { font-size:12px; font-weight:900; letter-spacing:.03em; text-transform:uppercase; }
+.vb2-summary-empty { margin-top:6px; color:var(--velora-text-muted,#687084); font-size:11px; line-height:1.6; }
+.vb2-summary-rows { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:12px; }
+.vb2-summary-rows > div { min-width:0; padding:10px 11px; border:1px solid var(--velora-line,#E5E7EB); border-radius:12px; background:var(--velora-surface,#fff); }
+.vb2-summary-rows span { display:block; color:var(--velora-text-muted,#687084); font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
+.vb2-summary-rows strong { display:block; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
+
+html.dark .vb2-wizard-progress span { background:#10172A; border-color:#252E45; }
+html.dark .vb2-wizard-progress i,
+html.dark .vb2-slot-picker,
+html.dark .vb2-summary-card,
+html.dark .vb2-summary-rows > div,
+html.dark .vb2-slot-button { border-color:#252E45; }
+html.dark .vb2-slot-picker,
+html.dark .vb2-summary-card { background:#10172A; }
+html.dark .vb2-slot-button,
+html.dark .vb2-summary-rows > div { background:#0D1226; color:#F8FAFC; }
+
+@media (min-width:861px) {
+    body:has(#bookingForm) #bookingForm { display:grid; grid-template-columns:minmax(0,1fr) minmax(260px,310px); align-items:start; column-gap:24px; }
     body:has(#bookingForm) #bookingForm > .vb2-step[data-step="2"],
     body:has(#bookingForm) #bookingForm > .vb2-step[data-step="3"],
     body:has(#bookingForm) #bookingForm > .vb2-step[data-step="4"],
     body:has(#bookingForm) #bookingForm > .vb2-step[data-step="5"],
     body:has(#bookingForm) #bookingForm > .vb2-step[data-step="6"],
-    body:has(#bookingForm) #bookingForm > .vb2-submit-wrap {
-        grid-column: 1;
-    }
-
-    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] {
-        grid-column: 2;
-        grid-row: 1 / span 7;
-        align-self: stretch;
-        margin: 12px 0 0;
-        padding: 20px;
-        border: 1px solid var(--velora-line, #E5E7EB);
-        border-radius: 20px;
-        background: var(--velora-surface-muted, #F5F7FA);
-    }
-
-    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"]::before {
-        display: none;
-    }
-
-    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] .vb2-fields-personal {
-        display: grid;
-        grid-template-columns: 1fr;
-    }
-
-    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] .vb2-field-full {
-        grid-column: auto;
-    }
-
-    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] .vb2-required {
-        display: none;
-    }
+    body:has(#bookingForm) #bookingForm > .vb2-submit-wrap { grid-column:1; }
+    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] { grid-column:2; grid-row:1 / span 7; align-self:stretch; margin:12px 0 0; padding:20px; border:1px solid var(--velora-line,#E5E7EB); border-radius:20px; background:var(--velora-surface-muted,#F5F7FA); }
+    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"]::before { display:none; }
+    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] .vb2-fields-personal { display:grid; grid-template-columns:1fr; }
+    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] .vb2-field-full { grid-column:auto; }
+    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] .vb2-required { display:none; }
 }
 
-@media (max-width: 860px) {
-    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] {
-        margin-top: 4px;
-        padding-top: 22px;
-    }
+@media (max-width:860px) {
+    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] { margin-top:4px; padding-top:22px; }
+    .vb2-summary-rows { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
 
-@media (max-width: 520px) {
+@media (max-width:520px) {
     body:has(#bookingForm) #bookingForm > .vb2-step[data-step="2"] select,
     body:has(#bookingForm) #bookingForm > .vb2-step[data-step="3"] select,
-    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="5"] select,
-    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="4"] input {
-        min-height: 56px !important;
-    }
-}
-
-html.dark body:has(#bookingForm) #bookingForm > .vb2-step[data-step="1"] {
-    background: #10172A;
-    border-color: #252E45;
+    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="4"] input,
+    body:has(#bookingForm) #bookingForm > .vb2-step[data-step="5"] select { min-height:56px !important; }
+    .vb2-slot-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .vb2-wizard-progress { gap:5px; margin-bottom:15px; }
+    .vb2-wizard-progress span { width:25px; height:25px; font-size:10px; }
+    .vb2-wizard-progress i { max-width:none; }
+    .vb2-summary-rows { grid-template-columns:1fr; }
 }
