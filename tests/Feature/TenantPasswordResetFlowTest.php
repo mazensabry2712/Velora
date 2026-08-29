@@ -72,9 +72,21 @@ final class TenantPasswordResetFlowTest extends TestCase
                 'password' => 'old-password',
                 'locale' => $locale,
             ]);
-            $user->forceFill(['email_verified_at' => now()]);
-            $user->save();
+            $user->forceFill(['email_verified_at' => now()])->save();
+
+            $saved = User::where('email', $email)->firstOrFail();
+            self::assertNotNull($saved->email_verified_at);
         });
+    }
+
+    private function tokenFromResetUrl(string $resetUrl): string
+    {
+        $path = (string) parse_url($resetUrl, PHP_URL_PATH);
+        $token = basename(trim($path, '/'));
+
+        self::assertNotSame('', $token);
+
+        return $token;
     }
 
     public function test_verified_user_can_request_and_complete_password_reset(): void
@@ -93,25 +105,20 @@ final class TenantPasswordResetFlowTest extends TestCase
         $requestReset->assertRedirect();
         $requestReset->assertSessionHas('status');
 
-        Mail::assertQueued(TenantPasswordResetMail::class, function (TenantPasswordResetMail $mail) use ($email, $baseUrl): bool {
+        $queued = null;
+        Mail::assertQueued(TenantPasswordResetMail::class, function (TenantPasswordResetMail $mail) use ($email, $baseUrl, &$queued): bool {
+            $queued = $mail;
+            $query = [];
             parse_str((string) parse_url($mail->resetUrl, PHP_URL_QUERY), $query);
+
             return $mail->mailLocale === 'fr'
                 && $mail->name === 'Reset User'
                 && ($query['email'] ?? null) === $email
-                && isset($query['token'])
                 && str_starts_with($mail->resetUrl, $baseUrl . '/reset-password/');
         });
 
-        $queued = null;
-        Mail::assertQueued(TenantPasswordResetMail::class, function (TenantPasswordResetMail $mail) use (&$queued): bool {
-            $queued = $mail;
-            return true;
-        });
-
         self::assertInstanceOf(TenantPasswordResetMail::class, $queued);
-        parse_str((string) parse_url($queued->resetUrl, PHP_URL_QUERY), $query);
-        $token = (string) ($query['token'] ?? '');
-        self::assertNotSame('', $token);
+        $token = $this->tokenFromResetUrl($queued->resetUrl);
 
         $showReset = $this->get($baseUrl . '/reset-password/' . urlencode($token) . '?email=' . urlencode($email));
         $showReset->assertOk();
@@ -173,9 +180,9 @@ final class TenantPasswordResetFlowTest extends TestCase
             $mail = $queued;
             return true;
         });
+
         self::assertInstanceOf(TenantPasswordResetMail::class, $mail);
-        parse_str((string) parse_url($mail->resetUrl, PHP_URL_QUERY), $query);
-        $token = (string) $query['token'];
+        $token = $this->tokenFromResetUrl($mail->resetUrl);
 
         $crossTenant = $this->get('http://' . $hostB . '/reset-password/' . urlencode($token) . '?email=' . urlencode($email));
 
