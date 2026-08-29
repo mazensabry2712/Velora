@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="/css/velora-brand.css">
     <link rel="stylesheet" href="/css/velora-public.css">
     <link rel="stylesheet" href="/css/dark-mode-enhancements.css">
+    <link rel="stylesheet" href="/css/velora-booking.css">
     <style>
         .vb2-fallback-logo { display:none; }
         .vb2-logo.is-broken { display:none; }
@@ -327,7 +328,7 @@
                 payload.data.forEach(service => {
                     const option = document.createElement('option');
                     option.value = service.id;
-                    const name = currentLang === 'ar' && service.name_ar ? service.name_ar : service.name;
+                    const name = service.name_localized || (currentLang === 'ar' && service.name_ar ? service.name_ar : service.name);
                     const duration = service.duration_minutes || service.duration;
                     option.textContent = duration ? `${name} (${duration} min)` : name;
                     els.service.appendChild(option);
