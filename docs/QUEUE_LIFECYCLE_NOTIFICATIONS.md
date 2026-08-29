@@ -12,7 +12,7 @@ The lifecycle uses three business events:
 - `queue.almost_turn`
 - `queue.turn_now`
 
-The events are represented by `QueueLifecycleNotificationRequested` and are dispatched after a successful database transaction commit.
+The business event `QueueLifecycleNotificationRequested` is dispatched immediately when the queue state changes. Its delivery listener implements `ShouldHandleEventsAfterCommit`, so delivery persistence and external delivery begin only after a successful database transaction commit.
 
 ## Position semantics
 
