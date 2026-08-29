@@ -1,206 +1,191 @@
-# Velora Public Booking UI
+# Velora Public Booking + Queue V3
 
-## Goal
+This document is the source of truth for the customer-facing booking experience and the public appointment tracking experience.
 
-`/book` is the customer-facing booking experience. It is intentionally focused on selecting and confirming an appointment. Appointment confirmation and queue tracking are handled by `/queue/status`.
+## 1. Public surfaces
 
-## Final customer flow
+### Booking
 
-```text
-/book
-  ↓
+`/book`
+
+Purpose: create a new appointment.
+
+The page is intentionally focused on one job: help the customer select a service, choose a specialist, select a real available time, enter contact details, review the appointment, and confirm it.
+
+It must not contain a final success ticket or queue-tracking dashboard.
+
+### Tracking
+
+`/queue/status`
+
+Purpose: show an existing customer's appointment and live queue position.
+
+Preferred access:
+
+`/queue/status?ref=VL-XXXXXXXX`
+
+The same public reference is the identifier sent later through customer notifications.
+
+Legacy queue-number lookup remains supported by the API for compatibility but is privacy-limited.
+
+## 2. Booking V3 flow
+
 1. Service
-  ↓
-2. Staff / Any available specialist
-  ↓
-3. Date + available time
-  ↓
-4. Customer details + review
-  ↓
-Confirm appointment
-  ↓
-POST /api/appointments
-  ↓
-public_reference
-  ↓
-/queue/status?ref=VL-XXXXXXXX
-```
+2. Specialist
+3. Date and time
+4. Customer details
+5. Confirmation by POST
+6. Redirect to `/queue/status?ref=...`
 
-## What must NOT be shown on `/book`
+The customer can choose `Any available specialist`. In that mode the browser checks the configured specialists for the selected service, shows available slots with the matching specialist name, and submits the actual selected `staff_id`.
 
-The old inline confirmation surface is removed from the active customer experience:
+## 3. Tenant branding
 
-- `successMessage`
-- `Appointment Booked Successfully!`
-- inline queue ticket
-- inline confirmation card
-- duplicate review script dependency
-- old multi-section presentation where all booking fields are visible together
+Both surfaces are tenant-branded.
 
-The booking response redirects the browser to the public tracking page after a successful creation.
+The tenant logo is loaded from the tenant setting when configured. The global `logo-bais.png` is only the fallback when the tenant logo is unavailable.
 
-## Booking layout
+The tenant controls which public languages appear through `available_languages`. The interface must never display the global list of languages when the tenant has configured a smaller set.
 
-Desktop uses a two-column public surface:
+## 4. Booking markup contract
 
-```text
-┌───────────────────────────────┬────────────────────┐
-│ Booking step                  │ Your appointment   │
-│                               │ summary             │
-│ Service                       │ Service            │
-│ Staff                         │ Staff              │
-│ Date + time                   │ Date               │
-│ Customer details              │ Time               │
-│ Review                        │ Queue link         │
-│ Confirm                       │                    │
-└───────────────────────────────┴────────────────────┘
-```
+The booking page uses a clean V3 surface and a single canonical stylesheet/runtime:
 
-Mobile collapses to one column and keeps controls touch-friendly.
+- `resources/views/customer/booking.blade.php`
+- `public/css/velora-booking.css`
+- `public/js/velora-booking-v3.js`
 
-## Step behavior
+Required backend form identifiers retained for compatibility:
 
-Only the current step is visually active. The customer progresses through:
+- `bookingForm`
+- `service_id`
+- `staff_id`
+- `appointment_date`
+- `appointment_time`
+- `notes`
+- `submitBtn`
 
-1. Service selection.
-2. Staff selection, including `Any available specialist`.
-3. Date selection and real availability lookup.
-4. Customer details and final review.
+Public UI identifiers:
 
-Back navigation is available after the first step.
+- `serviceCards`
+- `staffCards`
+- `dateChoices`
+- `timeOptions`
+- `summaryService`
+- `summaryStaff`
+- `summaryDate`
+- `summaryTime`
 
-## Service selection
+Legacy `vb2-*`, `vb-final-*`, final/override/alias booking layers are not part of V3.
 
-The server-provided `#service_id` remains the canonical form field and API value. The UI renders customer-friendly selection cards from its options.
+## 5. Queue markup contract
 
-## Staff selection
+The queue page uses:
 
-The server-provided `#staff_id` remains the canonical field. The UI adds:
+- `resources/views/customer/queue-status.blade.php`
+- `public/css/velora-queue.css`
+- `public/js/velora-queue-v3.js`
 
-```text
-Any available specialist
-```
+The page contains no inline styling or inline queue-fetch runtime.
 
-Selecting this option queries availability across the eligible staff returned for the service. The selected slot resolves to a real staff ID before booking submission.
+The result view exposes only customer-safe appointment data returned by the public queue endpoint.
 
-## Time selection
+## 6. Public reference contract
 
-The native `#appointment_time` select remains as the canonical form field but is not the primary visual control. Available slots are rendered as touch-friendly buttons.
+Appointments receive an unguessable `VL-XXXXXXXX` reference.
 
-For `Any available specialist`, each slot includes the staff member that can provide it.
+The reference is not a database id and is not the queue number.
 
-## Customer details
+Example:
 
-Customer fields are intentionally delayed until an actual time has been selected:
+`VL-AB12CD34`
 
-- Full name
-- Phone number
-- Email
-- Optional notes
+Queue number and public reference have different purposes:
 
-A review summary repeats the selected service, staff, date and time before the final confirmation action.
+- Public reference: customer-facing appointment lookup identifier.
+- Queue number: operational position for the current queue.
 
-## Tenant branding
+A reference lookup is tenant-scoped and rate limited.
 
-The header uses the current tenant branding:
+## 7. Public API
 
-- Tenant business name.
-- Tenant logo when configured.
-- Global `logo-bais.png` fallback when the tenant logo is missing or broken.
-- Tenant-configured languages only.
-- Tenant domain/host context.
+### Services
 
-Velora provides the design system; the tenant remains the public business identity.
+`GET /api/booking/services`
 
-## Theme
+Returns only fields required to build the public booking UI.
 
-The booking surface supports:
+### Staff
 
-- shared Velora light tokens.
-- shared Velora dark tokens.
-- dark-mode preference persistence.
-- RTL/LTR document direction.
-- reduced-motion support.
+`GET /api/booking/staff/by-service/{service}`
 
-## CSS architecture
+Returns public staff identity without staff email or other private information.
 
-`public/css/velora-booking.css` is the canonical booking entry point.
+### Availability
 
-Final layers:
+`GET /api/booking/available-timeslots`
 
-```text
-public/css/velora-booking.css
-  ├── velora-booking-final.css
-  ├── velora-booking-overrides.css
-  ├── velora-booking-ui-alias.css
-  └── velora-booking-layout-fixes.css
-```
+Returns only currently available time slots for the selected tenant/service/staff/date context.
 
-Legacy `v2/theme/wizard` files are no longer part of the canonical load chain and should not be reintroduced as additional overrides.
+### Create appointment
 
-## JavaScript architecture
+`POST /api/appointments`
 
-`public/js/dark-mode-booking.js` is the booking entry loader. Customer interaction behavior is implemented in `public/js/velora-booking-ui-polish.js`.
+The response is sanitized. It exposes the public reference and queue information required for the next customer action, not the full internal appointment model.
 
-The booking script preserves the existing backend field and endpoint contract.
+### Queue status
 
-## Confirmation and queue tracking
+`GET /api/queue/status/{identifier}`
 
-The customer-facing ticket is owned by:
+The preferred identifier is the public appointment reference. The response includes queue number, status, people ahead, estimated wait where calculable, appointment details, and customer name only for a reference lookup.
 
-```text
-/queue/status?ref=VL-XXXXXXXX
-```
+## 8. Confirmation behavior
 
-This page can show:
+The booking page does not render the final confirmation ticket inline.
 
-- appointment confirmation
-- customer display name
-- service
-- staff
-- date
-- time
-- duration
-- queue number
-- queue status
-- people ahead when calculable
+After a successful booking it redirects to:
 
-A raw queue number remains a legacy lookup and must not expose customer identity.
+`/queue/status?ref={public_reference}`
 
-## Notifications
+The queue-status surface becomes the reusable customer ticket and tracking destination.
 
-Email and WhatsApp are not considered implemented by the UI refactor. When implemented, they must use the same public reference:
+## 9. Notifications integration point
 
-```text
-{tenant-host}/queue/status?ref={public_reference}
-```
+Email and WhatsApp are not required to create an appointment successfully.
 
-Notification delivery belongs in asynchronous application/infrastructure integrations and must not be required for the booking transaction to succeed.
+When notification delivery is added, the message must link to the same public tracking URL:
 
-## Browser QA
+`/queue/status?ref={public_reference}`
 
-The browser suite must verify at minimum:
+Notification delivery should run asynchronously and must not roll back the appointment when an external provider fails.
 
-- tenant logo/branding
-- no horizontal overflow
-- desktop layout
-- mobile layout
-- language control
-- service selection
-- staff selection
-- `Any available specialist`
-- date/time selection
-- customer details visibility after time selection
-- review summary
-- absence of inline confirmation surface
-- redirect to public tracking after successful booking
+Recommended customer events:
 
-## Canonical tests
+- Appointment confirmed
+- Appointment reminder
+- Almost your turn
+- Your turn
+- Appointment cancelled
+- Appointment rescheduled
 
-```text
-tests/Feature/PublicBookingSurfaceContractTest.php
-tests/Feature/PublicBookingTest.php
-tests/Feature/CustomerBookingJourneyTest.php
-tests/Feature/PublicAppointmentReferenceTest.php
-tests/browser/booking.spec.js
-```
+## 10. Responsive requirements
+
+Desktop: booking form plus compact sticky summary.
+
+Mobile: one-column flow with touch targets of at least 44px, no horizontal overflow, and date/time choices that can be selected without opening a large native form control.
+
+Both surfaces support RTL and LTR.
+
+## 11. Automated verification
+
+Feature contracts:
+
+- `tests/Feature/PublicBookingSurfaceContractTest.php`
+- `tests/Feature/PublicAppointmentReferenceTest.php`
+- `tests/Feature/PublicQueueSurfaceContractTest.php`
+- `tests/Feature/PublicBookingTest.php`
+- `tests/Feature/CustomerBookingJourneyTest.php`
+
+Browser coverage is provided by Playwright under `tests/browser/`.
+
+The browser tests must verify the actual V3 classes and must not bring back the legacy markup merely to satisfy a test.
