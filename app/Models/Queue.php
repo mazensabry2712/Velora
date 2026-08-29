@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Observers\QueueObserver;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
@@ -23,24 +24,26 @@ class Queue extends Model
         'queue_date' => 'date',
     ];
 
-    protected static function booted()
+    protected static function booted(): void
     {
+        static::observe(QueueObserver::class);
+
         static::updating(function ($queue) {
             if ($queue->isDirty('status') && $queue->appointment) {
                 $newStatus = $queue->status;
                 $appointment = $queue->appointment;
 
                 if ($newStatus === 'completed') {
-                    \Illuminate\Database\Eloquent\Model::withoutEvents(fn () =>
+                    Model::withoutEvents(fn () =>
                         $appointment->update(['status' => 'completed'])
                     );
-                } elseif (in_array($newStatus, ['cancelled', 'skipped'])) {
-                    \Illuminate\Database\Eloquent\Model::withoutEvents(fn () =>
+                } elseif (in_array($newStatus, ['cancelled', 'skipped'], true)) {
+                    Model::withoutEvents(fn () =>
                         $appointment->update(['status' => 'cancelled'])
                     );
                 } elseif ($newStatus === 'serving') {
                     if ($appointment->status !== 'confirmed') {
-                        \Illuminate\Database\Eloquent\Model::withoutEvents(fn () =>
+                        Model::withoutEvents(fn () =>
                             $appointment->update(['status' => 'confirmed'])
                         );
                     }
@@ -49,10 +52,6 @@ class Queue extends Model
         });
     }
 
-    /**
-     * Generate the next queue number for a specific queue date.
-     * Existing callers without a date continue to generate today's number.
-     */
     public static function generateQueueNumber(?Carbon $date = null): string
     {
         $queueDate = ($date ?: now())->toDateString();
