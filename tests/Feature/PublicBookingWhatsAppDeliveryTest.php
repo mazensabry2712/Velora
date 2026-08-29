@@ -27,6 +27,7 @@ final class PublicBookingWhatsAppDeliveryTest extends TenantTestCase
             'provider' => NullWhatsAppProvider::class,
             'status' => 'queued',
             'attempts' => 0,
+            'dedupe_key' => 'appointment.booked|whatsapp|VL-WA-SKIP01',
             'queued_at' => now(),
         ]);
 
@@ -70,6 +71,7 @@ final class PublicBookingWhatsAppDeliveryTest extends TenantTestCase
             'provider' => 'fake',
             'status' => 'queued',
             'attempts' => 0,
+            'dedupe_key' => 'appointment.booked|whatsapp|VL-WA-SENT01',
             'queued_at' => now(),
         ]);
 
