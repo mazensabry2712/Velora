@@ -106,8 +106,11 @@
 
         function setProgress(active) {
             nav.querySelectorAll('[data-progress]').forEach((node) => {
+                const order = ['service', 'staff', 'date', 'time', 'details'];
+                const activeIndex = order.indexOf(active);
+                const nodeIndex = order.indexOf(node.dataset.progress);
                 node.classList.toggle('is-active', node.dataset.progress === active);
-                node.classList.toggle('is-complete', ['service', 'staff', 'date', 'time'].indexOf(node.dataset.progress) < ['service', 'staff', 'date', 'time', 'details'].indexOf(active));
+                node.classList.toggle('is-complete', nodeIndex < activeIndex);
             });
         }
 
@@ -164,7 +167,7 @@
         staff.addEventListener('change', () => {
             refreshSummary();
             setProgress('date');
-            if (dateSectionVisible()) reveal(stepDate);
+            if (stepDate && !stepDate.classList.contains('hidden')) reveal(stepDate);
         });
 
         date.addEventListener('change', () => {
@@ -182,10 +185,6 @@
             }
         });
 
-        function dateSectionVisible() {
-            return stepDate && !stepDate.classList.contains('hidden');
-        }
-
         const observer = new MutationObserver(() => {
             renderSlots();
             updateDetailsVisibility();
@@ -199,6 +198,15 @@
         updateDetailsVisibility();
     }
 
+    function loadGuidedAnyStaffEnhancement() {
+        if (!document.getElementById('bookingForm') || document.getElementById('velora-booking-guided-script')) return;
+        const script = document.createElement('script');
+        script.id = 'velora-booking-guided-script';
+        script.src = '/js/velora-booking-guided.js';
+        script.defer = true;
+        document.head.appendChild(script);
+    }
+
     function init() {
         apply(readPreference());
 
@@ -210,6 +218,7 @@
         else if (typeof media.addListener === 'function') media.addListener(handleSystemChange);
 
         initBookingEnhancements();
+        loadGuidedAnyStaffEnhancement();
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
