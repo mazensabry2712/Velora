@@ -106,7 +106,6 @@ abstract class TenantTestCase extends TestCase
     {
         DB::rollBack();
         tenancy()->end();
-        \Illuminate\Database\Eloquent\Model::clearBootedModels();
         parent::tearDown();
     }
 
