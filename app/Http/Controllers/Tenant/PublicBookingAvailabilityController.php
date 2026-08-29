@@ -59,7 +59,7 @@ final class PublicBookingAvailabilityController extends Controller
         $staff = Staff::query()
             ->bookable()
             ->whereHas('services', fn ($query) => $query->whereKey($service->id))
-            ->with('user:id,name,email')
+            ->with('user:id,name')
             ->orderBy('sort_order')
             ->orderBy('id')
             ->get()
@@ -67,7 +67,6 @@ final class PublicBookingAvailabilityController extends Controller
                 'id' => $staff->user_id,
                 'staff_id' => $staff->id,
                 'name' => $staff->full_name ?: $staff->user?->name,
-                'email' => $staff->email ?: $staff->user?->email,
             ])
             ->values();
 
