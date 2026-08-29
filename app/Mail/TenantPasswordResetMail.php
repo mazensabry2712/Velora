@@ -18,12 +18,12 @@ final class TenantPasswordResetMail extends Mailable implements ShouldQueue
     public function __construct(
         public readonly string $name,
         public readonly string $resetUrl,
-        public readonly string $locale,
+        public readonly string $mailLocale,
     ) {}
 
     public function envelope(): Envelope
     {
-        app()->setLocale($this->locale);
+        app()->setLocale($this->mailLocale);
 
         return new Envelope(
             subject: __('password_reset.email_subject'),
@@ -32,7 +32,7 @@ final class TenantPasswordResetMail extends Mailable implements ShouldQueue
 
     public function content(): Content
     {
-        app()->setLocale($this->locale);
+        app()->setLocale($this->mailLocale);
 
         return new Content(
             view: 'emails.tenant-password-reset',
