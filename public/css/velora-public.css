@@ -220,6 +220,13 @@ body:has(#findAccountForm) .animate-float {
     animation-duration: 7s;
 }
 
+/* Keep the Find Account content visually connected to the Landing navbar. */
+@media (min-width: 1024px) {
+    body:has(#findAccountForm) .min-h-\[calc\(100vh-4rem\)\].flex.items-center > div {
+        transform: translateY(-32px);
+    }
+}
+
 html[data-theme="dark"] body:has(#findAccountForm) .bg-surface {
     background: #080B18 !important;
 }
