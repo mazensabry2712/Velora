@@ -86,7 +86,9 @@ The project is built around:
 - [x] Move-to-next-day flow.
 - [x] Priority handling.
 - [x] Print / export support.
-- [ ] Queue lifecycle notification events: position changed, almost turn, turn now.
+- [x] Queue lifecycle notification event generation for position changes, almost-turn transitions and turn-now transitions.
+- [x] Queue lifecycle notification delivery through the shared NotificationDelivery contract.
+- [ ] Final local validation of the new queue lifecycle test suite.
 
 ### Appointment Notifications
 
@@ -100,7 +102,7 @@ The project is built around:
 - [x] Tenant-aware reminder processing without breaking tenant test transaction context.
 - [x] Scheduler remains the existing `reminders:process` entry point.
 - [x] Supported notification locales satisfy English notification key and placeholder parity.
-- [ ] Queue lifecycle notifications remain the next implementation phase.
+- [x] Queue lifecycle notifications use the same notification delivery foundation and locale catalog.
 
 ### Admin
 
@@ -143,7 +145,9 @@ The project is built around:
 - [x] Signup / verification / tenant-handoff regression tests.
 - [x] Appointment reminder delivery tests.
 - [x] Notification locale key/placeholder parity tests.
-- [x] Latest local full suite: **570 tests, 5624 assertions, 0 failures, 0 errors**.
+- [x] Queue lifecycle notification regression test suite added.
+- [x] Last confirmed local full suite before Queue Lifecycle implementation: **570 tests, 5624 assertions, 0 failures, 0 errors**.
+- [ ] Queue lifecycle implementation requires final local test validation after pull.
 
 ## 4. Known Incomplete / Risk Areas
 
@@ -177,15 +181,9 @@ These are not cosmetic tasks. They affect production readiness.
 
 Velora has a strong core SaaS implementation, but this repository should currently be treated as **production-candidate**, not as a system that has already passed a complete security, billing and deployment certification.
 
-The latest local automated regression baseline is green at **570 tests / 5624 assertions**.
+The latest confirmed local automated regression baseline before Queue Lifecycle implementation is green at **570 tests / 5624 assertions**.
 
-The most important next objective is to reduce the gap between:
-
-**feature complete**
-
-and
-
-**production hardened**.
+The Queue Lifecycle implementation is now present in the repository, with final local verification pending.
 
 ## 6. Definition of Success
 
