@@ -15,6 +15,7 @@ use App\Domain\Billing\Contracts\TrialExtender;
 use App\Domain\Booking\Contracts\AppointmentReader;
 use App\Domain\Customer\Contracts\CustomerReader;
 use App\Domain\Landing\Contracts\LandingSettingsReader;
+use App\Domain\Notifications\Contracts\WhatsAppProvider;
 use App\Domain\Pricing\Contracts\CountryPriceSelector;
 use App\Domain\Queue\Contracts\QueueReader;
 use App\Domain\Queue\Contracts\QueueRepository as DomainQueueRepository;
@@ -34,6 +35,7 @@ use App\Infrastructure\Billing\PaymentGatewayCheckoutSessionCreator;
 use App\Infrastructure\Booking\EloquentAppointmentReader;
 use App\Infrastructure\Customer\EloquentCustomerReader;
 use App\Infrastructure\Landing\LegacyLandingSettingsReader;
+use App\Infrastructure\Notifications\NullWhatsAppProvider;
 use App\Infrastructure\Payments\Moyasar\MoyasarWebhookProcessor;
 use App\Infrastructure\Payments\PaymentGatewayRouter;
 use App\Infrastructure\Payments\Stripe\StripeWebhookProcessor as StripeWebhookProcessorImplementation;
@@ -80,6 +82,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(MoyasarWebhookProcessorContract::class, MoyasarWebhookProcessor::class);
         $this->app->bind(StripeWebhookProcessor::class, StripeWebhookProcessorImplementation::class);
         $this->app->bind(PaymentGatewayResolver::class, PaymentGatewayRouter::class);
+        $this->app->bind(WhatsAppProvider::class, NullWhatsAppProvider::class);
         $this->app->singleton(PaymentGatewayManager::class);
     }
 
