@@ -33,7 +33,7 @@ final class AppointmentReminderDeliveryTest extends TenantTestCase
         $start = Carbon::create(2026, 9, 1, 9, 0, 0, config('app.timezone'));
         Carbon::setTestNow($start->copy()->subDay());
 
-        $appointment = $this->makeAppointment($start);
+        $appointment = $this->makeAppointment($start, 'VL-RM24-TEST01');
         $rule = $this->makeRule(1440);
 
         $this->runReminderCommand();
@@ -82,7 +82,7 @@ final class AppointmentReminderDeliveryTest extends TenantTestCase
         $start = Carbon::create(2026, 9, 1, 10, 30, 0, config('app.timezone'));
         Carbon::setTestNow($start->copy()->subHour());
 
-        $appointment = $this->makeAppointment($start);
+        $appointment = $this->makeAppointment($start, 'VL-RM1H-TEST01');
         $this->makeRule(60);
 
         $this->runReminderCommand();
@@ -108,7 +108,7 @@ final class AppointmentReminderDeliveryTest extends TenantTestCase
         $start = Carbon::create(2026, 9, 1, 11, 0, 0, config('app.timezone'));
         Carbon::setTestNow($start->copy()->subHour());
 
-        $appointment = $this->makeAppointment($start);
+        $appointment = $this->makeAppointment($start, 'VL-RMSENT-TEST01');
         $rule = $this->makeRule(60);
         $customer = $appointment->newCustomer;
 
@@ -192,7 +192,7 @@ final class AppointmentReminderDeliveryTest extends TenantTestCase
         ]);
     }
 
-    private function makeAppointment(Carbon $start): Appointment
+    private function makeAppointment(Carbon $start, string $publicReference): Appointment
     {
         $customer = Customer::create([
             'first_name' => 'Reminder',
@@ -210,6 +210,7 @@ final class AppointmentReminderDeliveryTest extends TenantTestCase
             'customer_id_new' => $customer->id,
             'staff_id_new' => $this->staff->id,
             'service_id' => $this->service->id,
+            'public_reference' => $publicReference,
             'date' => $start->toDateString(),
             'time_slot' => $start->format('H:i'),
             'starts_at' => $start,
