@@ -43,8 +43,9 @@ final class TenantPasswordResetController extends Controller
             return back()->withErrors(['email' => __('passwords.user')])->withInput();
         }
 
+        // Tenancy middleware already switches all tenant models to the current
+        // tenant database. There is no tenant_id column on tenant users.
         $user = User::query()
-            ->where('tenant_id', $tenant->id)
             ->whereRaw('LOWER(email) = ?', [$email])
             ->first();
 
@@ -55,10 +56,11 @@ final class TenantPasswordResetController extends Controller
 
         $locale = $this->resolveLocale($user, $tenant);
         $plainToken = Str::random(64);
-        $tokenKey = $this->tokenKey($tenant->id, $email);
 
+        // password_reset_tokens lives in the current tenant database, so the
+        // same email may safely have independent reset tokens in other tenants.
         DB::table('password_reset_tokens')->updateOrInsert(
-            ['email' => $tokenKey],
+            ['email' => $email],
             [
                 'token' => hash('sha256', $plainToken),
                 'locale' => $locale,
@@ -89,20 +91,19 @@ final class TenantPasswordResetController extends Controller
             return redirect()->route('password.request')->withErrors(['email' => __('passwords.token')]);
         }
 
-        $tokenKey = $this->tokenKey($tenant->id, $email);
-        $record = DB::table('password_reset_tokens')->where('email', $tokenKey)->first();
+        // This table is tenant-local because the tenancy context is active.
+        $record = DB::table('password_reset_tokens')->where('email', $email)->first();
 
         if (! $record || ! hash_equals((string) $record->token, hash('sha256', $token)) || $this->expired($record->created_at)) {
             return redirect()->route('password.request')->withErrors(['email' => __('passwords.token')]);
         }
 
         $user = User::query()
-            ->where('tenant_id', $tenant->id)
             ->whereRaw('LOWER(email) = ?', [$email])
             ->first();
 
         if (! $user) {
-            DB::table('password_reset_tokens')->where('email', $tokenKey)->delete();
+            DB::table('password_reset_tokens')->where('email', $email)->delete();
             return redirect()->route('password.request')->withErrors(['email' => __('passwords.token')]);
         }
 
@@ -131,26 +132,24 @@ final class TenantPasswordResetController extends Controller
             return back()->withErrors(['email' => __('passwords.token')])->withInput();
         }
 
-        $tokenKey = $this->tokenKey($tenant->id, $email);
-        $record = DB::table('password_reset_tokens')->where('email', $tokenKey)->first();
+        $record = DB::table('password_reset_tokens')->where('email', $email)->first();
 
         if (! $record || ! hash_equals((string) $record->token, hash('sha256', $token)) || $this->expired($record->created_at)) {
             return back()->withErrors(['email' => __('passwords.token')])->withInput();
         }
 
         $user = User::query()
-            ->where('tenant_id', $tenant->id)
             ->whereRaw('LOWER(email) = ?', [$email])
             ->first();
 
         if (! $user) {
-            DB::table('password_reset_tokens')->where('email', $tokenKey)->delete();
+            DB::table('password_reset_tokens')->where('email', $email)->delete();
             return back()->withErrors(['email' => __('passwords.user')])->withInput();
         }
 
         $user->forceFill(['password' => $data['password']])->save();
         $user->tokens()->delete();
-        DB::table('password_reset_tokens')->where('email', $tokenKey)->delete();
+        DB::table('password_reset_tokens')->where('email', $email)->delete();
         RateLimiter::clear($this->rateKey($request, $email));
 
         $locale = $this->normalizeLocale($record->locale ?: $user->locale);
@@ -158,11 +157,6 @@ final class TenantPasswordResetController extends Controller
         session()->put('locale', $locale);
 
         return redirect()->route('login')->with('status', __('password_reset.reset_success'));
-    }
-
-    private function tokenKey($tenantId, string $email): string
-    {
-        return 'tenant:' . $tenantId . ':' . $email;
     }
 
     private function expired(?string $createdAt): bool
