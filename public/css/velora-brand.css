@@ -165,3 +165,19 @@ body:has(.v-home) {
     background: #080B18 !important;
     color: #F8FAFC !important;
 }
+
+/* Find-account browser mockup: premium address-bar treatment for yourbusiness.velora.test. */
+.animate-float div[class*="bg-gray-900/70"][class*="text-gray-500"][class*="rounded-full"] {
+    background: linear-gradient(135deg, rgba(13, 18, 38, .96), rgba(21, 28, 50, .92)) !important;
+    border-color: rgba(138, 92, 255, .28) !important;
+    color: #D9E1F0 !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .045), 0 10px 28px rgba(13, 18, 38, .20) !important;
+}
+
+.dark .animate-float div[class*="bg-gray-900/70"][class*="text-gray-500"][class*="rounded-full"],
+[data-theme="dark"] .animate-float div[class*="bg-gray-900/70"][class*="text-gray-500"][class*="rounded-full"] {
+    background: linear-gradient(135deg, #0A0F1E, #121A30) !important;
+    border-color: rgba(138, 92, 255, .34) !important;
+    color: #E7ECF5 !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), 0 12px 30px rgba(0, 0, 0, .28) !important;
+}
