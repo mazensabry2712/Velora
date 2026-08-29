@@ -6,13 +6,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#f7f9fc">
     @php
-        $businessSettings = \App\Models\Setting::where('tenant_id', tenant()->id)->first();
-        $businessName = $businessSettings->business_name ?? tenant()->name ?? config('app.name');
-        if (is_array($businessName)) {
-            $businessName = $businessName[app()->getLocale()] ?? $businessName['en'] ?? reset($businessName) ?? config('app.name');
-        }
-        $businessName = (string) $businessName;
-        $businessLogo = $businessSettings->logo ?? null;
+        $businessName = $businessName ?? tenant()->name ?? config('app.name');
+        $businessLogo = $businessLogo ?? null;
         $businessHost = request()->getHost();
     @endphp
     <title>{{ __('Book Appointment') }} - {{ $businessName }}</title>
@@ -241,7 +236,7 @@
 
         <footer class="vb2-footer">
             <a href="{{ route('customer.queue.status') }}">{{ __('Check Queue Status') }} →</a>
-            <span>Velora · {{ date('Y') }}</span>
+            <span>{{ date('Y') }}</span>
         </footer>
     </div>
 
