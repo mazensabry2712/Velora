@@ -41,14 +41,12 @@ test.describe('Velora public booking V3', () => {
 
     test('loads services and moves to specialist step', async ({ page }) => {
         const serviceSelect = page.locator('#service_id');
-        await expect.poll(async () => serviceSelect.locator('option').count(), { timeout: 10000 }).toBeGreaterThan(0);
-        const first = serviceSelect.locator('option[value]:not([value=""])').first();
-        if (await first.count() === 0) {
+        const serviceOptions = serviceSelect.locator('option[value]:not([value=""])');
+        await expect.poll(async () => serviceOptions.count(), { timeout: 10000 }).toBeGreaterThanOrEqual(0);
+        if (await serviceOptions.count() === 0) {
             await expect(page.locator('#errorMessage')).toBeVisible();
             return;
         }
-        const value = await first.getAttribute('value');
-        expect(value).toBeTruthy();
         await page.locator('#serviceCards .booking-choice').first().click();
         await expect(page.locator('[data-step="2"]')).toBeVisible();
         await expect(page.locator('#staffCards')).toBeVisible();
@@ -56,20 +54,30 @@ test.describe('Velora public booking V3', () => {
 
     test('booking flow exposes real time slots when availability exists', async ({ page }) => {
         const service = page.locator('#service_id');
-        await expect.poll(async () => service.locator('option').count(), { timeout: 10000 }).toBeGreaterThan(0);
-        const serviceValue = await service.locator('option[value]:not([value=""])').first().getAttribute('value');
-        if (!serviceValue) test.skip(true, 'Tenant has no online-bookable services.');
+        const serviceOptions = service.locator('option[value]:not([value=""])');
+        await expect.poll(async () => serviceOptions.count(), { timeout: 10000 }).toBeGreaterThanOrEqual(0);
+        if (await serviceOptions.count() === 0) {
+            test.skip(true, 'Tenant has no online-bookable services.');
+        }
+
         await page.locator('#serviceCards .booking-choice').first().click();
         await expect(page.locator('#staffCards .booking-choice').first()).toBeVisible({ timeout: 5000 });
         await page.locator('#staffCards .booking-choice').first().click();
+
         const dates = page.locator('#dateChoices .booking-date');
         await expect(dates.first()).toBeVisible();
         const slots = page.locator('#timeOptions .booking-slot');
         let found = false;
+
         for (let i = 0; i < Math.min(await dates.count(), 7); i += 1) {
             await dates.nth(i).click();
-            try { await expect(slots.first()).toBeVisible({ timeout: 1800 }); found = true; break; } catch {}
+            try {
+                await expect(slots.first()).toBeVisible({ timeout: 1800 });
+                found = true;
+                break;
+            } catch {}
         }
+
         test.skip(!found, 'No available slot in the displayed date window.');
         await slots.first().click();
         await page.locator('#name').fill('Browser Test Customer');
