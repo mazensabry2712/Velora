@@ -88,6 +88,7 @@ The project is built around:
 - [x] Print / export support.
 - [x] Queue lifecycle notification event generation for position changes, almost-turn transitions and turn-now transitions.
 - [x] Queue lifecycle notification delivery through the shared NotificationDelivery contract.
+- [x] Queue observer registration is tied to the model lifecycle so test teardown/model boot resets do not silently remove the observer.
 - [ ] Final local validation of the new queue lifecycle test suite.
 
 ### Appointment Notifications
