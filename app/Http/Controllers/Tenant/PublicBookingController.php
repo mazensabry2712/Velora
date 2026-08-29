@@ -38,18 +38,32 @@ final class PublicBookingController extends Controller
             );
 
             $result = $this->createPublicBooking->execute($data);
+            $appointment = $result['appointment'];
+            $queue = $result['queue'];
+            $customer = $result['customer'];
 
             return response()->json([
                 'success' => true,
                 'message' => 'Appointment booked successfully',
                 'data' => [
-                    'appointment' => $result['appointment'],
-                    'queue_number' => $result['queue']->queue_number,
-                    'queue' => $result['queue'],
+                    'appointment' => [
+                        'public_reference' => $appointment->public_reference,
+                        'service_id' => $appointment->service_id,
+                        'staff_id' => $appointment->staff_id_new,
+                        'starts_at' => $appointment->starts_at?->toIso8601String(),
+                        'ends_at' => $appointment->ends_at?->toIso8601String(),
+                        'timezone' => $appointment->timezone,
+                        'status' => $appointment->status,
+                        'source' => $appointment->source,
+                    ],
+                    'queue_number' => $queue->queue_number,
+                    'queue' => [
+                        'queue_number' => $queue->queue_number,
+                        'queue_date' => $queue->queue_date?->toDateString(),
+                        'status' => $queue->status,
+                    ],
                     'customer' => [
-                        'id' => $result['customer']->id,
-                        'name' => $result['customer']->first_name . ' ' . $result['customer']->last_name,
-                        'email' => $result['customer']->email,
+                        'name' => trim($customer->first_name . ' ' . $customer->last_name),
                     ],
                 ],
             ], 201);
