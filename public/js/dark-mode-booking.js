@@ -23,6 +23,14 @@
         apply(isDark);
     };
 
+    function normalizeBrandFallback() {
+        document.querySelectorAll('.vb2-fallback-logo img').forEach((image) => {
+            const current = image.getAttribute('src') || '';
+            if (current.includes('/tenancy/assets/logo-bais.png')) image.setAttribute('src', '/logo-bais.png');
+            image.addEventListener('error', () => image.setAttribute('src', '/logo-bais.png'), { once: true });
+        });
+    }
+
     function initBookingEnhancements() {
         const form = document.getElementById('bookingForm');
         if (!form) return;
@@ -85,7 +93,6 @@
             chooseTime: 'Choose an available time to continue.',
             noSlots: 'No times are available for the selected date.',
             selectTime: 'Select time',
-            network: 'Unable to load availability. Please try again.',
         };
 
         function selectedText(select) { return select?.selectedOptions?.[0]?.textContent?.trim() || '—'; }
@@ -123,8 +130,8 @@
                 button.type = 'button';
                 button.className = 'vb2-slot-button';
                 button.dataset.value = option.value;
-                button.setAttribute('aria-pressed', option.selected ? 'true' : 'false');
                 button.textContent = option.textContent;
+                button.setAttribute('aria-pressed', option.selected ? 'true' : 'false');
                 button.addEventListener('click', () => {
                     time.value = option.value;
                     time.dispatchEvent(new Event('change', { bubbles: true }));
@@ -221,6 +228,7 @@
         }
 
         service.addEventListener('change', () => {
+            resetFrom(1);
             ensureAnyStaffOption();
             refreshSummary();
             setProgress('staff');
@@ -232,6 +240,7 @@
             reveal(stepDate);
         });
         date.addEventListener('change', () => {
+            resetFrom(2);
             refreshSummary();
             setProgress('time');
             if (staff.value === ANY_STAFF) loadAnyStaffAvailability();
@@ -257,13 +266,22 @@
         observer.observe(staff, { childList: true, subtree: true });
 
         ensureAnyStaffOption();
+        hideDetailsUntilTime();
         updateDetailsVisibility();
         refreshSummary();
         renderSlots();
+        normalizeBrandFallback();
+    }
+
+    function hideDetailsUntilTime() {
+        const form = document.getElementById('bookingForm');
+        form?.querySelector('.vb2-step[data-step="1"]')?.classList.add('vb2-wizard-hidden');
+        form?.querySelector('.vb2-step[data-step="6"]')?.classList.add('vb2-wizard-hidden');
     }
 
     function init() {
         apply(readPreference());
+        normalizeBrandFallback();
         const media = window.matchMedia('(prefers-color-scheme: dark)');
         const handleSystemChange = (event) => {
             if (localStorage.getItem(STORAGE_KEY) === null) apply(event.matches);
