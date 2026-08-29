@@ -13,234 +13,143 @@
         const loading = document.getElementById('loadingBanner');
         const error = document.getElementById('errorMessage');
         const errorText = document.getElementById('errorText');
-
         if (!form || !service || !staff || !date || !time) return;
 
+        const ANY = '__any__';
         let currentStaff = [];
-        let slotButtons = null;
-        const anyValue = '__any__';
+        let requestSerial = 0;
 
-        const text = {
-            anyStaff: 'Any available specialist',
-            anyStaffHint: 'We will find the earliest available time across the team.',
-            checking: 'Checking all available specialists...',
-            noSlots: 'No times are available for the selected date.',
-            chooseTime: 'Choose an available time to continue.',
-            network: 'Unable to load availability. Please try again.',
-            selectTime: 'Select time',
-        };
+        function refreshStaffCache() {
+            currentStaff = Array.from(staff.options)
+                .filter((option) => option.value && option.value !== ANY)
+                .map((option) => ({ id: option.value, name: option.textContent.trim() }));
+        }
 
-        const applyI18n = function () {
-            const translations = window.veloraBookingText || {};
-            Object.keys(text).forEach((key) => {
-                if (translations[key]) text[key] = translations[key];
-            });
-        };
-        applyI18n();
+        function ensureAnyOption() {
+            if (staff.querySelector('option[value="' + ANY + '"]')) return;
+            const option = document.createElement('option');
+            option.value = ANY;
+            option.textContent = 'Any available specialist';
+            staff.appendChild(option);
+        }
 
-        function setLoading(message) {
+        function showLoading(message) {
             if (!loading) return;
             loading.textContent = message;
             loading.classList.remove('hidden');
         }
 
-        function clearLoading() {
-            if (loading) loading.classList.add('hidden');
-        }
-
+        function clearLoading() { loading?.classList.add('hidden'); }
         function showError(message) {
             if (!error || !errorText) return;
             errorText.textContent = message;
             error.classList.remove('hidden');
         }
-
         function hideError() {
-            if (!error || !errorText) return;
-            error.classList.add('hidden');
-            errorText.textContent = '';
+            error?.classList.add('hidden');
+            if (errorText) errorText.textContent = '';
         }
 
-        function ensureAnyStaffOption() {
-            if (staff.querySelector('option[value="' + anyValue + '"]')) return;
-            const option = document.createElement('option');
-            option.value = anyValue;
-            option.textContent = text.anyStaff;
-            staff.appendChild(option);
-        }
-
-        function normalizeStaffList() {
-            currentStaff = Array.from(staff.options)
-                .filter((option) => option.value && option.value !== anyValue)
-                .map((option) => ({ id: option.value, name: option.textContent }));
-        }
-
-        function ensureTimeSlotCards() {
-            if (slotButtons) return slotButtons;
-            const host = document.createElement('div');
-            host.className = 'vb-guided-slots';
-            host.setAttribute('role', 'listbox');
-            host.setAttribute('aria-label', 'Available times');
-            time.parentNode.insertBefore(host, time);
-            time.classList.add('vb-guided-native-time');
-            slotButtons = host;
-            return host;
-        }
-
-        function clearSlotCards() {
-            const host = ensureTimeSlotCards();
-            host.innerHTML = '';
-        }
-
-        function renderSlotCards(slots) {
-            const host = ensureTimeSlotCards();
-            host.innerHTML = '';
-
-            const unique = new Map();
-            slots.forEach((slot) => {
-                const key = slot.start_time + '|' + slot.staff_id;
-                if (!unique.has(key)) unique.set(key, slot);
-            });
-
-            const sorted = Array.from(unique.values()).sort((a, b) => {
-                if (a.start_time === b.start_time) return String(a.staff_name || '').localeCompare(String(b.staff_name || ''));
-                return a.start_time.localeCompare(b.start_time);
-            });
-
-            sorted.forEach((slot) => {
-                const button = document.createElement('button');
-                button.type = 'button';
-                button.className = 'vb-guided-slot';
-                button.setAttribute('role', 'option');
-                button.dataset.time = slot.start_time;
-                button.dataset.staffId = slot.staff_id;
-                button.dataset.staffName = slot.staff_name || '';
-                button.innerHTML = '<strong></strong><span></span>';
-                button.querySelector('strong').textContent = slot.label || slot.start_time;
-                if (staff.value === anyValue) {
-                    button.querySelector('span').textContent = slot.staff_name || text.anyStaff;
-                }
-
-                button.addEventListener('click', function () {
-                    host.querySelectorAll('.vb-guided-slot[aria-selected="true"]').forEach((item) => item.setAttribute('aria-selected', 'false'));
-                    button.setAttribute('aria-selected', 'true');
-
-                    if (button.dataset.staffId) {
-                        const option = Array.from(staff.options).find((item) => item.value === button.dataset.staffId);
-                        if (option) staff.value = button.dataset.staffId;
-                    }
-
-                    time.value = button.dataset.time;
-                    time.dispatchEvent(new Event('change', { bubbles: true }));
-                });
-
-                host.appendChild(button);
-            });
-
-            if (!sorted.length) {
-                const empty = document.createElement('p');
-                empty.className = 'vb-guided-slots-empty';
-                empty.textContent = text.noSlots;
-                host.appendChild(empty);
-            }
-
-            time.classList.add('vb-guided-native-time');
-        }
-
-        function buildSingleStaffSlots(payload, staffItem) {
-            return (payload.data || []).map((slot) => ({
-                start_time: slot.start_time,
-                end_time: slot.end_time,
-                label: slot.label || slot.start_time,
-                staff_id: staffItem.id,
-                staff_name: staffItem.name,
-            }));
-        }
-
-        async function fetchSlotsForStaff(staffItem) {
+        async function fetchSlots(staffItem) {
             const params = new URLSearchParams({
                 date: date.value,
                 staff_id: staffItem.id,
                 service_id: service.value,
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Cairo',
             });
-
             const response = await fetch('/api/booking/available-timeslots?' + params.toString(), {
                 headers: { Accept: 'application/json' },
                 credentials: 'same-origin',
             });
-
             const payload = await response.json();
             if (!response.ok || !payload.success) return [];
-            return buildSingleStaffSlots(payload, staffItem);
+            return (payload.data || []).map((slot) => ({ ...slot, staff_id: staffItem.id, staff_name: staffItem.name }));
+        }
+
+        function renderSlots(slots, serial) {
+            if (serial !== requestSerial) return;
+            const picker = form.querySelector('.vb2-slot-picker');
+            const grid = picker?.querySelector('.vb2-slot-grid');
+            if (!picker || !grid) return;
+            grid.replaceChildren();
+
+            const unique = new Map();
+            slots.forEach((slot) => unique.set(slot.start_time + '|' + slot.staff_id, slot));
+            const ordered = Array.from(unique.values()).sort((a, b) => {
+                if (a.start_time === b.start_time) return String(a.staff_name).localeCompare(String(b.staff_name));
+                return a.start_time.localeCompare(b.start_time);
+            });
+
+            ordered.forEach((slot) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'vb2-slot-button';
+                button.dataset.value = slot.start_time;
+                button.setAttribute('aria-pressed', 'false');
+                button.innerHTML = '<strong></strong><span></span>';
+                button.querySelector('strong').textContent = slot.label || slot.start_time;
+                button.querySelector('span').textContent = slot.staff_name || '';
+                button.addEventListener('click', () => {
+                    const option = Array.from(staff.options).find((item) => item.value === slot.staff_id);
+                    if (!option) return;
+                    staff.value = slot.staff_id;
+                    time.value = slot.start_time;
+                    grid.querySelectorAll('.vb2-slot-button').forEach((item) => item.setAttribute('aria-pressed', item === button ? 'true' : 'false'));
+                    time.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+                grid.appendChild(button);
+            });
+
+            picker.classList.remove('hidden');
+            const title = picker.querySelector('.vb2-slot-picker-title');
+            if (title) title.textContent = ordered.length ? 'Available times across the team' : 'No available times';
         }
 
         async function loadAnyStaffAvailability() {
+            const serial = ++requestSerial;
+            refreshStaffCache();
             hideError();
-            setLoading(text.checking);
-            clearSlotCards();
-            timeSection.classList.remove('hidden');
-            timeHint.textContent = text.checking;
-
+            showLoading('Checking all available specialists...');
+            timeSection?.classList.remove('hidden');
+            if (timeHint) timeHint.textContent = 'Checking all available specialists...';
             try {
-                normalizeStaffList();
-                const results = [];
-                for (const staffItem of currentStaff) {
-                    const staffSlots = await fetchSlotsForStaff(staffItem);
-                    results.push(...staffSlots);
+                const results = await Promise.all(currentStaff.map((item) => fetchSlots(item).catch(() => [])));
+                const slots = results.flat();
+                renderSlots(slots, serial);
+                if (serial === requestSerial && timeHint) {
+                    timeHint.textContent = slots.length
+                        ? 'Choose an available time. The selected specialist will be booked automatically.'
+                        : 'No times are available for the selected date.';
                 }
-
-                renderSlotCards(results);
-                timeHint.textContent = results.length ? text.chooseTime : text.noSlots;
-            } catch (e) {
-                showError(text.network);
-                timeHint.textContent = text.network;
-                renderSlotCards([]);
             } finally {
-                clearLoading();
+                if (serial === requestSerial) clearLoading();
             }
         }
 
-        service.addEventListener('change', function () {
-            // The existing page listener populates the staff list first.
-            window.setTimeout(function () {
-                ensureAnyStaffOption();
-                normalizeStaffList();
-            }, 0);
+        service.addEventListener('change', () => {
+            window.setTimeout(() => { ensureAnyOption(); refreshStaffCache(); }, 0);
         });
 
-        staff.addEventListener('change', function () {
-            if (staff.value !== anyValue) return;
-            dateSection.classList.remove('hidden');
-            const hint = document.getElementById('serviceHint');
-            if (hint) {
-                hint.textContent = text.anyStaffHint;
-                hint.classList.remove('hidden');
+        staff.addEventListener('change', () => {
+            if (staff.value === ANY) {
+                refreshStaffCache();
+                dateSection?.classList.remove('hidden');
             }
         });
 
-        date.addEventListener('change', function (event) {
-            if (staff.value !== anyValue) return;
+        // Capture this event before the existing single-staff availability handler.
+        date.addEventListener('change', (event) => {
+            if (staff.value !== ANY) return;
             event.stopImmediatePropagation();
             loadAnyStaffAvailability();
         }, true);
 
-        time.addEventListener('change', function () {
-            const selected = slotButtons && slotButtons.querySelector('[data-time="' + CSS.escape(time.value) + '"][data-staff-id="' + CSS.escape(staff.value) + '"]');
-            if (selected) selected.setAttribute('aria-selected', 'true');
-        });
-
-        // Re-attach the option after async staff loading from the original page script.
-        const observer = new MutationObserver(function () {
-            if (service.value && !staff.querySelector('option[value="' + anyValue + '"]')) {
-                ensureAnyStaffOption();
-                normalizeStaffList();
+        const observer = new MutationObserver(() => {
+            if (service.value) {
+                ensureAnyOption();
+                refreshStaffCache();
             }
         });
         observer.observe(staff, { childList: true });
-
-        // Keep the hidden/native time select available for form submission and validation.
-        if (time.closest('.vb2-field')) {
-            time.closest('.vb2-field').classList.add('vb-guided-time-field');
-        }
     });
 })();
