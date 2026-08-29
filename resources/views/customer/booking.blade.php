@@ -88,7 +88,7 @@
                         <div class="booking-field booking-full"><label for="name">{{ __('Full name') }} *</label><input id="name" name="name" autocomplete="name" required placeholder="{{ __('Enter your full name') }}"></div>
                         <div class="booking-field"><label for="phone">{{ __('Phone number') }} *</label><input id="phone" name="phone" type="tel" autocomplete="tel" required placeholder="{{ __('Enter your phone number') }}"></div>
                         <div class="booking-field"><label for="email">{{ __('Email') }} *</label><input id="email" name="email" type="email" autocomplete="email" required placeholder="{{ __('Enter your email') }}"></div>
-                        <div class="booking-field booking-full"><label for="notes">{{ __('Notes') }}</label><textarea id="notes" name="notes" rows="4" maxlength="1000" placeholder="{{ __('Anything else we should know?') }}"></textarea></div>
+                        <div class="booking-field booking-full"><label for="notes">{{ __('Notes') }}</label><textarea id="notes" name="notes" rows="4" maxlength="1000" placeholder="{{ __('Anything else should we know?') }}"></textarea></div>
                     </div>
                     <div class="booking-review">
                         <h3>{{ __('Review your appointment') }}</h3>
