@@ -103,12 +103,21 @@ class ReportService
 
     public function getStaffPerformance(?Carbon $start, ?Carbon $end)
     {
-        return User::role(['Admin Tenant', 'Staff'])
+        $query = User::role(['Admin Tenant', 'Staff'])
             ->withCount(['staffAppointments' => function ($q) use ($start, $end) {
                 $q->where('status', 'confirmed');
                 $this->scopeToRange($q, $start, $end);
-            }])
-            ->having('staff_appointments_count', '>', 0)
+            }]);
+
+        // `HAVING` against a withCount alias is accepted by MySQL but is not
+        // valid on SQLite without an aggregate/grouping context. The relation
+        // filter below preserves the same business rule while staying portable.
+        $query->whereHas('staffAppointments', function ($q) use ($start, $end) {
+            $q->where('status', 'confirmed');
+            $this->scopeToRange($q, $start, $end);
+        });
+
+        return $query
             ->orderByDesc('staff_appointments_count')
             ->get();
     }
