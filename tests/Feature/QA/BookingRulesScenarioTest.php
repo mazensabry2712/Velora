@@ -59,6 +59,16 @@ final class BookingRulesScenarioTest extends TenantTestCase
         );
     }
 
+    private function assertSlotUnavailableWithReason(callable $operation, string $reason): void
+    {
+        try {
+            $operation();
+            $this->fail("Expected SlotUnavailableException with reason [{$reason}].");
+        } catch (SlotUnavailableException $exception) {
+            $this->assertSame($reason, $exception->getReason());
+        }
+    }
+
     #[Test]
     public function inactive_service_is_rejected_before_a_public_booking_is_created(): void
     {
@@ -72,8 +82,7 @@ final class BookingRulesScenarioTest extends TenantTestCase
             'is_online_bookable' => false,
         ]);
 
-        $this->expectException(\Illuminate\Validation\ValidationException::class);
-
+        $this->expectException(ValidationException::class);
         app(CreatePublicBooking::class)->execute($this->bookingData($date->toDateString(), '09:00', $inactive->id));
     }
 
@@ -108,7 +117,6 @@ final class BookingRulesScenarioTest extends TenantTestCase
         ]);
 
         $this->expectException(ValidationException::class);
-
         app(CreatePublicBooking::class)->execute($this->bookingData($date->toDateString(), '09:00', null, $secondStaffUser->id));
     }
 
@@ -116,10 +124,10 @@ final class BookingRulesScenarioTest extends TenantTestCase
     public function outside_working_hours_is_rejected_by_the_slot_engine(): void
     {
         [$date] = $this->prepareWorkingDay();
-
-        $this->expectException(SlotUnavailableException::class);
-
-        app(CreatePublicBooking::class)->execute($this->bookingData($date->toDateString(), '12:00'));
+        $this->assertSlotUnavailableWithReason(
+            fn () => app(CreatePublicBooking::class)->execute($this->bookingData($date->toDateString(), '12:00')),
+            'outside_working_hours',
+        );
     }
 
     #[Test]
@@ -130,8 +138,8 @@ final class BookingRulesScenarioTest extends TenantTestCase
         $action = app(CreatePublicBooking::class);
         $action->execute($this->bookingData($date->toDateString(), '09:00'));
 
-        try {
-            $action->execute(new PublicBookingData(
+        $this->assertSlotUnavailableWithReason(
+            fn () => $action->execute(new PublicBookingData(
                 customerName: 'Second Booking Customer',
                 customerEmail: 'second-booking@example.com',
                 customerPhone: '+201000000021',
@@ -142,11 +150,9 @@ final class BookingRulesScenarioTest extends TenantTestCase
                 appointmentTime: '09:00',
                 requestedTimezone: $timezone,
                 notes: null,
-            ));
-            $this->fail('Expected the occupied slot to be rejected.');
-        } catch (SlotUnavailableException $exception) {
-            $this->assertSame('slot_not_available', $exception->getMessage());
-        }
+            )),
+            'slot_not_available',
+        );
 
         $this->assertSame(1, Appointment::whereDate('date', $date->toDateString())->count());
     }
@@ -158,8 +164,9 @@ final class BookingRulesScenarioTest extends TenantTestCase
 
         BusinessRule::setValue(BusinessRule::MIN_ADVANCE_BOOKING_HOURS, 48, 'integer');
 
-        $this->expectException(SlotUnavailableException::class);
-
-        app(CreatePublicBooking::class)->execute($this->bookingData($date->toDateString(), '09:00'));
+        $this->assertSlotUnavailableWithReason(
+            fn () => app(CreatePublicBooking::class)->execute($this->bookingData($date->toDateString(), '09:00')),
+            'too_soon_to_book',
+        );
     }
 }
