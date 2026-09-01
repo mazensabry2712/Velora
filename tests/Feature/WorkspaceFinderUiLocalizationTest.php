@@ -46,4 +46,30 @@ final class WorkspaceFinderUiLocalizationTest extends TestCase
         $this->assertStringNotContainsString('Email address', $html);
         $this->assertStringNotContainsString('Send instructions', $html);
     }
+
+    public function test_french_workspace_finder_uses_french_ui_copy(): void
+    {
+        app()->setLocale('fr');
+
+        $html = view('landing.find-account', [
+            'baseDomain' => 'velora.test',
+        ])->render();
+
+        $this->assertStringContainsString('Retrouvez votre espace de travail', $html);
+        $this->assertStringContainsString('Saisissez le nom de l’espace de travail de votre entreprise pour continuer.', $html);
+        $this->assertStringContainsString('Nom de l’espace de travail', $html);
+        $this->assertStringContainsString('Continuer', $html);
+        $this->assertStringContainsString('Connexion professionnelle sécurisée', $html);
+        $this->assertStringContainsString('Espaces de travail actifs', $html);
+        $this->assertStringContainsString('Tous droits réservés.', $html);
+
+        $this->assertStringNotContainsString('Features', $html);
+        $this->assertStringNotContainsString('How it works', $html);
+        $this->assertStringNotContainsString('Pricing', $html);
+        $this->assertStringNotContainsString('Company admin sign in', $html);
+        $this->assertStringNotContainsString('Start free trial', $html);
+        $this->assertStringNotContainsString('All rights reserved.', $html);
+        $this->assertStringNotContainsString('Workspace name', $html);
+        $this->assertStringNotContainsString('Continue', $html);
+    }
 }
