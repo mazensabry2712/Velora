@@ -240,7 +240,23 @@ Added/fixed afterward and awaiting fresh MySQL CI evidence:
 - Expanded tenant authorization matrix
 - Moyasar canonical central-connection activation
 
-Next priority:
+## Finding QA-TESTINFRA-002 — Full test suite depended on a tracked local .env existing physically
+
+**Area:** PHPUnit/local and CI test bootstrap
+
+**Evidence:** A local `php artisan test` run after removing `.env` produced widespread failures/warnings across payment, repository, admin, booking, localization, health, and design-system tests with `file_get_contents(.../.env): Failed to open stream`. HTTP tests then cascaded into `MissingAppKeyException`, and Symfony's HTML error renderer exhausted the 128 MB PHP memory limit while rendering repeated exception payloads.
+
+**Root cause:** `.env` was correctly removed from Git for security, but legacy tests directly inspect the physical `.env` file. `phpunit.xml` previously bootstrapped only `vendor/autoload.php`, so a fresh checkout without a local `.env` did not satisfy the legacy test contract.
+
+**Fix implemented:** PHPUnit now bootstraps through `tests/bootstrap.php`. When `.env` is missing, the bootstrap creates a temporary local `.env` from `.env.example`, changes the environment to testing, injects a throwaway `APP_KEY`, and removes the generated file at process shutdown. An existing developer `.env` is never overwritten.
+
+**Security impact:** `.env` remains ignored by Git (`.env`, `.env.*`, with only `.env.example` allowed). No real secret is added to source control.
+
+**Regression:** `Tests\Unit\TestEnvironmentBootstrapTest` verifies the generated testing environment has a non-empty testing `APP_KEY` and verifies the repository continues to ignore `.env` while allowing `.env.example`.
+
+**Current status:** Fix and regression test are on `main`; fresh CI evidence is required.
+
+Next priority remains:
 
 ```text
 Fresh MySQL CI on current main
