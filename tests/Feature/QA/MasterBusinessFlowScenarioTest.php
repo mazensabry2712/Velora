@@ -60,6 +60,10 @@ final class MasterBusinessFlowScenarioTest extends TenantTestCase
             'notes' => 'Golden scenario',
         ]);
 
+        if ($response->status() !== 201) {
+            fwrite(STDERR, "Public booking response: {$response->getContent()}\n");
+        }
+
         $response->assertCreated()->assertJsonPath('success', true);
 
         $appointment = Appointment::query()->latest('id')->firstOrFail();
