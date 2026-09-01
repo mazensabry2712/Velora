@@ -12,10 +12,10 @@ Branch: main
 ## Current main head
 
 ```text
-SHA: cb16b9bf6e5b6c6802aa6fc0b1b969fc24fb7943
+SHA: 35773f9033d74dabca5f5fb42994375679fd1658
 ```
 
-This SHA contains the latest PHPUnit environment-bootstrap remediation and its documentation. Always verify `refs/heads/main` before continuing.
+This SHA contains the latest PHPUnit environment-bootstrap remediation and the updated QA handoff. Always verify `refs/heads/main` before continuing.
 
 ## Method in one line
 
@@ -93,7 +93,7 @@ PHPUnit environment regression test added
 
 ```
 
-## Latest completed Master QA evidence
+## Historical Master QA evidence
 
 Run **#120** tested commit `281268faf99337b2c9c62f3c9e679222268f76ee`:
 
@@ -132,7 +132,7 @@ Run #120 is historical evidence only. It does not certify the current `main` hea
 
 After pulling `main` with `.env` removed, the local `php artisan test` run showed widespread failures/warnings because many legacy tests directly read the physical `.env` file. The failing output included payment gateway tests, repository tests, admin tests, booking/journey tests, localization/geo tests, and health/design-system tests. HTTP tests then cascaded into `MissingAppKeyException`, and Symfony's error renderer eventually hit the PHP 128 MB memory limit while rendering the repeated exception payloads.
 
-The supplied log also shows that `.env` had been deleted by the security cleanup and that the local branch was successfully fast-forwarded to the QA changes. This was classified as **QA-TESTINFRA-002**, not as dozens of independent production defects.
+This was classified as **QA-TESTINFRA-002**, not as dozens of independent production defects.
 
 ## Remediation for QA-TESTINFRA-002
 
@@ -164,14 +164,14 @@ Security contract remains intact:
 .env.example     → committed template only
 ```
 
-The `.gitignore` already enforces this contract. The bootstrap is therefore a test-environment compatibility layer, not a return of secrets to source control.
+The `.gitignore` enforces this contract. The bootstrap is a test-environment compatibility layer, not a return of secrets to source control.
 
 ## Current CI requirement
 
 The current certification target is exactly:
 
 ```text
-cb16b9bf6e5b6c6802aa6fc0b1b969fc24fb7943
+35773f9033d74dabca5f5fb42994375679fd1658
 ```
 
 A fresh Master QA run and broader quality run must match that SHA before their results can be treated as current evidence. Until the relevant runs complete successfully, Velora remains **not certified**.
