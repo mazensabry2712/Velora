@@ -20,7 +20,19 @@ final class MoyasarCentralConnectionScenarioTest extends TenantTestCase
     #[Test]
     public function activation_uses_the_central_subscription_connection_inside_tenant_context(): void
     {
-        $plan = SubscriptionPlan::query()->firstOrFail();
+        $plan = SubscriptionPlan::create([
+            'name' => 'QA Central Connection Plan',
+            'slug' => 'qa-central-connection-' . uniqid(),
+            'price' => 25.00,
+            'billing_cycle' => 'monthly',
+            'max_users' => 10,
+            'max_appointments' => 100,
+            'storage_limit' => 100,
+            'features' => [],
+            'is_active' => true,
+            'trial_days' => 0,
+        ]);
+
         $subscription = TenantSubscription::query()->create([
             'tenant_id' => $this->tenant->id,
             'subscription_plan_id' => $plan->id,
