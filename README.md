@@ -48,6 +48,8 @@ The `docs/` directory is the engineering source of truth for project readiness a
 | `docs/SECURITY_TENANCY_AUDIT.md` | Tenant isolation, authorization and security audit checklist. |
 | `docs/BILLING_HARDENING.md` | Billing/webhook/subscription hardening plan. |
 | `docs/TESTING_QA_PLAN.md` | Automated testing, security testing and release QA plan. |
+| `docs/MASTER_QA_EXECUTION_RUNBOOK.md` | Exact Master QA execution method, evidence rules, handoff procedure and continuation order. |
+| `docs/QA_FINDINGS_LOG.md` | Defect-by-defect findings, root causes, fixes and regression guards discovered by Master QA. |
 | `docs/PRODUCTION_CHECKLIST.md` | Final go/no-go production checklist. |
 | `docs/CHANGELOG_IMPLEMENTATION.md` | Living record of important implementation work. |
 
@@ -73,31 +75,35 @@ Run tests:
 php artisan test
 ```
 
+Run the Master QA scenarios against the canonical MySQL CI environment:
+
+```bash
+php artisan test tests/Feature/QA --compact
+```
+
 Build frontend assets:
 
 ```bash
 npm run build
 ```
 
-## Production Readiness
+## QA Continuation Rule
 
-Velora has a strong core SaaS implementation, but a production launch must not be considered complete until the P0/P1 items in the documentation are verified.
+Master QA follows a strict cycle:
 
-The highest-risk areas are:
+```text
+inspect current main
+→ verify current CI evidence
+→ identify first confirmed discrepancy
+→ write/adjust regression test
+→ diagnose root cause
+→ apply minimal correct fix
+→ run focused regression
+→ run MySQL Master QA CI
+→ document finding/fix/status
+→ continue to next gate
+```
 
-1. Cross-tenant isolation.
-2. Resource-level authorization.
-3. Payment webhook correctness and idempotency.
-4. Public endpoint abuse protection.
-5. Storage quota enforcement.
-6. Production monitoring, backup and rollback readiness.
+Do not declare a feature family certified from test count alone. Certification requires business-flow correctness, database/reconciliation checks, security/authorization, concurrency where relevant, and fresh MySQL CI evidence on the current `main` SHA.
 
-Read `docs/PRODUCTION_ROADMAP.md` first when continuing the project.
-
-## Engineering Rule
-
-Do not mark a feature complete because its happy path works. A feature is complete only when its authorization, tenant isolation, validation, failure behavior, concurrency behavior, automated tests and production operation are verified.
-
-## License
-
-This project is proprietary unless a separate license says otherwise.
+See `docs/MASTER_QA_EXECUTION_RUNBOOK.md` for the complete operational method.
