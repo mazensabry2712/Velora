@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
+use App\Models\Customer;
 use App\Models\Queue;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -74,10 +75,9 @@ class DashboardController extends Controller
             : ($thisWeekAppointments > 0 ? 100 : 0);
 
         $queueCount      = Queue::whereIn('status', ['waiting', 'serving'])->count();
-        $totalCustomers  = User::role('Customer')->count();
+        $totalCustomers  = Customer::count();
         $totalStaff      = User::role('Staff')->count();
-        $newCustomersThisWeek = User::role('Customer')
-            ->whereBetween('created_at', [$thisWeekStart, $thisWeekEnd])->count();
+        $newCustomersThisWeek = Customer::whereBetween('created_at', [$thisWeekStart, $thisWeekEnd])->count();
 
         $attendanceRate   = $totalToday > 0 ? round(($completedToday / $totalToday) * 100) : 0;
         $cancellationRate = $thisWeekAppointments > 0 ? round(($cancelledThisWeek / $thisWeekAppointments) * 100) : 0;
@@ -146,15 +146,14 @@ class DashboardController extends Controller
                 'rate'      => ($s->total_appointments ?? 0) > 0 ? round(($s->completed_appointments / $s->total_appointments) * 100) : 0,
             ]);
 
-        $recentCustomers = User::role('Customer')
-            ->withCount('appointments')
+        $recentCustomers = Customer::withCount('appointments')
             ->orderByDesc('created_at')
             ->limit(5)
             ->get()
             ->map(fn($c) => [
-                'name'               => $c->name,
+                'name'               => $c->full_name,
                 'email'              => $c->email,
-                'avatar'             => $c->avatar_url ?? null,
+                'avatar'             => $c->avatar ?? null,
                 'appointments_count' => $c->appointments_count,
                 'joined'             => $c->created_at->diffForHumans(),
             ]);
