@@ -16,7 +16,7 @@ use App\Domain\Booking\Contracts\AppointmentReader;
 use App\Domain\Customer\Contracts\CustomerReader;
 use App\Domain\Landing\Contracts\LandingSettingsReader;
 use App\Domain\Notifications\Contracts\WhatsAppProvider;
-use App\Domain\Pricing\CountryPriceSelector;
+use App\Domain\Pricing\Contracts\CountryPriceSelector;
 use App\Domain\Queue\Contracts\QueueReader;
 use App\Domain\Queue\Contracts\QueueRepository as DomainQueueRepository;
 use App\Domain\Queue\Events\QueueLifecycleNotificationRequested;
