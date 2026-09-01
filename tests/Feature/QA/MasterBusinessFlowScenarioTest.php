@@ -7,9 +7,11 @@ namespace Tests\Feature\QA;
 use App\Application\Booking\Actions\CreatePublicBooking;
 use App\Application\Booking\DTOs\PublicBookingData;
 use App\Models\Appointment;
+use App\Models\BusinessRule;
 use App\Models\Invoice;
 use App\Models\Queue;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TenantTestCase;
@@ -43,6 +45,25 @@ final class MasterBusinessFlowScenarioTest extends TenantTestCase
         RateLimiter::clear('public-booking:' . $this->tenant->getTenantKey() . ':' . $this->app->make('request')->ip());
 
         return [$date, $timezone];
+    }
+
+    #[Test]
+    public function business_rule_schema_matches_the_contract_used_by_the_booking_engine(): void
+    {
+        foreach (['key', 'value', 'type', 'description', 'is_active'] as $column) {
+            $this->assertTrue(
+                Schema::hasColumn('business_rules', $column),
+                "business_rules.{$column} must exist for BusinessRule::getValue()."
+            );
+        }
+
+        BusinessRule::setValue(
+            BusinessRule::MIN_ADVANCE_BOOKING_HOURS,
+            2,
+            'integer',
+        );
+
+        $this->assertSame(2, BusinessRule::getValue(BusinessRule::MIN_ADVANCE_BOOKING_HOURS));
     }
 
     #[Test]
