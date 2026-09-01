@@ -12,10 +12,10 @@ Branch: main
 ## Current main head
 
 ```text
-SHA: e5eed0bec3b4e4b9721f9fcb156c14627fb7612d
+SHA: 7d461ea8e95809fb2c601ea1eb1d68f5c56e3078
 ```
 
-This SHA is the current `main` head after the QA remediation/cleanup commits. Always verify `refs/heads/main` before continuing.
+This SHA contains the latest PHPUnit environment-bootstrap remediation. Always verify `refs/heads/main` before continuing.
 
 ## Method in one line
 
@@ -37,6 +37,7 @@ Inspect current main → check current CI → classify the first confirmed discr
 10. Never overwrite documentation from memory and lose older findings.
 11. Distinguish production defects from test-fixture/test-infrastructure defects; fix the smallest correct layer.
 12. Never assume a commit mentioned in conversation is on `main`; verify the actual `refs/heads/main` SHA.
+13. Keep real `.env` secrets out of Git. Local/CI tests must bootstrap safely without requiring a committed `.env`.
 
 ## What the QA program is proving
 
@@ -77,16 +78,18 @@ Notification lifecycle/recovery basics
 Moyasar webhook fail-closed authentication
 Moyasar payment verification/retry scenarios
 Moyasar central-connection activation
-Tenant test transaction connection safety (remediation added; fresh CI pending)
-Tenant token/resource isolation tests (fresh CI pending)
+Tenant test transaction connection safety
+Tenant token/resource isolation tests
 Super Admin tenant/subscription reconciliation tests
 Reporting customer-source reconciliation
-Tenant deletion safety tests (remediation added; fresh CI pending)
+Tenant deletion safety tests
 Service/Staff/Settings authorization hardening
 Expanded authorization tests
-Onboarding mutation authorization hardening (remediation added; fresh CI pending)
+Onboarding mutation authorization hardening
 Stripe central-connection hardening
 QA suite cleanup: temporary marker/placeholder files removed
+PHPUnit temporary .env bootstrap remediation added
+PHPUnit environment regression test added
 
 ```
 
@@ -125,36 +128,53 @@ Run #120 is historical evidence only. It does not certify the current `main` hea
    → secondary leak from the teardown defect
 ```
 
-## Remediation added after Run #120
+## Latest local full-suite evidence supplied by the developer
+
+After pulling `main` with `.env` removed, the local `php artisan test` run showed widespread failures/warnings because many legacy tests directly read the physical `.env` file. The failing output included payment gateway tests, repository tests, admin tests, booking/journey tests, localization/geo tests, and health/design-system tests. HTTP tests then cascaded into `MissingAppKeyException`, and Symfony's error renderer eventually hit the PHP 128 MB memory limit while rendering the repeated exception payloads.
+
+This was classified as **QA-TESTINFRA-002**, not as dozens of independent production defects.
+
+## Remediation for QA-TESTINFRA-002
 
 ```text
-TenantTestCase
-→ concrete tenant/central Connection rollback
+phpunit.xml
+→ bootstrap changed from vendor/autoload.php to tests/bootstrap.php
 
-OnboardingController
-→ Admin Tenant-only mutation guard
+tests/bootstrap.php
+→ if .env exists: preserve it
+→ if .env is missing: copy .env.example into a temporary .env
+→ force APP_ENV=testing
+→ inject a throwaway random APP_KEY
+→ force a localhost APP_URL for the temporary environment
+→ require Composer autoload
+→ remove only the generated .env on process shutdown
 
-MoyasarCentralConnectionScenarioTest
-→ self-contained valid SubscriptionPlan fixture
-
-PermanentlyDeleteExpiredTenants
-→ explicit central connection for Tenant lookup
-
-QA suite
-→ temporary placeholder/marker files removed
+tests/Unit/TestEnvironmentBootstrapTest.php
+→ verifies physical .env exists during PHPUnit execution
+→ verifies APP_ENV=testing
+→ verifies a non-empty generated APP_KEY
+→ verifies .env remains ignored while .env.example remains allowed
 ```
 
-Full remediation details are preserved in `docs/QA_RUN_120_POSTMORTEM.md` and `docs/QA_FINDINGS_LOG.md`.
+Security contract remains intact:
+
+```text
+.env             → never committed
+.env.*           → ignored
+.env.example     → committed template only
+```
+
+The `.gitignore` already enforces this contract. The bootstrap is therefore a test-environment compatibility layer, not a return of secrets to source control.
 
 ## Current CI requirement
 
-The current certification target is the exact `main` SHA above:
+The current certification target is exactly:
 
 ```text
-e5eed0bec3b4e4b9721f9fcb156c14627fb7612d
+7d461ea8e95809fb2c601ea1eb1d68f5c56e3078
 ```
 
-The latest Master QA run for that head is still executing. Until it completes successfully, the repository remains **not certified**.
+A fresh Master QA run and broader quality run must match that SHA before their results can be treated as current evidence. Until the relevant runs complete successfully, Velora remains **not certified**.
 
 Canonical Master QA:
 
@@ -183,8 +203,9 @@ Do not add another browser framework. Existing browser tests include determinist
 ## Current next gate
 
 ```text
-Finish Master QA on current main
-→ close any remaining failures
+Fresh MySQL CI on current main
+→ validate QA-TESTINFRA-002 remediation
+→ close any remaining Master QA failures
 → Billing ↔ Subscription full reconciliation
 → Full tenant/resource authorization matrix
 → Super Admin financial/revenue reconciliation
