@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Appointment;
+use App\Models\Customer;
 use App\Models\Queue;
 use App\Models\User;
 use Carbon\Carbon;
@@ -77,7 +78,7 @@ class ReportService
             'total_appointments'     => $this->scopeToRange(Appointment::query(), $start, $end)->count(),
             'confirmed_appointments' => $this->scopeToRange(Appointment::where('status', 'confirmed'), $start, $end)->count(),
             'pending_appointments'   => $this->scopeToRange(Appointment::where('status', 'pending'), $start, $end)->count(),
-            'total_customers'        => User::role('Customer')->count(),
+            'total_customers'        => Customer::count(),
         ];
     }
 
