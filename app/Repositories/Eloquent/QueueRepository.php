@@ -9,6 +9,7 @@ use App\Models\Queue;
 use App\Repositories\Contracts\QueueRepositoryInterface;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 
 final class QueueRepository implements QueueRepositoryInterface, QueueRepositoryContract
 {
@@ -57,16 +58,21 @@ final class QueueRepository implements QueueRepositoryInterface, QueueRepository
 
     public function callNext(): ?Queue
     {
-        $next = Queue::where('status', 'waiting')
-            ->orderByDesc('is_vip')
-            ->orderBy('id')
-            ->first();
+        return DB::transaction(function (): ?Queue {
+            $next = Queue::where('status', 'waiting')
+                ->orderByDesc('is_vip')
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->first();
 
-        if ($next) {
+            if (! $next) {
+                return null;
+            }
+
             $next->update(['status' => 'serving']);
-        }
 
-        return $next;
+            return $next->refresh();
+        });
     }
 
     public function getDailyStats(string $date): array
