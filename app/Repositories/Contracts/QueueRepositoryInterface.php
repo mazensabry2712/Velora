@@ -21,7 +21,7 @@ interface QueueRepositoryInterface
 
     public function delete(Queue $queue): bool;
 
-    public function callNext(): ?Queue;
+    public function callNext(?string $date = null): ?Queue;
 
     public function getDailyStats(string $date): array;
 
