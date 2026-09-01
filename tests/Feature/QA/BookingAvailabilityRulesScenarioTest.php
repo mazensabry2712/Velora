@@ -60,6 +60,16 @@ final class BookingAvailabilityRulesScenarioTest extends TenantTestCase
         );
     }
 
+    private function assertSlotUnavailableWithReason(callable $operation, string $reason): void
+    {
+        try {
+            $operation();
+            $this->fail("Expected SlotUnavailableException with reason [{$reason}].");
+        } catch (SlotUnavailableException $exception) {
+            $this->assertSame($reason, $exception->getMessage());
+        }
+    }
+
     #[Test]
     public function holiday_makes_the_staff_unavailable_even_when_working_hours_exist(): void
     {
@@ -72,8 +82,10 @@ final class BookingAvailabilityRulesScenarioTest extends TenantTestCase
             'applies_to_all' => true,
         ]);
 
-        $this->expectException(SlotUnavailableException::class);
-        app(CreatePublicBooking::class)->execute($this->data($date, '09:00'));
+        $this->assertSlotUnavailableWithReason(
+            fn () => app(CreatePublicBooking::class)->execute($this->data($date, '09:00')),
+            'holiday',
+        );
     }
 
     #[Test]
@@ -87,8 +99,10 @@ final class BookingAvailabilityRulesScenarioTest extends TenantTestCase
 
         $bookingTime = now($timezone)->addHours(2)->ceilHour()->format('H:i');
 
-        $this->expectException(SlotUnavailableException::class);
-        app(CreatePublicBooking::class)->execute($this->data($date, $bookingTime, 'same-day@example.com'));
+        $this->assertSlotUnavailableWithReason(
+            fn () => app(CreatePublicBooking::class)->execute($this->data($date, $bookingTime, 'same-day@example.com')),
+            'same_day_booking_not_allowed',
+        );
     }
 
     #[Test]
@@ -100,8 +114,10 @@ final class BookingAvailabilityRulesScenarioTest extends TenantTestCase
 
         BusinessRule::setValue(BusinessRule::MAX_ADVANCE_BOOKING_DAYS, 1, 'integer');
 
-        $this->expectException(SlotUnavailableException::class);
-        app(CreatePublicBooking::class)->execute($this->data($date, '09:00', 'advance-limit@example.com'));
+        $this->assertSlotUnavailableWithReason(
+            fn () => app(CreatePublicBooking::class)->execute($this->data($date, '09:00', 'advance-limit@example.com')),
+            'too_far_in_advance',
+        );
     }
 
     #[Test]
@@ -116,8 +132,10 @@ final class BookingAvailabilityRulesScenarioTest extends TenantTestCase
         $action = app(CreatePublicBooking::class);
         $first = $action->execute($this->data($date, '09:00', 'daily-limit@example.com'));
 
-        $this->expectException(SlotUnavailableException::class);
-        $action->execute($this->data($date, '10:00', 'daily-limit@example.com'));
+        $this->assertSlotUnavailableWithReason(
+            fn () => $action->execute($this->data($date, '10:00', 'daily-limit@example.com')),
+            'max_bookings_per_day_reached',
+        );
 
         $this->assertSame(
             1,
