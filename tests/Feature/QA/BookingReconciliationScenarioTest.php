@@ -44,8 +44,6 @@ final class BookingReconciliationScenarioTest extends TenantTestCase
 
         RateLimiter::clear('public-booking:' . $this->tenant->getTenantKey() . ':' . $this->app->make('request')->ip());
 
-        // Use the public HTTP boundary because notification delivery records are
-        // created by PublicBookingController after the booking application action.
         $response = $this->postJson('/api/appointments', [
             'customer_name' => 'QA Reconciliation Customer',
             'customer_email' => 'qa-reconciliation@example.com',
@@ -71,9 +69,6 @@ final class BookingReconciliationScenarioTest extends TenantTestCase
         $this->assertSame('waiting', $queue->status);
         $this->assertSame($beforeQueues + 1, Queue::whereIn('status', ['waiting', 'serving'])->count());
 
-        // Depending on the configured test queue driver, the confirmation job may
-        // execute immediately. The durable invariant is that the delivery exists,
-        // has the correct identity, was queued, and is not in a failed state.
         $this->assertSame($beforeNotifications + 1, NotificationDelivery::count());
         $delivery = NotificationDelivery::query()
             ->where('appointment_id', $appointment->id)
