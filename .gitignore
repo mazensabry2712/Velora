@@ -50,4 +50,5 @@ Thumbs.db
 
 # PHPUnit / Tenancy temporary SQLite databases
 database/tenant*
+database/testing_*.sqlite
 storage/tenanttest-tenant-*/
