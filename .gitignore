@@ -1,54 +1,53 @@
-# # Generated test/runtime artifacts
-# /out
-# playwright-report/
-# test-results/
-# phpinfo.txt
+# Generated test/runtime artifacts
+/out
+playwright-report/
+test-results/
+phpinfo.txt
 
-# # Local environment
-# .env
-# .env.*
-# !.env.example
+# Local environment
+.env
+.env.*
+!.env.example
 
-# # Existing application artifacts
-# *.log
-# .DS_Store
-# .phpactor.json
-# .phpunit.result.cache
-# /.fleet
-# /.idea
-# /.nova
-# /.phpunit.cache
-# /.vscode
-# /.zed
-# /auth.json
-# /node_modules
-# /public/build
-# /public/hot
-# /public/storage
-# /storage/*.key
-# /storage/pail
-# Homestead.json
-# Homestead.yaml
-# Thumbs.db
+# Existing application artifacts
+*.log
+.DS_Store
+.phpactor.json
+.phpunit.result.cache
+/.fleet
+/.idea
+/.nova
+/.phpunit.cache
+/.vscode
+/.zed
+/auth.json
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+Homestead.json
+Homestead.yaml
+Thumbs.db
 
-# # Development files - لا ترفع على السيرفر
-# /storage/app/*
-# !/storage/app/.gitignore
-# !/storage/app/public/
-# /storage/framework/cache/*
-# !/storage/framework/cache/.gitignore
-# /storage/framework/sessions/*
-# !/storage/framework/sessions/.gitignore
-# /storage/framework/views/*
-# !/storage/framework/views/.gitignore
-# /storage/logs/*
-# !/storage/logs/.gitignore
+# Development files - لا ترفع على السيرفر
+/storage/app/*
+!/storage/app/.gitignore
+!/storage/app/public/
+/storage/framework/cache/*
+!/storage/framework/cache/.gitignore
+/storage/framework/sessions/*
+!/storage/framework/sessions/.gitignore
+/storage/framework/views/*
+!/storage/framework/views/.gitignore
+/storage/logs/*
+!/storage/logs/.gitignore
 
-# # Bootstrap cache
-# /bootstrap/cache/*
-# !/bootstrap/cache/.gitignore
+# Bootstrap cache
+/bootstrap/cache/*
+!/bootstrap/cache/.gitignore
 
-# # PHPUnit / Tenancy temporary SQLite databases
-# database/tenant*
-# database/testing_*.sqlite
-# storage/tenanttest-tenant-*/
+# PHPUnit / Tenancy temporary SQLite databases
+database/tenant*
+storage/tenanttest-tenant-*/
