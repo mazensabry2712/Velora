@@ -77,27 +77,9 @@ final class QueueNotificationLifecycleScenarioTest extends TenantTestCase
             'is_vip' => false,
         ]);
 
-        $event = new QueueLifecycleNotificationRequested(
-            tenantId: (string) $this->tenant->getKey(),
-            queueId: $queue->id,
-            appointmentId: $appointment->id,
-            publicReference: (string) $appointment->public_reference,
-            event: 'queue.turn_now',
-            updateType: 'next',
-            queueNumber: (string) $queue->queue_number,
-            position: null,
-            oldPosition: 1,
-            customerType: 'user',
-            customerId: $this->customer->id,
-            customerName: $this->customer->name,
-            email: $this->customer->email,
-            phone: $this->customer->phone,
-            locale: 'ar',
-            eventId: 'qa-queue-event-001',
-        );
+        $event = $this->eventFor($appointment, $queue, 'qa-queue-event-001');
 
-        $listener = app(CreateQueueLifecycleNotificationDeliveries::class);
-        $listener->handle($event);
+        app(CreateQueueLifecycleNotificationDeliveries::class)->handle($event);
 
         $this->assertDatabaseHas('notification_deliveries', [
             'appointment_id' => $appointment->id,
@@ -124,5 +106,67 @@ final class QueueNotificationLifecycleScenarioTest extends TenantTestCase
         );
 
         QueueFake::assertPushed(SendQueueLifecycleNotification::class, 2);
+    }
+
+    #[Test]
+    public function repeated_lifecycle_event_is_idempotent_for_delivery_records(): void
+    {
+        QueueFake::fake();
+
+        $appointment = Appointment::create([
+            'customer_id' => $this->customer->id,
+            'staff_id' => $this->staffMember->id,
+            'service_id' => $this->service->id,
+            'date' => today()->toDateString(),
+            'time_slot' => '15:00',
+            'status' => Appointment::STATUS_CONFIRMED,
+            'price' => 100,
+        ]);
+
+        $queue = Queue::create([
+            'appointment_id' => $appointment->id,
+            'queue_number' => 'A032',
+            'queue_date' => today()->toDateString(),
+            'status' => 'serving',
+            'is_vip' => false,
+        ]);
+
+        $event = $this->eventFor($appointment, $queue, 'qa-queue-event-002');
+        $listener = app(CreateQueueLifecycleNotificationDeliveries::class);
+
+        $listener->handle($event);
+        $listener->handle($event);
+
+        $this->assertSame(
+            2,
+            NotificationDelivery::query()
+                ->where('appointment_id', $appointment->id)
+                ->where('event', 'queue.turn_now')
+                ->count(),
+        );
+
+        QueueFake::assertPushed(SendQueueLifecycleNotification::class, 2);
+    }
+
+    private function eventFor(Appointment $appointment, Queue $queue, string $eventId): QueueLifecycleNotificationRequested
+    {
+        return new QueueLifecycleNotificationRequested(
+            tenantId: (string) $this->tenant->getKey(),
+            queueId: $queue->id,
+            appointmentId: $appointment->id,
+            publicReference: (string) $appointment->public_reference,
+            event: 'queue.turn_now',
+            updateType: 'next',
+            queueNumber: (string) $queue->queue_number,
+            position: null,
+            oldPosition: 1,
+            customerType: 'user',
+            customerId: $this->customer->id,
+            customerName: $this->customer->name,
+            email: $this->customer->email,
+            phone: $this->customer->phone,
+            locale: 'ar',
+            eventId: $eventId,
+        );
     }
 }
