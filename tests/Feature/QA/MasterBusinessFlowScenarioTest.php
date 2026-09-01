@@ -207,10 +207,13 @@ final class MasterBusinessFlowScenarioTest extends TenantTestCase
         ]);
 
         $queue->update(['status' => 'serving']);
+        $this->assertSame('serving', $queue->fresh()->status);
         $this->assertSame(Appointment::STATUS_CONFIRMED, $appointment->fresh()->status);
 
-        $queue->update(['status' => 'completed']);
+        $appointment->update(['status' => Appointment::STATUS_COMPLETED]);
+
         $this->assertSame(Appointment::STATUS_COMPLETED, $appointment->fresh()->status);
+        $this->assertSame('completed', $queue->fresh()->status);
 
         $this->assertDatabaseHas('invoices', [
             'appointment_id' => $appointment->id,
