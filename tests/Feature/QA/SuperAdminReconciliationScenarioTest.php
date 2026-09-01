@@ -78,10 +78,7 @@ final class SuperAdminReconciliationScenarioTest extends TestCase
             $this->assertTrue($payload['success']);
             $stats = $payload['data'];
 
-            $this->assertSame(
-                Tenant::query()->count(),
-                $stats['total_tenants'],
-            );
+            $this->assertSame(Tenant::query()->count(), $stats['total_tenants']);
             $this->assertSame(
                 Tenant::query()->get()->filter(fn (Tenant $tenant): bool => $tenant->active)->count(),
                 $stats['active_tenants'],
@@ -99,6 +96,85 @@ final class SuperAdminReconciliationScenarioTest extends TestCase
             foreach ($tenantIds as $tenantId) {
                 $this->assertTrue($recentIds->contains($tenantId));
             }
+        } finally {
+            TenantSubscription::query()->whereIn('tenant_id', $tenantIds)->delete();
+            DB::table('tenants')->whereIn('id', $tenantIds)->delete();
+        }
+    }
+
+    #[Test]
+    public function subscription_statistics_reconcile_revenue_and_plan_counts_with_central_database(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $tenantIds = [
+            "qa-sub-stats-paid-{$suffix}",
+            "qa-sub-stats-trial-{$suffix}",
+        ];
+        $planId = SubscriptionPlan::query()->value('id');
+
+        $this->assertNotNull($planId, 'A subscription plan is required for the subscription statistics scenario.');
+
+        try {
+            DB::table('tenants')->insert([
+                [
+                    'id' => $tenantIds[0],
+                    'data' => json_encode(['name' => 'QA Billing Paid', 'active' => true], JSON_THROW_ON_ERROR),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+                [
+                    'id' => $tenantIds[1],
+                    'data' => json_encode(['name' => 'QA Billing Trial', 'active' => true], JSON_THROW_ON_ERROR),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+            ]);
+
+            TenantSubscription::query()->insert([
+                [
+                    'tenant_id' => $tenantIds[0],
+                    'subscription_plan_id' => $planId,
+                    'status' => 'active',
+                    'amount_paid' => 125.50,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+                [
+                    'tenant_id' => $tenantIds[1],
+                    'subscription_plan_id' => $planId,
+                    'status' => 'trial',
+                    'amount_paid' => 0,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+            ]);
+
+            $payload = app(DashboardController::class)->subscriptionStats()->getData(true);
+            $data = $payload['data'];
+
+            $this->assertTrue($payload['success']);
+            $this->assertSame(
+                (float) TenantSubscription::query()->where('status', 'active')->sum('amount_paid'),
+                (float) $data['total_revenue'],
+            );
+            $this->assertSame(
+                (float) TenantSubscription::query()->where('status', 'active')->whereMonth('created_at', now()->month)->sum('amount_paid'),
+                (float) $data['monthly_revenue'],
+            );
+            $this->assertSame(TenantSubscription::query()->count(), $data['total_subscriptions']);
+            $this->assertSame(TenantSubscription::query()->where('status', 'active')->count(), $data['active_subscriptions']);
+            $this->assertSame(TenantSubscription::query()->where('status', 'trial')->count(), $data['trial_subscriptions']);
+
+            $plan = collect($data['plans'])->firstWhere('id', $planId);
+            $this->assertNotNull($plan);
+            $this->assertSame(
+                TenantSubscription::query()->where('subscription_plan_id', $planId)->where('status', 'active')->count(),
+                (int) $plan['active_count'],
+            );
+            $this->assertSame(
+                TenantSubscription::query()->where('subscription_plan_id', $planId)->where('status', 'trial')->count(),
+                (int) $plan['trial_count'],
+            );
         } finally {
             TenantSubscription::query()->whereIn('tenant_id', $tenantIds)->delete();
             DB::table('tenants')->whereIn('id', $tenantIds)->delete();
