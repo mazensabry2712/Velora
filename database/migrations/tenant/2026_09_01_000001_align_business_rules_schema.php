@@ -44,6 +44,17 @@ return new class extends Migration
             if (! Schema::hasColumn('business_rules', 'is_active')) {
                 $table->boolean('is_active')->default(true)->index();
             }
+
+            // Legacy columns may still exist in older tenant databases. They
+            // must not block the current BusinessRule model from inserting a
+            // rule while preserving any existing data in those columns.
+            if (Schema::hasColumn('business_rules', 'name')) {
+                $table->string('name')->nullable()->change();
+            }
+
+            if (Schema::hasColumn('business_rules', 'conditions')) {
+                $table->text('conditions')->nullable()->change();
+            }
         });
     }
 
