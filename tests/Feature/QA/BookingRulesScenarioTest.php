@@ -6,11 +6,10 @@ namespace Tests\Feature\QA;
 
 use App\Application\Booking\Actions\CreatePublicBooking;
 use App\Application\Booking\DTOs\PublicBookingData;
-use App\Domain\Booking\Exceptions\BookingException;
+use App\Domain\Booking\Exceptions\SlotUnavailableException;
 use App\Models\Appointment;
 use App\Models\BusinessRule;
 use App\Models\Service;
-use Carbon\Carbon;
 use Illuminate\Validation\ValidationException;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
@@ -73,7 +72,7 @@ final class BookingRulesScenarioTest extends TenantTestCase
             'is_online_bookable' => false,
         ]);
 
-        $this->expectException(ValidationException::class);
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
 
         app(CreatePublicBooking::class)->execute($this->bookingData($date->toDateString(), '09:00', $inactive->id));
     }
@@ -118,7 +117,7 @@ final class BookingRulesScenarioTest extends TenantTestCase
     {
         [$date] = $this->prepareWorkingDay();
 
-        $this->expectException(BookingException::class);
+        $this->expectException(SlotUnavailableException::class);
 
         app(CreatePublicBooking::class)->execute($this->bookingData($date->toDateString(), '12:00'));
     }
@@ -131,20 +130,23 @@ final class BookingRulesScenarioTest extends TenantTestCase
         $action = app(CreatePublicBooking::class);
         $action->execute($this->bookingData($date->toDateString(), '09:00'));
 
-        $this->expectException(BookingException::class);
-
-        $action->execute(new PublicBookingData(
-            customerName: 'Second Booking Customer',
-            customerEmail: 'second-booking@example.com',
-            customerPhone: '+201000000021',
-            serviceId: $this->service->id,
-            staffUserId: $this->staffMember->id,
-            resourceId: null,
-            appointmentDate: $date->toDateString(),
-            appointmentTime: '09:00',
-            requestedTimezone: $timezone,
-            notes: null,
-        ));
+        try {
+            $action->execute(new PublicBookingData(
+                customerName: 'Second Booking Customer',
+                customerEmail: 'second-booking@example.com',
+                customerPhone: '+201000000021',
+                serviceId: $this->service->id,
+                staffUserId: $this->staffMember->id,
+                resourceId: null,
+                appointmentDate: $date->toDateString(),
+                appointmentTime: '09:00',
+                requestedTimezone: $timezone,
+                notes: null,
+            ));
+            $this->fail('Expected the occupied slot to be rejected.');
+        } catch (SlotUnavailableException $exception) {
+            $this->assertSame('slot_not_available', $exception->getMessage());
+        }
 
         $this->assertSame(1, Appointment::whereDate('date', $date->toDateString())->count());
     }
@@ -152,11 +154,11 @@ final class BookingRulesScenarioTest extends TenantTestCase
     #[Test]
     public function configured_minimum_advance_notice_is_enforced(): void
     {
-        [$date, $timezone] = $this->prepareWorkingDay();
+        [$date] = $this->prepareWorkingDay();
 
         BusinessRule::setValue(BusinessRule::MIN_ADVANCE_BOOKING_HOURS, 48, 'integer');
 
-        $this->expectException(BookingException::class);
+        $this->expectException(SlotUnavailableException::class);
 
         app(CreatePublicBooking::class)->execute($this->bookingData($date->toDateString(), '09:00'));
     }
