@@ -16,8 +16,8 @@ phpinfo.txt
 .phpunit.result.cache
 /.fleet
 /.idea
-/.phpunit.cache
 /.nova
+/.phpunit.cache
 /.vscode
 /.zed
 /auth.json
