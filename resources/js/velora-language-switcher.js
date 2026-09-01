@@ -1,8 +1,10 @@
 (() => {
     'use strict';
 
+    const selector = '.velora-inline-language-switcher, .velora-language-switcher';
+
     const closeAll = () => {
-        document.querySelectorAll('.velora-inline-language-switcher').forEach((wrapper) => {
+        document.querySelectorAll(selector).forEach((wrapper) => {
             const trigger = wrapper.querySelector('.velora-language-trigger');
             const menu = wrapper.querySelector('.velora-language-menu');
 
@@ -14,7 +16,7 @@
     };
 
     const bind = () => {
-        document.querySelectorAll('.velora-inline-language-switcher').forEach((wrapper) => {
+        document.querySelectorAll(selector).forEach((wrapper) => {
             if (wrapper.dataset.veloraLanguageBound === '1') return;
 
             const trigger = wrapper.querySelector('.velora-language-trigger');
