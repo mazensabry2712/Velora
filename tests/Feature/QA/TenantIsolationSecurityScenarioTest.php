@@ -18,18 +18,25 @@ use Tests\TenantTestCase;
 #[Group('security')]
 final class TenantIsolationSecurityScenarioTest extends TenantTestCase
 {
+    private function persistedTokenFor(string $name): PersonalAccessToken
+    {
+        return PersonalAccessToken::query()
+            ->where('tokenable_id', $this->admin->getKey())
+            ->where('name', $name)
+            ->latest('id')
+            ->firstOrFail();
+    }
+
     #[Test]
     public function token_scoped_to_current_tenant_is_accepted(): void
     {
-        $createdToken = $this->admin->createToken('qa-tenant-a', [
+        $this->admin->createToken('qa-tenant-a', [
             'tenant:' . $this->tenant->id,
         ]);
 
         $request = Request::create('/api/v1/appointments', 'GET');
         $request->setUserResolver(fn () => $this->admin);
-        $this->admin->withAccessToken(
-            PersonalAccessToken::findToken($createdToken->accessToken)
-        );
+        $this->admin->withAccessToken($this->persistedTokenFor('qa-tenant-a'));
 
         $response = app(EnsureTokenBelongsToTenant::class)->handle(
             $request,
@@ -43,10 +50,11 @@ final class TenantIsolationSecurityScenarioTest extends TenantTestCase
     #[Test]
     public function token_from_tenant_a_is_rejected_when_tenant_b_is_initialized(): void
     {
-        $createdToken = $this->admin->createToken('qa-tenant-a-isolation', [
+        $this->admin->createToken('qa-tenant-a-isolation', [
             'tenant:' . $this->tenant->id,
         ]);
-        $tenantAToken = PersonalAccessToken::findToken($createdToken->accessToken);
+
+        $tenantAToken = $this->persistedTokenFor('qa-tenant-a-isolation');
 
         $tenantB = Tenant::create([
             'id' => 'qa-isolation-' . uniqid(),
