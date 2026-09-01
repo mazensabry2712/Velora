@@ -170,6 +170,10 @@ final class PublicBookingController extends Controller
             Log::error('Public booking error', [
                 'tenant_id' => tenant()?->getTenantKey(),
                 'message' => $exception->getMessage(),
+                'exception' => get_class($exception),
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine(),
+                'trace' => app()->environment('testing') ? $exception->getTraceAsString() : null,
             ]);
             return response()->json(['success' => false, 'message' => __('An error occurred while booking the appointment')], 500);
         }
