@@ -1,0 +1,85 @@
+name: Velora Master QA
+
+on:
+  push:
+    branches: [main, qa/master-system-scenarios]
+  pull_request:
+    branches: [main]
+
+jobs:
+  master-qa:
+    name: Master business scenarios
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: velora_qa
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, dom, fileinfo, bcmath, curl, xml, zip, gd, intl, pdo, pdo_mysql
+          coverage: none
+          tools: composer:v2
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare application
+        env:
+          APP_ENV: testing
+          APP_DEBUG: true
+          CACHE_STORE: array
+          CACHE_DRIVER: array
+          QUEUE_CONNECTION: sync
+          SESSION_DRIVER: array
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: velora_qa
+          DB_USERNAME: root
+          DB_PASSWORD: root
+          TENANCY_CENTRAL_CONNECTION: mysql
+          APP_URL: http://velora.test
+          APP_DOMAIN: velora.test
+          APP_BASE_DOMAIN: velora.test
+        run: |
+          cp .env.example .env
+          php artisan key:generate --ansi
+          php artisan optimize:clear
+          php artisan migrate --force
+
+      - name: Run master QA scenarios
+        env:
+          APP_ENV: testing
+          APP_DEBUG: true
+          CACHE_STORE: array
+          CACHE_DRIVER: array
+          QUEUE_CONNECTION: sync
+          SESSION_DRIVER: array
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: velora_qa
+          DB_USERNAME: root
+          DB_PASSWORD: root
+          TENANCY_CENTRAL_CONNECTION: mysql
+          APP_URL: http://velora.test
+          APP_DOMAIN: velora.test
+          APP_BASE_DOMAIN: velora.test
+        run: php artisan test tests/Feature/QA --compact
