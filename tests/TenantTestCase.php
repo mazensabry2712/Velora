@@ -45,6 +45,7 @@ abstract class TenantTestCase extends TestCase
     private static array $tenantDbPaths = [];
 
     private bool $centralTransactionStarted = false;
+    private ?string $tenantTransactionConnection = null;
 
     public static function tearDownAfterClass(): void
     {
@@ -94,6 +95,7 @@ abstract class TenantTestCase extends TestCase
 
             $this->tenant = Tenant::findOrFail(self::$tenantIds[$class]);
             tenancy()->initialize($this->tenant);
+            $this->tenantTransactionConnection = DB::getDefaultConnection();
         }
 
         $ids = self::$fixtureIds[$class];
@@ -106,14 +108,21 @@ abstract class TenantTestCase extends TestCase
         $this->customer = User::findOrFail($ids['customer']);
         $this->service = Service::findOrFail($ids['service']);
 
-        DB::beginTransaction();
+        if ($this->tenantTransactionConnection === null) {
+            $this->tenantTransactionConnection = DB::getDefaultConnection();
+        }
+
+        DB::connection($this->tenantTransactionConnection)->beginTransaction();
     }
 
     protected function tearDown(): void
     {
         try {
-            if (DB::transactionLevel() > 0) {
-                DB::rollBack();
+            if ($this->tenantTransactionConnection !== null) {
+                $tenantDb = DB::connection($this->tenantTransactionConnection);
+                if ($tenantDb->transactionLevel() > 0) {
+                    $tenantDb->rollBack();
+                }
             }
         } finally {
             tenancy()->end();
@@ -125,6 +134,8 @@ abstract class TenantTestCase extends TestCase
                 }
                 $this->centralTransactionStarted = false;
             }
+
+            $this->tenantTransactionConnection = null;
         }
 
         parent::tearDown();
@@ -160,6 +171,8 @@ abstract class TenantTestCase extends TestCase
         );
 
         tenancy()->initialize($this->tenant);
+        $this->tenantTransactionConnection = DB::getDefaultConnection();
+
         Artisan::call('tenants:migrate', [
             '--tenants' => [$this->tenant->id],
             '--force' => true,
