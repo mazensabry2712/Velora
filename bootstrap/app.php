@@ -6,6 +6,7 @@ use App\Http\Middleware\CheckSubscriptionLimits;
 use App\Http\Middleware\CheckSuperAdmin;
 use App\Http\Middleware\CheckTokenAbility;
 use App\Http\Middleware\DetectCountryAndLocale;
+use App\Http\Middleware\EnforceCentralLocale;
 use App\Http\Middleware\EnsureSubscriptionIsValid;
 use App\Http\Middleware\EnsureTokenBelongsToTenant;
 use App\Http\Middleware\InitializeTenancyByToken;
@@ -57,6 +58,7 @@ return (new ApplicationBuilder($app))
         $middleware->web(append: [
             SetLocale::class,
             RedirectLocale::class,
+            EnforceCentralLocale::class,
             SubstituteBindings::class,
         ]);
 
