@@ -36,6 +36,7 @@ final class MoyasarWebhookProcessingScenarioTest extends TestCase
         DB::table('subscription_plans')->insert([
             'id' => $planId,
             'name' => 'QA Monthly',
+            'slug' => 'qa-monthly',
             'billing_cycle' => 'monthly',
             'price' => 99,
             'created_at' => now(),
