@@ -14,12 +14,22 @@ class StripeService
         $this->stripe = new \Stripe\StripeClient(config('services.stripe.secret'));
     }
 
+    private function centralConnection(): string
+    {
+        return (string) config('tenancy.database.central_connection', config('database.default'));
+    }
+
+    private function centralDb()
+    {
+        return DB::connection($this->centralConnection());
+    }
+
     /**
      * Get or create a Stripe Customer for a tenant.
      */
     public function getOrCreateCustomer(string $tenantId, string $email, string $name): \Stripe\Customer
     {
-        $subscription = DB::table('tenant_subscriptions')
+        $subscription = $this->centralDb()->table('tenant_subscriptions')
             ->where('tenant_id', $tenantId)
             ->orderByDesc('created_at')
             ->first();
@@ -34,7 +44,7 @@ class StripeService
             'metadata' => ['tenant_id' => $tenantId],
         ]);
 
-        DB::table('tenant_subscriptions')
+        $this->centralDb()->table('tenant_subscriptions')
             ->where('tenant_id', $tenantId)
             ->update(['stripe_customer_id' => $customer->id]);
 
@@ -99,8 +109,10 @@ class StripeService
             return;
         }
 
+        $central = $this->centralDb();
+
         // Idempotency check
-        $existing = DB::table('tenant_subscriptions')
+        $existing = $central->table('tenant_subscriptions')
             ->where('tenant_id', $tenantId)
             ->where('last_webhook_event', $eventId)
             ->exists();
@@ -110,20 +122,20 @@ class StripeService
         }
 
         // Map Stripe price → local plan
-        $plan = DB::table('subscription_plans')
+        $plan = $central->table('subscription_plans')
             ->where('stripe_price_id', $priceId)
             ->first();
 
-        $billingCycle         = 'monthly';
-        $durationDays         = 30;
-        $planId               = $plan?->id ?? 1;
+        $billingCycle = 'monthly';
+        $durationDays = 30;
+        $planId = $plan?->id ?? 1;
 
         if ($plan) {
             $billingCycle = $plan->billing_cycle;
             $durationDays = $plan->billing_cycle === 'yearly' ? 365 : 30;
         }
 
-        DB::table('tenant_subscriptions')
+        $central->table('tenant_subscriptions')
             ->where('tenant_id', $tenantId)
             ->orderByDesc('created_at')
             ->limit(1)
@@ -154,7 +166,7 @@ class StripeService
         $tenantId = $stripeSubscription->metadata['tenant_id'] ?? null;
         if (!$tenantId) return;
 
-        DB::table('tenant_subscriptions')
+        $this->centralDb()->table('tenant_subscriptions')
             ->where('tenant_id', $tenantId)
             ->where('stripe_subscription_id', $stripeSubscription->id)
             ->update([
@@ -172,20 +184,21 @@ class StripeService
         $subscriptionId = $invoice->subscription;
         if (!$subscriptionId) return;
 
-        $sub = DB::table('tenant_subscriptions')
+        $central = $this->centralDb();
+        $sub = $central->table('tenant_subscriptions')
             ->where('stripe_subscription_id', $subscriptionId)
             ->first();
 
         if (!$sub) return;
 
-        $plan = DB::table('subscription_plans')->find($sub->subscription_plan_id);
+        $plan = $central->table('subscription_plans')->find($sub->subscription_plan_id);
         $durationDays = $plan?->billing_cycle === 'yearly' ? 365 : 30;
 
-        DB::table('tenant_subscriptions')
+        $central->table('tenant_subscriptions')
             ->where('id', $sub->id)
             ->update([
-                'status'   => 'active',
-                'ends_at'  => now()->addDays($durationDays),
+                'status'     => 'active',
+                'ends_at'    => now()->addDays($durationDays),
                 'updated_at' => now(),
             ]);
     }
