@@ -1,0 +1,246 @@
+name: tests
+
+# Why `github-token: ''` on every setup-php below: shivammathur/setup-php
+# auto-injects $GITHUB_TOKEN into ~/.composer/auth.json. GitHub's new
+# `ghs_<APPID>_<JWT>` token format contains dashes; composer's BaseIO regex
+# `[.A-Za-z0-9_]` rejects them (composer issue #12849, PR #12850 unmerged).
+# auth.json also wins over COMPOSER_AUTH env (composer #12084), so the only
+# reliable fix is to stop the injection at the source. Public package, no
+# GitHub auth needed for composer install.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4']
+        laravel: [9, 10, 11, 12, 13]
+        include:
+          # Laravel 9/10 are EOL for security fixes; all framework versions
+          # are flagged by Composer audit.
+          - laravel: 9
+            testbench: ^7.0
+            composer-flags: --no-audit
+          - laravel: 10
+            testbench: ^8.0
+            composer-flags: --no-audit
+          - laravel: 11
+            testbench: ^9.0
+            composer-flags: ''
+          - laravel: 12
+            testbench: ^10.0
+            composer-flags: ''
+          - laravel: 13
+            testbench: ^11.0
+            composer-flags: ''
+        exclude:
+          - php: '8.4'
+            laravel: 9
+          - php: '8.2'
+            laravel: 13
+
+    name: PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, intl
+          coverage: none
+          tools: composer:v2.8
+          github-token: ''  # see workflow header for rationale
+
+      - name: Cache composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ runner.os }}-php${{ matrix.php }}-laravel${{ matrix.laravel }}-${{ hashFiles('composer.json') }}
+          restore-keys: |
+            composer-${{ runner.os }}-php${{ matrix.php }}-laravel${{ matrix.laravel }}-
+            composer-${{ runner.os }}-php${{ matrix.php }}-
+
+      - name: Pin Laravel and Testbench versions
+        run: |
+          composer require "illuminate/support:^${{ matrix.laravel }}.0" --no-interaction --no-update
+          composer require --dev "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
+
+      - name: Install dependencies
+        run: composer update --prefer-dist --prefer-stable --no-interaction ${{ matrix.composer-flags }}
+
+      - name: Run tests
+        run: vendor/bin/phpunit --testsuite=Package
+
+  livewire-3:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # Livewire 3 supports Laravel 10-13. PHP-Range an die Hauptmatrix angeglichen.
+        php: ['8.2', '8.3', '8.4']
+        laravel: [10, 11, 12, 13]
+        include:
+          - laravel: 10
+            testbench: ^8.0
+            composer-flags: --no-audit
+          - laravel: 11
+            testbench: ^9.0
+            composer-flags: ''
+          - laravel: 12
+            testbench: ^10.0
+            composer-flags: ''
+          - laravel: 13
+            testbench: ^11.0
+            composer-flags: ''
+        exclude:
+          - php: '8.2'
+            laravel: 13
+
+    name: Livewire 3 / PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, intl
+          coverage: none
+          tools: composer:v2.8
+          github-token: ''  # see workflow header for rationale
+
+      - name: Cache composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-livewire3-${{ runner.os }}-php${{ matrix.php }}-laravel${{ matrix.laravel }}-${{ hashFiles('composer.json') }}
+          restore-keys: |
+            composer-livewire3-${{ runner.os }}-php${{ matrix.php }}-laravel${{ matrix.laravel }}-
+            composer-livewire3-${{ runner.os }}-php${{ matrix.php }}-
+
+      - name: Pin Laravel, Testbench and Livewire 3
+        run: |
+          composer require "illuminate/support:^${{ matrix.laravel }}.0" --no-interaction --no-update
+          composer require --dev "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
+          composer require --dev "livewire/livewire:^3.0" --no-interaction --no-update
+
+      - name: Install dependencies
+        run: composer update --prefer-dist --prefer-stable --no-interaction ${{ matrix.composer-flags }}
+
+      - name: Run Livewire 3 integration tests
+        run: vendor/bin/phpunit --testsuite=Livewire3
+
+  livewire-4:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # Livewire 4 supports Laravel 10-13 (same range as Livewire 3).
+        php: ['8.2', '8.3', '8.4']
+        laravel: [10, 11, 12, 13]
+        include:
+          - laravel: 10
+            testbench: ^8.0
+            composer-flags: --no-audit
+          - laravel: 11
+            testbench: ^9.0
+            composer-flags: ''
+          - laravel: 12
+            testbench: ^10.0
+            composer-flags: ''
+          - laravel: 13
+            testbench: ^11.0
+            composer-flags: ''
+        exclude:
+          - php: '8.2'
+            laravel: 13
+
+    name: Livewire 4 / PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, intl
+          coverage: none
+          tools: composer:v2.8
+          github-token: ''  # see workflow header for rationale
+
+      - name: Cache composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-livewire4-${{ runner.os }}-php${{ matrix.php }}-laravel${{ matrix.laravel }}-${{ hashFiles('composer.json') }}
+          restore-keys: |
+            composer-livewire4-${{ runner.os }}-php${{ matrix.php }}-laravel${{ matrix.laravel }}-
+            composer-livewire4-${{ runner.os }}-php${{ matrix.php }}-
+
+      - name: Pin Laravel, Testbench and Livewire 4
+        run: |
+          composer require "illuminate/support:^${{ matrix.laravel }}.0" --no-interaction --no-update
+          composer require --dev "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
+          composer require --dev "livewire/livewire:^4.0" --no-interaction --no-update
+
+      - name: Install dependencies
+        run: composer update --prefer-dist --prefer-stable --no-interaction ${{ matrix.composer-flags }}
+
+      - name: Run Livewire 4 integration tests
+        run: vendor/bin/phpunit --testsuite=Livewire4
+
+  pint:
+    runs-on: ubuntu-latest
+    name: Pint code style
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer:v2.8
+          github-token: ''  # see workflow header for rationale
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction
+
+      - name: Run Pint in check-only mode
+        run: vendor/bin/pint --test
+
+  phpstan:
+    runs-on: ubuntu-latest
+    name: PHPStan static analysis
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, intl
+          coverage: none
+          tools: composer:v2.8
+          github-token: ''  # see workflow header for rationale
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction
+
+      - name: Run PHPStan
+        run: vendor/bin/phpstan analyse --memory-limit=512M --no-progress

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit bootstrap="vendor/autoload.php" colors="true">
+    <testsuites>
+        <testsuite name="Package">
+            <directory>tests/Feature</directory>
+        </testsuite>
+        <testsuite name="Livewire3">
+            <directory>tests/Integration/Livewire3</directory>
+        </testsuite>
+        <testsuite name="Livewire4">
+            <directory>tests/Integration/Livewire4</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>

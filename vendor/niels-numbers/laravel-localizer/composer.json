@@ -1,0 +1,70 @@
+{
+    "name": "niels-numbers/laravel-localizer",
+    "description": "Detects the user’s preferred language and redirects to the matching localized URL.",
+    "keywords": [
+        "php",
+        "laravel",
+        "localization",
+        "locale",
+        "language",
+        "country",
+        "routes",
+        "routing",
+        "translation"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Dr. Adam Nielsen",
+            "email": "info@adam-nielsen.de"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/niels-numbers/laravel-localizer/issues",
+        "source": "https://github.com/niels-numbers/laravel-localizer"
+    },
+    "require": {
+        "php": "^8.2",
+        "codezero/browser-locale": "^3.0",
+        "illuminate/support": "^9.0 || ^10.0 || ^11.0 || ^12.0 || ^13.0"
+    },
+    "require-dev": {
+        "larastan/larastan": "^2.9 || ^3.0",
+        "laravel/pint": "^1.29",
+        "mockery/mockery": "^1.3.3",
+        "orchestra/testbench": "^7.0 || ^8.0 || ^9.0 || ^10.0 || ^11.0",
+        "phpunit/phpunit": "^9.6 || ^10.1 || ^11.0 || ^12.0 || ^13.0"
+    },
+    "suggest": {
+        "tighten/ziggy": "Use Ziggy v2+ as your client-side route helper. Bind \\Tighten\\Ziggy\\Ziggy::class to NielsNumbers\\LaravelLocalizer\\Routing\\LocalizerZiggyV2::class to make route() locale-aware in JS.",
+        "tightenco/ziggy": "Use Ziggy v1 as your client-side route helper. Bind \\Tightenco\\Ziggy\\BladeRouteGenerator::class to NielsNumbers\\LaravelLocalizer\\Routing\\LocalizerBladeRouteGeneratorV1::class to make route() locale-aware in JS."
+    },
+    "autoload": {
+        "psr-4": {
+            "NielsNumbers\\LaravelLocalizer\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "NielsNumbers\\LaravelLocalizer\\Tests\\": "tests"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "NielsNumbers\\LaravelLocalizer\\ServiceProvider"
+            ],
+            "aliases": {
+                "Localizer": "NielsNumbers\\LaravelLocalizer\\Facades\\Localizer"
+            }
+        }
+    },
+    "config": {
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "optimize-autoloader": true,
+        "audit": {
+            "block-insecure": false
+        }
+    }
+}
