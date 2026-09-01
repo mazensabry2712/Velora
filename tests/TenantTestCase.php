@@ -7,6 +7,7 @@ use App\Models\Service;
 use App\Models\Staff;
 use App\Models\Tenant;
 use App\Models\User;
+use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -45,7 +46,8 @@ abstract class TenantTestCase extends TestCase
     private static array $tenantDbPaths = [];
 
     private bool $centralTransactionStarted = false;
-    private ?string $tenantTransactionConnection = null;
+    private ?Connection $centralDatabaseConnection = null;
+    private ?Connection $tenantDatabaseConnection = null;
 
     public static function tearDownAfterClass(): void
     {
@@ -86,16 +88,17 @@ abstract class TenantTestCase extends TestCase
         } else {
             $this->beginCentralTransaction();
 
-            DB::table('tenants')->insert([
-                'id' => self::$tenantIds[$class],
-                'data' => json_encode(['name' => 'Test Clinic']),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            DB::connection(config('tenancy.database.central_connection', 'sqlite'))
+                ->table('tenants')
+                ->insert([
+                    'id' => self::$tenantIds[$class],
+                    'data' => json_encode(['name' => 'Test Clinic']),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
 
-            $this->tenant = Tenant::findOrFail(self::$tenantIds[$class]);
+            $this->tenant = Tenant::on($this->centralConnectionName())->findOrFail(self::$tenantIds[$class]);
             tenancy()->initialize($this->tenant);
-            $this->tenantTransactionConnection = DB::getDefaultConnection();
         }
 
         $ids = self::$fixtureIds[$class];
@@ -108,34 +111,28 @@ abstract class TenantTestCase extends TestCase
         $this->customer = User::findOrFail($ids['customer']);
         $this->service = Service::findOrFail($ids['service']);
 
-        if ($this->tenantTransactionConnection === null) {
-            $this->tenantTransactionConnection = DB::getDefaultConnection();
-        }
-
-        DB::connection($this->tenantTransactionConnection)->beginTransaction();
+        $this->tenantDatabaseConnection ??= DB::connection(DB::getDefaultConnection());
+        $this->tenantDatabaseConnection->beginTransaction();
     }
 
     protected function tearDown(): void
     {
         try {
-            if ($this->tenantTransactionConnection !== null) {
-                $tenantDb = DB::connection($this->tenantTransactionConnection);
-                if ($tenantDb->transactionLevel() > 0) {
-                    $tenantDb->rollBack();
-                }
+            if ($this->tenantDatabaseConnection?->transactionLevel() > 0) {
+                $this->tenantDatabaseConnection->rollBack();
             }
         } finally {
+            // Roll back using the connection object captured before tenancy
+            // teardown. Dynamic Stancl connections may be removed at end().
             tenancy()->end();
 
-            if ($this->centralTransactionStarted) {
-                $central = DB::connection(config('tenancy.database.central_connection', 'sqlite'));
-                if ($central->transactionLevel() > 0) {
-                    $central->rollBack();
-                }
-                $this->centralTransactionStarted = false;
+            if ($this->centralTransactionStarted && $this->centralDatabaseConnection?->transactionLevel() > 0) {
+                $this->centralDatabaseConnection->rollBack();
             }
 
-            $this->tenantTransactionConnection = null;
+            $this->centralTransactionStarted = false;
+            $this->tenantDatabaseConnection = null;
+            $this->centralDatabaseConnection = null;
         }
 
         parent::tearDown();
@@ -143,9 +140,14 @@ abstract class TenantTestCase extends TestCase
 
     private function beginCentralTransaction(): void
     {
-        $central = DB::connection(config('tenancy.database.central_connection', 'sqlite'));
-        $central->beginTransaction();
+        $this->centralDatabaseConnection = DB::connection($this->centralConnectionName());
+        $this->centralDatabaseConnection->beginTransaction();
         $this->centralTransactionStarted = true;
+    }
+
+    private function centralConnectionName(): string
+    {
+        return (string) config('tenancy.database.central_connection', config('database.default', 'sqlite'));
     }
 
     private function bootstrapTenantOnce(): void
@@ -153,14 +155,14 @@ abstract class TenantTestCase extends TestCase
         $class = static::class;
 
         Artisan::call('migrate', [
-            '--database' => config('tenancy.database.central_connection', 'sqlite'),
+            '--database' => $this->centralConnectionName(),
             '--path' => 'database/migrations',
             '--force' => true,
         ]);
 
         $this->beginCentralTransaction();
 
-        $this->tenant = Tenant::create([
+        $this->tenant = Tenant::on($this->centralConnectionName())->create([
             'id' => 'test-tenant-' . uniqid(),
             'name' => 'Test Clinic',
         ]);
@@ -171,7 +173,7 @@ abstract class TenantTestCase extends TestCase
         );
 
         tenancy()->initialize($this->tenant);
-        $this->tenantTransactionConnection = DB::getDefaultConnection();
+        $this->tenantDatabaseConnection = DB::connection(DB::getDefaultConnection());
 
         Artisan::call('tenants:migrate', [
             '--tenants' => [$this->tenant->id],
