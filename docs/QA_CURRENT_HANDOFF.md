@@ -12,10 +12,10 @@ Branch: main
 ## Current main head
 
 ```text
-SHA: 7d461ea8e95809fb2c601ea1eb1d68f5c56e3078
+SHA: cb16b9bf6e5b6c6802aa6fc0b1b969fc24fb7943
 ```
 
-This SHA contains the latest PHPUnit environment-bootstrap remediation. Always verify `refs/heads/main` before continuing.
+This SHA contains the latest PHPUnit environment-bootstrap remediation and its documentation. Always verify `refs/heads/main` before continuing.
 
 ## Method in one line
 
@@ -132,7 +132,7 @@ Run #120 is historical evidence only. It does not certify the current `main` hea
 
 After pulling `main` with `.env` removed, the local `php artisan test` run showed widespread failures/warnings because many legacy tests directly read the physical `.env` file. The failing output included payment gateway tests, repository tests, admin tests, booking/journey tests, localization/geo tests, and health/design-system tests. HTTP tests then cascaded into `MissingAppKeyException`, and Symfony's error renderer eventually hit the PHP 128 MB memory limit while rendering the repeated exception payloads.
 
-This was classified as **QA-TESTINFRA-002**, not as dozens of independent production defects.
+The supplied log also shows that `.env` had been deleted by the security cleanup and that the local branch was successfully fast-forwarded to the QA changes. This was classified as **QA-TESTINFRA-002**, not as dozens of independent production defects.
 
 ## Remediation for QA-TESTINFRA-002
 
@@ -171,7 +171,7 @@ The `.gitignore` already enforces this contract. The bootstrap is therefore a te
 The current certification target is exactly:
 
 ```text
-7d461ea8e95809fb2c601ea1eb1d68f5c56e3078
+cb16b9bf6e5b6c6802aa6fc0b1b969fc24fb7943
 ```
 
 A fresh Master QA run and broader quality run must match that SHA before their results can be treated as current evidence. Until the relevant runs complete successfully, Velora remains **not certified**.
@@ -209,7 +209,7 @@ Fresh MySQL CI on current main
 → Billing ↔ Subscription full reconciliation
 → Full tenant/resource authorization matrix
 → Super Admin financial/revenue reconciliation
-→ Reports / Excel export reconciliation
+→ Reporting/export reconciliation
 → Deletion / storage / DB cleanup certification
 → Deterministic Playwright browser journeys
 → Full regression
