@@ -9,7 +9,6 @@ use App\Domain\Queue\Contracts\QueueReader;
 use App\Models\Appointment;
 use App\Models\Queue;
 use App\Models\Tenant;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
@@ -63,7 +62,7 @@ final class TenantIsolationResourceScenarioTest extends TenantTestCase
             $queueReader = app(QueueReader::class);
 
             $this->assertNull($appointmentReader->find($tenantAAppointmentId));
-            $this->assertSame([], $queueReader->status($tenantAQueueNumber, $date)['queue'] ? ['unexpected'] : []);
+            $this->assertNull($queueReader->status($tenantAQueueNumber, $date)['queue']);
             $this->assertFalse(
                 $queueReader->forDate($date)->contains('queue_number', $tenantAQueueNumber),
             );
