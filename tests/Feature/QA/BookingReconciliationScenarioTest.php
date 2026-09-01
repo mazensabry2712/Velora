@@ -71,14 +71,20 @@ final class BookingReconciliationScenarioTest extends TenantTestCase
         $this->assertSame('waiting', $queue->status);
         $this->assertSame($beforeQueues + 1, Queue::whereIn('status', ['waiting', 'serving'])->count());
 
+        // Depending on the configured test queue driver, the confirmation job may
+        // execute immediately. The durable invariant is that the delivery exists,
+        // has the correct identity, was queued, and is not in a failed state.
         $this->assertSame($beforeNotifications + 1, NotificationDelivery::count());
-        $this->assertDatabaseHas('notification_deliveries', [
-            'appointment_id' => $appointment->id,
-            'event' => 'appointment.booked',
-            'channel' => 'email',
-            'public_reference' => $appointment->public_reference,
-            'status' => 'queued',
-        ]);
+        $delivery = NotificationDelivery::query()
+            ->where('appointment_id', $appointment->id)
+            ->where('event', 'appointment.booked')
+            ->where('channel', 'email')
+            ->where('public_reference', $appointment->public_reference)
+            ->first();
+
+        $this->assertNotNull($delivery);
+        $this->assertContains($delivery->status, ['queued', 'sending', 'sent']);
+        $this->assertNotNull($delivery->queued_at);
 
         $this->actingAs($this->admin);
         $dashboard = $this->get(route('admin.dashboard'));
