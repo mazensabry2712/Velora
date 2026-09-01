@@ -62,6 +62,18 @@ This log records defects discovered by the master QA program, the test that expo
 
 ---
 
+## Finding QA-CUSTOMER-001 — Tenant Dashboard counted the wrong customer entity
+
+**Area:** Tenant Dashboard / Customer module
+
+**Root cause:** Public booking creates the canonical `Customer` entity, while the Tenant Dashboard was counting and listing `User` records with the `Customer` role. This could make a newly booked customer appear in the Customer module but not in Dashboard customer metrics/recent customers.
+
+**Fix:** Dashboard customer count, new-customer count, and recent-customer projection now read from the canonical `Customer` model while preserving the existing view data contract.
+
+**Regression:** `CustomerReconciliationScenarioTest::booking_customer_is_counted_by_customer_api_and_tenant_dashboard()` creates a customer through real booking, verifies the appointment-to-customer relationship, verifies the Customer API, and reconciles the Dashboard customer and appointment counts against database truth.
+
+---
+
 ## Test Policy
 
 Every production defect discovered by Master QA must produce a regression test before the next feature family is accepted.
