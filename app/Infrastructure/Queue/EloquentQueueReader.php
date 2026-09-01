@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Infrastructure\Queue;
 
 use App\Domain\Queue\Contracts\QueueReader;
@@ -15,14 +13,19 @@ final class EloquentQueueReader implements QueueReader
     public function forDate(string $date, ?string $status = null): Collection
     {
         return Queue::query()
-            ->whereDate('created_at', $date)
+            ->where(function ($query) use ($date): void {
+                $query->whereDate('queue_date', $date)
+                    ->orWhere(function ($legacy) use ($date): void {
+                        $legacy->whereNull('queue_date')->whereDate('created_at', $date);
+                    });
+            })
             ->when($status, fn ($query) => $query->where('status', $status))
             ->with(['appointment.customer', 'appointment.staff'])
             ->orderByDesc('is_vip')
             ->orderBy('queue_number')
             ->get()
-            ->each(function (Queue $queue): void {
-                $queue->estimated_wait_time = $this->estimatedWaitTime($queue, (string) $queue->created_at?->toDateString());
+            ->each(function (Queue $queue) use ($date): void {
+                $queue->estimated_wait_time = $this->estimatedWaitTime($queue, $date);
             });
     }
 
@@ -41,7 +44,12 @@ final class EloquentQueueReader implements QueueReader
                 });
             })
             ->where('status', 'waiting')
-            ->whereDate('created_at', $date)
+            ->where(function ($query) use ($date): void {
+                $query->whereDate('queue_date', $date)
+                    ->orWhere(function ($legacy) use ($date): void {
+                        $legacy->whereNull('queue_date')->whereDate('created_at', $date);
+                    });
+            })
             ->with('appointment')
             ->first();
 
@@ -56,7 +64,12 @@ final class EloquentQueueReader implements QueueReader
 
         $position = Queue::query()
             ->where('status', 'waiting')
-            ->whereDate('created_at', $date)
+            ->where(function ($query) use ($date): void {
+                $query->whereDate('queue_date', $date)
+                    ->orWhere(function ($legacy) use ($date): void {
+                        $legacy->whereNull('queue_date')->whereDate('created_at', $date);
+                    });
+            })
             ->where(function ($query) use ($queue): void {
                 $query->where('is_vip', '>', $queue->is_vip)
                     ->orWhere(function ($q) use ($queue): void {
@@ -81,7 +94,12 @@ final class EloquentQueueReader implements QueueReader
     {
         $queue = Queue::query()
             ->where('queue_number', $queueNumber)
-            ->whereDate('created_at', $date)
+            ->where(function ($query) use ($date): void {
+                $query->whereDate('queue_date', $date)
+                    ->orWhere(function ($legacy) use ($date): void {
+                        $legacy->whereNull('queue_date')->whereDate('created_at', $date);
+                    });
+            })
             ->with('appointment.service', 'appointment.staff')
             ->first();
 
@@ -91,7 +109,12 @@ final class EloquentQueueReader implements QueueReader
 
         $peopleAhead = Queue::query()
             ->where('status', 'waiting')
-            ->whereDate('created_at', $date)
+            ->where(function ($query) use ($date): void {
+                $query->whereDate('queue_date', $date)
+                    ->orWhere(function ($legacy) use ($date): void {
+                        $legacy->whereNull('queue_date')->whereDate('created_at', $date);
+                    });
+            })
             ->where(function ($query) use ($queue): void {
                 $query->where('is_vip', '>', $queue->is_vip)
                     ->orWhere(function ($q) use ($queue): void {
@@ -103,7 +126,12 @@ final class EloquentQueueReader implements QueueReader
 
         $currentlyServing = Queue::query()
             ->where('status', 'serving')
-            ->whereDate('created_at', $date)
+            ->where(function ($query) use ($date): void {
+                $query->whereDate('queue_date', $date)
+                    ->orWhere(function ($legacy) use ($date): void {
+                        $legacy->whereNull('queue_date')->whereDate('created_at', $date);
+                    });
+            })
             ->first();
 
         return [
@@ -118,7 +146,12 @@ final class EloquentQueueReader implements QueueReader
     {
         $queuesAhead = Queue::query()
             ->where('status', 'waiting')
-            ->whereDate('created_at', $date)
+            ->where(function ($query) use ($date): void {
+                $query->whereDate('queue_date', $date)
+                    ->orWhere(function ($legacy) use ($date): void {
+                        $legacy->whereNull('queue_date')->whereDate('created_at', $date);
+                    });
+            })
             ->where(function ($query) use ($queue): void {
                 $query->where('is_vip', '>', $queue->is_vip)
                     ->orWhere(function ($q) use ($queue): void {
