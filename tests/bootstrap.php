@@ -9,6 +9,12 @@ declare(strict_types=1);
  * physical .env file directly, so when PHPUnit starts without a local .env we
  * create a temporary testing copy from .env.example, inject a throwaway APP_KEY,
  * and remove the generated file when the test process exits.
+ *
+ * SQLite uses a process-local file rather than :memory:. Laravel creates a new
+ * application/connection during the test lifecycle, while :memory: creates a
+ * fresh database per connection and breaks tenant/central test isolation.
+ * Each PHPUnit process gets its own file, which also keeps parallel processes
+ * isolated from one another.
  */
 
 $root = dirname(__DIR__);
@@ -42,12 +48,35 @@ if (! is_file($envPath)) {
     $createdEnv = true;
 }
 
+$testToken = getenv('TEST_TOKEN') ?: getenv('PARALLEL_PROCESS') ?: (string) getmypid();
+$testToken = preg_replace('/[^A-Za-z0-9_-]/', '_', $testToken) ?: (string) getmypid();
+$testDatabaseRelativePath = 'database' . DIRECTORY_SEPARATOR . 'testing_' . $testToken . '.sqlite';
+$testDatabasePath = $root . DIRECTORY_SEPARATOR . $testDatabaseRelativePath;
+
+if (! is_dir(dirname($testDatabasePath))) {
+    mkdir(dirname($testDatabasePath), 0775, true);
+}
+
+if (is_file($testDatabasePath)) {
+    @unlink($testDatabasePath);
+}
+
+if (file_put_contents($testDatabasePath, '') === false) {
+    throw new RuntimeException('Cannot bootstrap tests: failed to create the SQLite test database.');
+}
+
+putenv('DB_DATABASE=' . $testDatabaseRelativePath);
+$_ENV['DB_DATABASE'] = $testDatabaseRelativePath;
+$_SERVER['DB_DATABASE'] = $testDatabaseRelativePath;
+
 require $root . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php';
 
-if ($createdEnv) {
-    register_shutdown_function(static function () use ($envPath): void {
-        if (is_file($envPath)) {
-            @unlink($envPath);
-        }
-    });
-}
+register_shutdown_function(static function () use ($envPath, $createdEnv, $testDatabasePath): void {
+    if ($createdEnv && is_file($envPath)) {
+        @unlink($envPath);
+    }
+
+    if (is_file($testDatabasePath)) {
+        @unlink($testDatabasePath);
+    }
+});
