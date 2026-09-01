@@ -8,10 +8,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class UpgradeRequest extends Model
 {
     /**
-     * The connection name for the model.
-     * This model uses the central database (mysql) not tenant database
+     * Upgrade requests are central billing records.
+     * Resolve the connection from tenancy configuration so tests and
+     * deployments can use the configured central database consistently.
      */
-    protected $connection = 'mysql';
+    public function getConnectionName(): string
+    {
+        return config('tenancy.database.central_connection', parent::getConnectionName() ?? 'mysql');
+    }
 
     /**
      * The attributes that are mass assignable.
