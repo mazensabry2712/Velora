@@ -1,6 +1,6 @@
 # Velora QA Current Handoff
 
-**Purpose:** Snapshot for the next chat/session. This file is intentionally small and is updated when the QA execution state changes materially.
+**Purpose:** Snapshot for the next chat/session. This file is intentionally small and is updated whenever QA execution state changes materially. It must never claim a gate is closed unless the relevant evidence is present.
 
 ## Repository
 
@@ -12,31 +12,55 @@ Branch: main
 ## Current main head
 
 ```text
-SHA: 76058aa1367212fcf991346fcb386e465412339f
+SHA: c4e397232ac439bdd6caae8ea5832621e2486248
 ```
-
-This SHA includes the QA execution runbook link in `README.md` and the complete operational QA runbook in `docs/MASTER_QA_EXECUTION_RUNBOOK.md`.
 
 ## Method in one line
 
 ```text
-Inspect current main → check current CI → find first confirmed discrepancy → regression test → root-cause diagnosis → minimal fix → focused regression → MySQL Master QA → document finding/status → continue.
+Inspect current main → check current CI → classify the first confirmed discrepancy → regression test → root-cause diagnosis → minimal fix → focused regression → MySQL Master QA → document finding/status → continue.
 ```
 
 ## Non-negotiable rules
 
-1. All accepted work for this QA workstream goes to `main`.
+1. All accepted work for this QA workstream goes directly to `main`.
 2. Never claim a test passed unless its result was actually observed.
-3. Never claim certification while the relevant CI run is queued/in progress.
-4. MySQL 8.4 is the certification database. SQLite is not sufficient evidence for tenant, locking, billing, webhook, concurrency or certification gates.
-5. Every production defect requires a regression test.
-6. Do not weaken assertions to obtain green CI; correct the test only when its contract is demonstrably wrong.
+3. Never claim certification while the relevant CI run is queued or in progress.
+4. MySQL 8.4 + PHP 8.4 is the certification environment. SQLite is not sufficient evidence for tenant, locking, billing, webhook, concurrency or final certification gates.
+5. Every confirmed production defect requires a regression test.
+6. Do not weaken assertions to obtain green CI. Change an assertion only when the production contract proves that assertion is wrong.
 7. Do not add a package when native Laravel/PHP/project code is sufficient.
 8. Reconcile dashboards/reports against canonical database truth.
 9. Treat central and tenant databases as separate security/data boundaries.
 10. Never overwrite documentation from memory and lose older findings.
+11. Distinguish production defects from test-fixture/test-infrastructure defects; fix the smallest correct layer.
+12. Never assume a commit mentioned in conversation is on `main`; verify the actual `refs/heads/main` SHA.
 
-## Completed coverage / hardening already implemented
+## What the QA program is proving
+
+The target is system certification, not a large test count.
+
+```text
+UI / HTTP
+  ↓
+Application / Domain
+  ↓
+Database state
+  ↓
+Events / Jobs / Notifications
+  ↓
+Dependent projections/readers
+  ↓
+Tenant Dashboard / Reports / Super Admin
+  ↓
+Business invariants
+  ↓
+Security / authorization / concurrency
+```
+
+A scenario is accepted only when the same business fact remains consistent everywhere that depends on it.
+
+## Completed coverage / hardening implemented on the main line
 
 ```text
 Environment foundation
@@ -51,79 +75,148 @@ Notification lifecycle/recovery basics
 Moyasar webhook fail-closed authentication
 Moyasar payment verification/retry scenarios
 Moyasar central-connection activation
-Tenant test transaction connection safety
-Tenant token/resource isolation tests
+Tenant test transaction connection safety (fix in main; fresh CI pending)
+Tenant token/resource isolation tests (tests in main; fresh CI pending)
 Super Admin tenant/subscription reconciliation tests
 Reporting customer-source reconciliation
 Tenant deletion safety tests
 Service/Staff/Settings authorization hardening
 Expanded authorization tests
-Onboarding mutation authorization hardening
-Stripe central-connection hardening
+Onboarding mutation authorization hardening (production fix now in main; fresh CI pending)
+Stripe central-connection hardening (fix in main; fresh CI pending)
+
 ```
 
-## Latest CI evidence policy
+## Latest observed MySQL Master QA evidence
 
-The repository uses `.github/workflows/master-qa.yml` for the canonical Master QA suite and `.github/workflows/quality.yml` for broader quality checks. Both are driven from `main`; always match the run's `head_sha` to the current `main` SHA before treating its result as evidence.
-
-At the time this snapshot was written, the latest observed CI for the preceding billing commit was still running/queued, and therefore the repository was **not certified**. The next chat must fetch fresh results for SHA `76058aa1367212fcf991346fcb386e465412339f` or a newer `main` head before making any certification claim.
-
-## Last confirmed important CI failure batch
-
-A previous Master QA run reported 42 passing tests and 4 failures. The failures were diagnosed as test/projection/test-infrastructure contract issues and corrected:
+The authoritative recent Master QA run was **Run #120** on commit:
 
 ```text
-BookingReconciliation projection assertion mismatch
-Moyasar fixture missing subscription_plans.slug
-Tenant isolation test used incorrect Sanctum token setup
-Tenant test connection/rollback leakage
+281268faf99337b2c9c62f3c9e679222268f76ee
 ```
 
-Those fixes were followed by additional hardening and must still receive fresh CI evidence on the current head.
+Result:
+
+```text
+53 passed
+6 failed
+240 assertions
+```
+
+Important: this run is evidence for commit `281268f`, not for newer commits. The failures were:
+
+```text
+1. AuthorizationMatrixExpandedScenarioTest
+   Staff/Assistant onboarding mutation expected 403, received 200.
+   Classification: confirmed production authorization gap.
+
+2. MoyasarCentralConnectionScenarioTest
+   No SubscriptionPlan fixture existed in a clean central DB.
+   Classification: QA fixture issue, not a Moyasar business failure.
+
+3. TenantDeletionSafetyScenarioTest
+   Successful cleanup assertion still found the subscription.
+   Classification: requires production/connection-path verification.
+
+4. TenantIsolationResourceScenarioTest
+   Dynamic connection [tenant] no longer existed during test teardown.
+   Classification: test infrastructure / tenancy teardown issue.
+
+5. TenantIsolationSecurityScenarioTest
+   Dynamic connection [tenant] no longer existed during test teardown.
+   Classification: test infrastructure / tenancy teardown issue; same root family as #4.
+
+6. Shared tenant fixture duplication
+   A later tenant test attempted to recreate `test-tenant-*` already left behind.
+   Classification: test infrastructure leakage caused by the teardown problem.
+```
+
+## Fixes added after Run #120
+
+```text
+TenantTestCase
+→ captures the concrete tenant + central Connection objects
+→ rolls back using those objects before dynamic tenancy is ended
+→ avoids reopening a deleted `tenant` connection during tearDown
+
+OnboardingController
+→ Admin Tenant guard added to saveStep1/saveStep2/saveStep3/complete
+
+MoyasarCentralConnectionScenarioTest
+→ creates its own valid SubscriptionPlan fixture instead of assuming a seeder ran
+
+PermanentlyDeleteExpiredTenants
+→ resolves Tenant records explicitly through the configured central connection
+```
+
+These changes are now on `main`, but they are **not certified yet**. The next CI run must match the current `main` SHA `c4e397232ac439bdd6caae8ea5832621e2486248`.
+
+## CI configuration
+
+Canonical Master QA:
+
+```text
+.github/workflows/master-qa.yml
+DB_CONNECTION=mysql
+TENANCY_CENTRAL_CONNECTION=mysql
+MySQL 8.4
+PHP 8.4
+php artisan migrate --force
+php artisan test tests/Feature/QA --compact
+```
+
+The general quality workflow also exists, but its full PHPUnit step currently uses SQLite for speed. It is useful for broad quality checks, but it is not enough by itself for tenant/locking/billing/concurrency certification.
 
 ## Current next gate
 
 ```text
-Fresh CI on current main
-→ Billing ↔ Subscription reconciliation
-→ Full resource authorization matrix
-→ Tenant isolation matrix for sensitive IDs
+Fresh MySQL CI on current main
+→ close/verify the six Run #120 failures
+→ Billing ↔ Subscription full reconciliation
+→ Full tenant/resource authorization matrix
 → Super Admin financial/revenue reconciliation
-→ Reporting / Excel export reconciliation
-→ Deletion / storage/database cleanup certification
+→ Reports / Excel export reconciliation
+→ Deletion / storage / DB cleanup certification
 → Playwright browser journeys
 → Full regression
 → Production go/no-go certification
 ```
 
-## Key current findings
+## E2E status
 
-- `QA-BOOK-001`: legacy public booking response generated a route incorrectly.
-- `QA-SCHEMA-001`: `business_rules` schema drift.
-- `QA-SCHEMA-002`: appointment status history schema drift.
-- `QA-QUEUE-001`: queue business date incorrectly used `created_at`.
-- `QA-CUSTOMER-001`: dashboard customer metric used a different customer entity.
-- `QA-NOTIF-001`: test depended on a transient notification queue state.
-- `QA-BILLING-001`: Moyasar webhook authentication was fail-open when secret was missing.
-- `QA-TESTINFRA-001`: tenant test rollback could target the wrong connection after tenancy changes.
-- `QA-ISOLATION-001`: isolation test used the wrong Sanctum access-token object.
-- `QA-SUPERADMIN-001`: active-tenant reconciliation initially disagreed with the Tenant accessor contract.
-- `QA-REPORT-001`: reporting customer metric used a different source than the canonical Customer model.
-- `QA-DELETION-001`: tenant purge hardcoded the central connection.
-- `QA-AUTH-001`: Staff/Assistant could reach administrative configuration mutations.
-- `QA-BILLING-002`: Moyasar subscription activation could use the default DB connection.
-- `QA-AUTH-ONBOARDING-001`: onboarding mutations could be reached by Staff/Assistant even though onboarding changes tenant configuration and creates/activates core business records.
+Playwright is already installed and configured in the repository; do not add another browser framework.
+
+Existing browser specs:
+
+```text
+tests/browser/booking.spec.js
+tests/browser/queue.spec.js
+playwright.config.js
+```
+
+Current Playwright configuration supports:
+
+```text
+PLAYWRIGHT_BASE_URL override
+Chromium desktop
+Chromium mobile
+trace on failure
+screenshots on failure
+video on failure
+```
+
+The existing booking suite contains deterministic mocked scenarios as well as real availability checks. A full browser CI gate should be added only after the test environment has a deterministic tenant/database bootstrap; do not create a fake browser gate that can pass without exercising the application.
 
 ## Documentation map
 
 ```text
 README.md
   ↓
-docs/MASTER_QA_EXECUTION_RUNBOOK.md   ← how to work
+docs/MASTER_QA_EXECUTION_RUNBOOK.md   ← operational method
   ↓
-docs/QA_FINDINGS_LOG.md              ← defect history
+docs/QA_FINDINGS_LOG.md              ← defect/fix/regression history
   ↓
-docs/QA_CURRENT_HANDOFF.md           ← current session snapshot
+docs/QA_CURRENT_HANDOFF.md           ← current main/checkpoint
 ```
 
-The runbook is the operational source of truth. This file is the short current-state checkpoint.
+The runbook explains **how** to continue. This handoff explains **where** to continue. The findings log explains **what went wrong and why**.
