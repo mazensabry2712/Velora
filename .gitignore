@@ -1,8 +1,17 @@
+# Generated test/runtime artifacts
+/out
+playwright-report/
+test-results/
+phpinfo.txt
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Existing application artifacts
 *.log
 .DS_Store
-# .env
-.env.backup
-.env.production
 .phpactor.json
 .phpunit.result.cache
 /.fleet
@@ -18,24 +27,11 @@
 /public/storage
 /storage/*.key
 /storage/pail
-/vendor
 Homestead.json
 Homestead.yaml
 Thumbs.db
 
 # Development files - لا ترفع على السيرفر
-/out
-# /lang
-*.php~
-cookies.txt
-test_*.php
-check_*.php
-fix_*.php
-seed_*.php
-update_*.php
-add_*.php
-
-# Storage folders - تأكد من وجود المجلدات فقط
 /storage/app/*
 !/storage/app/.gitignore
 !/storage/app/public/

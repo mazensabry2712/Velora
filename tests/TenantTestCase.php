@@ -16,9 +16,9 @@ use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 /**
  * Base test case for all tenant-scoped tests.
  *
- * Migrations run ONCE per class (not per test) to avoid memory exhaustion.
- * Each test runs inside a DB transaction that is rolled back in tearDown
- * so tests remain isolated without repeating the expensive migrate runs.
+ * Migrations run ONCE per test class (not globally across all subclasses) to
+ * avoid cross-class fixture leakage. Each test runs inside tenant + central
+ * DB transactions that are rolled back in tearDown.
  */
 abstract class TenantTestCase extends TestCase
 {
@@ -32,26 +32,35 @@ abstract class TenantTestCase extends TestCase
     protected Role    $staffRole;
     protected Role    $customerRole;
 
-    private static bool $migrationsDone = false;
-    private static ?string $tenantId = null;
-    private static ?array $fixtureIds = null;
-    private static ?string $tenantDbPath = null;
+    /** @var array<class-string, bool> */
+    private static array $migrationsDone = [];
 
-    public static function setUpBeforeClass(): void
-    {
-        parent::setUpBeforeClass();
+    /** @var array<class-string, string> */
+    private static array $tenantIds = [];
 
-        self::$migrationsDone = false;
-        self::$tenantId = null;
-        self::$fixtureIds = null;
-        self::$tenantDbPath = null;
-    }
+    /** @var array<class-string, array<string, int|string>> */
+    private static array $fixtureIds = [];
+
+    /** @var array<class-string, string> */
+    private static array $tenantDbPaths = [];
+
+    private bool $centralTransactionStarted = false;
 
     public static function tearDownAfterClass(): void
     {
-        if (self::$tenantDbPath !== null && file_exists(self::$tenantDbPath)) {
-            @unlink(self::$tenantDbPath);
+        $class = static::class;
+        $tenantDbPath = self::$tenantDbPaths[$class] ?? null;
+
+        if ($tenantDbPath !== null && file_exists($tenantDbPath)) {
+            @unlink($tenantDbPath);
         }
+
+        unset(
+            self::$migrationsDone[$class],
+            self::$tenantIds[$class],
+            self::$fixtureIds[$class],
+            self::$tenantDbPaths[$class],
+        );
 
         parent::tearDownAfterClass();
     }
@@ -69,27 +78,25 @@ abstract class TenantTestCase extends TestCase
             \App\Http\Middleware\RedirectIfOnboardingIncomplete::class,
         ]);
 
-        if (!self::$migrationsDone) {
+        $class = static::class;
+
+        if (! (self::$migrationsDone[$class] ?? false)) {
             $this->bootstrapTenantOnce();
         } else {
-            Artisan::call('migrate', [
-                '--database' => config('tenancy.database.central_connection', 'sqlite'),
-                '--path' => 'database/migrations',
-                '--force' => true,
-            ]);
+            $this->beginCentralTransaction();
 
             DB::table('tenants')->insert([
-                'id' => self::$tenantId,
+                'id' => self::$tenantIds[$class],
                 'data' => json_encode(['name' => 'Test Clinic']),
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
 
-            $this->tenant = Tenant::find(self::$tenantId);
+            $this->tenant = Tenant::findOrFail(self::$tenantIds[$class]);
             tenancy()->initialize($this->tenant);
         }
 
-        $ids = self::$fixtureIds;
+        $ids = self::$fixtureIds[$class];
         $this->adminRole = Role::findOrFail($ids['adminRole']);
         $this->staffRole = Role::findOrFail($ids['staffRole']);
         $this->customerRole = Role::findOrFail($ids['customerRole']);
@@ -104,27 +111,52 @@ abstract class TenantTestCase extends TestCase
 
     protected function tearDown(): void
     {
-        DB::rollBack();
-        tenancy()->end();
+        try {
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+        } finally {
+            tenancy()->end();
+
+            if ($this->centralTransactionStarted) {
+                $central = DB::connection(config('tenancy.database.central_connection', 'sqlite'));
+                if ($central->transactionLevel() > 0) {
+                    $central->rollBack();
+                }
+                $this->centralTransactionStarted = false;
+            }
+        }
+
         parent::tearDown();
+    }
+
+    private function beginCentralTransaction(): void
+    {
+        $central = DB::connection(config('tenancy.database.central_connection', 'sqlite'));
+        $central->beginTransaction();
+        $this->centralTransactionStarted = true;
     }
 
     private function bootstrapTenantOnce(): void
     {
+        $class = static::class;
+
         Artisan::call('migrate', [
             '--database' => config('tenancy.database.central_connection', 'sqlite'),
             '--path' => 'database/migrations',
             '--force' => true,
         ]);
 
+        $this->beginCentralTransaction();
+
         $this->tenant = Tenant::create([
             'id' => 'test-tenant-' . uniqid(),
             'name' => 'Test Clinic',
         ]);
 
-        self::$tenantId = $this->tenant->id;
-        self::$tenantDbPath = database_path(
-            config('tenancy.database.prefix', 'tenant') . self::$tenantId
+        self::$tenantIds[$class] = $this->tenant->id;
+        self::$tenantDbPaths[$class] = database_path(
+            config('tenancy.database.prefix', 'tenant') . $this->tenant->id
         );
 
         tenancy()->initialize($this->tenant);
@@ -186,7 +218,7 @@ abstract class TenantTestCase extends TestCase
             'updated_at' => now(),
         ]);
 
-        self::$fixtureIds = [
+        self::$fixtureIds[$class] = [
             'adminRole' => $this->adminRole->id,
             'staffRole' => $this->staffRole->id,
             'customerRole' => $this->customerRole->id,
@@ -197,6 +229,6 @@ abstract class TenantTestCase extends TestCase
             'service' => $this->service->id,
         ];
 
-        self::$migrationsDone = true;
+        self::$migrationsDone[$class] = true;
     }
 }
