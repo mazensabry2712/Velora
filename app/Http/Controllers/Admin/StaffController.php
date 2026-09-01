@@ -7,18 +7,19 @@ namespace App\Http\Controllers\Admin;
 use App\Application\Staff\Actions\CreateStaff;
 use App\Application\Staff\Actions\DeleteStaff;
 use App\Application\Staff\Actions\UpdateStaff;
+use App\Domain\Staff\Contracts\ServiceReader;
+use App\Domain\Staff\Contracts\StaffReader;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreStaffRequest;
 use App\Http\Requests\Admin\UpdateStaffRequest;
-use App\Models\Service;
-use App\Repositories\Contracts\StaffRepositoryInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 
 final class StaffController extends Controller
 {
     public function __construct(
-        private readonly StaffRepositoryInterface $staff,
+        private readonly StaffReader $staff,
+        private readonly ServiceReader $services,
         private readonly CreateStaff $createStaff,
         private readonly UpdateStaff $updateStaff,
         private readonly DeleteStaff $deleteStaff,
@@ -27,7 +28,7 @@ final class StaffController extends Controller
     public function index()
     {
         $staffMembers = $this->staff->all();
-        $services = Service::orderBy('name')->get();
+        $services = $this->services->allOrderedByName();
 
         return view('admin.staff.index', compact('staffMembers', 'services'));
     }
