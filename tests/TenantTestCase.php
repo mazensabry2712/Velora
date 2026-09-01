@@ -71,11 +71,11 @@ abstract class TenantTestCase extends TestCase
             \App\Http\Middleware\RedirectIfOnboardingIncomplete::class,
         ]);
 
-        $this->beginCentralTransaction();
-
         if (!self::$migrationsDone) {
             $this->bootstrapTenantOnce();
         } else {
+            $this->beginCentralTransaction();
+
             DB::table('tenants')->insert([
                 'id' => self::$tenantId,
                 'data' => json_encode(['name' => 'Test Clinic']),
@@ -135,6 +135,8 @@ abstract class TenantTestCase extends TestCase
             '--path' => 'database/migrations',
             '--force' => true,
         ]);
+
+        $this->beginCentralTransaction();
 
         $this->tenant = Tenant::create([
             'id' => 'test-tenant-' . uniqid(),
