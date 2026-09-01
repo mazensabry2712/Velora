@@ -17,11 +17,17 @@ final class PermanentlyDeleteExpiredTenants extends Command
 
     protected $description = 'Permanently delete tenants whose locked period has expired';
 
+    private function centralConnection(): string
+    {
+        return (string) config('tenancy.database.central_connection', config('database.default', 'mysql'));
+    }
+
     public function handle(): int
     {
         $now = now();
+        $centralConnection = $this->centralConnection();
 
-        $subscriptions = DB::connection('mysql')
+        $subscriptions = DB::connection($centralConnection)
             ->table('tenant_subscriptions')
             ->where('status', 'locked')
             ->whereNotNull('deletion_at')
@@ -48,7 +54,10 @@ final class PermanentlyDeleteExpiredTenants extends Command
             $tenant = Tenant::withTrashed()->find($tenantId);
 
             if (! $tenant) {
-                DB::connection('mysql')->table('tenant_subscriptions')->where('id', $subscription->id)->delete();
+                DB::connection($centralConnection)
+                    ->table('tenant_subscriptions')
+                    ->where('id', $subscription->id)
+                    ->delete();
                 continue;
             }
 
@@ -60,7 +69,10 @@ final class PermanentlyDeleteExpiredTenants extends Command
                 app(TenantDatabaseManager::class)->deleteDatabase($tenant);
 
                 // Remove central records after tenant resources are gone.
-                DB::connection('mysql')->table('tenant_subscriptions')->where('tenant_id', $tenantId)->delete();
+                DB::connection($centralConnection)
+                    ->table('tenant_subscriptions')
+                    ->where('tenant_id', $tenantId)
+                    ->delete();
                 $tenant->domains()->delete();
                 $tenant->forceDelete();
 
