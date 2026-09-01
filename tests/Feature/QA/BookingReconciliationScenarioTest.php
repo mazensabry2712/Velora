@@ -93,7 +93,7 @@ final class BookingReconciliationScenarioTest extends TenantTestCase
         $this->assertSame(Queue::whereIn('status', ['waiting', 'serving'])->count(), $stats['queue']);
         $this->assertTrue($currentQueue->contains('id', $queue->id));
 
-        $top = $topServices->firstWhere('id', $this->service->id);
+        $top = $topServices->firstWhere('name', $this->service->name);
         $this->assertNotNull($top);
         $this->assertSame(
             Appointment::where('service_id', $this->service->id)->count(),
