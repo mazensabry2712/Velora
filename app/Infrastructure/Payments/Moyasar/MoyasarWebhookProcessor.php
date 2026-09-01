@@ -15,12 +15,14 @@ final class MoyasarWebhookProcessor implements \App\Domain\Billing\Contracts\Moy
 
     public function process(string $payload, ?string $signature): array
     {
-        $secret = config('services.moyasar.webhook_secret');
-        if ($secret) {
-            $expected = hash_hmac('sha256', $payload, $secret);
-            if (! hash_equals($expected, (string) $signature)) {
-                throw new \InvalidArgumentException('Invalid signature');
-            }
+        $secret = (string) config('services.moyasar.webhook_secret', '');
+        if ($secret === '') {
+            throw new \InvalidArgumentException('Webhook secret is not configured');
+        }
+
+        $expected = hash_hmac('sha256', $payload, $secret);
+        if ($signature === null || ! hash_equals($expected, $signature)) {
+            throw new \InvalidArgumentException('Invalid signature');
         }
 
         $decoded = json_decode($payload, true);
