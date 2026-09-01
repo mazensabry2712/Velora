@@ -46,7 +46,6 @@ jobs:
           APP_DEBUG: true
           CACHE_STORE: array
           CACHE_DRIVER: array
-          QUEUE_CONNECTION: sync
           SESSION_DRIVER: array
           DB_CONNECTION: mysql
           DB_HOST: 127.0.0.1
@@ -70,7 +69,6 @@ jobs:
           APP_DEBUG: true
           CACHE_STORE: array
           CACHE_DRIVER: array
-          QUEUE_CONNECTION: sync
           SESSION_DRIVER: array
           DB_CONNECTION: mysql
           DB_HOST: 127.0.0.1
