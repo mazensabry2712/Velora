@@ -70,7 +70,7 @@ This log records defects discovered by the master QA program, the minimal fix, a
 
 **Fix:** Dashboard customer count, new-customer count, and recent-customer projection now read from the canonical `Customer` model while preserving the existing view data contract.
 
-**Regression:** `CustomerReconciliationScenarioTest::booking_customer_is_counted_by_customer_api_and_tenant_dashboard()` creates a customer through real booking, verifies the appointment-to-customer relationship, verifies the Customer API, and reconciles the Dashboard customer and appointment counts against database truth.
+**Regression:** `CustomerReconciliationScenarioTest` creates a customer through real booking, verifies the appointment-to-customer relationship, verifies the Customer API, and reconciles Dashboard counts against database truth.
 
 ---
 
@@ -142,6 +142,18 @@ This log records defects discovered by the master QA program, the minimal fix, a
 
 ---
 
+## Finding QA-REPORT-001 — Reports counted a different customer population than the Tenant Dashboard
+
+**Area:** Reports / Customer metrics
+
+**Root cause:** `ReportService::getStats()` counted `User::role('Customer')`, while the canonical customer population is stored in the `customers` table and used by public booking and the Tenant Dashboard.
+
+**Fix implemented:** `ReportService` now counts the canonical `Customer` model.
+
+**Regression:** `ReportingReconciliationScenarioTest` creates a canonical Customer and verifies report customer totals equal `Customer::count()` and the Tenant Dashboard customer metric.
+
+---
+
 ## Test Infrastructure Policy
 
 Every production defect discovered by Master QA must produce a regression test before the next feature family is accepted.
@@ -168,7 +180,7 @@ A feature family is not considered complete until:
 
 ## Current Handoff State
 
-Covered with passing evidence in the latest completed Master QA run before the most recent test-infrastructure fixes:
+Covered with passing evidence in the completed Master QA run on `a2e97f1`:
 
 - Environment foundation
 - Public booking golden flow
@@ -180,12 +192,15 @@ Covered with passing evidence in the latest completed Master QA run before the m
 - Queue notification lifecycle and recovery basics
 - Moyasar webhook security and payment-verification scenarios
 
-Added after that run and awaiting a fresh MySQL CI result:
+Added/fixed after that run and awaiting fresh MySQL CI evidence:
 
 - Tenant token isolation
 - Tenant resource isolation
 - Tenant test transaction connection safety
 - Super Admin tenant/subscription reconciliation
+- Reporting customer reconciliation
+
+Recent Master QA result on `a2e97f1`: **42 passed, 4 failed**. Those four failures were diagnosed as test/projection/fixture infrastructure issues and corrected on subsequent commits; the current `main` contains those corrections. A fresh run on the current head is required before any of these additions are marked certified.
 
 Next priority after the current CI gate:
 
