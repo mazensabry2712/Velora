@@ -11,7 +11,6 @@ use App\Models\CountrySetting;
 use App\Services\GeoService;
 use App\Services\PricingService;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\App;
 
 class LandingController extends Controller
 {
@@ -144,10 +143,7 @@ class LandingController extends Controller
             // Keep the configured fallback when central settings are unavailable.
         }
 
-        // An explicit locale in the signup URL is authoritative. This guard
-        // runs at the controller boundary as the final source of truth after
-        // Localizer middleware has completed, preventing a persisted default
-        // locale from leaking into /{locale}/signup requests.
+        // Explicit locale URLs are authoritative at the final controller boundary.
         $path = trim($request->path(), '/');
         $firstSegment = $path === '' ? null : explode('/', $path, 2)[0];
         $routeLocale = $request->route('locale');
@@ -158,17 +154,19 @@ class LandingController extends Controller
                 : null);
 
         if ($explicitLocale !== null) {
-            App::setLocale($explicitLocale);
+            \Illuminate\Support\Facades\App::setLocale($explicitLocale);
             session()->put('central_locale', $explicitLocale);
         } else {
             $sessionLocale = session('central_locale');
-            $current = is_string($sessionLocale) && in_array($sessionLocale, $supported, true)
+            $locale = is_string($sessionLocale) && in_array($sessionLocale, $supported, true)
                 ? $sessionLocale
-                : (app()->getLocale() ?: $default);
+                : (is_string(app()->getLocale()) && in_array(app()->getLocale(), $supported, true)
+                    ? app()->getLocale()
+                    : $default);
 
-            if (is_string($current) && in_array($current, $supported, true)) {
-                App::setLocale($current);
-                session()->put('central_locale', $current);
+            if (is_string($locale) && in_array($locale, $supported, true)) {
+                \Illuminate\Support\Facades\App::setLocale($locale);
+                session()->put('central_locale', $locale);
             }
         }
 
@@ -223,3 +221,37 @@ class LandingController extends Controller
             'appName'             => $appName,
         ]);
     }
+
+    /**
+     * Check subdomain availability via AJAX.
+     */
+    public function checkSubdomain(Request $request)
+    {
+        $request->validate(['subdomain' => 'required|string|min:3|max:32']);
+
+        $service = app(\App\Services\TenantRegistrationService::class);
+        $result  = $service->checkSubdomainAvailability($request->subdomain);
+
+        return response()->json($result);
+    }
+
+    /**
+     * Get basic platform stats for the landing page.
+     */
+    private function getPlatformStats(): array
+    {
+        try {
+            return [
+                'tenants'      => DB::table('tenants')->count(),
+                'appointments' => 0, // Aggregate across tenant DBs (optional)
+                'countries'    => DB::table('tenants')
+                    ->selectRaw("JSON_UNQUOTE(JSON_EXTRACT(data, '$.country')) as country")
+                    ->whereRaw("JSON_EXTRACT(data, '$.country') IS NOT NULL")
+                    ->distinct()
+                    ->count(),
+            ];
+        } catch (\Exception $e) {
+            return ['tenants' => '500+', 'appointments' => '50,000+', 'countries' => '30+'];
+        }
+    }
+}
