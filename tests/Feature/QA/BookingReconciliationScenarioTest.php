@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\QA;
 
-use App\Application\Booking\Actions\CreatePublicBooking;
-use App\Application\Booking\DTOs\PublicBookingData;
 use App\Models\Appointment;
 use App\Models\NotificationDelivery;
 use App\Models\Queue;
@@ -46,21 +44,24 @@ final class BookingReconciliationScenarioTest extends TenantTestCase
 
         RateLimiter::clear('public-booking:' . $this->tenant->getTenantKey() . ':' . $this->app->make('request')->ip());
 
-        $result = app(CreatePublicBooking::class)->execute(new PublicBookingData(
-            customerName: 'QA Reconciliation Customer',
-            customerEmail: 'qa-reconciliation@example.com',
-            customerPhone: '+201000000003',
-            serviceId: $this->service->id,
-            staffUserId: $this->staffMember->id,
-            resourceId: null,
-            appointmentDate: $date->toDateString(),
-            appointmentTime: '09:00',
-            requestedTimezone: $timezone,
-            notes: 'Cross-surface reconciliation',
-        ));
+        // Use the public HTTP boundary because notification delivery records are
+        // created by PublicBookingController after the booking application action.
+        $response = $this->postJson('/api/appointments', [
+            'customer_name' => 'QA Reconciliation Customer',
+            'customer_email' => 'qa-reconciliation@example.com',
+            'customer_phone' => '+201000000003',
+            'appointment_date' => $date->toDateString(),
+            'appointment_time' => '09:00',
+            'staff_id' => $this->staffMember->id,
+            'service_id' => $this->service->id,
+            'timezone' => $timezone,
+            'notes' => 'Cross-surface reconciliation',
+        ]);
 
-        $appointment = $result['appointment'];
-        $queue = $result['queue'];
+        $response->assertCreated()->assertJsonPath('success', true);
+
+        $appointment = Appointment::query()->latest('id')->firstOrFail();
+        $queue = Queue::query()->where('appointment_id', $appointment->id)->firstOrFail();
 
         $this->assertSame($beforeAppointments + 1, Appointment::count());
         $this->assertSame($appointment->id, $queue->appointment_id);
@@ -76,6 +77,7 @@ final class BookingReconciliationScenarioTest extends TenantTestCase
             'event' => 'appointment.booked',
             'channel' => 'email',
             'public_reference' => $appointment->public_reference,
+            'status' => 'queued',
         ]);
 
         $this->actingAs($this->admin);
