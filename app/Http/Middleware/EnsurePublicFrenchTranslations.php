@@ -72,6 +72,8 @@ class EnsurePublicFrenchTranslations
                 'landing.switcher_lang_label' => 'Changer de langue',
                 'landing.dark_mode' => 'Mode sombre',
                 'landing.footer_rights' => 'Tous droits réservés.',
+                'Toggle theme' => 'Changer de thème',
+                'Back to workspace' => 'Retour à l’espace de travail',
             ], 'fr');
 
             Lang::addLines([
