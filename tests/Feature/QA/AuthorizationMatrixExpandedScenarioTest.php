@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\QA;
 
-use Illuminate\Support\Facades\DB;
+use App\Models\Role;
+use App\Models\User;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TenantTestCase;
@@ -35,8 +36,8 @@ final class AuthorizationMatrixExpandedScenarioTest extends TenantTestCase
     #[Test]
     public function assistant_cannot_change_schedule_configuration(): void
     {
-        $assistantRole = \App\Models\Role::firstOrCreate(['name' => 'Assistant']);
-        $assistant = \App\Models\User::create([
+        $assistantRole = Role::firstOrCreate(['name' => 'Assistant']);
+        $assistant = User::create([
             'name' => 'QA Schedule Assistant',
             'email' => 'qa-schedule-assistant-' . uniqid() . '@example.com',
             'password' => bcrypt('password'),
@@ -54,6 +55,27 @@ final class AuthorizationMatrixExpandedScenarioTest extends TenantTestCase
         $this->postJson(route('admin.api.workingdays.toggle', ['id' => 1]), [
             'is_active' => false,
         ])->assertForbidden();
+    }
+
+    #[Test]
+    public function staff_and_assistant_cannot_mutate_onboarding(): void
+    {
+        $assistantRole = Role::firstOrCreate(['name' => 'Assistant']);
+        $assistant = User::create([
+            'name' => 'QA Onboarding Assistant',
+            'email' => 'qa-onboarding-assistant-' . uniqid() . '@example.com',
+            'password' => bcrypt('password'),
+            'specialization' => 'Reception',
+        ]);
+        $assistant->assignRole($assistantRole);
+
+        foreach ([$this->staffMember, $assistant] as $user) {
+            $this->actingAs($user);
+
+            $this->postJson(route('admin.onboarding.step1'), [
+                'phone' => '+201000000009',
+            ])->assertForbidden();
+        }
     }
 
     #[Test]
