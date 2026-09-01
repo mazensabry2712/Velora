@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature\QA;
 
+use App\Application\Queue\Actions\CallNextQueueEntry;
+use App\Application\Queue\Actions\TransitionQueueEntry;
 use App\Domain\Queue\Contracts\QueueReader;
 use App\Models\Appointment;
 use App\Models\Queue;
 use Carbon\Carbon;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TenantTestCase;
@@ -121,5 +124,83 @@ final class QueueLifecycleScenarioTest extends TenantTestCase
         $queues = app(QueueReader::class)->forDate($date, 'waiting');
 
         $this->assertSame($vipQueue->id, $queues->first()?->id);
+    }
+
+    #[Test]
+    public function call_next_selects_the_highest_priority_waiting_customer_and_keeps_single_active_serving_entry(): void
+    {
+        $date = today()->toDateString();
+
+        $regularAppointment = Appointment::create([
+            'customer_id' => $this->customer->id,
+            'staff_id' => $this->staffMember->id,
+            'service_id' => $this->service->id,
+            'date' => $date,
+            'time_slot' => '12:00',
+            'status' => Appointment::STATUS_CONFIRMED,
+            'price' => 100,
+        ]);
+
+        $vipAppointment = Appointment::create([
+            'customer_id' => $this->customer->id,
+            'staff_id' => $this->staffMember->id,
+            'service_id' => $this->service->id,
+            'date' => $date,
+            'time_slot' => '12:30',
+            'status' => Appointment::STATUS_CONFIRMED,
+            'price' => 100,
+        ]);
+
+        Queue::create([
+            'appointment_id' => $regularAppointment->id,
+            'queue_number' => 'A020',
+            'queue_date' => $date,
+            'status' => 'waiting',
+            'is_vip' => false,
+        ]);
+
+        $vipQueue = Queue::create([
+            'appointment_id' => $vipAppointment->id,
+            'queue_number' => 'A021',
+            'queue_date' => $date,
+            'status' => 'waiting',
+            'is_vip' => true,
+        ]);
+
+        $called = app(CallNextQueueEntry::class)->execute();
+
+        $this->assertSame($vipQueue->id, $called?->id);
+        $this->assertSame('serving', $called?->status);
+        $this->assertSame(
+            1,
+            Queue::where('queue_date', $date)->where('status', 'serving')->count(),
+        );
+        $this->assertSame('confirmed', $vipAppointment->fresh()->status);
+    }
+
+    #[Test]
+    public function completed_queue_entry_cannot_return_to_waiting(): void
+    {
+        $appointment = Appointment::create([
+            'customer_id' => $this->customer->id,
+            'staff_id' => $this->staffMember->id,
+            'service_id' => $this->service->id,
+            'date' => today()->toDateString(),
+            'time_slot' => '13:00',
+            'status' => Appointment::STATUS_CONFIRMED,
+            'price' => 100,
+        ]);
+
+        $queue = Queue::create([
+            'appointment_id' => $appointment->id,
+            'queue_number' => 'A022',
+            'queue_date' => today()->toDateString(),
+            'status' => 'completed',
+            'is_vip' => false,
+        ]);
+
+        $this->expectException(InvalidArgumentException::class);
+
+        app(TransitionQueueEntry::class)->execute($queue, 'waiting');
     }
 }
