@@ -1,97 +1,12 @@
-Windows PowerShell
-Copyright (C) Microsoft Corporation. All rights reserved.
-
-PS C:\Herd\Velora> code .
-PS C:\Herd\Velora> git fetch origin
-PS C:\Herd\Velora> git pull --ff-only origin main
-From https://github.com/mazensabry2712/Velora
- * branch              main       -> FETCH_HEAD
-Already up to date.
-PS C:\Herd\Velora> git rev-parse HEAD
-0b6359be2b0eec911d2b367e982361575b51fdf8
-PS C:\Herd\Velora> git rev-parse origin/main
-0b6359be2b0eec911d2b367e982361575b51fdf8
-PS C:\Herd\Velora>
-PS C:\Herd\Velora> php artisan route:list --path=signup
-
-  GET|HEAD   velora.test/signup ..................................... without_locale.signup › LandingController@signup
-  POST       velora.test/signup ................ without_locale.signup.store › Auth\TenantRegistrationController@store
-  GET|HEAD   velora.test/signup/check-subdomain without_locale.signup.check-subdomain › LandingController@checkSubdom…
-  GET|HEAD   signup/provisioning/{token} ................ signup.provisioning › Auth\TenantProvisioningController@show
-  GET|HEAD   velora.test/signup/provisioning/{token} .... signup.provisioning › Auth\TenantProvisioningController@show
-  GET|HEAD   velora.test/signup/provisioning/{token}/handoff signup.provisioning.handoff › Auth\TenantProvisioningCon…
-  POST       velora.test/signup/provisioning/{token}/resend signup.provisioning.resend › Auth\TenantProvisioningContr…
-  POST       signup/provisioning/{token}/resend-verification signup.provisioning.resend › Auth\TenantProvisioningCont…
-  GET|HEAD   signup/provisioning/{token}/status signup.provisioning.status › Auth\TenantProvisioningController@status
-  GET|HEAD   velora.test/signup/provisioning/{token}/status signup.provisioning.status › Auth\TenantProvisioningContr…
-  GET|HEAD   velora.test/{locale}/signup ............................... with_locale.signup › LandingController@signup
-  POST       velora.test/{locale}/signup .......... with_locale.signup.store › Auth\TenantRegistrationController@store
-  GET|HEAD   velora.test/{locale}/signup/check-subdomain with_locale.signup.check-subdomain › LandingController@check…
-
-                                                                                                   Showing [13] routes
-
-PS C:\Herd\Velora>
-PS C:\Herd\Velora> php artisan route:list --path=pricing
-
-  GET|HEAD        velora.test/pricing ............................. without_locale.pricing › LandingController@pricing
-  POST            velora.test/pricing/set-country .. without_locale.pricing.set-country › PricingController@setCountry
-  GET|HEAD        super-admin/country-pricing super-admin.country-pricing.index › SuperAdmin\CountryPricingController…
-  POST            super-admin/country-pricing super-admin.country-pricing.store › SuperAdmin\CountryPricingController…
-  GET|HEAD        super-admin/country-pricing/create super-admin.country-pricing.create › SuperAdmin\CountryPricingCo…
-  POST            super-admin/country-pricing/{countryPricing}/toggle super-admin.country-pricing.toggle › SuperAdmin…
-  GET|HEAD        super-admin/country-pricing/{country_pricing} super-admin.country-pricing.show › SuperAdmin\Country…
-  PUT|PATCH       super-admin/country-pricing/{country_pricing} super-admin.country-pricing.update › SuperAdmin\Count…
-  DELETE          super-admin/country-pricing/{country_pricing} super-admin.country-pricing.destroy › SuperAdmin\Coun…
-  GET|HEAD        super-admin/country-pricing/{country_pricing}/edit super-admin.country-pricing.edit › SuperAdmin\Co…
-  GET|HEAD        velora.test/{locale}/pricing ....................... with_locale.pricing › LandingController@pricing
-  POST            velora.test/{locale}/pricing/set-country with_locale.pricing.set-country › PricingController@setCou…
-
-                                                                                                   Showing [12] routes
-
-PS C:\Herd\Velora>
-PS C:\Herd\Velora> php artisan route:list --path=lang
-
-  GET|HEAD       change-language/{lang} ................................ tenant.change.language › routes/tenant.php:56
-  GET|HEAD       velora.test/lang/{locale} ......................................... landing.lang › routes/web.php:107
-  GET|HEAD       super-admin/lang/{locale} ..................................... super-admin.lang › routes/web.php:192
-
-                                                                                                    Showing [3] routes
-
-PS C:\Herd\Velora>
-PS C:\Herd\Velora> php artisan tinker --execute="dump(env('APP_DOMAIN')); dump(config('app.url'));"
-null // vendor\psy\psysh\src\ExecutionClosure.php(41) : eval()'d code:1
-"http://localhost" // vendor\psy\psysh\src\ExecutionClosure.php(41) : eval()'d code:2
-PS C:\Herd\Velora>
-PS C:\Herd\Velora>
-PS C:\Herd\Velora> php artisan test tests/Feature/SignupValidationTest.php --filter=test_signup_page_is_gettable --compact
-
-   FAIL  Tests\Feature\SignupValidationTest
-  ⨯ signup page is gettable                                                                                      1.19s
-  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-   FAILED  Tests\Feature\SignupValidationTest > signup page is gettable
-  Expected response status code [>=200, <300] but received 404.
-Failed asserting that false is true.
-
-  at tests\Feature\SignupValidationTest.php:93
-     89▕     }
-     90▕
-     91▕     public function test_signup_page_is_gettable(): void
-     92▕     {
-  ➜  93▕         $this->get('/signup')->assertSuccessful();
-     94▕     }
-     95▕
-     96▕     public function test_business_name_is_required(): void
-     97▕     {
-
-
-  Tests:    1 failed (1 assertions)
-  Duration: 1.36s
-
-PS C:\Herd\Velora>
+PS C:\Herd\Velora> php artisan tinker --execute="dump(config('app.url')); dump(config('app.domain')); dump(env('APP_DOMAIN')); dump(request()->getHost());"
+"http://localhost" // vendor\psy\psysh\src\ExecutionClosure.php(41) : eval()'d code:1
+null // vendor\psy\psysh\src\ExecutionClosure.php(41) : eval()'d code:2
+null // vendor\psy\psysh\src\ExecutionClosure.php(41) : eval()'d code:3
+"localhost" // vendor\psy\psysh\src\ExecutionClosure.php(41) : eval()'d code:4
 PS C:\Herd\Velora> php artisan test tests/Feature/SignupPageContractTest.php --filter=test_arabic_signup_page_resolves_on_the_central_domain --compact
 
    FAIL  Tests\Feature\SignupPageContractTest
-  ⨯ arabic signup page resolves on the central domain                                                            1.11s
+  ⨯ arabic signup page resolves on the central domain                                                            1.07s
   ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
    FAILED  Tests\Feature\SignupPageContractTest > arabic signup page resolves on the central domain
   Expected response status code [200] but received 404.
@@ -110,13 +25,40 @@ Failed asserting that 404 is identical to 200.
 
 
   Tests:    1 failed (1 assertions)
-  Duration: 1.26s
+  Duration: 1.20s
 
-PS C:\Herd\Velora>
+PS C:\Herd\Velora> php artisan test tests/Feature/SignupValidationTest.php --filter=test_signup_page_is_gettable --compact
+
+   FAIL  Tests\Feature\SignupValidationTest
+  ⨯ signup page is gettable                                                                                      1.07s
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupValidationTest > signup page is gettable
+  Expected response status code [>=200, <300] but received 404.
+Failed asserting that false is true.
+
+  at tests\Feature\SignupValidationTest.php:93
+     89▕     }
+     90▕
+     91▕     public function test_signup_page_is_gettable(): void
+     92▕     {
+  ➜  93▕         $this->get('/signup')->assertSuccessful();
+     94▕     }
+     95▕
+     96▕     public function test_business_name_is_required(): void
+     97▕     {
+
+
+  Tests:    1 failed (1 assertions)
+  Duration: 1.22s
+
+PS C:\Herd\Velora> php artisan test tests/Feature/MultiRegion/GeoLocalizationTest.php --filter=pricing_page_returns_200 --compactphp artisan test tests/Feature/MultiRegion/GeoLocalizationTest.php --filter=pricing_page_returns_200 --compact
+PHPUnit 11.5.56 by Sebastian Bergmann and contributors.
+
+Unknown option "--compactphp"
 PS C:\Herd\Velora> php artisan test tests/Feature/MultiRegion/GeoLocalizationTest.php --filter=pricing_page_returns_200 --compact
 
    FAIL  Tests\Feature\MultiRegion\GeoLocalizationTest
-  ⨯ pricing page returns 200                                                                                     1.18s
+  ⨯ pricing page returns 200                                                                                     1.10s
   ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
    FAILED  Tests\Feature\MultiRegion\GeoLocalizationTest > pricing page returns 200
   Expected response status code [200] but received 404.
@@ -135,7 +77,6 @@ Failed asserting that 404 is identical to 200.
 
 
   Tests:    1 failed (1 assertions)
-  Duration: 1.34s
+  Duration: 1.25s
 
-PS C:\Herd\Velora>
 PS C:\Herd\Velora>
