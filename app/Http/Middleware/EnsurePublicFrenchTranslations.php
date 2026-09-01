@@ -82,8 +82,12 @@ class EnsurePublicFrenchTranslations
                 'messages.loading' => 'Connexion...',
                 'messages.login_success' => 'Connexion réussie.',
                 'messages.login_failed' => 'Identifiants invalides.',
-                'messages.toggle_theme' => 'Changer de thème',
-                'messages.back_to_workspace' => 'Retour à l’espace de travail',
+            ], 'fr');
+
+            // JSON-style translation keys are resolved under the wildcard group.
+            Lang::addLines([
+                '*.Toggle theme' => 'Changer de thème',
+                '*.Back to workspace' => 'Retour à l’espace de travail',
             ], 'fr');
         }
 
