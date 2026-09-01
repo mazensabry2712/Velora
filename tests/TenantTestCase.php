@@ -17,8 +17,9 @@ use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
  * Base test case for all tenant-scoped tests.
  *
  * Migrations run ONCE per class (not per test) to avoid memory exhaustion.
- * Each test runs inside a DB transaction that is rolled back in tearDown
- * so tests remain isolated without repeating the expensive migrate runs.
+ * Each test runs inside tenant + central DB transactions that are rolled back
+ * in tearDown so fixtures remain isolated without repeating the expensive
+ * tenant migration setup.
  */
 abstract class TenantTestCase extends TestCase
 {
@@ -36,6 +37,7 @@ abstract class TenantTestCase extends TestCase
     private static ?string $tenantId = null;
     private static ?array $fixtureIds = null;
     private static ?string $tenantDbPath = null;
+    private bool $centralTransactionStarted = false;
 
     public static function setUpBeforeClass(): void
     {
@@ -69,15 +71,11 @@ abstract class TenantTestCase extends TestCase
             \App\Http\Middleware\RedirectIfOnboardingIncomplete::class,
         ]);
 
+        $this->beginCentralTransaction();
+
         if (!self::$migrationsDone) {
             $this->bootstrapTenantOnce();
         } else {
-            Artisan::call('migrate', [
-                '--database' => config('tenancy.database.central_connection', 'sqlite'),
-                '--path' => 'database/migrations',
-                '--force' => true,
-            ]);
-
             DB::table('tenants')->insert([
                 'id' => self::$tenantId,
                 'data' => json_encode(['name' => 'Test Clinic']),
@@ -85,7 +83,7 @@ abstract class TenantTestCase extends TestCase
                 'updated_at' => now(),
             ]);
 
-            $this->tenant = Tenant::find(self::$tenantId);
+            $this->tenant = Tenant::findOrFail(self::$tenantId);
             tenancy()->initialize($this->tenant);
         }
 
@@ -104,9 +102,30 @@ abstract class TenantTestCase extends TestCase
 
     protected function tearDown(): void
     {
-        DB::rollBack();
-        tenancy()->end();
+        try {
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+        } finally {
+            tenancy()->end();
+
+            if ($this->centralTransactionStarted) {
+                $central = DB::connection(config('tenancy.database.central_connection', 'sqlite'));
+                if ($central->transactionLevel() > 0) {
+                    $central->rollBack();
+                }
+                $this->centralTransactionStarted = false;
+            }
+        }
+
         parent::tearDown();
+    }
+
+    private function beginCentralTransaction(): void
+    {
+        $central = DB::connection(config('tenancy.database.central_connection', 'sqlite'));
+        $central->beginTransaction();
+        $this->centralTransactionStarted = true;
     }
 
     private function bootstrapTenantOnce(): void
