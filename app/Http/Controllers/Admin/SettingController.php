@@ -21,6 +21,8 @@ class SettingController extends Controller
 
     public function save(SaveSettingsRequest $request): JsonResponse
     {
+        abort_unless(auth()->user()?->hasRole('Admin Tenant'), 403);
+
         try {
             $tenant = tenant();
             $data   = $request->validated();
