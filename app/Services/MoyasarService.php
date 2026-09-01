@@ -77,7 +77,6 @@ class MoyasarService
             'subscription_plan_id' => $planId,
             'starts_at'            => $now,
             'ends_at'              => $now->copy()->addDays($durationDays),
-            'billing_cycle'        => $plan?->billing_cycle ?? 'monthly',
             'amount_paid'          => round($amountHalalas / 100, 2),
             'payment_method'       => 'moyasar',
             'last_webhook_event'   => $eventKey,
