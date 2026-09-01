@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Middleware;
 
 use Closure;
@@ -11,7 +13,15 @@ class EnsurePublicFrenchTranslations
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (app()->getLocale() === 'fr') {
+        // The public locale middleware runs later in the pipeline, so app()->getLocale()
+        // may still be the default locale when this middleware executes. Prefer the
+        // locale encoded in the public URL and fall back to the current app locale.
+        $requestedLocale = strtolower((string) $request->segment(1));
+        $locale = $requestedLocale === 'fr' || app()->getLocale() === 'fr'
+            ? 'fr'
+            : null;
+
+        if ($locale === 'fr') {
             Lang::addLines([
                 'landing.signup_hero_line1' => 'Créez votre compte et',
                 'landing.signup_hero_line2' => 'commencez en quelques minutes',
@@ -54,10 +64,18 @@ class EnsurePublicFrenchTranslations
                 'landing.signup_step3_title' => 'Mode lecture seule',
                 'landing.signup_step3_desc' => 'Votre compte devient limité si aucune formule n’est sélectionnée.',
                 'landing.back_to_home' => 'Retour à l’accueil',
+                'landing.nav_features' => 'Fonctionnalités',
+                'landing.nav_how_it_works' => 'Comment ça marche',
+                'landing.nav_pricing' => 'Tarifs',
+                'landing.nav_company_admin_sign_in' => 'Connexion administrateur de l’entreprise',
+                'landing.nav_start_trial' => 'Commencer l’essai gratuit',
+                'landing.switcher_lang_label' => 'Changer de langue',
+                'landing.dark_mode' => 'Mode sombre',
+                'landing.footer_rights' => 'Tous droits réservés.',
             ], 'fr');
 
             Lang::addLines([
-                'messages.login' => 'Se connecter',
+                'messages.login' => 'Connexion',
                 'messages.login_to_account' => 'Connectez-vous à votre compte',
                 'messages.password' => 'Mot de passe',
                 'messages.remember_me' => 'Se souvenir de moi',
