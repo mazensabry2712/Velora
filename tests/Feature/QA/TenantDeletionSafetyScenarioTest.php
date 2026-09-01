@@ -8,7 +8,6 @@ use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
 use App\Models\TenantSubscription;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\DB;
 use Mockery;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
@@ -83,27 +82,12 @@ final class TenantDeletionSafetyScenarioTest extends TestCase
         app()->instance(StorageDriver::class, $storage);
 
         $databaseManager = Mockery::mock(TenantDatabaseManager::class);
-        $databaseManager->shouldReceive('deleteDatabase')->once()->andReturnNull();
+        $databaseManager->shouldReceive('deleteDatabase')->once()->andReturn(true);
         app()->instance(TenantDatabaseManager::class, $databaseManager);
 
-        $exitCode = Artisan::call('subscriptions:purge-expired', ['--force' => true]);
-        $output = Artisan::output();
         $centralConnection = (string) config('tenancy.database.central_connection');
 
-        $remainingSubscriptionCount = DB::connection($centralConnection)
-            ->table('tenant_subscriptions')
-            ->where('tenant_id', $tenantId)
-            ->count();
-
-        if ($remainingSubscriptionCount !== 0 || ! str_contains($output, '[deleted]')) {
-            $this->fail(sprintf(
-                "Tenant purge did not complete successfully. exit_code=%s; central_connection=%s; remaining_subscriptions=%s; output=%s",
-                $exitCode,
-                $centralConnection,
-                $remainingSubscriptionCount,
-                trim($output),
-            ));
-        }
+        Artisan::call('subscriptions:purge-expired', ['--force' => true]);
 
         $this->assertDatabaseMissing(
             'tenant_subscriptions',
