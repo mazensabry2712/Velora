@@ -48,10 +48,11 @@ final class PermanentlyDeleteExpiredTenants extends Command
         }
 
         $deleted = 0;
+        $centralTenants = Tenant::on($centralConnection);
 
         foreach ($subscriptions as $subscription) {
             $tenantId = (string) $subscription->tenant_id;
-            $tenant = Tenant::withTrashed()->find($tenantId);
+            $tenant = $centralTenants->newQuery()->withTrashed()->find($tenantId);
 
             if (! $tenant) {
                 DB::connection($centralConnection)
