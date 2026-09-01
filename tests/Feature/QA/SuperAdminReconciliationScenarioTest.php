@@ -83,7 +83,7 @@ final class SuperAdminReconciliationScenarioTest extends TestCase
                 $stats['total_tenants'],
             );
             $this->assertSame(
-                Tenant::query()->where('data->active', true)->count(),
+                Tenant::query()->get()->filter(fn (Tenant $tenant): bool => $tenant->active)->count(),
                 $stats['active_tenants'],
             );
             $this->assertSame(
