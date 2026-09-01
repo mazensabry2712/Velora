@@ -56,10 +56,18 @@ final class QueueRepository implements QueueRepositoryInterface, QueueRepository
         return (bool) $queue->delete();
     }
 
-    public function callNext(): ?Queue
+    public function callNext(?string $date = null): ?Queue
     {
-        return DB::transaction(function (): ?Queue {
+        $date = $date ?? Carbon::today()->toDateString();
+
+        return DB::transaction(function () use ($date): ?Queue {
             $next = Queue::where('status', 'waiting')
+                ->where(function ($query) use ($date): void {
+                    $query->whereDate('queue_date', $date)
+                        ->orWhere(function ($legacy) use ($date): void {
+                            $legacy->whereNull('queue_date')->whereDate('created_at', $date);
+                        });
+                })
                 ->orderByDesc('is_vip')
                 ->orderBy('id')
                 ->lockForUpdate()
