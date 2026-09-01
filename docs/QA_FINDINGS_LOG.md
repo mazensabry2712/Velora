@@ -168,6 +168,20 @@ This log records defects discovered by the master QA program, the minimal fix, a
 
 ---
 
+## Finding QA-AUTH-001 — Tenant Staff/Assistant could mutate administrative configuration
+
+**Area:** Tenant admin authorization / services / staff / settings
+
+**Root cause:** The tenant admin route group admits `Admin Tenant|Staff|Assistant`, while the affected controllers had no method-level authorization and their FormRequests returned `authorize() = true`. As a result, Staff/Assistant could reach mutation methods for services, time slots, working-day configuration, staff-service assignment, staff CRUD, and tenant settings.
+
+**Fix implemented:** Added a minimal role guard inside the affected mutation methods. `Admin Tenant` is required for service/schedule mutations, tenant settings writes, and staff create/update/delete. Read methods remain unchanged.
+
+**Regression:** `AdminAuthorizationMatrixScenarioTest` verifies Staff can read but cannot mutate services, Assistant cannot mutate settings/services, and Admin Tenant can create a service.
+
+**Current status:** Code fix and regression test are on `main`; fresh MySQL CI certification pending.
+
+---
+
 ## Test Infrastructure Policy
 
 Every production defect discovered by Master QA must produce a regression test before the next feature family is accepted.
@@ -212,10 +226,12 @@ Added/fixed after that run and awaiting fresh MySQL CI evidence:
 - Tenant resource isolation
 - Tenant test transaction connection safety
 - Super Admin tenant/subscription reconciliation
+- Super Admin billing/revenue reconciliation
 - Reporting customer reconciliation
 - Tenant deletion safety
+- Admin/Staff/Assistant authorization matrix
 
-Recent Master QA result on `a2e97f1`: **42 passed, 4 failed**. Those four failures were diagnosed as test/projection/fixture infrastructure issues and corrected on subsequent commits; the current `main` contains those corrections. Fresh CI on the current head is required before these additions are marked certified.
+Recent Master QA result on `a2e97f1`: **42 passed, 4 failed**. Those four failures were diagnosed as test/projection/fixture/infrastructure issues and corrected on subsequent commits; the current `main` contains those corrections. Fresh CI on the current head is required before these additions are marked certified.
 
 Next priority after the current CI gate:
 
