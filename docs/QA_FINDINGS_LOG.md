@@ -1,6 +1,6 @@
 # Velora QA Findings Log
 
-This log records defects discovered by the master QA program, the test that exposed each defect, the minimal fix, and the regression guard.
+This log records defects discovered by the master QA program, the minimal fix, and the regression guard.
 
 ## Finding QA-BOOK-001 — Booking response returned HTTP 500
 
@@ -20,7 +20,7 @@ This log records defects discovered by the master QA program, the test that expo
 
 **Root causes discovered:**
 - `BusinessRule` uses `key`, while older tenant schemas lacked it.
-- Legacy `name` and `conditions` columns could remain `NOT NULL`, preventing inserts by the current model.
+- Legacy `name`, `conditions`, and `actions` columns could remain `NOT NULL`, preventing inserts by the current model.
 
 **Fix:** Tenant migration aligns the current `BusinessRule` contract and makes legacy blocking columns nullable without deleting legacy data.
 
@@ -92,11 +92,17 @@ This log records defects discovered by the master QA program, the test that expo
 
 **Root cause:** `MoyasarWebhookProcessor` only verified the HMAC signature when `services.moyasar.webhook_secret` was non-empty. A missing secret therefore allowed webhook processing to continue.
 
-**Required fix:** Webhook authentication must fail closed: missing secret or invalid/missing signature must reject the webhook before any webhook ledger insert or subscription/payment side effect.
+**Fix implemented:** Webhook authentication now fails closed. A missing secret or a missing/invalid signature is rejected before JSON processing, webhook-ledger insertion, payment verification, subscription mutation, or other side effects.
 
-**Regression required:** Add coverage for missing secret, invalid signature, valid signature, duplicate event, verification failure, and safe retry semantics before marking Moyasar billing certified.
+**Regression added:**
+- missing secret
+- invalid signature
+- valid signature
+- duplicate event
+- successful `payment.paid` processing with payment verification
+- processing failure removes the unprocessed event so provider retry is possible
 
-**Current status:** Identified and documented; not considered closed until the fix and MySQL CI regression tests pass.
+**Current status:** Fix and regression tests are committed to `main`; billing remains uncertified until the MySQL CI run passes and subscription/invoice/payment reconciliation is completed.
 
 ---
 
@@ -136,6 +142,7 @@ Completed/covered so far:
 - Call-next locking/date scoping
 - Customer/dashboard reconciliation
 - Queue notification lifecycle and recovery basics
+- Moyasar webhook security fix and regression coverage added (CI pending)
 
 Next priority:
 
