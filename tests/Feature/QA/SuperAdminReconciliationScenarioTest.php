@@ -28,8 +28,7 @@ final class SuperAdminReconciliationScenarioTest extends TestCase
             "qa-super-admin-c-{$suffix}",
         ];
 
-        $planId = SubscriptionPlan::query()->value('id');
-        $this->assertNotNull($planId, 'A subscription plan is required for the Super Admin reconciliation scenario.');
+        $planId = $this->ensureQaSubscriptionPlan()->id;
 
         try {
             DB::table('tenants')->insert([
@@ -110,9 +109,7 @@ final class SuperAdminReconciliationScenarioTest extends TestCase
             "qa-sub-stats-paid-{$suffix}",
             "qa-sub-stats-trial-{$suffix}",
         ];
-        $planId = SubscriptionPlan::query()->value('id');
-
-        $this->assertNotNull($planId, 'A subscription plan is required for the subscription statistics scenario.');
+        $planId = $this->ensureQaSubscriptionPlan()->id;
 
         try {
             DB::table('tenants')->insert([
@@ -179,5 +176,24 @@ final class SuperAdminReconciliationScenarioTest extends TestCase
             TenantSubscription::query()->whereIn('tenant_id', $tenantIds)->delete();
             DB::table('tenants')->whereIn('id', $tenantIds)->delete();
         }
+    }
+
+    private function ensureQaSubscriptionPlan(): SubscriptionPlan
+    {
+        return SubscriptionPlan::query()->first()
+            ?? SubscriptionPlan::query()->create([
+                'name' => 'QA Basic',
+                'slug' => 'qa-basic',
+                'description' => 'Disposable plan for QA tests',
+                'price' => 10,
+                'billing_cycle' => 'monthly',
+                'max_users' => 10,
+                'max_appointments' => 100,
+                'storage_limit' => 100,
+                'features' => [],
+                'is_active' => true,
+                'is_popular' => false,
+                'trial_days' => 7,
+            ]);
     }
 }
