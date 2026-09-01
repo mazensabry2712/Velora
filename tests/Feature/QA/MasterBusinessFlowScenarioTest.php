@@ -10,6 +10,7 @@ use App\Models\Appointment;
 use App\Models\BusinessRule;
 use App\Models\Invoice;
 use App\Models\Queue;
+use Illuminate\Database\Schema\ColumnDefinition;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\Group;
@@ -55,6 +56,17 @@ final class MasterBusinessFlowScenarioTest extends TenantTestCase
                 Schema::hasColumn('business_rules', $column),
                 "business_rules.{$column} must exist for BusinessRule::getValue()."
             );
+        }
+
+        // Legacy columns may remain after historical migrations. They must not
+        // make the current model contract impossible to persist.
+        foreach (['name', 'conditions'] as $legacyColumn) {
+            if (! Schema::hasColumn('business_rules', $legacyColumn)) {
+                continue;
+            }
+
+            $metadata = Schema::getColumnType('business_rules', $legacyColumn);
+            $this->assertNotSame('', $metadata);
         }
 
         BusinessRule::setValue(
