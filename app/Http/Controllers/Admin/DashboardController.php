@@ -28,9 +28,9 @@ class DashboardController extends Controller
              SUM(CASE WHEN created_at BETWEEN ? AND ? THEN 1 ELSE 0 END) as this_week,
              SUM(CASE WHEN created_at BETWEEN ? AND ? THEN 1 ELSE 0 END) as last_week,
              SUM(CASE WHEN status = ? AND created_at BETWEEN ? AND ? THEN 1 ELSE 0 END) as cancelled_this_week,
-             SUM(CASE WHEN date = ? THEN 1 ELSE 0 END) as total_today,
-             SUM(CASE WHEN date = ? AND status = ? THEN 1 ELSE 0 END) as completed_today,
-             SUM(CASE WHEN date = ? AND status = ? THEN 1 ELSE 0 END) as confirmed_today,
+             SUM(CASE WHEN DATE(date) = ? THEN 1 ELSE 0 END) as total_today,
+             SUM(CASE WHEN DATE(date) = ? AND status = ? THEN 1 ELSE 0 END) as completed_today,
+             SUM(CASE WHEN DATE(date) = ? AND status = ? THEN 1 ELSE 0 END) as confirmed_today,
              SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as pending_total,
              SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as confirmed_total,
              SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as completed_total,
@@ -185,8 +185,6 @@ class DashboardController extends Controller
             'statusDistribution'
         ));
     }
-
-    // ── Private helpers ──────────────────────────────────────────────────
 
     private function activityDescription(string $status): string
     {
