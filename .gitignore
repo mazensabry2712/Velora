@@ -16,8 +16,8 @@ phpinfo.txt
 .phpunit.result.cache
 /.fleet
 /.idea
-/.nova
 /.phpunit.cache
+/.nova
 /.vscode
 /.zed
 /auth.json
@@ -50,4 +50,5 @@ Thumbs.db
 
 # PHPUnit / Tenancy temporary SQLite databases
 database/tenant*
+database/testing_*.sqlite
 storage/tenanttest-tenant-*/
