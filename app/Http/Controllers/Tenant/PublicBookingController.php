@@ -43,7 +43,12 @@ final class PublicBookingController extends Controller
             $queue = $result['queue'];
             $customer = $result['customer'];
             $reference = (string) $appointment->public_reference;
-            $trackingUrl = route('customer.queue.status', ['ref' => $reference]);
+
+            // The queue status page accepts the public reference as a query
+            // parameter rather than a route placeholder. Passing `ref` to
+            // route() previously threw after a successful booking and turned
+            // the response into HTTP 500.
+            $trackingUrl = route('customer.queue.status') . '?ref=' . rawurlencode($reference);
 
             try {
                 $appointment->loadMissing(['service', 'newStaff']);
