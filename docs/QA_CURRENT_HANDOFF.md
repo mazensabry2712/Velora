@@ -12,7 +12,7 @@ Branch: main
 ## Current main head
 
 ```text
-SHA: 1457212c9816c14e4e01ec408ce5e10c1e5d371f
+SHA: e2473f3665f43d3c3d89ff6ffcd3beed1da2e104
 ```
 
 Always verify `refs/heads/main` before continuing. Never assume a SHA from an older chat is still the current main.
@@ -94,6 +94,8 @@ Process-isolated SQLite test database bootstrap
 Central schema bootstrap for fresh test applications
 SQLite-compatible staff reporting query
 Self-contained Super Admin billing/deletion fixtures
+Holiday calendar-date comparison fix
+Dashboard daily appointment date reconciliation fix
 
 ```
 
@@ -116,68 +118,95 @@ docs/QA_RUN_120_POSTMORTEM.md
 
 ## Latest local QA evidence supplied by the developer
 
-The developer ran:
+Before the canonical-main reset, the developer ran the booking/dashboard regression batch and observed:
 
 ```text
-php artisan test tests/Feature/QA --compact
+40 passed
+2 failed
+163 assertions
 ```
 
-and observed:
+The two failures were:
 
 ```text
-46 failed
-13 passed
-72 assertions
-21.53s
+BookingAvailabilityRulesScenarioTest
+→ Holiday row existed but SlotEngine did not recognize it
+
+MasterBusinessFlowScenarioTest
+→ Dashboard confirmed count was 0 while canonical database truth was 1
 ```
 
-The dominant failure signatures were:
-
-```text
-no such table: tenants
-no such table: subscription_plans
-```
-
-The failures came from many unrelated test classes and occurred during fixture initialization, which identified a shared SQLite/test-bootstrap defect rather than 46 independent product defects.
-
-One additional product/query compatibility failure was observed:
-
-```text
-ReportService::getStaffPerformance()
-→ SQLite: HAVING clause on a non-aggregate query
-```
-
-One billing schema-contract mismatch was observed:
-
-```text
-MoyasarService::activateSubscription()
-→ no such column: billing_cycle
-```
+After resetting the local checkout to canonical `origin/main` and reinstalling dependencies, both failures reproduced on the canonical test code.
 
 ## Latest findings added
 
-### QA-TESTINFRA-003 — SQLite `:memory:` lifecycle
+### QA-BOOK-002 — Holiday availability comparison was too strict for a calendar-date field
 
-`phpunit.xml` used `DB_DATABASE=:memory:`. `TenantTestCase` cached migration completion per test class, but Laravel can boot a fresh application/connection while the static cache survives. A new in-memory SQLite connection therefore had no `tenants` or other central tables.
+`BookingAvailabilityRulesScenarioTest::holiday_makes_the_staff_unavailable_even_when_working_hours_exist()` persisted an all-staff holiday successfully, but `SlotEngine::validateSlot()` returned an available result for the same calendar day.
+
+The test then isolated the layer: the Holiday fixture existed, while the domain `SlotEngine` result was still available. This proved the defect was in Holiday lookup semantics, before `CreatePublicBooking` could translate the domain result into `SlotUnavailableException`.
+
+Root cause:
+
+```text
+Holiday model stores a calendar date
+→ SlotEngine queried `where('date', $date->toDateString())`
+→ stored representation could include a time component
+→ exact equality missed the same calendar day
+```
 
 Remediation:
 
 ```text
-SQLite test DB
-→ process-isolated file
-→ TEST_TOKEN / PARALLEL_PROCESS / PID naming
-→ cleaned on shutdown
+SlotEngine::isHoliday()
+→ `whereDate('date', $date->toDateString())`
 ```
 
-This also removes the shared-memory conflict that caused the earlier parallel run to explode into hundreds of `no such table` errors.
+The business contract is unchanged: a holiday matching the staff's local calendar date blocks booking. The regression already present in `BookingAvailabilityRulesScenarioTest` verifies fixture persistence, direct SlotEngine rejection with reason `holiday`, and higher-level booking rejection.
 
-### QA-REPORT-002 — SQLite-incompatible staff-performance query
+Fix commit: `cfc9e468a3b65c13d3c11ec7aec0c6381a555cc2`.
 
-`ReportService` used `HAVING` on a `withCount()` alias. This was replaced by a `whereHas()` existence filter while retaining `withCount()` for the returned count.
+### QA-REPORT-003 — Tenant Dashboard daily appointment metrics disagreed with canonical database truth
 
-### QA-BILLING-003 — unsupported subscription `billing_cycle` write
+`MasterBusinessFlowScenarioTest::dashboard_reconciles_exactly_with_database_truth_for_the_golden_dataset()` created one confirmed appointment on the business date. The canonical `whereDate('date', $today)` query returned `1`, while Dashboard `stats['confirmed']` returned `0`.
 
-`SubscriptionPlan` is the canonical source of `billing_cycle`. `tenant_subscriptions` does not define that column. The duplicate write was removed from `MoyasarService`.
+Root cause:
+
+```text
+Dashboard aggregate
+→ exact `date = ?` comparison
+→ possible mismatch when date representation contains a time component
+→ projected confirmed count diverged from canonical `whereDate()` truth
+```
+
+Remediation:
+
+```text
+Dashboard aggregate
+→ `DATE(date) = ?` for total_today / completed_today / confirmed_today
+```
+
+The aggregate structure and metric meanings remain unchanged; only calendar-date matching was normalized. The existing master scenario is the regression guard and reconciles the projection with direct database truth.
+
+Fix commit: `c033fb8fd4628dad7cda5e569ccc7073500b27bf`.
+
+## Current canonical-main checkpoint
+
+The latest documentation commit after both fixes is:
+
+```text
+SHA: e2473f3665f43d3c3d89ff6ffcd3beed1da2e104
+```
+
+This SHA includes:
+
+```text
+cfc9e468  fix(booking): compare holidays by calendar date
+c033fb8f  fix(dashboard): reconcile daily appointment date comparisons
+e2473f36  docs(qa): record booking availability and dashboard findings
+```
+
+Fresh CI evidence must be fetched for this current head. Local `vendor/` is intentionally untracked and must not be added to Git.
 
 ## Current Test Environment Contract
 
@@ -210,6 +239,18 @@ Fast targeted regression:
 php artisan test tests/Unit/TestEnvironmentBootstrapTest.php
 ```
 
+Booking holiday regression:
+
+```text
+php artisan test tests/Feature/QA/BookingAvailabilityRulesScenarioTest.php --filter=holiday_makes_the_staff_unavailable_even_when_working_hours_exist --compact
+```
+
+Dashboard reconciliation regression:
+
+```text
+php artisan test tests/Feature/QA/MasterBusinessFlowScenarioTest.php --compact
+```
+
 Master QA local suite:
 
 ```text
@@ -235,7 +276,7 @@ Parallel is a speed check, not final certification. It must use isolated databas
 The current certification target is exactly:
 
 ```text
-1457212c9816c14e4e01ec408ce5e10c1e5d371f
+e2473f3665f43d3c3d89ff6ffcd3beed1da2e104
 ```
 
 Fresh CI evidence must match this or a later current `main` SHA. Until the relevant Master QA and broader quality runs complete successfully, Velora remains **not certified**.
@@ -268,6 +309,8 @@ Do not add another browser framework. Before creating a CI browser gate, establi
 
 ```text
 Fresh MySQL CI on current main
+→ verify holiday enforcement regression
+→ verify dashboard date reconciliation regression
 → close remaining Master QA failures
 → Billing ↔ Subscription full reconciliation
 → Full tenant/resource authorization matrix
