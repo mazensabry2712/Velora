@@ -24,6 +24,11 @@ final class StaffController extends Controller
         private readonly DeleteStaff $deleteStaff,
     ) {}
 
+    private function ensureTenantAdmin(): void
+    {
+        abort_unless(auth()->user()?->hasRole('Admin Tenant'), 403);
+    }
+
     public function index()
     {
         $staffMembers = $this->staff->all();
@@ -45,6 +50,8 @@ final class StaffController extends Controller
 
     public function store(StoreStaffRequest $request): JsonResponse
     {
+        $this->ensureTenantAdmin();
+
         try {
             $data = $request->validated();
             $member = $this->createStaff->execute($data);
@@ -65,6 +72,8 @@ final class StaffController extends Controller
 
     public function update(UpdateStaffRequest $request, int $id): JsonResponse
     {
+        $this->ensureTenantAdmin();
+
         try {
             $member = $this->staff->findById($id);
             $data = $request->validated();
@@ -84,6 +93,8 @@ final class StaffController extends Controller
 
     public function destroy(int $id): JsonResponse
     {
+        $this->ensureTenantAdmin();
+
         try {
             $member = $this->staff->findById($id);
             $this->deleteStaff->execute($member);
