@@ -27,7 +27,12 @@ final class PublicBookingAvailabilityController extends Controller
             ])
             ->map(fn (Service $service): array => [
                 'id' => $service->id,
-                'name' => $service->localized_name,
+                // Keep the canonical service name stable for API consumers.
+                // The localized value is exposed separately so the public UI
+                // can opt into the tenant/request locale without changing the
+                // legacy `name` field semantics.
+                'name' => $service->name,
+                'name_localized' => $service->localized_name,
                 'name_ar' => $service->name_ar,
                 'duration' => $service->duration,
                 'duration_minutes' => $service->duration_minutes ?: $service->duration,
