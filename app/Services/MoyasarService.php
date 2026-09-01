@@ -2,7 +2,8 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\DB;
+use App\Models\SubscriptionPlan;
+use App\Models\TenantSubscription;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -51,38 +52,40 @@ class MoyasarService
         $eventKey = 'moyasar_' . $paymentId;
 
         // Idempotency – skip if already processed
-        $exists = DB::table('tenant_subscriptions')
+        $subscription = TenantSubscription::query()
             ->where('tenant_id', $tenantId)
-            ->where('last_webhook_event', $eventKey)
-            ->exists();
+            ->latest('created_at')
+            ->first();
 
-        if ($exists) {
-            Log::info("Moyasar: duplicate callback ignored for payment {$paymentId}");
-            return;
+        if (!$subscription) {
+            throw new \RuntimeException('Tenant subscription not found.');
         }
 
-        $plan         = DB::table('subscription_plans')->find($planId);
-        $durationDays = ($plan?->billing_cycle === 'yearly') ? 365 : 30;
-        $now          = now();
+        if ($subscription->last_webhook_event ?? null) {
+            if ($subscription->last_webhook_event === $eventKey) {
+                Log::info("Moyasar: duplicate callback ignored for payment {$paymentId}");
+                return;
+            }
+        }
 
-        DB::table('tenant_subscriptions')
-            ->where('tenant_id', $tenantId)
-            ->orderByDesc('created_at')
-            ->limit(1)
-            ->update([
-                'status'               => 'active',
-                'subscription_plan_id' => $planId,
-                'starts_at'            => $now,
-                'ends_at'              => $now->copy()->addDays($durationDays),
-                'billing_cycle'        => $plan?->billing_cycle ?? 'monthly',
-                'amount_paid'          => round($amountHalalas / 100, 2),
-                'payment_method'       => 'moyasar',
-                'last_webhook_event'   => $eventKey,
-                'trial_ends_at'        => null,
-                'grace_ends_at'        => null,
-                'converted_at'         => $now,
-                'updated_at'           => $now,
-            ]);
+        $plan = SubscriptionPlan::query()->find($planId);
+        $durationDays = ($plan?->billing_cycle === 'yearly') ? 365 : 30;
+        $now = now();
+
+        $subscription->forceFill([
+            'status'               => 'active',
+            'subscription_plan_id' => $planId,
+            'starts_at'            => $now,
+            'ends_at'              => $now->copy()->addDays($durationDays),
+            'billing_cycle'        => $plan?->billing_cycle ?? 'monthly',
+            'amount_paid'          => round($amountHalalas / 100, 2),
+            'payment_method'       => 'moyasar',
+            'last_webhook_event'   => $eventKey,
+            'trial_ends_at'        => null,
+            'grace_ends_at'        => null,
+            'converted_at'         => $now,
+            'updated_at'           => $now,
+        ])->save();
 
         Log::info("Moyasar: tenant {$tenantId} subscription activated. Plan ID={$planId}, Amount=" . round($amountHalalas / 100, 2) . ' SAR');
     }
