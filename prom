@@ -1,12 +1,7 @@
-PS C:\Herd\Velora> php artisan tinker --execute="dump(config('app.url')); dump(config('app.domain')); dump(env('APP_DOMAIN')); dump(request()->getHost());"
-"http://localhost" // vendor\psy\psysh\src\ExecutionClosure.php(41) : eval()'d code:1
-null // vendor\psy\psysh\src\ExecutionClosure.php(41) : eval()'d code:2
-null // vendor\psy\psysh\src\ExecutionClosure.php(41) : eval()'d code:3
-"localhost" // vendor\psy\psysh\src\ExecutionClosure.php(41) : eval()'d code:4
 PS C:\Herd\Velora> php artisan test tests/Feature/SignupPageContractTest.php --filter=test_arabic_signup_page_resolves_on_the_central_domain --compact
 
    FAIL  Tests\Feature\SignupPageContractTest
-  ⨯ arabic signup page resolves on the central domain                                                            1.07s
+  ⨯ arabic signup page resolves on the central domain                                                            1.17s
   ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
    FAILED  Tests\Feature\SignupPageContractTest > arabic signup page resolves on the central domain
   Expected response status code [200] but received 404.
@@ -25,12 +20,12 @@ Failed asserting that 404 is identical to 200.
 
 
   Tests:    1 failed (1 assertions)
-  Duration: 1.20s
+  Duration: 1.30s
 
 PS C:\Herd\Velora> php artisan test tests/Feature/SignupValidationTest.php --filter=test_signup_page_is_gettable --compact
 
    FAIL  Tests\Feature\SignupValidationTest
-  ⨯ signup page is gettable                                                                                      1.07s
+  ⨯ signup page is gettable                                                                                      1.08s
   ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
    FAILED  Tests\Feature\SignupValidationTest > signup page is gettable
   Expected response status code [>=200, <300] but received 404.
@@ -49,34 +44,6 @@ Failed asserting that false is true.
 
 
   Tests:    1 failed (1 assertions)
-  Duration: 1.22s
-
-PS C:\Herd\Velora> php artisan test tests/Feature/MultiRegion/GeoLocalizationTest.php --filter=pricing_page_returns_200 --compactphp artisan test tests/Feature/MultiRegion/GeoLocalizationTest.php --filter=pricing_page_returns_200 --compact
-PHPUnit 11.5.56 by Sebastian Bergmann and contributors.
-
-Unknown option "--compactphp"
-PS C:\Herd\Velora> php artisan test tests/Feature/MultiRegion/GeoLocalizationTest.php --filter=pricing_page_returns_200 --compact
-
-   FAIL  Tests\Feature\MultiRegion\GeoLocalizationTest
-  ⨯ pricing page returns 200                                                                                     1.10s
-  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-   FAILED  Tests\Feature\MultiRegion\GeoLocalizationTest > pricing page returns 200
-  Expected response status code [200] but received 404.
-Failed asserting that 404 is identical to 200.
-
-  at tests\Feature\MultiRegion\GeoLocalizationTest.php:298
-    294▕     #[Test]
-    295▕     public function pricing_page_returns_200(): void
-    296▕     {
-    297▕         $this->get('/pricing')
-  ➜ 298▕              ->assertStatus(200)
-    299▕              ->assertViewIs('landing.pricing')
-    300▕              ->assertViewHas('pricing')
-    301▕              ->assertViewHas('allPricing')
-    302▕              ->assertViewHas('globalPricing')
-
-
-  Tests:    1 failed (1 assertions)
-  Duration: 1.25s
+  Duration: 1.21s
 
 PS C:\Herd\Velora>
