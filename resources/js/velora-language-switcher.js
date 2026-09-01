@@ -33,7 +33,10 @@
 
     const bind = () => {
         document.querySelectorAll(selector).forEach((wrapper) => {
-            if (wrapper.dataset.veloraLanguageBound === '1') return;
+            // The response middleware also installs a fallback binding before
+            // this deferred Vite module executes. Treat both bindings as the
+            // same integration point so a click cannot toggle twice.
+            if (wrapper.dataset.veloraLanguageBound === '1' || wrapper.dataset.ready === '1') return;
 
             const { trigger, menu } = getParts(wrapper);
             if (!trigger || !menu) return;
