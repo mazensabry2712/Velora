@@ -19,6 +19,40 @@ A release is not certified because a page returns `200` or an endpoint returns `
 
 ---
 
+## 0. Engineering / Package Policy
+
+Velora follows a pragmatic implementation rule:
+
+> **Do not over-engineer a problem. Use Laravel/PHP capabilities already present when they are sufficient. When a mature, maintained package directly solves a real requirement or repeated problem with less code and less risk, use the package instead of building a custom subsystem.**
+
+Decision order:
+
+```text
+1. Existing project code / existing abstraction
+        ↓
+2. Native Laravel / PHP capability
+        ↓
+3. Existing installed package already covering the requirement
+        ↓
+4. Add a mature package only when it materially reduces complexity/risk
+        ↓
+5. Custom implementation only when the above are insufficient
+```
+
+Before introducing a package, verify:
+
+- it solves the actual problem rather than a hypothetical future problem
+- it is compatible with the current Laravel/PHP versions
+- it is maintained and appropriate for production
+- it does not duplicate an existing project capability
+- its operational/security cost is lower than the custom alternative
+
+Do not introduce infrastructure, abstractions, services, repositories, event buses, or packages merely to make the architecture look more sophisticated.
+
+For the current `BOOK-001` tracking URL failure, **no package is warranted**: the root cause is an incorrect route invocation and the smallest correct fix is in the existing controller.
+
+---
+
 ## 1. Canonical Truth Model
 
 ### Rule
