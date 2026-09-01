@@ -51,7 +51,7 @@ final class MoyasarCentralConnectionScenarioTest extends TenantTestCase
 
         $this->assertSame('active', $subscription->status);
         $this->assertSame('moyasar', $subscription->payment_method);
-        $this->assertSame('12.5', (string) $subscription->amount_paid);
+        $this->assertSame('12.50', (string) $subscription->amount_paid);
         $this->assertSame($plan->id, $subscription->subscription_plan_id);
         $this->assertNotNull($subscription->starts_at);
         $this->assertNotNull($subscription->ends_at);
