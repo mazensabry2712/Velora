@@ -8,6 +8,7 @@ use App\Http\Middleware\EnsureTokenBelongsToTenant;
 use App\Models\Tenant;
 use Closure;
 use Illuminate\Http\Request;
+use Laravel\Sanctum\PersonalAccessToken;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TenantTestCase;
@@ -20,13 +21,15 @@ final class TenantIsolationSecurityScenarioTest extends TenantTestCase
     #[Test]
     public function token_scoped_to_current_tenant_is_accepted(): void
     {
-        $token = $this->admin->createToken('qa-tenant-a', [
+        $createdToken = $this->admin->createToken('qa-tenant-a', [
             'tenant:' . $this->tenant->id,
-        ])->accessToken;
+        ]);
 
         $request = Request::create('/api/v1/appointments', 'GET');
         $request->setUserResolver(fn () => $this->admin);
-        $this->admin->withAccessToken($this->admin->tokens()->where('name', 'qa-tenant-a')->latest('id')->first());
+        $this->admin->withAccessToken(
+            PersonalAccessToken::findToken($createdToken->accessToken)
+        );
 
         $response = app(EnsureTokenBelongsToTenant::class)->handle(
             $request,
@@ -35,15 +38,15 @@ final class TenantIsolationSecurityScenarioTest extends TenantTestCase
 
         $this->assertSame(200, $response->getStatusCode());
         $this->assertSame(['passed' => true], $response->getData(true));
-        $this->assertNotSame('', $token);
     }
 
     #[Test]
     public function token_from_tenant_a_is_rejected_when_tenant_b_is_initialized(): void
     {
-        $tenantAToken = $this->admin->createToken('qa-tenant-a-isolation', [
+        $createdToken = $this->admin->createToken('qa-tenant-a-isolation', [
             'tenant:' . $this->tenant->id,
         ]);
+        $tenantAToken = PersonalAccessToken::findToken($createdToken->accessToken);
 
         $tenantB = Tenant::create([
             'id' => 'qa-isolation-' . uniqid(),
@@ -55,7 +58,7 @@ final class TenantIsolationSecurityScenarioTest extends TenantTestCase
 
             $request = Request::create('/api/v1/appointments', 'GET');
             $request->setUserResolver(fn () => $this->admin);
-            $this->admin->withAccessToken($tenantAToken->token);
+            $this->admin->withAccessToken($tenantAToken);
 
             $response = app(EnsureTokenBelongsToTenant::class)->handle(
                 $request,
