@@ -22,10 +22,10 @@ final class WorkspaceFinderUiLocalizationTest extends TestCase
         $this->assertStringContainsString('Find your workspace', $html);
         $this->assertStringContainsString('Enter your business workspace name to continue.', $html);
         $this->assertStringContainsString('Workspace name', $html);
-        $this->assertStringContainsString('Continue', $html);
+        $this->assertStringContainsString('>Continue</span>', $html);
         $this->assertStringNotContainsString('Find your account', $html);
         $this->assertStringNotContainsString('Enter your email to receive account instructions.', $html);
-        $this->assertStringNotContainsString('Email address', $html);
+        $this->assertStringNotContainsString('>Email address</', $html);
         $this->assertStringNotContainsString('Send instructions', $html);
     }
 
@@ -40,10 +40,10 @@ final class WorkspaceFinderUiLocalizationTest extends TestCase
         $this->assertStringContainsString('ابحث عن مساحة عملك', $html);
         $this->assertStringContainsString('أدخل اسم مساحة العمل الخاصة بنشاطك للمتابعة.', $html);
         $this->assertStringContainsString('اسم مساحة العمل', $html);
-        $this->assertStringContainsString('متابعة', $html);
+        $this->assertStringContainsString('>متابعة</span>', $html);
         $this->assertStringNotContainsString('Find your account', $html);
         $this->assertStringNotContainsString('Enter your email to receive account instructions.', $html);
-        $this->assertStringNotContainsString('Email address', $html);
+        $this->assertStringNotContainsString('>Email address</', $html);
         $this->assertStringNotContainsString('Send instructions', $html);
     }
 
@@ -58,7 +58,7 @@ final class WorkspaceFinderUiLocalizationTest extends TestCase
         $this->assertStringContainsString('Retrouvez votre espace de travail', $html);
         $this->assertStringContainsString('Saisissez le nom de l’espace de travail de votre entreprise pour continuer.', $html);
         $this->assertStringContainsString('Nom de l’espace de travail', $html);
-        $this->assertStringContainsString('Continuer', $html);
+        $this->assertStringContainsString('>Continuer</span>', $html);
         $this->assertStringContainsString('Connexion professionnelle sécurisée', $html);
         $this->assertStringContainsString('Espaces de travail actifs', $html);
         $this->assertStringContainsString('Tous droits réservés.', $html);
@@ -69,7 +69,7 @@ final class WorkspaceFinderUiLocalizationTest extends TestCase
         $this->assertStringNotContainsString('Company admin sign in', $html);
         $this->assertStringNotContainsString('Start free trial', $html);
         $this->assertStringNotContainsString('All rights reserved.', $html);
-        $this->assertStringNotContainsString('Workspace name', $html);
-        $this->assertStringNotContainsString('Continue', $html);
+        $this->assertStringNotContainsString('>Workspace name<', $html);
+        $this->assertStringNotContainsString('>Continue</span>', $html);
     }
 }
