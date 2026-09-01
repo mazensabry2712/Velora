@@ -24,6 +24,11 @@ final class EnsureSubscriptionIsValid
     public function handle(Request $request, Closure $next): mixed
     {
         if (! tenant('id') || $this->isExcluded($request)) return $next($request);
+
+        if ($request->routeIs('admin.onboarding.*')) {
+            abort_unless($request->user()?->hasRole('Admin Tenant'), 403);
+        }
+
         $state = $this->subscriptions->currentState();
         $subscription = $state ? (object) $state : null;
         if (! $subscription) return $this->redirectToBilling($request, 'no_subscription');
@@ -65,8 +70,7 @@ final class EnsureSubscriptionIsValid
 
     private function isExcluded(Request $request): bool
     {
-        foreach ($this->excludedRoutes as $route) if ($request->is($route) || $request->is('*/' . $route)) return true;
-        return false;
+        foreach ($this->excludedRoutes as $route) if ($request->is($route) || $request->is('*/' . $route)) return true; return false;
     }
 
     private function moveToReadOnly(object $subscription): void
