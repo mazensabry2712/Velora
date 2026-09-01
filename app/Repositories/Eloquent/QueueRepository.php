@@ -20,7 +20,12 @@ final class QueueRepository implements QueueRepositoryInterface, QueueRepository
     public function getByDate(string $date): Collection
     {
         return Queue::with(['appointment.customer', 'appointment.staff', 'appointment.service'])
-            ->whereDate('created_at', $date)
+            ->where(function ($query) use ($date): void {
+                $query->whereDate('queue_date', $date)
+                    ->orWhere(function ($legacy) use ($date): void {
+                        $legacy->whereNull('queue_date')->whereDate('created_at', $date);
+                    });
+            })
             ->orderByDesc('is_vip')
             ->orderBy('id')
             ->get();
@@ -73,7 +78,12 @@ final class QueueRepository implements QueueRepositoryInterface, QueueRepository
                 SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
                 SUM(CASE WHEN is_vip = 1           THEN 1 ELSE 0 END) as vip
             ")
-            ->whereDate('created_at', $date)
+            ->where(function ($query) use ($date): void {
+                $query->whereDate('queue_date', $date)
+                    ->orWhere(function ($legacy) use ($date): void {
+                        $legacy->whereNull('queue_date')->whereDate('created_at', $date);
+                    });
+            })
             ->first();
 
         return $rows ? $rows->toArray() : [
@@ -92,14 +102,19 @@ final class QueueRepository implements QueueRepositoryInterface, QueueRepository
 
     public function moveToNextDay(string $date, string $status): int
     {
-        $nextDay = Carbon::parse($date)->addDay();
+        $nextDay = Carbon::parse($date)->addDay()->toDateString();
 
-        $queues = Queue::whereDate('created_at', $date)
+        $queues = Queue::where(function ($query) use ($date): void {
+                $query->whereDate('queue_date', $date)
+                    ->orWhere(function ($legacy) use ($date): void {
+                        $legacy->whereNull('queue_date')->whereDate('created_at', $date);
+                    });
+            })
             ->where('status', $status)
             ->get();
 
         foreach ($queues as $queue) {
-            $queue->created_at = $nextDay;
+            $queue->queue_date = $nextDay;
             $queue->updated_at = now();
             $queue->save();
         }
