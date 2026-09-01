@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Booking\Services;
 
 use App\Domain\Booking\DTOs\SlotValidationResult;
@@ -154,7 +156,7 @@ class SlotEngine
     private function isHoliday(CarbonImmutable $date, Staff $staff): bool
     {
         return Holiday::query()
-            ->where('date', $date->toDateString())
+            ->whereDate('date', $date->toDateString())
             ->where(function ($q) use ($staff) {
                 $q->where('applies_to_all', true)
                     ->orWhereHas('staff', fn($s) => $s->where('staff_id', $staff->id));
