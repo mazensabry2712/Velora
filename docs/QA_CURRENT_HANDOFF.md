@@ -12,8 +12,10 @@ Branch: main
 ## Current main head
 
 ```text
-SHA: 4d989d38ca57977ad6185b51fe4cc02300e711be
+SHA: e5eed0bec3b4e4b9721f9fcb156c14627fb7612d
 ```
+
+This SHA is the current `main` head after the QA remediation/cleanup commits. Always verify `refs/heads/main` before continuing.
 
 ## Method in one line
 
@@ -84,18 +86,13 @@ Service/Staff/Settings authorization hardening
 Expanded authorization tests
 Onboarding mutation authorization hardening (remediation added; fresh CI pending)
 Stripe central-connection hardening
+QA suite cleanup: temporary marker/placeholder files removed
 
 ```
 
-## Latest observed MySQL Master QA evidence
+## Latest completed Master QA evidence
 
-Run **#120** tested commit:
-
-```text
-281268faf99337b2c9c62f3c9e679222268f76ee
-```
-
-Result:
+Run **#120** tested commit `281268faf99337b2c9c62f3c9e679222268f76ee`:
 
 ```text
 53 passed
@@ -103,7 +100,7 @@ Result:
 240 assertions
 ```
 
-Full diagnostic and remediation record:
+Detailed report:
 
 ```text
 docs/QA_RUN_120_POSTMORTEM.md
@@ -116,19 +113,14 @@ Run #120 is historical evidence only. It does not certify the current `main` hea
 ```text
 1. Onboarding Staff/Assistant authorization
    → confirmed production authorization gap
-
 2. Moyasar central connection test
    → missing clean-environment fixture
-
 3. Tenant deletion success assertion
    → central-connection boundary hardening required
-
 4. Tenant resource isolation teardown
    → dynamic tenant connection test-infrastructure defect
-
 5. Tenant token isolation teardown
    → same test-infrastructure defect
-
 6. Duplicate class tenant fixture
    → secondary leak from the teardown defect
 ```
@@ -136,24 +128,33 @@ Run #120 is historical evidence only. It does not certify the current `main` hea
 ## Remediation added after Run #120
 
 ```text
-464a5d76...  TenantTestCase concrete Connection rollback
-117e57ed...  Onboarding admin-only mutations
-c30656d9...  Self-contained Moyasar plan fixture
-c4e39723...  Explicit central Tenant lookup during purge
-4d989d38...  Run #120 postmortem documentation
+TenantTestCase
+→ concrete tenant/central Connection rollback
+
+OnboardingController
+→ Admin Tenant-only mutation guard
+
+MoyasarCentralConnectionScenarioTest
+→ self-contained valid SubscriptionPlan fixture
+
+PermanentlyDeleteExpiredTenants
+→ explicit central connection for Tenant lookup
+
+QA suite
+→ temporary placeholder/marker files removed
 ```
 
-The complete SHAs are preserved in `docs/QA_RUN_120_POSTMORTEM.md`.
+Full remediation details are preserved in `docs/QA_RUN_120_POSTMORTEM.md` and `docs/QA_FINDINGS_LOG.md`.
 
 ## Current CI requirement
 
-The next Master QA run must match this exact current `main` SHA:
+The current certification target is the exact `main` SHA above:
 
 ```text
-4d989d38ca57977ad6185b51fe4cc02300e711be
+e5eed0bec3b4e4b9721f9fcb156c14627fb7612d
 ```
 
-Until that run completes successfully, the repository remains **not certified**.
+The latest Master QA run for that head is still executing. Until it completes successfully, the repository remains **not certified**.
 
 Canonical Master QA:
 
@@ -182,7 +183,7 @@ Do not add another browser framework. Existing browser tests include determinist
 ## Current next gate
 
 ```text
-Fresh MySQL Master QA on current main
+Finish Master QA on current main
 → close any remaining failures
 → Billing ↔ Subscription full reconciliation
 → Full tenant/resource authorization matrix
@@ -205,5 +206,5 @@ docs/QA_CURRENT_HANDOFF.md           ← where to continue
   ↓
 docs/QA_FINDINGS_LOG.md              ← long-term finding history
   ↓
-docs/QA_RUN_120_POSTMORTEM.md        ← detailed latest CI failure/remediation report
+docs/QA_RUN_120_POSTMORTEM.md        ← detailed CI failure/remediation report
 ```
