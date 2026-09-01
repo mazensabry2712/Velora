@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\QA;
 
+use App\Application\Booking\Actions\CreatePublicBooking;
+use App\Application\Booking\DTOs\PublicBookingData;
 use App\Models\Appointment;
 use App\Models\Invoice;
 use App\Models\Queue;
@@ -41,6 +43,40 @@ final class MasterBusinessFlowScenarioTest extends TenantTestCase
         RateLimiter::clear('public-booking:' . $this->tenant->getTenantKey() . ':' . $this->app->make('request')->ip());
 
         return [$date, $timezone];
+    }
+
+    #[Test]
+    public function application_booking_use_case_creates_a_consistent_booking_without_http_infrastructure(): void
+    {
+        [$date, $timezone] = $this->prepareBookableSlot();
+
+        $result = app(CreatePublicBooking::class)->execute(new PublicBookingData(
+            customerName: 'QA Application Customer',
+            customerEmail: 'qa-application@example.com',
+            customerPhone: '+201000000002',
+            serviceId: $this->service->id,
+            staffUserId: $this->staffMember->id,
+            resourceId: null,
+            appointmentDate: $date->toDateString(),
+            appointmentTime: '09:00',
+            requestedTimezone: $timezone,
+            notes: 'Application layer scenario',
+        ));
+
+        $appointment = $result['appointment'];
+        $queue = $result['queue'];
+        $customer = $result['customer'];
+
+        $this->assertInstanceOf(Appointment::class, $appointment);
+        $this->assertInstanceOf(Queue::class, $queue);
+        $this->assertSame($this->service->id, $appointment->service_id);
+        $this->assertSame($this->staff->id, $appointment->staff_id_new);
+        $this->assertSame($customer->id, $appointment->customer_id_new);
+        $this->assertSame($appointment->id, $queue->appointment_id);
+        $this->assertSame('pending', $appointment->status);
+        $this->assertSame('waiting', $queue->status);
+        $this->assertSame($date->toDateString(), $queue->queue_date->toDateString());
+        $this->assertNotSame('', (string) $appointment->public_reference);
     }
 
     #[Test]
