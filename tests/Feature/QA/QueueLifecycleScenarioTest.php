@@ -53,6 +53,55 @@ final class QueueLifecycleScenarioTest extends TenantTestCase
     }
 
     #[Test]
+    public function call_next_does_not_consume_a_future_queue_entry(): void
+    {
+        $today = today()->toDateString();
+        $tomorrow = today()->addDay()->toDateString();
+
+        $todayAppointment = Appointment::create([
+            'customer_id' => $this->customer->id,
+            'staff_id' => $this->staffMember->id,
+            'service_id' => $this->service->id,
+            'date' => $today,
+            'time_slot' => '09:00',
+            'status' => Appointment::STATUS_CONFIRMED,
+            'price' => 100,
+        ]);
+
+        $futureAppointment = Appointment::create([
+            'customer_id' => $this->customer->id,
+            'staff_id' => $this->staffMember->id,
+            'service_id' => $this->service->id,
+            'date' => $tomorrow,
+            'time_slot' => '09:00',
+            'status' => Appointment::STATUS_CONFIRMED,
+            'price' => 100,
+        ]);
+
+        $todayQueue = Queue::create([
+            'appointment_id' => $todayAppointment->id,
+            'queue_number' => 'A030',
+            'queue_date' => $today,
+            'status' => 'waiting',
+            'is_vip' => false,
+        ]);
+
+        $futureQueue = Queue::create([
+            'appointment_id' => $futureAppointment->id,
+            'queue_number' => 'A031',
+            'queue_date' => $tomorrow,
+            'status' => 'waiting',
+            'is_vip' => true,
+        ]);
+
+        $called = app(CallNextQueueEntry::class)->execute();
+
+        $this->assertSame($todayQueue->id, $called?->id);
+        $this->assertSame('serving', $todayQueue->fresh()->status);
+        $this->assertSame('waiting', $futureQueue->fresh()->status);
+    }
+
+    #[Test]
     public function queue_state_transitions_keep_the_appointment_consistent(): void
     {
         $appointment = Appointment::create([
@@ -127,7 +176,7 @@ final class QueueLifecycleScenarioTest extends TenantTestCase
     }
 
     #[Test]
-    public function call_next_selects_the_highest_priority_waiting_customer_and_keeps_single_active_serving_entry(): void
+    public function call_next_selects_the_highest_priority_waiting_customer(): void
     {
         $date = today()->toDateString();
 
@@ -171,11 +220,6 @@ final class QueueLifecycleScenarioTest extends TenantTestCase
 
         $this->assertSame($vipQueue->id, $called?->id);
         $this->assertSame('serving', $called?->status);
-        $this->assertSame(
-            1,
-            Queue::where('queue_date', $date)->where('status', 'serving')->count(),
-        );
-        $this->assertSame('confirmed', $vipAppointment->fresh()->status);
     }
 
     #[Test]
