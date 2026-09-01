@@ -67,6 +67,19 @@ final class MasterBusinessFlowScenarioTest extends TenantTestCase
     }
 
     #[Test]
+    public function appointment_status_history_schema_matches_the_model_contract(): void
+    {
+        $this->assertTrue(Schema::hasTable('appointment_status_history'));
+
+        foreach (['appointment_id', 'from_status', 'to_status', 'changed_by', 'actor_type', 'reason', 'metadata', 'created_at'] as $column) {
+            $this->assertTrue(
+                Schema::hasColumn('appointment_status_history', $column),
+                "appointment_status_history.{$column} must exist for status history persistence."
+            );
+        }
+    }
+
+    #[Test]
     public function application_booking_use_case_creates_a_consistent_booking_without_http_infrastructure(): void
     {
         [$date, $timezone] = $this->prepareBookableSlot();
@@ -135,7 +148,7 @@ final class MasterBusinessFlowScenarioTest extends TenantTestCase
         $this->assertNotSame('', (string) $appointment->public_reference);
         $this->assertNotNull($appointment->customer_id_new);
 
-        $this->assertDatabaseHas('appointment_status_histories', [
+        $this->assertDatabaseHas('appointment_status_history', [
             'appointment_id' => $appointment->id,
             'to_status' => Appointment::STATUS_PENDING,
         ]);
