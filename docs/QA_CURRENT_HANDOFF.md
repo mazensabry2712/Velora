@@ -12,7 +12,7 @@ Branch: main
 ## Current main head
 
 ```text
-SHA: c4e397232ac439bdd6caae8ea5832621e2486248
+SHA: 4d989d38ca57977ad6185b51fe4cc02300e711be
 ```
 
 ## Method in one line
@@ -75,21 +75,21 @@ Notification lifecycle/recovery basics
 Moyasar webhook fail-closed authentication
 Moyasar payment verification/retry scenarios
 Moyasar central-connection activation
-Tenant test transaction connection safety (fix in main; fresh CI pending)
-Tenant token/resource isolation tests (tests in main; fresh CI pending)
+Tenant test transaction connection safety (remediation added; fresh CI pending)
+Tenant token/resource isolation tests (fresh CI pending)
 Super Admin tenant/subscription reconciliation tests
 Reporting customer-source reconciliation
-Tenant deletion safety tests
+Tenant deletion safety tests (remediation added; fresh CI pending)
 Service/Staff/Settings authorization hardening
 Expanded authorization tests
-Onboarding mutation authorization hardening (production fix now in main; fresh CI pending)
-Stripe central-connection hardening (fix in main; fresh CI pending)
+Onboarding mutation authorization hardening (remediation added; fresh CI pending)
+Stripe central-connection hardening
 
 ```
 
 ## Latest observed MySQL Master QA evidence
 
-The authoritative recent Master QA run was **Run #120** on commit:
+Run **#120** tested commit:
 
 ```text
 281268faf99337b2c9c62f3c9e679222268f76ee
@@ -103,55 +103,57 @@ Result:
 240 assertions
 ```
 
-Important: this run is evidence for commit `281268f`, not for newer commits. The failures were:
+Full diagnostic and remediation record:
 
 ```text
-1. AuthorizationMatrixExpandedScenarioTest
-   Staff/Assistant onboarding mutation expected 403, received 200.
-   Classification: confirmed production authorization gap.
-
-2. MoyasarCentralConnectionScenarioTest
-   No SubscriptionPlan fixture existed in a clean central DB.
-   Classification: QA fixture issue, not a Moyasar business failure.
-
-3. TenantDeletionSafetyScenarioTest
-   Successful cleanup assertion still found the subscription.
-   Classification: requires production/connection-path verification.
-
-4. TenantIsolationResourceScenarioTest
-   Dynamic connection [tenant] no longer existed during test teardown.
-   Classification: test infrastructure / tenancy teardown issue.
-
-5. TenantIsolationSecurityScenarioTest
-   Dynamic connection [tenant] no longer existed during test teardown.
-   Classification: test infrastructure / tenancy teardown issue; same root family as #4.
-
-6. Shared tenant fixture duplication
-   A later tenant test attempted to recreate `test-tenant-*` already left behind.
-   Classification: test infrastructure leakage caused by the teardown problem.
+docs/QA_RUN_120_POSTMORTEM.md
 ```
 
-## Fixes added after Run #120
+Run #120 is historical evidence only. It does not certify the current `main` head.
+
+## Run #120 failure classifications
 
 ```text
-TenantTestCase
-→ captures the concrete tenant + central Connection objects
-→ rolls back using those objects before dynamic tenancy is ended
-→ avoids reopening a deleted `tenant` connection during tearDown
+1. Onboarding Staff/Assistant authorization
+   → confirmed production authorization gap
 
-OnboardingController
-→ Admin Tenant guard added to saveStep1/saveStep2/saveStep3/complete
+2. Moyasar central connection test
+   → missing clean-environment fixture
 
-MoyasarCentralConnectionScenarioTest
-→ creates its own valid SubscriptionPlan fixture instead of assuming a seeder ran
+3. Tenant deletion success assertion
+   → central-connection boundary hardening required
 
-PermanentlyDeleteExpiredTenants
-→ resolves Tenant records explicitly through the configured central connection
+4. Tenant resource isolation teardown
+   → dynamic tenant connection test-infrastructure defect
+
+5. Tenant token isolation teardown
+   → same test-infrastructure defect
+
+6. Duplicate class tenant fixture
+   → secondary leak from the teardown defect
 ```
 
-These changes are now on `main`, but they are **not certified yet**. The next CI run must match the current `main` SHA `c4e397232ac439bdd6caae8ea5832621e2486248`.
+## Remediation added after Run #120
 
-## CI configuration
+```text
+464a5d76...  TenantTestCase concrete Connection rollback
+117e57ed...  Onboarding admin-only mutations
+c30656d9...  Self-contained Moyasar plan fixture
+c4e39723...  Explicit central Tenant lookup during purge
+4d989d38...  Run #120 postmortem documentation
+```
+
+The complete SHAs are preserved in `docs/QA_RUN_120_POSTMORTEM.md`.
+
+## Current CI requirement
+
+The next Master QA run must match this exact current `main` SHA:
+
+```text
+4d989d38ca57977ad6185b51fe4cc02300e711be
+```
+
+Until that run completes successfully, the repository remains **not certified**.
 
 Canonical Master QA:
 
@@ -165,28 +167,9 @@ php artisan migrate --force
 php artisan test tests/Feature/QA --compact
 ```
 
-The general quality workflow also exists, but its full PHPUnit step currently uses SQLite for speed. It is useful for broad quality checks, but it is not enough by itself for tenant/locking/billing/concurrency certification.
-
-## Current next gate
-
-```text
-Fresh MySQL CI on current main
-→ close/verify the six Run #120 failures
-→ Billing ↔ Subscription full reconciliation
-→ Full tenant/resource authorization matrix
-→ Super Admin financial/revenue reconciliation
-→ Reports / Excel export reconciliation
-→ Deletion / storage / DB cleanup certification
-→ Playwright browser journeys
-→ Full regression
-→ Production go/no-go certification
-```
-
 ## E2E status
 
-Playwright is already installed and configured in the repository; do not add another browser framework.
-
-Existing browser specs:
+Playwright is already installed and configured. Existing specs:
 
 ```text
 tests/browser/booking.spec.js
@@ -194,29 +177,33 @@ tests/browser/queue.spec.js
 playwright.config.js
 ```
 
-Current Playwright configuration supports:
+Do not add another browser framework. Existing browser tests include deterministic mocked UI paths plus real availability checks. A browser CI gate must use a deterministic application/tenant bootstrap; a fake gate that can pass without exercising the app is not acceptable.
+
+## Current next gate
 
 ```text
-PLAYWRIGHT_BASE_URL override
-Chromium desktop
-Chromium mobile
-trace on failure
-screenshots on failure
-video on failure
+Fresh MySQL Master QA on current main
+→ close any remaining failures
+→ Billing ↔ Subscription full reconciliation
+→ Full tenant/resource authorization matrix
+→ Super Admin financial/revenue reconciliation
+→ Reports / Excel export reconciliation
+→ Deletion / storage / DB cleanup certification
+→ Deterministic Playwright browser journeys
+→ Full regression
+→ Production go/no-go certification
 ```
-
-The existing booking suite contains deterministic mocked scenarios as well as real availability checks. A full browser CI gate should be added only after the test environment has a deterministic tenant/database bootstrap; do not create a fake browser gate that can pass without exercising the application.
 
 ## Documentation map
 
 ```text
 README.md
   ↓
-docs/MASTER_QA_EXECUTION_RUNBOOK.md   ← operational method
+docs/MASTER_QA_EXECUTION_RUNBOOK.md   ← how to work
   ↓
-docs/QA_FINDINGS_LOG.md              ← defect/fix/regression history
+docs/QA_CURRENT_HANDOFF.md           ← where to continue
   ↓
-docs/QA_CURRENT_HANDOFF.md           ← current main/checkpoint
+docs/QA_FINDINGS_LOG.md              ← long-term finding history
+  ↓
+docs/QA_RUN_120_POSTMORTEM.md        ← detailed latest CI failure/remediation report
 ```
-
-The runbook explains **how** to continue. This handoff explains **where** to continue. The findings log explains **what went wrong and why**.
