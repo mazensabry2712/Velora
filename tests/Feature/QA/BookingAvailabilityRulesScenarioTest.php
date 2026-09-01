@@ -66,7 +66,7 @@ final class BookingAvailabilityRulesScenarioTest extends TenantTestCase
             $operation();
             $this->fail("Expected SlotUnavailableException with reason [{$reason}].");
         } catch (SlotUnavailableException $exception) {
-            $this->assertSame($reason, $exception->getMessage());
+            $this->assertSame($reason, $exception->getReason());
         }
     }
 
