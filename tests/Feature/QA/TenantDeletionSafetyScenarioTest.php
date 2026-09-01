@@ -24,8 +24,7 @@ final class TenantDeletionSafetyScenarioTest extends TestCase
     public function failed_resource_cleanup_retains_tenant_and_subscription_for_retry(): void
     {
         $tenantId = 'qa-delete-failure-' . bin2hex(random_bytes(4));
-        $planId = SubscriptionPlan::query()->value('id');
-        $this->assertNotNull($planId);
+        $planId = $this->ensureQaSubscriptionPlan()->id;
 
         Tenant::create([
             'id' => $tenantId,
@@ -62,8 +61,7 @@ final class TenantDeletionSafetyScenarioTest extends TestCase
     public function successful_resource_cleanup_removes_tenant_subscription_and_tenant_record(): void
     {
         $tenantId = 'qa-delete-success-' . bin2hex(random_bytes(4));
-        $planId = SubscriptionPlan::query()->value('id');
-        $this->assertNotNull($planId);
+        $planId = $this->ensureQaSubscriptionPlan()->id;
 
         Tenant::create([
             'id' => $tenantId,
@@ -91,5 +89,24 @@ final class TenantDeletionSafetyScenarioTest extends TestCase
 
         $this->assertDatabaseMissing('tenant_subscriptions', ['tenant_id' => $tenantId]);
         $this->assertNull(Tenant::withTrashed()->find($tenantId));
+    }
+
+    private function ensureQaSubscriptionPlan(): SubscriptionPlan
+    {
+        return SubscriptionPlan::query()->first()
+            ?? SubscriptionPlan::query()->create([
+                'name' => 'QA Basic',
+                'slug' => 'qa-basic',
+                'description' => 'Disposable plan for QA tests',
+                'price' => 10,
+                'billing_cycle' => 'monthly',
+                'max_users' => 10,
+                'max_appointments' => 100,
+                'storage_limit' => 100,
+                'features' => [],
+                'is_active' => true,
+                'is_popular' => false,
+                'trial_days' => 7,
+            ]);
     }
 }
