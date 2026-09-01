@@ -106,6 +106,42 @@ This log records defects discovered by the master QA program, the minimal fix, a
 
 ---
 
+## Finding QA-TESTINFRA-001 — Tenant test transaction rollback depended on the current default connection
+
+**Area:** Tenant QA infrastructure
+
+**Root cause:** `TenantTestCase` started a tenant transaction, but `tearDown()` previously called `DB::rollBack()` through whichever connection was current at teardown time. Tests that explicitly ended tenancy before teardown could therefore roll back the wrong connection and leak the central fixture transaction into the next test.
+
+**Fix implemented:** The test base now records the actual tenant connection name when tenancy is initialized, starts the tenant transaction on that connection, and explicitly rolls it back before ending tenancy. Central transaction rollback remains explicit through the configured central connection.
+
+**Regression:** Tenant isolation tests run multiple methods in the same class without leaking the shared fixture tenant into a following test.
+
+---
+
+## Finding QA-ISOLATION-001 — Tenant token isolation needed an actual persisted Sanctum token model
+
+**Area:** Tenant authorization tests
+
+**Root cause:** The first QA isolation test used the `NewAccessToken` wrapper incorrectly. The middleware checks `currentAccessToken()` and its abilities; the test must attach the persisted `PersonalAccessToken` model, not the plain-text token wrapper.
+
+**Fix implemented:** Isolation tests now attach the persisted `PersonalAccessToken` retrieved from the tenant database and verify tenant A access versus tenant B rejection.
+
+**Regression:** `TenantIsolationSecurityScenarioTest` covers same-tenant acceptance and cross-tenant `403` rejection. `TenantIsolationResourceScenarioTest` additionally verifies tenant A Appointment/Queue records are not visible after switching to tenant B.
+
+---
+
+## Finding QA-SUPERADMIN-001 — Active tenant reconciliation must respect the Tenant model accessor contract
+
+**Area:** Super Admin Dashboard / tenant aggregation
+
+**Root cause:** The test initially counted only tenants with an explicit `data.active=true` JSON key, while `Tenant::active` treats a missing value as active by default. This made the test disagree with the actual Super Admin projection semantics.
+
+**Fix:** Reconciliation now calculates active tenants through the same `Tenant::$active` accessor contract used by the application.
+
+**Regression:** `SuperAdminReconciliationScenarioTest` verifies total, active, paid and trial tenant counts plus recent tenant identities against central DB truth, and separately verifies subscription statistics/revenue and per-plan active/trial counts.
+
+---
+
 ## Test Infrastructure Policy
 
 Every production defect discovered by Master QA must produce a regression test before the next feature family is accepted.
@@ -132,7 +168,7 @@ A feature family is not considered complete until:
 
 ## Current Handoff State
 
-Completed/covered so far:
+Covered with passing evidence in the latest completed Master QA run before the most recent test-infrastructure fixes:
 
 - Environment foundation
 - Public booking golden flow
@@ -142,15 +178,22 @@ Completed/covered so far:
 - Call-next locking/date scoping
 - Customer/dashboard reconciliation
 - Queue notification lifecycle and recovery basics
-- Moyasar webhook security fix and regression coverage added (CI pending)
+- Moyasar webhook security and payment-verification scenarios
 
-Next priority:
+Added after that run and awaiting a fresh MySQL CI result:
+
+- Tenant token isolation
+- Tenant resource isolation
+- Tenant test transaction connection safety
+- Super Admin tenant/subscription reconciliation
+
+Next priority after the current CI gate:
 
 ```text
-Billing/Webhooks
-→ Subscription lifecycle reconciliation
-→ Tenant isolation matrix
-→ Super Admin aggregation reconciliation
+Billing/Webhooks reconciliation
+→ Subscription access reconciliation
+→ Full Tenant Isolation authorization matrix
+→ Super Admin aggregation and revenue reconciliation
 → Reporting/export reconciliation
 → Deletion/cleanup safety
 → Browser smoke / final certification
