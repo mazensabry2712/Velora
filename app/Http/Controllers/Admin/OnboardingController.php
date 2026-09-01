@@ -23,6 +23,11 @@ use Illuminate\Support\Facades\Log;
  */
 class OnboardingController extends Controller
 {
+    private function ensureTenantAdmin(): void
+    {
+        abort_unless(auth()->user()?->hasRole('Admin Tenant'), 403);
+    }
+
     public function index()
     {
         $settings = Setting::first();
@@ -49,6 +54,8 @@ class OnboardingController extends Controller
 
     public function saveStep1(Request $request): JsonResponse
     {
+        $this->ensureTenantAdmin();
+
         $data = $request->validate([
             'phone'   => 'required|string|max:30',
             'address' => 'nullable|string|max:255',
@@ -81,6 +88,8 @@ class OnboardingController extends Controller
 
     public function saveStep2(Request $request): JsonResponse
     {
+        $this->ensureTenantAdmin();
+
         $data = $request->validate([
             'name'      => 'required|string|max:100',
             'specialty' => 'nullable|string|max:100',
@@ -134,6 +143,8 @@ class OnboardingController extends Controller
 
     public function saveStep3(Request $request): JsonResponse
     {
+        $this->ensureTenantAdmin();
+
         $data = $request->validate([
             'name'     => 'required|string|max:100',
             'duration' => 'required|integer|min:5|max:480',
@@ -191,6 +202,8 @@ class OnboardingController extends Controller
 
     public function complete(Request $request): JsonResponse
     {
+        $this->ensureTenantAdmin();
+
         try {
             $staff   = Staff::query()->first();
             $service = Service::query()->first();
