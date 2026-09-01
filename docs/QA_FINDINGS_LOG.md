@@ -269,6 +269,38 @@ no such column: billing_cycle
 
 ---
 
+## Finding QA-BOOK-002 — Holiday availability comparison was too strict for a calendar-date field
+
+**Area:** Booking availability / public booking
+
+**Observed:** `BookingAvailabilityRulesScenarioTest::holiday_makes_the_staff_unavailable_even_when_working_hours_exist()` persisted an all-staff holiday successfully, but `SlotEngine::validateSlot()` returned an available result for the same calendar day.
+
+**Root cause:** The Holiday model casts `date` as a date, while `SlotEngine::isHoliday()` compared the database value with exact equality using `where('date', $date->toDateString())`. On the test schema the persisted date representation can contain a time component, so exact equality did not match even though `whereDate()` correctly identified the row.
+
+**Fix implemented:** `SlotEngine::isHoliday()` now uses `whereDate('date', $date->toDateString())`, preserving the business contract as calendar-date matching and remaining compatible with the existing Holiday model/query style.
+
+**Regression:** `BookingAvailabilityRulesScenarioTest` now proves the Holiday fixture exists, proves `SlotEngine` returns `holiday`, and then verifies `CreatePublicBooking` rejects the booking with `SlotUnavailableException('holiday')`.
+
+**Status:** Fix committed to `main` as `cfc9e468a3b65c13d3c11ec7aec0c6381a555cc2`. Focused regression must pass locally and then receive fresh MySQL CI evidence.
+
+---
+
+## Finding QA-REPORT-003 — Tenant Dashboard daily appointment metrics disagreed with canonical database truth
+
+**Area:** Tenant Dashboard / appointment metrics
+
+**Observed:** `MasterBusinessFlowScenarioTest::dashboard_reconciles_exactly_with_database_truth_for_the_golden_dataset()` persisted one confirmed appointment for the current business date. The canonical `whereDate('date', $today)` query returned `1`, while Dashboard `stats['confirmed']` returned `0`.
+
+**Root cause:** `DashboardController` calculated `total_today`, `completed_today`, and `confirmed_today` inside a raw aggregate using exact `date = ?` comparison. The application's canonical appointment contract and dashboard collections use date-aware comparisons, so the aggregate could disagree when the stored date representation included a time component.
+
+**Fix implemented:** The three calendar-day aggregate predicates now use `DATE(date) = ?`, making the projection use the same calendar-date semantics as the canonical reconciliation queries without changing the metric's intended meaning or the aggregate structure.
+
+**Regression:** `MasterBusinessFlowScenarioTest` reconciles `stats['confirmed']`, `stats['queue']`, today's appointments, status distribution, top services, and invoice creation against direct database truth.
+
+**Status:** Fix committed to `main` as `c033fb8fd4628dad7cda5e569ccc7073500b27bf`. Focused regression must pass locally and then receive fresh MySQL CI evidence.
+
+---
+
 ## Test Infrastructure Policy
 
 Every production defect discovered by Master QA must produce a regression test before the next feature family is accepted.
@@ -295,13 +327,15 @@ A feature family is not complete until:
 
 ## Current Handoff State
 
-The current `main` line contains the Master QA foundation, booking/appointment/queue/customer/notification coverage, Moyasar webhook hardening, tenant isolation test infrastructure, reporting/deletion safeguards, billing connection hardening, authorization hardening, and the current local SQLite bootstrap remediation. Fresh MySQL CI evidence is required for changes added after the last completed Master QA run.
+The current `main` line contains the Master QA foundation, booking/appointment/queue/customer/notification coverage, Moyasar webhook hardening, tenant isolation test infrastructure, reporting/deletion safeguards, billing connection hardening, authorization hardening, local test bootstrap remediation, and the latest booking/dashboard reconciliation fixes. Fresh MySQL CI evidence is required for the new commits.
 
 Next priority:
 
 ```text
 Fresh MySQL CI on current main
-→ close any remaining failures
+→ verify holiday enforcement regression
+→ verify dashboard date reconciliation regression
+→ close any remaining Master QA failures
 → Billing/Webhooks full reconciliation
 → Subscription access reconciliation
 → Full tenant/resource authorization matrix
