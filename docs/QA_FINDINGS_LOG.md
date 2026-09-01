@@ -189,13 +189,93 @@ Queue/Appointment permissions are not changed by this guard because Staff/Assist
 
 ---
 
+## Finding QA-TESTINFRA-002 — Full test suite depended on a tracked local `.env` existing physically
+
+**Area:** PHPUnit/local and CI test bootstrap
+
+**Evidence:** A local `php artisan test` run after removing `.env` produced widespread failures/warnings across payment, repository, admin, booking, localization, health, and design-system tests with `file_get_contents(.../.env): Failed to open stream`. HTTP tests then cascaded into `MissingAppKeyException`, and Symfony's HTML error renderer exhausted the 128 MB PHP memory limit while rendering repeated exception payloads.
+
+**Root cause:** `.env` was correctly removed from Git for security, but legacy tests directly inspect the physical `.env` file. `phpunit.xml` previously bootstrapped only `vendor/autoload.php`, so a fresh checkout without a local `.env` did not satisfy the legacy test contract.
+
+**Fix implemented:** PHPUnit now bootstraps through `tests/bootstrap.php`. When `.env` is missing, the bootstrap creates a temporary local `.env` from `.env.example`, changes the environment to testing, injects a throwaway `APP_KEY`, and removes the generated file at process shutdown. An existing developer `.env` is never overwritten.
+
+**Security impact:** `.env` remains ignored by Git (`.env`, `.env.*`, with only `.env.example` allowed). No real secret is added to source control.
+
+**Regression:** `Tests\Unit\TestEnvironmentBootstrapTest` verifies the generated testing environment has a non-empty testing `APP_KEY` and verifies the repository continues to ignore `.env` while allowing `.env.example`.
+
+**Current status:** Fix and regression test are on `main`; fresh CI evidence is required.
+
+---
+
+## Finding QA-TESTINFRA-003 — SQLite `:memory:` database was incompatible with Laravel test application lifecycle
+
+**Area:** PHPUnit database isolation / Tenancy
+
+**Evidence:** Running the QA suite sequentially after the `.env` bootstrap remediation produced 46 failures and 13 passes. Most failures shared the exact signatures:
+
+```text
+no such table: tenants
+no such table: subscription_plans
+```
+
+The failing statements came from multiple unrelated test classes, proving the common failure happened before their business assertions.
+
+**Root cause:** `phpunit.xml` configured SQLite as `:memory:` while `TenantTestCase` cached migration completion per test class. Laravel can boot a fresh application/connection while the static migration flag survives. A fresh in-memory SQLite connection starts empty, so the next test attempted to use a schema that no longer existed.
+
+**Fix implemented:** `tests/bootstrap.php` now creates a SQLite file unique to the PHPUnit process using `TEST_TOKEN`, `PARALLEL_PROCESS`, or the PHP process ID. The file is removed after the process ends. This preserves the schema across Laravel application boots within one worker while keeping parallel workers isolated from each other.
+
+`tests/TestCase.php` also ensures the configured central connection has a migration table and runs application migrations when a fresh test database is detected.
+
+**Regression:** `Tests\Unit\TestEnvironmentBootstrapTest` verifies `DB_DATABASE` points to the process-isolated SQLite file and that the file exists during the test process.
+
+**Operational impact:** The previous `php artisan test --parallel --processes=12` setup could not safely use shared `:memory:` SQLite. After this remediation, parallel execution has isolated test files per worker and can be re-evaluated. MySQL remains the certification environment.
+
+---
+
+## Finding QA-REPORT-002 — Staff performance report used SQLite-incompatible HAVING semantics
+
+**Area:** Reports / staff performance
+
+**Observed:**
+
+```text
+SQLSTATE[HY000]: General error: 1
+HAVING clause on a non-aggregate query
+```
+
+**Root cause:** `ReportService::getStaffPerformance()` filtered the `withCount()` alias using `HAVING staff_appointments_count > 0`. MySQL accepts this query shape, while SQLite rejects it without an aggregate/grouping context.
+
+**Fix implemented:** Preserve `withCount()` for the displayed count and use `whereHas('staffAppointments', ...)` with the same status/date filters to express the existence condition portably.
+
+**Regression:** `ReportingReconciliationScenarioTest` continues to exercise report generation and canonical customer reconciliation; the cross-database query shape is covered by the QA suite on SQLite and MySQL CI.
+
+---
+
+## Finding QA-BILLING-003 — Moyasar attempted to persist unsupported `billing_cycle` column on tenant_subscriptions
+
+**Area:** Billing / Moyasar subscription activation
+
+**Observed:**
+
+```text
+no such column: billing_cycle
+```
+
+**Root cause:** `MoyasarService::activateSubscription()` attempted to write `billing_cycle` into `tenant_subscriptions`, but the canonical subscription schema stores `billing_cycle` on `subscription_plans`. The service already reads that plan field to determine duration.
+
+**Fix implemented:** Removed the unsupported duplicate subscription write. `SubscriptionPlan::billing_cycle` remains the source of truth, while `TenantSubscription` stores the resulting active period and payment state.
+
+**Regression:** `MoyasarCentralConnectionScenarioTest` verifies activation while tenant context is active and checks the central subscription record.
+
+---
+
 ## Test Infrastructure Policy
 
 Every production defect discovered by Master QA must produce a regression test before the next feature family is accepted.
 
 The test must validate the intended business outcome, not merely that an exception was thrown.
 
-The canonical certification environment is MySQL. SQLite may be used for fast unit checks but is not sufficient evidence for tenant, locking, webhook, billing, concurrency, or certification gates.
+The canonical certification environment is MySQL. SQLite may be used for fast local checks, but tenant, locking, billing, webhook, concurrency, and final certification gates require MySQL evidence.
 
 ## Package / Engineering Policy
 
@@ -215,51 +295,13 @@ A feature family is not complete until:
 
 ## Current Handoff State
 
-The current `main` line contains the Master QA foundation, booking/appointment/queue/customer/notification coverage, Moyasar webhook hardening, tenant isolation test infrastructure, reporting/deletion safeguards, billing connection hardening, and authorization hardening. Fresh MySQL CI evidence is required for changes added after the last completed Master QA run.
+The current `main` line contains the Master QA foundation, booking/appointment/queue/customer/notification coverage, Moyasar webhook hardening, tenant isolation test infrastructure, reporting/deletion safeguards, billing connection hardening, authorization hardening, and the current local SQLite bootstrap remediation. Fresh MySQL CI evidence is required for changes added after the last completed Master QA run.
 
-Verified passing evidence from the earlier Master QA run on `a2e97f1` includes:
-
-- Environment foundation
-- Public booking golden flow
-- Booking rules/negative cases
-- Appointment lifecycle
-- Queue lifecycle and business-date correctness
-- Call-next locking/date scoping
-- Customer/dashboard reconciliation
-- Queue notification lifecycle and recovery basics
-- Moyasar webhook security and payment-verification scenarios
-
-Added/fixed afterward and awaiting fresh MySQL CI evidence:
-
-- Tenant token isolation
-- Tenant resource isolation
-- Tenant test transaction connection safety
-- Super Admin tenant/subscription reconciliation
-- Reporting customer reconciliation
-- Tenant deletion safety
-- Expanded tenant authorization matrix
-- Moyasar canonical central-connection activation
-
-## Finding QA-TESTINFRA-002 — Full test suite depended on a tracked local .env existing physically
-
-**Area:** PHPUnit/local and CI test bootstrap
-
-**Evidence:** A local `php artisan test` run after removing `.env` produced widespread failures/warnings across payment, repository, admin, booking, localization, health, and design-system tests with `file_get_contents(.../.env): Failed to open stream`. HTTP tests then cascaded into `MissingAppKeyException`, and Symfony's HTML error renderer exhausted the 128 MB PHP memory limit while rendering repeated exception payloads.
-
-**Root cause:** `.env` was correctly removed from Git for security, but legacy tests directly inspect the physical `.env` file. `phpunit.xml` previously bootstrapped only `vendor/autoload.php`, so a fresh checkout without a local `.env` did not satisfy the legacy test contract.
-
-**Fix implemented:** PHPUnit now bootstraps through `tests/bootstrap.php`. When `.env` is missing, the bootstrap creates a temporary local `.env` from `.env.example`, changes the environment to testing, injects a throwaway `APP_KEY`, and removes the generated file at process shutdown. An existing developer `.env` is never overwritten.
-
-**Security impact:** `.env` remains ignored by Git (`.env`, `.env.*`, with only `.env.example` allowed). No real secret is added to source control.
-
-**Regression:** `Tests\Unit\TestEnvironmentBootstrapTest` verifies the generated testing environment has a non-empty testing `APP_KEY` and verifies the repository continues to ignore `.env` while allowing `.env.example`.
-
-**Current status:** Fix and regression test are on `main`; fresh CI evidence is required.
-
-Next priority remains:
+Next priority:
 
 ```text
 Fresh MySQL CI on current main
+→ close any remaining failures
 → Billing/Webhooks full reconciliation
 → Subscription access reconciliation
 → Full tenant/resource authorization matrix
@@ -269,4 +311,4 @@ Fresh MySQL CI on current main
 → Browser smoke / final certification
 ```
 
-Do not mark Velora production-certified merely because the existing global PHPUnit suite is green. Certification requires the master scenario suite, reconciliation, security, concurrency and billing gates above.
+Do not mark Velora production-certified merely because a local SQLite run is green. Certification requires the master scenario suite, MySQL evidence, reconciliation, security, concurrency and billing gates above.
