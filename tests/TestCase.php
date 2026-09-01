@@ -13,11 +13,12 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
-        // Every test gets a clean application locale. HTTP middleware can
-        // change App::getLocale() during a request, so leaving that mutable
-        // singleton state behind makes later tests order-dependent when they
+        // Every test gets a clean application locale and session locale.
+        // HTTP middleware can change either mutable singleton/session state,
+        // so leaving it behind makes later tests order-dependent when they
         // read localized model accessors outside a request.
         App::setLocale((string) config('app.locale', 'en'));
+        session()->forget('locale');
 
         $connection = (string) config(
             'tenancy.database.central_connection',
