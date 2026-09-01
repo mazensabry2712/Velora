@@ -7,6 +7,7 @@ namespace Tests\Feature\QA;
 use App\Application\Booking\Actions\CreatePublicBooking;
 use App\Application\Booking\DTOs\PublicBookingData;
 use App\Domain\Booking\Exceptions\SlotUnavailableException;
+use App\Domain\Booking\Services\SlotEngine;
 use App\Models\Appointment;
 use App\Models\BusinessRule;
 use App\Models\Holiday;
@@ -74,13 +75,34 @@ final class BookingAvailabilityRulesScenarioTest extends TenantTestCase
     public function holiday_makes_the_staff_unavailable_even_when_working_hours_exist(): void
     {
         $date = now($this->staff->timezone ?: config('app.timezone'))->addDays(2)->startOfDay();
-        $this->prepareDate($date);
+        $timezone = $this->prepareDate($date);
 
         Holiday::create([
             'date' => $date->toDateString(),
             'name' => ['en' => 'QA Holiday'],
             'applies_to_all' => true,
         ]);
+
+        // Prove the fixture was written to the current tenant database before
+        // attributing any subsequent failure to the booking engine.
+        $this->assertTrue(
+            Holiday::query()
+                ->whereDate('date', $date->toDateString())
+                ->where('applies_to_all', true)
+                ->exists(),
+            'The QA holiday fixture was not persisted in the current tenant database.'
+        );
+
+        // Prove the domain availability engine itself returns the canonical
+        // holiday reason before exercising the higher-level booking use case.
+        $result = app(SlotEngine::class)->validateSlot(
+            $this->service,
+            $this->staff,
+            Carbon::createFromFormat('Y-m-d H:i', $date->toDateString() . ' 09:00', $timezone),
+        );
+
+        $this->assertFalse($result->isAvailable(), 'SlotEngine unexpectedly considered a holiday slot available.');
+        $this->assertSame('holiday', $result->getReason());
 
         $this->assertSlotUnavailableWithReason(
             fn () => app(CreatePublicBooking::class)->execute($this->data($date, '09:00')),
