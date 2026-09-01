@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\SystemSetting;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -36,7 +37,11 @@ final class SignupUiContractTest extends TestCase
     {
         $locales = array_values(array_unique(config('localizer.supported_locales', [])));
         $directions = config('localizer.locale_directions', []);
-        $default = config('localizer.omitted_locale', 'ar');
+        $configuredDefault = config('localizer.omitted_locale', 'ar');
+        $publicDefault = SystemSetting::get('public_default_locale', $configuredDefault);
+        $default = is_string($publicDefault) && in_array($publicDefault, $locales, true)
+            ? $publicDefault
+            : $configuredDefault;
 
         self::assertNotEmpty($locales);
 
@@ -46,7 +51,7 @@ final class SignupUiContractTest extends TestCase
             $response = $this->withServerVariables([
                 'HTTP_HOST' => $this->centralHost(),
                 'SERVER_NAME' => $this->centralHost(),
-            ])->get($path);
+            ])->withSession([])->get($path);
 
             $response->assertOk()
                 ->assertSee('lang="' . $locale . '"', false)
