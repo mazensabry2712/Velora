@@ -36,13 +36,14 @@ final class AppointmentLifecycleScenarioTest extends TenantTestCase
         }
 
         foreach (['completed', 'cancelled', 'no_show'] as $terminal) {
-            $this->expectException(DomainException::class);
-
             try {
                 $rule->assertAllowed($terminal, 'confirmed');
+                $this->fail("Terminal appointment status [{$terminal}] must not transition to confirmed.");
             } catch (DomainException $exception) {
-                // Keep testing each terminal state independently.
-                continue;
+                $this->assertStringContainsString(
+                    "{$terminal} -> confirmed",
+                    $exception->getMessage(),
+                );
             }
         }
     }
