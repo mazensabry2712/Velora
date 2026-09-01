@@ -25,6 +25,16 @@ class LocaleSignalDetector implements DetectorInterface
             // Keep the configured fallback when central settings are unavailable.
         }
 
+        // Explicit locale URLs must always win over persisted/session signals.
+        // Laravel Localizer's detector can run before route parameters are
+        // populated, so inspect the first URL segment as a reliable fallback.
+        $path = trim($request->path(), '/');
+        $firstSegment = $path === '' ? null : explode('/', $path, 2)[0];
+
+        if (is_string($firstSegment) && in_array($firstSegment, $supported, true)) {
+            return $firstSegment;
+        }
+
         $routeLocale = $request->route('locale');
         if (is_string($routeLocale) && in_array($routeLocale, $supported, true)) {
             return $routeLocale;
