@@ -3,6 +3,7 @@
 namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
 
@@ -11,6 +12,12 @@ abstract class TestCase extends BaseTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Every test gets a clean application locale. HTTP middleware can
+        // change App::getLocale() during a request, so leaving that mutable
+        // singleton state behind makes later tests order-dependent when they
+        // read localized model accessors outside a request.
+        App::setLocale((string) config('app.locale', 'en'));
 
         $connection = (string) config(
             'tenancy.database.central_connection',
