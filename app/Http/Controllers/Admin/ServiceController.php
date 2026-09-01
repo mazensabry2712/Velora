@@ -14,6 +14,11 @@ use Illuminate\Support\Facades\Log;
 
 class ServiceController extends Controller
 {
+    private function ensureTenantAdmin(): void
+    {
+        abort_unless(auth()->user()?->hasRole('Admin Tenant'), 403);
+    }
+
     public function index(): JsonResponse
     {
         return response()->json([
@@ -29,6 +34,8 @@ class ServiceController extends Controller
 
     public function store(StoreServiceRequest $request): JsonResponse
     {
+        $this->ensureTenantAdmin();
+
         try {
             $service = Service::create($request->validated());
             return response()->json(['success' => true, 'message' => __('Service created.'), 'data' => $service]);
@@ -40,6 +47,8 @@ class ServiceController extends Controller
 
     public function update(StoreServiceRequest $request, int $id): JsonResponse
     {
+        $this->ensureTenantAdmin();
+
         try {
             $service = Service::findOrFail($id);
             $service->update($request->validated());
@@ -52,6 +61,8 @@ class ServiceController extends Controller
 
     public function destroy(int $id): JsonResponse
     {
+        $this->ensureTenantAdmin();
+
         try {
             Service::findOrFail($id)->delete();
             return response()->json(['success' => true, 'message' => __('Service deleted.')]);
@@ -71,6 +82,8 @@ class ServiceController extends Controller
 
     public function storeTimeSlot(Request $request): JsonResponse
     {
+        $this->ensureTenantAdmin();
+
         $data = $request->validate([
             'start_time' => ['required'],
             'end_time' => ['required', 'after:start_time'],
@@ -87,6 +100,8 @@ class ServiceController extends Controller
 
     public function toggleTimeSlot(Request $request, int $id): JsonResponse
     {
+        $this->ensureTenantAdmin();
+
         try {
             TimeSlot::findOrFail($id)->update(['is_active' => $request->boolean('is_active')]);
             return response()->json(['success' => true]);
@@ -97,9 +112,11 @@ class ServiceController extends Controller
 
     public function destroyTimeSlot(int $id): JsonResponse
     {
+        $this->ensureTenantAdmin();
+
         try {
             TimeSlot::findOrFail($id)->delete();
-            return response()->json(['success' => true]);
+            return response()->json(['success' => true, 'message' => __('Time slot deleted.')]);
         } catch (\Exception $e) {
             return response()->json(['success' => false], 500);
         }
@@ -116,6 +133,8 @@ class ServiceController extends Controller
 
     public function toggleWorkingDay(Request $request, int $id): JsonResponse
     {
+        $this->ensureTenantAdmin();
+
         try {
             WorkingDay::findOrFail($id)->update(['is_active' => $request->boolean('is_active')]);
             return response()->json(['success' => true]);
@@ -126,6 +145,8 @@ class ServiceController extends Controller
 
     public function toggleStaffService(Request $request): JsonResponse
     {
+        $this->ensureTenantAdmin();
+
         try {
             $staff = Staff::where('user_id', (int) $request->staff_id)->firstOrFail();
 
@@ -138,7 +159,7 @@ class ServiceController extends Controller
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
             Log::error('toggleStaffService: ' . $e->getMessage());
-            return response()->json(['success' => false], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 }
