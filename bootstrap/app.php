@@ -7,6 +7,7 @@ use App\Http\Middleware\CheckSuperAdmin;
 use App\Http\Middleware\CheckTokenAbility;
 use App\Http\Middleware\DetectCountryAndLocale;
 use App\Http\Middleware\EnforceCentralLocale;
+use App\Http\Middleware\EnsurePublicFrenchTranslations;
 use App\Http\Middleware\EnsureSubscriptionIsValid;
 use App\Http\Middleware\EnsureTokenBelongsToTenant;
 use App\Http\Middleware\InitializeTenancyByToken;
@@ -45,8 +46,6 @@ return (new ApplicationBuilder($app))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
         then: function (): void {
-            // Tenant routes are loaded separately because they use
-            // domain-based tenancy initialization for *.APP_DOMAIN hosts.
             require base_path('routes/tenant.php');
         },
     )
@@ -59,6 +58,7 @@ return (new ApplicationBuilder($app))
             SetLocale::class,
             RedirectLocale::class,
             EnforceCentralLocale::class,
+            EnsurePublicFrenchTranslations::class,
             SubstituteBindings::class,
         ]);
 
