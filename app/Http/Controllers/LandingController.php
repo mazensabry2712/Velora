@@ -11,6 +11,7 @@ use App\Models\CountrySetting;
 use App\Services\GeoService;
 use App\Services\PricingService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\App;
 
 class LandingController extends Controller
 {
@@ -128,8 +129,49 @@ class LandingController extends Controller
     /**
      * Show signup form.
      */
-    public function signup()
+    public function signup(Request $request)
     {
+        $supported = config('localizer.supported_locales', []);
+        $configuredDefault = config('localizer.omitted_locale', config('app.locale', 'en'));
+        $default = $configuredDefault;
+
+        try {
+            $systemDefault = SystemSetting::get('public_default_locale', $configuredDefault);
+            if (is_string($systemDefault) && in_array($systemDefault, $supported, true)) {
+                $default = $systemDefault;
+            }
+        } catch (\Throwable) {
+            // Keep the configured fallback when central settings are unavailable.
+        }
+
+        // An explicit locale in the signup URL is authoritative. This guard
+        // runs at the controller boundary as the final source of truth after
+        // Localizer middleware has completed, preventing a persisted default
+        // locale from leaking into /{locale}/signup requests.
+        $path = trim($request->path(), '/');
+        $firstSegment = $path === '' ? null : explode('/', $path, 2)[0];
+        $routeLocale = $request->route('locale');
+        $explicitLocale = is_string($routeLocale) && in_array($routeLocale, $supported, true)
+            ? $routeLocale
+            : (is_string($firstSegment) && in_array($firstSegment, $supported, true)
+                ? $firstSegment
+                : null);
+
+        if ($explicitLocale !== null) {
+            App::setLocale($explicitLocale);
+            session()->put('central_locale', $explicitLocale);
+        } else {
+            $sessionLocale = session('central_locale');
+            $current = is_string($sessionLocale) && in_array($sessionLocale, $supported, true)
+                ? $sessionLocale
+                : (app()->getLocale() ?: $default);
+
+            if (is_string($current) && in_array($current, $supported, true)) {
+                App::setLocale($current);
+                session()->put('central_locale', $current);
+            }
+        }
+
         if (! SystemSetting::get('registration_enabled', true)) {
             $appName = SystemSetting::get('app_name', config('app.name', 'Velora'));
             return response()->view('landing.registration-disabled', compact('appName'), 403);
@@ -181,37 +223,3 @@ class LandingController extends Controller
             'appName'             => $appName,
         ]);
     }
-
-    /**
-     * Check subdomain availability via AJAX.
-     */
-    public function checkSubdomain(Request $request)
-    {
-        $request->validate(['subdomain' => 'required|string|min:3|max:32']);
-
-        $service = app(\App\Services\TenantRegistrationService::class);
-        $result  = $service->checkSubdomainAvailability($request->subdomain);
-
-        return response()->json($result);
-    }
-
-    /**
-     * Get basic platform stats for the landing page.
-     */
-    private function getPlatformStats(): array
-    {
-        try {
-            return [
-                'tenants'      => DB::table('tenants')->count(),
-                'appointments' => 0, // Aggregate across tenant DBs (optional)
-                'countries'    => DB::table('tenants')
-                    ->selectRaw("JSON_UNQUOTE(JSON_EXTRACT(data, '$.country')) as country")
-                    ->whereRaw("JSON_EXTRACT(data, '$.country') IS NOT NULL")
-                    ->distinct()
-                    ->count(),
-            ];
-        } catch (\Exception $e) {
-            return ['tenants' => '500+', 'appointments' => '50,000+', 'countries' => '30+'];
-        }
-    }
-}
