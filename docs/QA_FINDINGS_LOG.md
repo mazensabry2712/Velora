@@ -102,7 +102,7 @@ This log records defects discovered by the master QA program, the minimal fix, a
 - successful `payment.paid` processing with payment verification
 - processing failure removes the unprocessed event so provider retry is possible
 
-**Current status:** Fix and regression tests are committed to `main`; billing remains uncertified until the MySQL CI run passes and subscription/invoice/payment reconciliation is completed.
+**Current status:** Fix and regression tests are on the QA history; fresh MySQL CI evidence is required before billing certification.
 
 ---
 
@@ -112,9 +112,9 @@ This log records defects discovered by the master QA program, the minimal fix, a
 
 **Root cause:** `TenantTestCase` started a tenant transaction, but `tearDown()` previously called `DB::rollBack()` through whichever connection was current at teardown time. Tests that explicitly ended tenancy before teardown could therefore roll back the wrong connection and leak the central fixture transaction into the next test.
 
-**Fix implemented:** The test base now records the actual tenant connection name when tenancy is initialized, starts the tenant transaction on that connection, and explicitly rolls it back before ending tenancy. Central transaction rollback remains explicit through the configured central connection.
+**Fix implemented:** The test base records the actual tenant connection and rolls it back explicitly before ending tenancy. Central transaction rollback remains explicit through the configured central connection.
 
-**Regression:** Tenant isolation tests run multiple methods in the same class without leaking the shared fixture tenant into a following test.
+**Regression:** Tenant isolation tests execute multiple methods without leaking the shared fixture tenant into a following test.
 
 ---
 
@@ -122,11 +122,11 @@ This log records defects discovered by the master QA program, the minimal fix, a
 
 **Area:** Tenant authorization tests
 
-**Root cause:** The first QA isolation test used the `NewAccessToken` wrapper incorrectly. The middleware checks `currentAccessToken()` and its abilities; the test must attach the persisted `PersonalAccessToken` model, not the plain-text token wrapper.
+**Root cause:** The first QA isolation test used the `NewAccessToken` wrapper incorrectly. The middleware checks `currentAccessToken()` and its abilities; the test must attach the persisted `PersonalAccessToken` model.
 
-**Fix implemented:** Isolation tests now attach the persisted `PersonalAccessToken` retrieved from the tenant database and verify tenant A access versus tenant B rejection.
+**Fix implemented:** Isolation tests use the persisted Sanctum token model and verify same-tenant acceptance versus cross-tenant rejection.
 
-**Regression:** `TenantIsolationSecurityScenarioTest` covers same-tenant acceptance and cross-tenant `403` rejection. `TenantIsolationResourceScenarioTest` additionally verifies tenant A Appointment/Queue records are not visible after switching to tenant B.
+**Regression:** `TenantIsolationSecurityScenarioTest` covers token scoping and `TenantIsolationResourceScenarioTest` covers tenant A Appointment/Queue visibility after switching to tenant B.
 
 ---
 
@@ -134,11 +134,11 @@ This log records defects discovered by the master QA program, the minimal fix, a
 
 **Area:** Super Admin Dashboard / tenant aggregation
 
-**Root cause:** The test initially counted only tenants with an explicit `data.active=true` JSON key, while `Tenant::active` treats a missing value as active by default. This made the test disagree with the actual Super Admin projection semantics.
+**Root cause:** The test initially counted only tenants with an explicit `data.active=true` JSON key, while `Tenant::active` treats a missing value as active by default.
 
-**Fix:** Reconciliation now calculates active tenants through the same `Tenant::$active` accessor contract used by the application.
+**Fix:** Reconciliation uses the same active-state contract as the application.
 
-**Regression:** `SuperAdminReconciliationScenarioTest` verifies total, active, paid and trial tenant counts plus recent tenant identities against central DB truth, and separately verifies subscription statistics/revenue and per-plan active/trial counts.
+**Regression:** `SuperAdminReconciliationScenarioTest` verifies tenant, subscription and recent-tenant metrics against central DB truth.
 
 ---
 
@@ -146,11 +146,11 @@ This log records defects discovered by the master QA program, the minimal fix, a
 
 **Area:** Reports / Customer metrics
 
-**Root cause:** `ReportService::getStats()` counted `User::role('Customer')`, while the canonical customer population is stored in the `customers` table and used by public booking and the Tenant Dashboard.
+**Root cause:** `ReportService::getStats()` counted `User::role('Customer')`, while the canonical customer population is stored in `customers` and used by public booking/Dashboard.
 
-**Fix implemented:** `ReportService` now counts the canonical `Customer` model.
+**Fix:** `ReportService` uses the canonical `Customer` model for customer metrics.
 
-**Regression:** `ReportingReconciliationScenarioTest` creates a canonical Customer and verifies report customer totals equal `Customer::count()` and the Tenant Dashboard customer metric.
+**Regression:** `ReportingReconciliationScenarioTest` compares report customer totals with `Customer::count()` and the Tenant Dashboard customer metric.
 
 ---
 
@@ -158,13 +158,13 @@ This log records defects discovered by the master QA program, the minimal fix, a
 
 **Area:** Permanent tenant deletion
 
-**Root cause:** `PermanentlyDeleteExpiredTenants` queried and deleted billing/tenant records through a hardcoded `mysql` connection instead of the configured `tenancy.database.central_connection`.
+**Root cause:** `PermanentlyDeleteExpiredTenants` used a hardcoded `mysql` connection rather than the configured central connection.
 
-**Fix implemented:** The command now resolves the configured central connection once and uses it for all central subscription/tenant-record operations.
+**Fix implemented:** The command resolves and uses the configured central connection for central subscription/tenant operations.
 
-**Regression:** `TenantDeletionSafetyScenarioTest` covers failed resource cleanup (tenant retained for retry) and successful cleanup (subscription and tenant central records removed after resource cleanup succeeds).
+**Regression:** `TenantDeletionSafetyScenarioTest` covers failed resource cleanup (tenant retained for retry) and successful cleanup.
 
-**Current status:** Code fix and tests are on `main`; CI certification pending.
+**Current status:** Fix/test are part of the QA history; fresh MySQL CI evidence is required for certification.
 
 ---
 
@@ -172,13 +172,24 @@ This log records defects discovered by the master QA program, the minimal fix, a
 
 **Area:** Tenant admin authorization / services / staff / settings
 
-**Root cause:** The tenant admin route group admits `Admin Tenant|Staff|Assistant`, while the affected controllers had no method-level authorization and their FormRequests returned `authorize() = true`. As a result, Staff/Assistant could reach mutation methods for services, time slots, working-day configuration, staff-service assignment, staff CRUD, and tenant settings.
+**Root cause:** The tenant admin route group admitted `Admin Tenant|Staff|Assistant`, while affected controllers had no method-level authorization and FormRequests returned `authorize() = true`. This allowed Staff/Assistant to reach service, schedule, staff and settings mutations.
 
-**Fix implemented:** Added a minimal role guard inside the affected mutation methods. `Admin Tenant` is required for service/schedule mutations, tenant settings writes, and staff create/update/delete. Read methods remain unchanged.
+**Fix implemented:** Added minimal role guards. `Admin Tenant` is required for service/schedule mutations, tenant settings writes, and staff create/update/delete. Read methods remain unchanged.
 
-**Regression:** `AdminAuthorizationMatrixScenarioTest` verifies Staff can read but cannot mutate services, Assistant cannot mutate settings/services, and Admin Tenant can create a service.
+**Regression:** `AdminAuthorizationMatrixScenarioTest` verifies Staff read vs mutation behavior, Assistant write rejection, and Admin Tenant service mutation.
 
-**Current status:** Code fix and regression test are on `main`; fresh MySQL CI certification pending.
+---
+
+## Current Expanded Authorization Coverage
+
+`AuthorizationMatrixExpandedScenarioTest` adds regression coverage for:
+
+- Staff cannot create/delete staff accounts.
+- Assistant cannot create time slots.
+- Assistant cannot change working-day configuration.
+- Tenant Admin can create a time slot and create a staff account.
+
+This extends the authorization gate without changing Queue/Appointment permissions whose Staff/Assistant behavior may be intentional and requires separate business-policy evidence.
 
 ---
 
@@ -186,29 +197,29 @@ This log records defects discovered by the master QA program, the minimal fix, a
 
 Every production defect discovered by Master QA must produce a regression test before the next feature family is accepted.
 
-The test must validate the intended business outcome, not merely that an exception was thrown.
-
-The canonical test environment is MySQL for feature/certification/concurrency scenarios. SQLite may be used for fast unit-level checks but is not sufficient evidence for tenant, locking, webhook, or billing certification.
+The canonical certification environment is MySQL. SQLite may be used for fast unit checks but is not sufficient evidence for tenant, locking, webhook, billing, or certification gates.
 
 ## Package / Engineering Policy
 
-Do not add a package merely to solve a problem that existing Laravel/PHP/project code can solve correctly. A mature package may be added only when it materially reduces complexity or risk for a real requirement. Every such decision must be documented.
+Do not add a package merely to solve a problem that existing Laravel/PHP/project code can solve correctly. A package is justified only when it materially reduces complexity or risk for a real requirement. Such decisions must be documented.
 
 ## Current Certification Rule
 
-A feature family is not considered complete until:
+A feature family is not complete until:
 
-1. Its happy path passes.
-2. Its negative and edge cases pass.
-3. Its data invariants pass.
-4. Its dependent projections reconcile.
-5. Its regression tests pass in MySQL CI.
-6. Its security/authorization and concurrency gates pass where applicable.
-7. Any known production defect in that feature family is either fixed with regression coverage or explicitly blocks release.
+1. Happy path passes.
+2. Negative and edge cases pass.
+3. Data invariants pass.
+4. Dependent projections reconcile.
+5. Regression tests pass in MySQL CI.
+6. Security/authorization and concurrency gates pass where applicable.
+7. Known production defects are fixed with regression coverage or explicitly block release.
 
 ## Current Handoff State
 
-Covered with passing evidence in the completed Master QA run on `a2e97f1`:
+The verified `main` history currently includes the Master QA foundation and the authorization hardening up to commit `270b4e3`. Additional later experiments exist as separate Git objects and are **not considered part of `main`** until explicitly merged or recreated on `main`.
+
+Passing evidence from the completed Master QA run on `a2e97f1` includes:
 
 - Environment foundation
 - Public booking golden flow
@@ -220,26 +231,14 @@ Covered with passing evidence in the completed Master QA run on `a2e97f1`:
 - Queue notification lifecycle and recovery basics
 - Moyasar webhook security and payment-verification scenarios
 
-Added/fixed after that run and awaiting fresh MySQL CI evidence:
-
-- Tenant token isolation
-- Tenant resource isolation
-- Tenant test transaction connection safety
-- Super Admin tenant/subscription reconciliation
-- Super Admin billing/revenue reconciliation
-- Reporting customer reconciliation
-- Tenant deletion safety
-- Admin/Staff/Assistant authorization matrix
-
-Recent Master QA result on `a2e97f1`: **42 passed, 4 failed**. Those four failures were diagnosed as test/projection/fixture/infrastructure issues and corrected on subsequent commits; the current `main` contains those corrections. Fresh CI on the current head is required before these additions are marked certified.
-
-Next priority after the current CI gate:
+The latest required work on top of the current main line is:
 
 ```text
-Billing/Webhooks reconciliation
+Fresh MySQL CI for current main
+→ Billing/Webhooks reconciliation
 → Subscription access reconciliation
-→ Full Tenant Isolation authorization matrix
-→ Super Admin aggregation and revenue reconciliation
+→ Full tenant/resource authorization matrix
+→ Super Admin aggregation/revenue reconciliation
 → Reporting/export reconciliation
 → Deletion/cleanup safety
 → Browser smoke / final certification
