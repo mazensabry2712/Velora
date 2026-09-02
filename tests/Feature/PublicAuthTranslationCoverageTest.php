@@ -38,7 +38,19 @@ final class PublicAuthTranslationCoverageTest extends TestCase
             'messages.loading', 'messages.login_success', 'messages.login_failed',
         ];
 
+        $directJsonKeys = [
+            'Toggle theme',
+            'Back to workspace',
+            'Forgot your password?',
+        ];
+
         foreach ($locales as $locale) {
+            $response = $this->get('/'.$locale.'/signup', [
+                'HTTP_HOST' => $this->centralHost(),
+                'SERVER_NAME' => $this->centralHost(),
+            ]);
+
+            $response->assertOk();
             $this->app->setLocale($locale);
 
             foreach ($signupKeys as $key) {
@@ -54,12 +66,6 @@ final class PublicAuthTranslationCoverageTest extends TestCase
                 $this->assertNotSame('', trim($resolved), "Translation [{$key}] in [{$locale}] is empty.");
                 $this->assertNotSame($key, $resolved, "Missing translation [{$key}] in [{$locale}].");
             }
-
-            $directJsonKeys = [
-                'Toggle theme',
-                'Back to workspace',
-                'Forgot your password?',
-            ];
 
             foreach ($directJsonKeys as $key) {
                 $resolved = __($key);
