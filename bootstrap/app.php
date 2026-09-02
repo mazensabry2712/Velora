@@ -21,7 +21,6 @@ use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\ApplicationBuilder;
-use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
@@ -90,8 +89,5 @@ return (new ApplicationBuilder($app))
             'webhooks/stripe',
             'webhooks/moyasar',
         ]);
-    })
-    ->withExceptions(function (Exceptions $exceptions): void {
-        // Application-specific exception rendering is registered here when needed.
     })
     ->create();
