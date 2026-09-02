@@ -15,8 +15,6 @@ return new class extends Migration
             return;
         }
 
-        // Any remaining legacy rows must already be associated with a canonical
-        // staff record before the old user foreign key is removed.
         $unresolved = DB::table('staff_services')
             ->whereNotNull('user_id')
             ->whereNull('staff_id')
@@ -28,17 +26,10 @@ return new class extends Migration
             );
         }
 
-        // The previous consolidation migration already made this column nullable
-        // so all canonical application writes are independent of user_id.
-        $foreignKeys = DB::select(
-            "SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE
-             WHERE TABLE_SCHEMA = DATABASE()
-               AND TABLE_NAME = 'staff_services'
-               AND COLUMN_NAME = 'user_id'
-               AND REFERENCED_TABLE_NAME IS NOT NULL"
-        );
+        $hasUserForeignKey = collect(Schema::getForeignKeys('staff_services'))
+            ->contains(static fn (array $foreign): bool => in_array('user_id', $foreign['columns'] ?? [], true));
 
-        if ($foreignKeys !== []) {
+        if ($hasUserForeignKey) {
             Schema::table('staff_services', function (Blueprint $table): void {
                 $table->dropForeign(['user_id']);
             });
