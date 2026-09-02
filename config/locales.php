@@ -1,12 +1,7 @@
 <?php
 
 return [
-    'default' => 'ar',
-
-    'supported' => [
-        'ar', 'en', 'fr', 'es', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'tr', 'hi', 'ko', 'nl', 'id',
-    ],
-
+    // UI metadata only. Locale resolution is owned by Laravel Localizer.
     'languages' => [
         'ar' => ['name' => 'Arabic', 'native' => 'العربية', 'direction' => 'rtl'],
         'en' => ['name' => 'English', 'native' => 'English', 'direction' => 'ltr'],
