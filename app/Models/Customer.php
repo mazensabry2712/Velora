@@ -42,6 +42,11 @@ class Customer extends Model
         return $this->hasMany(Appointment::class, 'customer_id_new');
     }
 
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class, 'customer_id');
+    }
+
     public function waitingList(): HasMany
     {
         return $this->hasMany(WaitingList::class);
