@@ -33,15 +33,13 @@ final class StaffController extends Controller
     {
         $staffMembers = $this->staff->all();
         $services = Service::orderBy('name')->get();
-
         return view('admin.staff.index', compact('staffMembers', 'services'));
     }
 
     public function show(int $id): JsonResponse
     {
         try {
-            $member = $this->staff->findWithRelations($id, ['services', 'schedules']);
-
+            $member = $this->staff->findWithRelations($id, ['staffProfile.services', 'schedules']);
             return response()->json(['success' => true, 'data' => $member]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => __('Not found')], 404);
@@ -51,12 +49,10 @@ final class StaffController extends Controller
     public function store(StoreStaffRequest $request): JsonResponse
     {
         $this->ensureTenantAdmin();
-
         try {
             $data = $request->validated();
             $member = $this->createStaff->execute($data);
             $password = explode('@', $data['email'])[0] . '123';
-
             return response()->json([
                 'success' => true,
                 'message' => __('Staff member created. Default password: ') . $password,
@@ -65,7 +61,6 @@ final class StaffController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('storeStaff: ' . $e->getMessage());
-
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
@@ -73,20 +68,17 @@ final class StaffController extends Controller
     public function update(UpdateStaffRequest $request, int $id): JsonResponse
     {
         $this->ensureTenantAdmin();
-
         try {
             $member = $this->staff->findById($id);
             $data = $request->validated();
             $this->updateStaff->execute($member, $data);
-
             return response()->json([
                 'success' => true,
                 'message' => __('Staff member updated.'),
-                'data' => $member->fresh(['services', 'schedules']),
+                'data' => $member->fresh(['staffProfile.services', 'schedules']),
             ]);
         } catch (\Exception $e) {
             Log::error('updateStaff: ' . $e->getMessage());
-
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
@@ -94,37 +86,30 @@ final class StaffController extends Controller
     public function destroy(int $id): JsonResponse
     {
         $this->ensureTenantAdmin();
-
         try {
             $member = $this->staff->findById($id);
             $this->deleteStaff->execute($member);
-
             return response()->json(['success' => true, 'message' => __('Staff member deleted.')]);
         } catch (\Exception $e) {
             Log::error('destroyStaff: ' . $e->getMessage());
-
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
     public function bySpecialization(string $specialization): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'data' => $this->staff->getBySpecialization($specialization),
-        ]);
+        return response()->json(['success' => true, 'data' => $this->staff->getBySpecialization($specialization)]);
     }
 
     public function services(int $id): JsonResponse
     {
         try {
-            $member = $this->staff->findWithRelations($id, ['services']);
-
+            $member = $this->staff->findWithRelations($id, ['staffProfile.services']);
             return response()->json([
                 'success' => true,
-                'data' => $member->services->map(
+                'data' => $member->staffProfile?->services?->map(
                     fn ($service) => $service->only(['id', 'name', 'name_ar', 'duration', 'price'])
-                ),
+                )->values() ?? collect(),
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => __('Not found')], 404);
@@ -133,17 +118,11 @@ final class StaffController extends Controller
 
     public function byService(int $serviceId): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'data' => $this->staff->getByService($serviceId),
-        ]);
+        return response()->json(['success' => true, 'data' => $this->staff->getByService($serviceId)]);
     }
 
     public function schedule(int $staffId): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'data' => $this->staff->getSchedule($staffId),
-        ]);
+        return response()->json(['success' => true, 'data' => $this->staff->getSchedule($staffId)]);
     }
 }
