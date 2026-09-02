@@ -4,7 +4,6 @@ use App\Http\Middleware\CheckMaintenanceMode;
 use App\Http\Middleware\CheckRole;
 use App\Http\Middleware\CheckSubscriptionLimits;
 use App\Http\Middleware\CheckSuperAdmin;
-use App\Http\Middleware\CheckTokenAbility;
 use App\Http\Middleware\DetectCountryAndLocale;
 use App\Http\Middleware\EnforceCentralLocale;
 use App\Http\Middleware\EnsurePublicAuthCopyTranslations;
@@ -13,11 +12,11 @@ use App\Http\Middleware\EnsurePublicLoginCopyTranslations;
 use App\Http\Middleware\EnsureSubscriptionIsValid;
 use App\Http\Middleware\EnsureTokenBelongsToTenant;
 use App\Http\Middleware\InitializeTenancyByToken;
+use App\Http\Middleware\InjectVeloraBrandStyles;
 use App\Http\Middleware\RedirectIfOnboardingIncomplete;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetTenantLocale;
 use App\Http\Middleware\SuperAdminAuth;
-use App\Http\Middleware\InjectVeloraBrandStyles;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Application;
@@ -28,6 +27,7 @@ use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Laravel\Sanctum\Http\Middleware\CheckAbilities;
 use NielsNumbers\LaravelLocalizer\Middleware\RedirectLocale;
 use NielsNumbers\LaravelLocalizer\Middleware\SetLocale;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
@@ -73,7 +73,7 @@ return (new ApplicationBuilder($app))
             'super.admin' => CheckSuperAdmin::class,
             'super.admin.auth' => SuperAdminAuth::class,
             'role' => CheckRole::class,
-            'ability' => CheckTokenAbility::class,
+            'ability' => CheckAbilities::class,
             'subscription.limits' => CheckSubscriptionLimits::class,
             'subscription.valid' => EnsureSubscriptionIsValid::class,
             'geo.detect' => DetectCountryAndLocale::class,
