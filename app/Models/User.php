@@ -16,21 +16,11 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, HasRoles, Notifiable;
 
     protected $fillable = [
-        'name',
-        'email',
-        'locale',
-        'phone',
-        'specialization',
-        'specialization_ar',
-        'password',
-        'is_vip',
-        'avatar',
+        'name', 'email', 'locale', 'phone', 'specialization',
+        'specialization_ar', 'password', 'is_vip', 'avatar',
     ];
 
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
+    protected $hidden = ['password', 'remember_token'];
 
     protected function casts(): array
     {
@@ -64,57 +54,20 @@ class User extends Authenticatable
         return $this->morphMany(Image::class, 'imageable');
     }
 
-    public function isAssistant(): bool
-    {
-        return $this->hasRole('Assistant');
-    }
+    public function isAssistant(): bool { return $this->hasRole('Assistant'); }
+    public function tenant() { return $this->belongsTo(Tenant::class); }
+    public function appointments() { return $this->hasMany(Appointment::class, 'customer_id'); }
+    public function staffAppointments() { return $this->hasMany(Appointment::class, 'staff_id'); }
+    public function notifications() { return $this->hasMany(Notification::class); }
+    public function invoices() { return $this->hasMany(Invoice::class, 'customer_id'); }
 
-    public function tenant()
-    {
-        return $this->belongsTo(Tenant::class);
-    }
-
-    public function appointments()
-    {
-        return $this->hasMany(Appointment::class, 'customer_id');
-    }
-
-    public function staffAppointments()
-    {
-        return $this->hasMany(Appointment::class, 'staff_id');
-    }
-
-    public function notifications()
-    {
-        return $this->hasMany(Notification::class);
-    }
-
-    public function invoices()
-    {
-        return $this->hasMany(Invoice::class, 'customer_id');
-    }
-
-    /**
-     * Staff profile corresponding to this user account.
-     */
+    /** Staff profile corresponding to this user account. */
     public function staffProfile()
     {
         return $this->hasOne(Staff::class, 'user_id');
     }
 
-    /**
-     * Services assigned to this user when the user is acting as staff.
-     * The pivot also contains staff_id for the Staff profile, so the user_id
-     * key is declared explicitly to avoid Eloquent guessing the wrong key.
-     */
-    public function services()
-    {
-        return $this->belongsToMany(Service::class, 'staff_services', 'user_id', 'service_id');
-    }
-
-    /**
-     * Canonical staff weekly schedule through the dedicated Staff profile.
-     */
+    /** Canonical weekly schedule through the dedicated Staff profile. */
     public function schedules(): HasManyThrough
     {
         return $this->hasManyThrough(
@@ -127,36 +80,14 @@ class User extends Authenticatable
         );
     }
 
-    /**
-     * Active working days from the canonical staff availability table.
-     */
     public function activeSchedules(): HasManyThrough
     {
         return $this->schedules()->where('is_working', true);
     }
 
-    public function isSuperAdmin(): bool
-    {
-        return $this->hasRole('Super Admin');
-    }
-
-    public function isAdminTenant(): bool
-    {
-        return $this->hasRole('Admin Tenant');
-    }
-
-    public function isStaff(): bool
-    {
-        return $this->hasRole('Staff');
-    }
-
-    public function isCustomer(): bool
-    {
-        return $this->hasRole('Customer');
-    }
-
-    public function getRoleName(): ?string
-    {
-        return $this->getRoleNames()->first();
-    }
+    public function isSuperAdmin(): bool { return $this->hasRole('Super Admin'); }
+    public function isAdminTenant(): bool { return $this->hasRole('Admin Tenant'); }
+    public function isStaff(): bool { return $this->hasRole('Staff'); }
+    public function isCustomer(): bool { return $this->hasRole('Customer'); }
+    public function getRoleName(): ?string { return $this->getRoleNames()->first(); }
 }
