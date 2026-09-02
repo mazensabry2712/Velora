@@ -7,6 +7,7 @@ use App\Http\Middleware\CheckSuperAdmin;
 use App\Http\Middleware\CheckTokenAbility;
 use App\Http\Middleware\DetectCountryAndLocale;
 use App\Http\Middleware\EnforceCentralLocale;
+use App\Http\Middleware\EnsurePublicAuthCopyTranslations;
 use App\Http\Middleware\EnsurePublicFrenchTranslations;
 use App\Http\Middleware\EnsureSubscriptionIsValid;
 use App\Http\Middleware\EnsureTokenBelongsToTenant;
@@ -59,6 +60,7 @@ return (new ApplicationBuilder($app))
             RedirectLocale::class,
             EnforceCentralLocale::class,
             EnsurePublicFrenchTranslations::class,
+            EnsurePublicAuthCopyTranslations::class,
             SubstituteBindings::class,
         ]);
 
