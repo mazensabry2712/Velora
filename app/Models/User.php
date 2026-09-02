@@ -65,14 +65,11 @@ class User extends Authenticatable
     }
 
     /**
-     * Legacy user-owned appointments are kept only for historical compatibility.
-     * New booking flows use Customer as the business identity.
+     * Legacy user-owned appointments kept for historical compatibility.
      */
-    public function appointments()
-    {
-        return $this->hasMany(Appointment::class, 'customer_id');
-    }
+    public function appointments() { return $this->hasMany(Appointment::class, 'customer_id'); }
 
+    /** Canonical customer-owned appointments through the business Customer entity. */
     public function customerAppointments(): HasManyThrough
     {
         return $this->hasManyThrough(
@@ -87,8 +84,21 @@ class User extends Authenticatable
 
     /** Legacy staff appointments through the users identity. */
     public function staffAppointments() { return $this->hasMany(Appointment::class, 'staff_id'); }
+
     public function notifications() { return $this->hasMany(Notification::class); }
-    public function invoices() { return $this->hasMany(Invoice::class, 'customer_id'); }
+
+    /** Canonical invoices through the business Customer entity. */
+    public function invoices(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            Invoice::class,
+            Customer::class,
+            'user_id',
+            'customer_id',
+            'id',
+            'id'
+        );
+    }
 
     /** Staff profile corresponding to this user account. */
     public function staffProfile()
