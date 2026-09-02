@@ -9,6 +9,7 @@ use App\Http\Middleware\DetectCountryAndLocale;
 use App\Http\Middleware\EnforceCentralLocale;
 use App\Http\Middleware\EnsurePublicAuthCopyTranslations;
 use App\Http\Middleware\EnsurePublicFrenchTranslations;
+use App\Http\Middleware\EnsurePublicLoginCopyTranslations;
 use App\Http\Middleware\EnsureSubscriptionIsValid;
 use App\Http\Middleware\EnsureTokenBelongsToTenant;
 use App\Http\Middleware\InitializeTenancyByToken;
@@ -61,6 +62,7 @@ return (new ApplicationBuilder($app))
             EnforceCentralLocale::class,
             EnsurePublicFrenchTranslations::class,
             EnsurePublicAuthCopyTranslations::class,
+            EnsurePublicLoginCopyTranslations::class,
             SubstituteBindings::class,
         ]);
 
