@@ -3,7 +3,6 @@
 use App\Http\Middleware\CheckMaintenanceMode;
 use App\Http\Middleware\CheckRole;
 use App\Http\Middleware\CheckSubscriptionLimits;
-use App\Http\Middleware\CheckSuperAdmin;
 use App\Http\Middleware\DetectCountryAndLocale;
 use App\Http\Middleware\EnsureSubscriptionIsValid;
 use App\Http\Middleware\EnsureTokenBelongsToTenant;
@@ -58,8 +57,8 @@ return (new ApplicationBuilder($app))
             'tenant.token' => InitializeTenancyByToken::class,
             'tenant.token.bound' => EnsureTokenBelongsToTenant::class,
             'tenant.locale' => SetTenantLocale::class,
-            'super.admin' => CheckSuperAdmin::class,
             'role' => CheckRole::class,
+            'super.admin.auth' => CheckRole::class,
             'ability' => CheckAbilities::class,
             'subscription.limits' => CheckSubscriptionLimits::class,
             'subscription.valid' => EnsureSubscriptionIsValid::class,
