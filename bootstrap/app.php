@@ -13,7 +13,6 @@ use App\Http\Middleware\InjectVeloraBrandStyles;
 use App\Http\Middleware\RedirectIfOnboardingIncomplete;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetTenantLocale;
-use App\Http\Middleware\SuperAdminAuth;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Application;
@@ -62,7 +61,6 @@ return (new ApplicationBuilder($app))
             'tenant.token.bound' => EnsureTokenBelongsToTenant::class,
             'tenant.locale' => SetTenantLocale::class,
             'super.admin' => CheckSuperAdmin::class,
-            'super.admin.auth' => SuperAdminAuth::class,
             'role' => CheckRole::class,
             'ability' => CheckAbilities::class,
             'subscription.limits' => CheckSubscriptionLimits::class,
