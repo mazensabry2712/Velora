@@ -2,32 +2,28 @@
 
 namespace App\Services;
 
+use App\Domain\Pricing\Contracts\CountryPriceSelector;
 use App\Models\CountryPricing;
 use Illuminate\Http\Request;
 
-class PricingService
+class PricingService implements CountryPriceSelector
 {
-    public function __construct(private GeoService $geo) {}
-
     /**
      * Resolve the CountryPricing record for the current request.
      * Priority: cookie override → session override → geo-detected country → GLOBAL.
      */
     public function getPricingForRequest(Request $request): CountryPricing
     {
-        // 1. Permanent cookie override (survives session changes)
         $cookieOverride = $request->cookie('velora_country_override');
         if ($cookieOverride && preg_match('/^[A-Z]{2,10}$/', strtoupper($cookieOverride))) {
             return $this->getPricingForCountry(strtoupper($cookieOverride));
         }
 
-        // 2. Session override (set within the same session)
         $override = session('pricing_country_override');
         if ($override) {
             return $this->getPricingForCountry($override);
         }
 
-        // 3. Detected country from geo middleware (stored in session by DetectCountryAndLocale)
         $detected = session('detected_country', 'US');
 
         return $this->getPricingForCountry($detected);
@@ -50,6 +46,7 @@ class PricingService
         $code = strtoupper($countryCode);
         session(['pricing_country_override' => $code]);
         cookie()->queue(cookie()->forever('velora_country_override', $code));
+
         return $this->getPricingForCountry($code);
     }
 
@@ -62,8 +59,7 @@ class PricingService
     }
 
     /**
-     * Return an array summary suitable for views:
-     *   price, currency, formatted_price, payment_methods, country_code, country_name
+     * Return an array summary suitable for views.
      */
     public function getPricingSummary(Request $request): array
     {
