@@ -21,14 +21,17 @@ final class StaffRepository implements StaffRepositoryInterface
 
     public function findWithRelations(int $id, array $relations = []): ?User
     {
+        $relations = array_map(
+            static fn (string $relation): string => $relation === 'services' ? 'staffProfile.services' : $relation,
+            $relations
+        );
+
         return User::with($relations)->findOrFail($id);
     }
 
     public function all(): Collection
     {
-        return User::role('Staff')
-            ->with(['staffProfile', 'activeSchedules'])
-            ->get();
+        return User::role('Staff')->with(['staffProfile', 'activeSchedules'])->get();
     }
 
     public function create(array $userData, array $services = [], array $schedule = []): User
@@ -65,9 +68,6 @@ final class StaffRepository implements StaffRepositoryInterface
 
     public function getSchedule(int $staffId): Collection
     {
-        return User::findOrFail($staffId)
-            ->activeSchedules()
-            ->orderBy('day_of_week')
-            ->get();
+        return User::findOrFail($staffId)->activeSchedules()->orderBy('day_of_week')->get();
     }
 }
