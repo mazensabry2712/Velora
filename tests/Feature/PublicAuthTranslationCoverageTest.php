@@ -8,6 +8,19 @@ use Tests\TestCase;
 
 final class PublicAuthTranslationCoverageTest extends TestCase
 {
+    private function centralHost(): string
+    {
+        return env('APP_DOMAIN', 'velora.test');
+    }
+
+    private function centralRequest(): static
+    {
+        return $this->withServerVariables([
+            'HTTP_HOST' => $this->centralHost(),
+            'SERVER_NAME' => $this->centralHost(),
+        ]);
+    }
+
     public function test_signup_and_login_copy_has_non_english_translation_for_every_supported_locale(): void
     {
         $locales = array_values(array_unique(
@@ -51,10 +64,7 @@ final class PublicAuthTranslationCoverageTest extends TestCase
                 ? '/signup'
                 : '/'.$locale.'/signup';
 
-            $response = $this->get($path, [
-                'HTTP_HOST' => $this->centralHost(),
-                'SERVER_NAME' => $this->centralHost(),
-            ]);
+            $response = $this->centralRequest()->get($path);
 
             $response->assertOk();
             $this->app->setLocale($locale);
@@ -99,7 +109,8 @@ final class PublicAuthTranslationCoverageTest extends TestCase
             'landing.signup_privacy', 'landing.signup_submit', 'landing.signup_existing', 'landing.signup_login',
             'landing.signup_isolated_data',
         ] as $key) {
-            $this->assertStringContainsString("__('{$key}')", $view, "Signup Blade is missing translation key [{$key}].");
+            $pattern = "/__\\(\\s*'".preg_quote($key, '/')."'\\s*(?:,|\\))/";
+            $this->assertMatchesRegularExpression($pattern, $view, "Signup Blade is missing translation key [{$key}].");
         }
     }
 
