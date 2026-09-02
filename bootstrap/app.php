@@ -17,7 +17,6 @@ use App\Http\Middleware\RedirectIfOnboardingIncomplete;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetTenantLocale;
 use App\Http\Middleware\SuperAdminAuth;
-use App\Http\Middleware\ThrottleRequests;
 use App\Http\Middleware\InjectVeloraBrandStyles;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -77,7 +76,6 @@ return (new ApplicationBuilder($app))
             'ability' => CheckTokenAbility::class,
             'subscription.limits' => CheckSubscriptionLimits::class,
             'subscription.valid' => EnsureSubscriptionIsValid::class,
-            'throttle.api' => ThrottleRequests::class,
             'geo.detect' => DetectCountryAndLocale::class,
             'onboarding.redirect' => RedirectIfOnboardingIncomplete::class,
             'maintenance' => CheckMaintenanceMode::class,
