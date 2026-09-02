@@ -5,7 +5,6 @@ use App\Http\Middleware\CheckRole;
 use App\Http\Middleware\CheckSubscriptionLimits;
 use App\Http\Middleware\CheckSuperAdmin;
 use App\Http\Middleware\DetectCountryAndLocale;
-use App\Http\Middleware\EnforceCentralLocale;
 use App\Http\Middleware\EnsureSubscriptionIsValid;
 use App\Http\Middleware\EnsureTokenBelongsToTenant;
 use App\Http\Middleware\InitializeTenancyByToken;
@@ -13,7 +12,6 @@ use App\Http\Middleware\InjectVeloraBrandStyles;
 use App\Http\Middleware\RedirectIfOnboardingIncomplete;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetTenantLocale;
-use App\Http\Middleware\SuperAdminAuth;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Application;
@@ -52,7 +50,6 @@ return (new ApplicationBuilder($app))
         $middleware->web(append: [
             SetLocale::class,
             RedirectLocale::class,
-            EnforceCentralLocale::class,
             SubstituteBindings::class,
         ]);
 
@@ -62,7 +59,6 @@ return (new ApplicationBuilder($app))
             'tenant.token.bound' => EnsureTokenBelongsToTenant::class,
             'tenant.locale' => SetTenantLocale::class,
             'super.admin' => CheckSuperAdmin::class,
-            'super.admin.auth' => SuperAdminAuth::class,
             'role' => CheckRole::class,
             'ability' => CheckAbilities::class,
             'subscription.limits' => CheckSubscriptionLimits::class,
