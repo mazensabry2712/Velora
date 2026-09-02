@@ -36,7 +36,7 @@ class DetectCountryAndLocale
     private function hasExplicitRouteLocale(Request $request): bool
     {
         $routeLocale = $request->route('locale');
-        $supported = config('localizer.supported_locales', config('locales.supported', ['ar', 'en', 'fr']));
+        $supported = config('localizer.supported_locales', []);
 
         return is_string($routeLocale) && in_array($routeLocale, $supported, true);
     }
@@ -54,8 +54,8 @@ class DetectCountryAndLocale
 
     private function resolveLocale(Request $request): string
     {
-        $supported = config('localizer.supported_locales', config('locales.supported', ['ar', 'en', 'fr']));
-        $default = config('locales.default', config('localizer.supported_locales.0', 'ar'));
+        $supported = config('localizer.supported_locales', []);
+        $default = config('localizer.omitted_locale', 'ar');
 
         if (SystemSetting::get('allow_manual_language_switch', true)) {
             $cookieLocale = $request->cookie('velora_locale_override');
