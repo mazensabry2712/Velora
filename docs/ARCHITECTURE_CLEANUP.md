@@ -7,12 +7,13 @@ This cleanup removes application code that duplicated responsibilities already p
 ## Canonical sources
 
 - **Locale routing and supported locales:** `niels-numbers/laravel-localizer` via `config/localizer.php`.
-- **Roles and permissions:** `spatie/laravel-permission` is the source of truth. Application code now uses Spatie's Role model directly.
-- **Multi-tenancy:** `stancl/tenancy` is the source for tenancy initialization and tenant lifecycle jobs.
+- **Roles and permissions:** `spatie/laravel-permission` is the source of truth. The compatibility `App\Models\Role` wrapper remains only where the existing application/test namespace is still used.
+- **Multi-tenancy:** `stancl/tenancy` is the source for domain tenancy initialization and tenant lifecycle jobs.
 - **API token abilities:** Laravel Sanctum's `CheckAbilities` middleware.
 - **HTTP rate limiting:** Laravel's native named `RateLimiter`.
 - **Staff identity and scheduling:** the dedicated `Staff` entity and `staff_working_hours` table are canonical.
-- **Staff/service assignments:** `staff_services.staff_id` is the target canonical identity; the old `user_id` column remains temporarily nullable during migration.
+- **Staff/service assignments:** `staff_services.staff_id` is now the sole runtime identity; the legacy `user_id` pivot column is removed by migration `2026_09_03_000003_drop_legacy_user_id_from_staff_services.php`.
+- **Booking relationships:** `customer_id_new` → `customers` and `staff_id_new` → `staff` are the current production booking columns. The older `customer_id` / `staff_id` columns still require a data-safe historical reconciliation before they can be physically removed because they reference a different identity model (`users`).
 - **Payment, PDF, Excel, QR, HTTP, and API-auth integrations:** existing installed packages remain in place; application services are adapters/domain logic, not competing implementations.
 
 ## Removed duplicate implementations
@@ -58,7 +59,7 @@ The application model relationships keep the public `schedules` and `activeSched
 
 ### Staff-service identity duplication
 
-The `staff_services` pivot historically stored both `user_id` and the newer `staff_id` for the same staff/service assignment. A staged migration now backfills missing `staff_id` values, prevents duplicate staff/service pairs, and makes the old `user_id` nullable. Production code is being moved to the `Staff` relationship before the legacy column is finally dropped.
+The `staff_services` pivot previously stored both `user_id` and `staff_id` for the same assignment. Runtime writes, onboarding, booking availability, repositories, controllers, and tests now use the dedicated `Staff` relationship. Existing rows are backfilled and deduplicated before the final migration removes `user_id` and its foreign key. The pivot's canonical uniqueness rule is `staff_id + service_id`.
 
 ## Intentionally retained
 
@@ -67,6 +68,7 @@ The `staff_services` pivot historically stored both `user_id` and the newer `sta
 - `WorkingDay`, which represents tenant-level enabled business days rather than a staff member's working hours.
 - `TimeSlot`, which represents the older/admin compatibility slot catalog; it is not the generated availability DTO returned by `SlotEngine`.
 - `UsageLog` alongside `ActivityLog`: `UsageLog` records central product/usage events, while `ActivityLog` is the admin/audit trail. They are different responsibilities and should not be merged merely because both are logs.
+- The `App\Models\Role` wrapper until all configuration, seeders, infrastructure, and test imports are converted to Spatie's model namespace.
 - Custom model translation support and legacy `_ar` / `*_i18n` columns until `spatie/laravel-translatable` is installed and tenant data is migrated.
 - Custom activity logging until `spatie/laravel-activitylog` is installed and existing audit data is migrated.
 - The custom notification-delivery ledger because it tracks channel-specific delivery/recovery state and is used by multiple notification flows.
@@ -77,8 +79,23 @@ The `staff_services` pivot historically stored both `user_id` and the newer `sta
 1. Migrate custom model translations to `spatie/laravel-translatable` with a data migration.
 2. Migrate `ActivityLog` to `spatie/laravel-activitylog` with audit-data preservation.
 3. Migrate the legacy FCM transport to a maintained Laravel notification channel.
-4. Finish the staff-service pivot migration from `user_id` to canonical `staff_id` after all production/test consumers are converted.
-5. Reconcile remaining `customer_id` / `customer_id_new`, `staff_id` / `staff_id_new`, and other legacy booking columns through a data-safe schema migration.
+4. Reconcile historical `appointments.customer_id` / `appointments.staff_id` rows into the dedicated `customers` / `staff` identities, then remove the old appointment columns and rename the current `*_new` columns to canonical names.
+5. Convert the remaining `App\Models\Role` imports to `Spatie\Permission\Models\Role`, then remove the compatibility wrapper.
+
+## Verification requirement
+
+After pulling `main`, run:
+
+```powershell
+git pull --ff-only origin main
+php artisan optimize:clear
+php artisan migrate
+php artisan test --compact
+vendor/bin/pint --test
+composer validate --strict
+```
+
+The GitHub Actions suite is also expected to verify the pushed state; a successful CI run must be treated as the authoritative remote verification rather than assuming local success.
 
 ## Package policy
 
