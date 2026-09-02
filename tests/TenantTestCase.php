@@ -14,37 +14,22 @@ use Illuminate\Support\Facades\Hash;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
-/**
- * Base test case for all tenant-scoped tests.
- *
- * Migrations run ONCE per test class (not globally across all subclasses) to
- * avoid cross-class fixture leakage. Each test runs inside tenant + central
- * DB transactions that are rolled back in tearDown.
- */
 abstract class TenantTestCase extends TestCase
 {
-    protected Tenant  $tenant;
-    protected User    $admin;
-    protected User    $staffMember;
-    protected Staff   $staff;
-    protected User    $customer;
+    protected Tenant $tenant;
+    protected User $admin;
+    protected User $staffMember;
+    protected Staff $staff;
+    protected User $customer;
     protected Service $service;
-    protected Role    $adminRole;
-    protected Role    $staffRole;
-    protected Role    $customerRole;
+    protected Role $adminRole;
+    protected Role $staffRole;
+    protected Role $customerRole;
 
-    /** @var array<class-string, bool> */
     private static array $migrationsDone = [];
-
-    /** @var array<class-string, string> */
     private static array $tenantIds = [];
-
-    /** @var array<class-string, array<string, int|string>> */
     private static array $fixtureIds = [];
-
-    /** @var array<class-string, string> */
     private static array $tenantDbPaths = [];
-
     private bool $centralTransactionStarted = false;
     private ?Connection $centralDatabaseConnection = null;
     private ?Connection $tenantDatabaseConnection = null;
@@ -53,27 +38,14 @@ abstract class TenantTestCase extends TestCase
     {
         $class = static::class;
         $tenantDbPath = self::$tenantDbPaths[$class] ?? null;
-
-        if ($tenantDbPath !== null && file_exists($tenantDbPath)) {
-            @unlink($tenantDbPath);
-        }
-
-        unset(
-            self::$migrationsDone[$class],
-            self::$tenantIds[$class],
-            self::$fixtureIds[$class],
-            self::$tenantDbPaths[$class],
-        );
-
+        if ($tenantDbPath !== null && file_exists($tenantDbPath)) @unlink($tenantDbPath);
+        unset(self::$migrationsDone[$class], self::$tenantIds[$class], self::$fixtureIds[$class], self::$tenantDbPaths[$class]);
         parent::tearDownAfterClass();
     }
 
     protected function setUp(): void
     {
         parent::setUp();
-
-        // Bypass tenant-domain/subscription/onboarding infrastructure in
-        // HTTP tests; authorization itself remains enabled and is tested.
         $this->withoutMiddleware([
             InitializeTenancyByDomain::class,
             PreventAccessFromCentralDomains::class,
@@ -82,21 +54,16 @@ abstract class TenantTestCase extends TestCase
         ]);
 
         $class = static::class;
-
-        if (! (self::$migrationsDone[$class] ?? false)) {
+        if (!(self::$migrationsDone[$class] ?? false)) {
             $this->bootstrapTenantOnce();
         } else {
             $this->beginCentralTransaction();
-
-            DB::connection(config('tenancy.database.central_connection', 'sqlite'))
-                ->table('tenants')
-                ->insert([
-                    'id' => self::$tenantIds[$class],
-                    'data' => json_encode(['name' => 'Test Clinic']),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-
+            DB::connection($this->centralConnectionName())->table('tenants')->insert([
+                'id' => self::$tenantIds[$class],
+                'data' => json_encode(['name' => 'Test Clinic']),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
             $this->tenant = Tenant::on($this->centralConnectionName())->findOrFail(self::$tenantIds[$class]);
             tenancy()->initialize($this->tenant);
         }
@@ -118,23 +85,14 @@ abstract class TenantTestCase extends TestCase
     protected function tearDown(): void
     {
         try {
-            if ($this->tenantDatabaseConnection?->transactionLevel() > 0) {
-                $this->tenantDatabaseConnection->rollBack();
-            }
+            if ($this->tenantDatabaseConnection?->transactionLevel() > 0) $this->tenantDatabaseConnection->rollBack();
         } finally {
-            // Roll back using the connection object captured before tenancy
-            // teardown. Dynamic Stancl connections may be removed at end().
             tenancy()->end();
-
-            if ($this->centralTransactionStarted && $this->centralDatabaseConnection?->transactionLevel() > 0) {
-                $this->centralDatabaseConnection->rollBack();
-            }
-
+            if ($this->centralTransactionStarted && $this->centralDatabaseConnection?->transactionLevel() > 0) $this->centralDatabaseConnection->rollBack();
             $this->centralTransactionStarted = false;
             $this->tenantDatabaseConnection = null;
             $this->centralDatabaseConnection = null;
         }
-
         parent::tearDown();
     }
 
@@ -153,52 +111,24 @@ abstract class TenantTestCase extends TestCase
     private function bootstrapTenantOnce(): void
     {
         $class = static::class;
-
-        Artisan::call('migrate', [
-            '--database' => $this->centralConnectionName(),
-            '--path' => 'database/migrations',
-            '--force' => true,
-        ]);
-
+        Artisan::call('migrate', ['--database' => $this->centralConnectionName(), '--path' => 'database/migrations', '--force' => true]);
         $this->beginCentralTransaction();
 
-        $this->tenant = Tenant::on($this->centralConnectionName())->create([
-            'id' => 'test-tenant-' . uniqid(),
-            'name' => 'Test Clinic',
-        ]);
-
+        $this->tenant = Tenant::on($this->centralConnectionName())->create(['id' => 'test-tenant-' . uniqid(), 'name' => 'Test Clinic']);
         self::$tenantIds[$class] = $this->tenant->id;
-        self::$tenantDbPaths[$class] = database_path(
-            config('tenancy.database.prefix', 'tenant') . $this->tenant->id
-        );
-
+        self::$tenantDbPaths[$class] = database_path(config('tenancy.database.prefix', 'tenant') . $this->tenant->id);
         tenancy()->initialize($this->tenant);
         $this->tenantDatabaseConnection = DB::connection(DB::getDefaultConnection());
-
-        Artisan::call('tenants:migrate', [
-            '--tenants' => [$this->tenant->id],
-            '--force' => true,
-        ]);
+        Artisan::call('tenants:migrate', ['--tenants' => [$this->tenant->id], '--force' => true]);
 
         $this->adminRole = Role::firstOrCreate(['name' => 'Admin Tenant']);
         $this->staffRole = Role::firstOrCreate(['name' => 'Staff']);
         $this->customerRole = Role::firstOrCreate(['name' => 'Customer']);
 
-        $this->admin = User::create([
-            'name' => 'Admin User',
-            'email' => 'admin@test.com',
-            'password' => Hash::make('password'),
-        ]);
+        $this->admin = User::create(['name' => 'Admin User', 'email' => 'admin@test.com', 'password' => Hash::make('password')]);
         $this->admin->assignRole($this->adminRole);
-
-        $this->staffMember = User::create([
-            'name' => 'Staff Member',
-            'email' => 'staff@test.com',
-            'password' => Hash::make('password'),
-            'specialization' => 'General',
-        ]);
+        $this->staffMember = User::create(['name' => 'Staff Member', 'email' => 'staff@test.com', 'password' => Hash::make('password'), 'specialization' => 'General']);
         $this->staffMember->assignRole($this->staffRole);
-
         $this->staff = Staff::create([
             'user_id' => $this->staffMember->id,
             'first_name' => 'Staff',
@@ -208,30 +138,10 @@ abstract class TenantTestCase extends TestCase
             'accepts_bookings' => true,
             'is_active' => true,
         ]);
-
-        $this->customer = User::create([
-            'name' => 'Test Customer',
-            'email' => 'customer@test.com',
-            'phone' => '0501234567',
-            'password' => Hash::make('password'),
-        ]);
+        $this->customer = User::create(['name' => 'Test Customer', 'email' => 'customer@test.com', 'phone' => '0501234567', 'password' => Hash::make('password')]);
         $this->customer->assignRole($this->customerRole);
-
-        $this->service = Service::create([
-            'name' => 'Consultation',
-            'name_ar' => 'استشارة',
-            'duration' => 30,
-            'price' => 100.00,
-            'is_active' => true,
-        ]);
-
-        DB::table('staff_services')->insert([
-            'user_id' => $this->staffMember->id,
-            'staff_id' => $this->staff->id,
-            'service_id' => $this->service->id,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $this->service = Service::create(['name' => 'Consultation', 'name_ar' => 'استشارة', 'duration' => 30, 'price' => 100.00, 'is_active' => true]);
+        $this->staff->services()->syncWithoutDetaching([$this->service->id]);
 
         self::$fixtureIds[$class] = [
             'adminRole' => $this->adminRole->id,
@@ -243,7 +153,6 @@ abstract class TenantTestCase extends TestCase
             'customer' => $this->customer->id,
             'service' => $this->service->id,
         ];
-
         self::$migrationsDone[$class] = true;
     }
 }
