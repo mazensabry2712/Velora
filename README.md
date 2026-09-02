@@ -44,6 +44,9 @@ The `docs/` directory is the engineering source of truth for project readiness a
 | --- | --- |
 | `docs/PROJECT_STATUS.md` | What is already implemented and what remains. |
 | `docs/ARCHITECTURE.md` | Architecture and engineering rules. |
+| `docs/FUTURE_ARCHITECTURE.md` | Target modular-monolith structure, module ownership and future boundaries. |
+| `docs/ARCHITECTURE_CLEANUP.md` | Canonical-source and duplicate-system cleanup decisions. |
+| `docs/ARCHITECTURE_CLEANUP_2026-09-03.md` | Detailed record of the 2026-09-03 identity and migration cleanup pass. |
 | `docs/PRODUCTION_ROADMAP.md` | Phased roadmap from current state to production. |
 | `docs/SECURITY_TENANCY_AUDIT.md` | Tenant isolation, authorization and security audit checklist. |
 | `docs/BILLING_HARDENING.md` | Billing/webhook/subscription hardening plan. |
@@ -52,6 +55,8 @@ The `docs/` directory is the engineering source of truth for project readiness a
 | `docs/QA_FINDINGS_LOG.md` | Defect-by-defect findings, root causes, fixes and regression guards discovered by Master QA. |
 | `docs/PRODUCTION_CHECKLIST.md` | Final go/no-go production checklist. |
 | `docs/CHANGELOG_IMPLEMENTATION.md` | Living record of important implementation work. |
+| `database/migrations/README.md` | Central/tenant migration strategy, naming and safety rules. |
+| `database/migrations/tenant/README.md` | Tenant migration ownership and future module naming convention. |
 
 ## Development
 
