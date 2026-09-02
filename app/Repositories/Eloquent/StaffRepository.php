@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Repositories\Eloquent;
 
 use App\Domain\Staff\Contracts\StaffWriter;
-use App\Models\StaffSchedule;
 use App\Models\User;
 use App\Repositories\Contracts\StaffRepositoryInterface;
 use Illuminate\Database\Eloquent\Collection;
@@ -28,7 +27,7 @@ final class StaffRepository implements StaffRepositoryInterface
     public function all(): Collection
     {
         return User::role('Staff')
-            ->with(['services', 'activeSchedules'])
+            ->with(['staffProfile', 'activeSchedules'])
             ->get();
     }
 
@@ -51,13 +50,14 @@ final class StaffRepository implements StaffRepositoryInterface
     {
         return User::where('specialization', $specialization)
             ->role('Staff')
+            ->with('staffProfile')
             ->get(['id', 'name', 'specialization']);
     }
 
     public function getByService(int $serviceId): Collection
     {
-        return User::whereHas('services', fn ($q) => $q->where('services.id', $serviceId))
-            ->whereHas('roles', fn ($q) => $q->where('name', 'Staff'))
+        return User::whereHas('staffProfile.services', fn ($q) => $q->where('services.id', $serviceId))
+            ->role('Staff')
             ->whereHas('staffProfile', fn ($q) => $q->where('is_active', true)->where('accepts_bookings', true))
             ->with(['activeSchedules', 'staffProfile'])
             ->get(['id', 'name']);
@@ -65,8 +65,8 @@ final class StaffRepository implements StaffRepositoryInterface
 
     public function getSchedule(int $staffId): Collection
     {
-        return StaffSchedule::where('user_id', $staffId)
-            ->where('is_active', true)
+        return User::findOrFail($staffId)
+            ->activeSchedules()
             ->orderBy('day_of_week')
             ->get();
     }
