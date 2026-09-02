@@ -6,9 +6,6 @@ use App\Http\Middleware\CheckSubscriptionLimits;
 use App\Http\Middleware\CheckSuperAdmin;
 use App\Http\Middleware\DetectCountryAndLocale;
 use App\Http\Middleware\EnforceCentralLocale;
-use App\Http\Middleware\EnsurePublicAuthCopyTranslations;
-use App\Http\Middleware\EnsurePublicFrenchTranslations;
-use App\Http\Middleware\EnsurePublicLoginCopyTranslations;
 use App\Http\Middleware\EnsureSubscriptionIsValid;
 use App\Http\Middleware\EnsureTokenBelongsToTenant;
 use App\Http\Middleware\InitializeTenancyByToken;
@@ -56,9 +53,6 @@ return (new ApplicationBuilder($app))
             SetLocale::class,
             RedirectLocale::class,
             EnforceCentralLocale::class,
-            EnsurePublicFrenchTranslations::class,
-            EnsurePublicAuthCopyTranslations::class,
-            EnsurePublicLoginCopyTranslations::class,
             SubstituteBindings::class,
         ]);
 
