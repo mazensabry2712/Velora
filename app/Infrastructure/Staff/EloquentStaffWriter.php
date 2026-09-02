@@ -22,10 +22,10 @@ final class EloquentStaffWriter implements StaffWriter
 
         $defaultPassword = explode('@', $userData['email'])[0] . '123';
         $user = User::create([
-            'name'           => $userData['name'],
-            'email'          => $userData['email'],
-            'phone'          => $userData['phone'] ?? null,
-            'password'       => Hash::make($defaultPassword),
+            'name' => $userData['name'],
+            'email' => $userData['email'],
+            'phone' => $userData['phone'] ?? null,
+            'password' => Hash::make($defaultPassword),
             'specialization' => $userData['specialization'] ?? null,
         ]);
 
@@ -33,40 +33,40 @@ final class EloquentStaffWriter implements StaffWriter
 
         $parts = preg_split('/\s+/', trim($userData['name']), 2);
         $staff = Staff::create([
-            'user_id'          => $user->id,
-            'first_name'       => $parts[0] ?? '',
-            'last_name'        => $parts[1] ?? '',
-            'email'            => $user->email,
-            'phone'            => $user->phone,
-            'title'            => !empty($userData['specialization']) ? ['en' => $userData['specialization']] : null,
-            'is_active'        => true,
+            'user_id' => $user->id,
+            'first_name' => $parts[0] ?? '',
+            'last_name' => $parts[1] ?? '',
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'title' => !empty($userData['specialization']) ? ['en' => $userData['specialization']] : null,
+            'is_active' => true,
             'accepts_bookings' => true,
-            'sort_order'       => 0,
+            'sort_order' => 0,
         ]);
 
-        $this->syncServices($user->id, $staff->id, $services);
+        $this->syncServices($staff->id, $services);
         $this->syncScheduleData($staff->id, $schedule);
 
         try {
             UsageLog::log('user_created', [
-                'user_id'   => $user->id,
+                'user_id' => $user->id,
                 'user_type' => 'staff',
-                'name'      => $user->name,
-                'email'     => $user->email,
+                'name' => $user->name,
+                'email' => $user->email,
             ]);
         } catch (\Throwable) {
         }
 
-        return $user->load(['services', 'schedules']);
+        return $user->load(['staffProfile.services', 'schedules']);
     }
 
     /** @param array<string, mixed> $userData */
     public function update(User $staff, array $userData, array $services = [], array $schedule = []): bool
     {
         $staff->update([
-            'name'           => $userData['name'],
-            'email'          => $userData['email'],
-            'phone'          => $userData['phone'] ?? null,
+            'name' => $userData['name'],
+            'email' => $userData['email'],
+            'phone' => $userData['phone'] ?? null,
             'specialization' => $userData['specialization'] ?? $staff->specialization,
         ]);
 
@@ -79,27 +79,27 @@ final class EloquentStaffWriter implements StaffWriter
 
         if (!$staffRecord) {
             $staffRecord = Staff::create([
-                'user_id'          => $staff->id,
-                'first_name'       => $parts[0] ?? '',
-                'last_name'        => $parts[1] ?? '',
-                'email'            => $staff->email,
-                'phone'            => $staff->phone,
-                'title'            => !empty($staff->specialization) ? ['en' => $staff->specialization] : null,
-                'is_active'        => true,
+                'user_id' => $staff->id,
+                'first_name' => $parts[0] ?? '',
+                'last_name' => $parts[1] ?? '',
+                'email' => $staff->email,
+                'phone' => $staff->phone,
+                'title' => !empty($staff->specialization) ? ['en' => $staff->specialization] : null,
+                'is_active' => true,
                 'accepts_bookings' => true,
-                'sort_order'       => 0,
+                'sort_order' => 0,
             ]);
         } else {
             $staffRecord->update([
                 'first_name' => $parts[0] ?? '',
-                'last_name'  => $parts[1] ?? '',
-                'email'      => $staff->email,
-                'phone'      => $staff->phone,
-                'title'      => !empty($staff->specialization) ? ['en' => $staff->specialization] : $staffRecord->title,
+                'last_name' => $parts[1] ?? '',
+                'email' => $staff->email,
+                'phone' => $staff->phone,
+                'title' => !empty($staff->specialization) ? ['en' => $staff->specialization] : $staffRecord->title,
             ]);
         }
 
-        $this->syncServices($staff->id, $staffRecord->id, $services);
+        $this->syncServices($staffRecord->id, $services);
         $this->syncScheduleData($staffRecord->id, $schedule, true);
 
         return true;
@@ -110,22 +110,15 @@ final class EloquentStaffWriter implements StaffWriter
         $staffRecord = Staff::where('user_id', $staff->id)->first();
         if ($staffRecord) {
             StaffWorkingHours::where('staff_id', $staffRecord->id)->delete();
-
-            DB::table('staff_services')
-                ->where('staff_id', $staffRecord->id)
-                ->orWhere('user_id', $staff->id)
-                ->delete();
-
+            DB::table('staff_services')->where('staff_id', $staffRecord->id)->delete();
             $staffRecord->delete();
-        } else {
-            DB::table('staff_services')->where('user_id', $staff->id)->delete();
         }
 
         try {
             UsageLog::log('user_deleted', [
                 'user_id' => $staff->id,
-                'name'    => $staff->name,
-                'email'   => $staff->email,
+                'name' => $staff->name,
+                'email' => $staff->email,
             ]);
         } catch (\Throwable) {
         }
@@ -133,17 +126,15 @@ final class EloquentStaffWriter implements StaffWriter
         return (bool) $staff->delete();
     }
 
-    private function syncServices(int $userId, int $staffId, array $serviceIds): void
+    private function syncServices(int $staffId, array $serviceIds): void
     {
         DB::table('staff_services')
-            ->where('user_id', $userId)
-            ->orWhere('staff_id', $staffId)
+            ->where('staff_id', $staffId)
             ->delete();
 
         foreach (array_unique(array_map('intval', $serviceIds)) as $serviceId) {
             DB::table('staff_services')->insert([
-                'user_id'    => $userId,
-                'staff_id'   => $staffId,
+                'staff_id' => $staffId,
                 'service_id' => $serviceId,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -177,7 +168,7 @@ final class EloquentStaffWriter implements StaffWriter
                 ['staff_id' => $staffId, 'day_of_week' => $dayOfWeek],
                 [
                     'start_time' => $hours['start_time'] ?? null,
-                    'end_time'   => $hours['end_time'] ?? null,
+                    'end_time' => $hours['end_time'] ?? null,
                     'is_working' => $isWorking,
                 ]
             );
