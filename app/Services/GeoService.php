@@ -14,10 +14,6 @@ use Illuminate\Support\Facades\Schema;
 
 class GeoService
 {
-    const SUPPORTED_LOCALES = [
-        'en','ar','fr','es','de','it','pt','ru','zh','ja','tr','hi','ko','nl','id',
-    ];
-
     public function getCountryCode(Request $request): string
     {
         if ($cf = $request->header('CF-IPCountry')) {
@@ -28,7 +24,10 @@ class GeoService
         }
 
         if ($hdr = $request->header('X-Country-Code')) {
-            return strtoupper(trim($hdr));
+            $country = strtoupper(trim($hdr));
+            if (preg_match('/^[A-Z]{2}$/', $country)) {
+                return $country;
+            }
         }
 
         return 'US';
@@ -37,7 +36,7 @@ class GeoService
     public function getLocaleForCountry(string $code): string
     {
         $setting = CountrySetting::getByCode($code);
-        $locale = $setting?->default_language ?? SystemSetting::get('default_language', 'en');
+        $locale = $setting?->default_language ?? SystemSetting::get('default_language', config('app.fallback_locale', 'en'));
 
         return $this->sanitiseLocale((string) $locale);
     }
@@ -45,13 +44,18 @@ class GeoService
     private function sanitiseLocale(string $locale): string
     {
         $locale = strtolower(trim($locale));
-        return in_array($locale, self::SUPPORTED_LOCALES, true) ? $locale : 'en';
+        $supported = config('localizer.supported_locales', []);
+
+        return in_array($locale, $supported, true)
+            ? $locale
+            : (string) config('app.fallback_locale', 'en');
     }
 
     public function getCurrencyForCountry(string $code): string
     {
         $setting = CountrySetting::getByCode($code);
         $currency = $setting?->default_currency ?? SystemSetting::get('default_currency', 'USD');
+
         return strtoupper(trim((string) $currency));
     }
 
@@ -66,17 +70,16 @@ class GeoService
             return collect();
         }
 
-        $plans = Cache::remember("plans_for_country:{$countryCode}", 1800, function () use ($countryCode) {
+        return Cache::remember("plans_for_country:{$countryCode}", 1800, function () use ($countryCode) {
             return SubscriptionPlan::where('is_active', true)
                 ->orderBy('price')
                 ->get()
                 ->map(function (SubscriptionPlan $plan) use ($countryCode) {
                     $plan->geo_price = PlanPrice::forPlanAndCountry($plan->id, $countryCode);
+
                     return $plan;
                 });
         });
-
-        return $plans;
     }
 
     public function getTaxPercentage(string $countryCode): float
@@ -84,6 +87,7 @@ class GeoService
         if (! SystemSetting::get('enable_vat_per_country', false)) {
             return 0.0;
         }
+
         return CountryTax::percentageFor($countryCode);
     }
 
@@ -93,6 +97,7 @@ class GeoService
         if ($percentage <= 0) {
             return 0.0;
         }
+
         return round($amount * ($percentage / 100), 2);
     }
 
