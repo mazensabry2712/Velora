@@ -45,11 +45,6 @@ class InjectVeloraBrandStyles
             );
         }
 
-        /*
-         * Booking keeps a dedicated scoped visual layer. Inject it only for
-         * the tenant booking page so other public/admin pages never download
-         * or inherit booking-specific presentation rules.
-         */
         if ($request->is('book') && ! str_contains($content, '/css/velora-booking.css')) {
             $content = str_replace(
                 '</head>',
@@ -66,7 +61,6 @@ class InjectVeloraBrandStyles
             $code = e(strtoupper($locale));
             $direction = e($language['direction'] ?? 'ltr');
             $active = $locale === $currentLocale;
-
             $href = e(route('landing', ['locale' => $locale]));
 
             $languageOptions .= '<a class="velora-language-item'.($active ? ' is-active' : '').'" href="'.$href.'" lang="'.e($locale).'" dir="'.$direction.'" aria-current="'.($active ? 'true' : 'false').'">'
@@ -100,7 +94,8 @@ class InjectVeloraBrandStyles
         }
 
         if ($passwordResetUrl && str_contains($content, 'aria-disabled="true"') && str_contains($content, 'Forgot your password?')) {
-            $replacement = '<a class="vl-link" href="'.e($passwordResetUrl).'">Forgot your password?</a>';
+            $forgotPasswordLabel = e(__('Forgot your password?'));
+            $replacement = '<a class="vl-link" href="'.e($passwordResetUrl).'">'.$forgotPasswordLabel.'</a>';
             $patterns = [
                 '~<span[^>]*class="vl-link"[^>]*aria-disabled="true"[^>]*title="[^"]*"[^>]*>.*?Forgot your password\?.*?</span>~s',
                 '~<span[^>]*class="vl-link"[^>]*aria-disabled="true"[^>]*>.*?Forgot your password\?.*?</span>~s',
@@ -155,6 +150,19 @@ JS;
         $content = str_replace('</body>', $script."\n</body>", $content);
 
         if ($request->is('login')) {
+            $workspaceCopy = __('landing.workspace_finder.'.($currentLocale ?: config('localizer.omitted_locale', 'ar')));
+            if (! is_array($workspaceCopy)) {
+                $workspaceCopy = __('landing.workspace_finder.'.config('localizer.omitted_locale', 'ar'));
+            }
+
+            $workspaceStrings = [
+                '__VELORA_INVALID__' => json_encode((string) ($workspaceCopy['invalid'] ?? '')),
+                '__VELORA_CHECKING__' => json_encode((string) ($workspaceCopy['checking'] ?? '')),
+                '__VELORA_NOT_FOUND__' => json_encode((string) ($workspaceCopy['not_found'] ?? '')),
+                '__VELORA_VERIFY_ERROR__' => json_encode((string) ($workspaceCopy['verify_error'] ?? '')),
+                '__VELORA_CONTINUE__' => json_encode((string) ($workspaceCopy['button'] ?? '')),
+            ];
+
             $resolverScript = <<<'JS'
 <script id="velora-tenant-login-resolver">
 (function(){
@@ -170,14 +178,14 @@ JS;
         const value=(input.value||'').trim().toLowerCase();
         error.classList.add('hidden');
         if(!/^[a-z0-9][a-z0-9\-]{1,30}[a-z0-9]$/.test(value)){
-            error.textContent='Please enter a valid business domain.';
+            error.textContent=__VELORA_INVALID__;
             error.classList.remove('hidden');
             input.focus();
             return;
         }
         button.disabled=true;
         button.classList.add('opacity-60','cursor-wait');
-        buttonText.textContent='Checking...';
+        buttonText.textContent=__VELORA_CHECKING__;
         try{
             const response=await fetch('/signup/check-subdomain?subdomain='+encodeURIComponent(value),{headers:{Accept:'application/json'},credentials:'same-origin'});
             const data=await response.json();
@@ -185,22 +193,23 @@ JS;
                 window.open(data.login_url,'_blank','noopener');
                 return;
             }
-            error.textContent='Workspace not found. Please check the business domain and try again.';
+            error.textContent=__VELORA_NOT_FOUND__;
             error.classList.remove('hidden');
             status.classList.add('hidden');
             input.focus();
         }catch(_){
-            error.textContent='We could not verify that workspace right now. Please try again.';
+            error.textContent=__VELORA_VERIFY_ERROR__;
             error.classList.remove('hidden');
         }finally{
             button.disabled=false;
             button.classList.remove('opacity-60','cursor-wait');
-            buttonText.textContent='Continue';
+            buttonText.textContent=__VELORA_CONTINUE__;
         }
     };
 })();
 </script>
 JS;
+            $resolverScript = str_replace(array_keys($workspaceStrings), array_values($workspaceStrings), $resolverScript);
             $content = str_replace('</body>', $resolverScript."\n</body>", $content);
         }
 
