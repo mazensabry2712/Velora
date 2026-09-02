@@ -23,8 +23,6 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\ApplicationBuilder;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Http\Exceptions\ThrottleRequestsException;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Laravel\Sanctum\Http\Middleware\CheckAbilities;
@@ -94,15 +92,6 @@ return (new ApplicationBuilder($app))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->render(function (ThrottleRequestsException $exception, $request) {
-            if ($request->is('api/appointments')) {
-                return new JsonResponse([
-                    'success' => false,
-                    'message' => 'Too many booking attempts. Please try again later.',
-                ], 429);
-            }
-
-            return null;
-        });
+        // Application-specific exception rendering is registered here when needed.
     })
     ->create();
