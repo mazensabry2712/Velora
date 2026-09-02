@@ -55,7 +55,10 @@ use App\Payments\PaymentGatewayManager;
 use App\Repositories\Eloquent\QueueRepository;
 use App\View\Composers\AdminLayoutComposer;
 use App\View\Composers\LandingLayoutComposer;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View as ViewFacade;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\View\View;
@@ -90,6 +93,22 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        RateLimiter::for('public-booking', function (Request $request): Limit {
+            $tenantKey = tenant()?->getTenantKey() ?? 'central';
+
+            return Limit::perMinute(5)
+                ->by('public-booking:'.$tenantKey.':'.$request->ip())
+                ->response(function (Request $request, array $headers) {
+                    $retryAfter = (int) ($headers['Retry-After'] ?? 60);
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Too many booking attempts. Please try again later.',
+                        'retry_after' => $retryAfter,
+                    ], 429, $headers);
+                });
+        });
+
         Event::listen(
             SubscriptionUpgradeRequested::class,
             SendUpgradeRequestNotifications::class,
