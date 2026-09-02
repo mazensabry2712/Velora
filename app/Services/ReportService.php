@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Domain\Reporting\Contracts\ReportReader;
 use App\Models\Appointment;
 use App\Models\Customer;
 use App\Models\Queue;
@@ -9,13 +10,18 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
-class ReportService
+class ReportService implements ReportReader
 {
     /**
      * Periods accepted by the dashboard filter and the Excel export,
      * kept in one place so both stay in sync.
      */
     public const PERIODS = ['today', 'week', 'month', 'year', 'all', 'custom'];
+
+    public function dashboard(string $period = 'month', ?string $startDate = null, ?string $endDate = null): array
+    {
+        return $this->getDashboardData($period, $startDate, $endDate);
+    }
 
     /**
      * Resolve a period keyword (+ optional explicit range) into a
@@ -33,15 +39,14 @@ class ReportService
             'week'  => [now()->startOfWeek(), now()->endOfWeek()],
             'year'  => [now()->startOfYear(), now()->endOfYear()],
             'all'   => [null, null],
-            default => [now()->startOfMonth(), now()->endOfMonth()], // 'month' and fallback
+            default => [now()->startOfMonth(), now()->endOfMonth()],
         };
     }
 
     /**
      * Build every dataset the reports dashboard needs for the given
-     * period. Queue stats reflect the live queue (a snapshot of "right
-     * now"), so they are intentionally not scoped to the date range —
-     * everything else (appointments, staff, services) is.
+     * period. Queue stats reflect the live queue and are intentionally
+     * not scoped to the date range; other datasets are range-scoped.
      */
     public function getDashboardData(string $period = 'month', ?string $startDate = null, ?string $endDate = null): array
     {
@@ -75,10 +80,10 @@ class ReportService
     public function getStats(?Carbon $start, ?Carbon $end): array
     {
         return [
-            'total_appointments'     => $this->scopeToRange(Appointment::query(), $start, $end)->count(),
-            'confirmed_appointments' => $this->scopeToRange(Appointment::where('status', 'confirmed'), $start, $end)->count(),
-            'pending_appointments'   => $this->scopeToRange(Appointment::where('status', 'pending'), $start, $end)->count(),
-            'total_customers'        => Customer::count(),
+            'total_appointments'      => $this->scopeToRange(Appointment::query(), $start, $end)->count(),
+            'confirmed_appointments'  => $this->scopeToRange(Appointment::where('status', 'confirmed'), $start, $end)->count(),
+            'pending_appointments'    => $this->scopeToRange(Appointment::where('status', 'pending'), $start, $end)->count(),
+            'total_customers'         => Customer::count(),
         ];
     }
 
@@ -109,9 +114,6 @@ class ReportService
                 $this->scopeToRange($q, $start, $end);
             }]);
 
-        // `HAVING` against a withCount alias is accepted by MySQL but is not
-        // valid on SQLite without an aggregate/grouping context. The relation
-        // filter below preserves the same business rule while staying portable.
         $query->whereHas('staffAppointments', function ($q) use ($start, $end) {
             $q->where('status', 'confirmed');
             $this->scopeToRange($q, $start, $end);
