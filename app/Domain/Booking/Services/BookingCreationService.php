@@ -14,12 +14,7 @@ use App\Models\PaymentTransaction;
 use App\Models\Service;
 use App\Models\Staff;
 
-/**
- * BookingCreationService — domain/application orchestration for appointment creation.
- *
- * Persistence transactions are abstracted behind TransactionManager so the
- * use case does not couple itself directly to Laravel's DB facade.
- */
+/** BookingCreationService — domain/application orchestration for appointment creation. */
 final class BookingCreationService
 {
     public function __construct(
@@ -27,9 +22,7 @@ final class BookingCreationService
         private readonly TransactionManager $transactions,
     ) {}
 
-    /**
-     * Create a new appointment with concurrency-safe slot validation.
-     */
+    /** Create a new appointment with concurrency-safe slot validation. */
     public function create(CreateBookingData $data): Appointment
     {
         $service = Service::findOrFail($data->serviceId);
@@ -98,8 +91,6 @@ final class BookingCreationService
                 'source'              => $data->source,
                 'notes'               => $data->notes,
                 'status'              => Appointment::STATUS_PENDING,
-                'customer_id'         => $data->legacyCustomerId,
-                'staff_id'            => $staff->user_id,
                 'date'                => $startsAt->toDateString(),
                 'time_slot'           => $startsAt->format('H:i'),
                 'service_type'        => $service->name,
