@@ -12,15 +12,17 @@ class CheckRole
      * Handle an incoming request.
      *
      * Versioned tenant API requests (`/api/v1/...`) receive JSON authorization
-     * responses. Legacy/admin web endpoints keep their redirect behaviour.
+     * responses. Web endpoints use the application's standard authentication
+     * and authorization flow.
      *
      * @param  Closure(\Illuminate\Http\Request): (Symfony\Component\HttpFoundation\Response)  $next
      * @param  string  $roles
      */
-    public function handle(Request $request, Closure $next, string $roles): Response
+    public function handle(Request $request, Closure $next, string $roles = 'Super Admin'): Response
     {
         $user = $request->user();
         $isVersionedApi = $request->is('api/v1/*') || $request->routeIs('api.v1.*');
+        $isSuperAdminGuard = trim($roles) === 'Super Admin';
 
         if (! $user) {
             if ($isVersionedApi && $request->expectsJson()) {
@@ -30,7 +32,7 @@ class CheckRole
                 ], 401);
             }
 
-            return redirect()->route('login');
+            return redirect()->route($isSuperAdminGuard ? 'super-admin.login' : 'login');
         }
 
         $allowedRoles = array_values(array_filter(explode('|', $roles)));
@@ -42,6 +44,10 @@ class CheckRole
                     'success' => false,
                     'message' => 'You do not have permission to access this resource.',
                 ], 403);
+            }
+
+            if ($isSuperAdminGuard) {
+                abort(403, 'Super Admin access required');
             }
 
             return redirect()->route('customer.booking')->with(
