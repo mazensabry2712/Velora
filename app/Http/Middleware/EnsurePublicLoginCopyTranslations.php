@@ -22,87 +22,91 @@ final class EnsurePublicLoginCopyTranslations
             ? $requestedLocale
             : app()->getLocale();
 
-        $translations = [
+        $directTranslations = [
             'ar' => [
-                'messages.forgot_password' => 'نسيت كلمة المرور؟',
-                'messages.toggle_theme' => 'تغيير المظهر',
-                'messages.back_to_workspace' => 'العودة إلى مساحة العمل',
+                'Toggle theme' => 'تغيير المظهر',
+                'Back to workspace' => 'العودة إلى مساحة العمل',
+                'Forgot your password?' => 'نسيت كلمة المرور؟',
             ],
             'en' => [
-                'messages.forgot_password' => 'Forgot your password?',
-                'messages.toggle_theme' => 'Toggle theme',
-                'messages.back_to_workspace' => 'Back to workspace',
+                'Toggle theme' => 'Toggle theme',
+                'Back to workspace' => 'Back to workspace',
+                'Forgot your password?' => 'Forgot your password?',
             ],
             'fr' => [
-                'messages.forgot_password' => 'Mot de passe oublié ?',
-                'messages.toggle_theme' => 'Changer de thème',
-                'messages.back_to_workspace' => 'Retour à l’espace de travail',
+                'Toggle theme' => 'Changer de thème',
+                'Back to workspace' => 'Retour à l’espace de travail',
+                'Forgot your password?' => 'Mot de passe oublié ?',
             ],
             'es' => [
-                'messages.forgot_password' => '¿Olvidaste tu contraseña?',
-                'messages.toggle_theme' => 'Cambiar tema',
-                'messages.back_to_workspace' => 'Volver al espacio de trabajo',
+                'Toggle theme' => 'Cambiar tema',
+                'Back to workspace' => 'Volver al espacio de trabajo',
+                'Forgot your password?' => '¿Olvidaste tu contraseña?',
             ],
             'de' => [
-                'messages.forgot_password' => 'Passwort vergessen?',
-                'messages.toggle_theme' => 'Darstellung wechseln',
-                'messages.back_to_workspace' => 'Zurück zum Arbeitsbereich',
+                'Toggle theme' => 'Darstellung wechseln',
+                'Back to workspace' => 'Zurück zum Arbeitsbereich',
+                'Forgot your password?' => 'Passwort vergessen?',
             ],
             'it' => [
-                'messages.forgot_password' => 'Hai dimenticato la password?',
-                'messages.toggle_theme' => 'Cambia tema',
-                'messages.back_to_workspace' => 'Torna all’area di lavoro',
+                'Toggle theme' => 'Cambia tema',
+                'Back to workspace' => 'Torna all’area di lavoro',
+                'Forgot your password?' => 'Hai dimenticato la password?',
             ],
             'pt' => [
-                'messages.forgot_password' => 'Esqueceu a palavra-passe?',
-                'messages.toggle_theme' => 'Alterar tema',
-                'messages.back_to_workspace' => 'Voltar ao espaço de trabalho',
+                'Toggle theme' => 'Alterar tema',
+                'Back to workspace' => 'Voltar ao espaço de trabalho',
+                'Forgot your password?' => 'Esqueceu a palavra-passe?',
             ],
             'ru' => [
-                'messages.forgot_password' => 'Забыли пароль?',
-                'messages.toggle_theme' => 'Сменить тему',
-                'messages.back_to_workspace' => 'Вернуться в рабочее пространство',
+                'Toggle theme' => 'Сменить тему',
+                'Back to workspace' => 'Вернуться в рабочее пространство',
+                'Forgot your password?' => 'Забыли пароль?',
             ],
             'zh' => [
-                'messages.forgot_password' => '忘记密码？',
-                'messages.toggle_theme' => '切换主题',
-                'messages.back_to_workspace' => '返回工作区',
+                'Toggle theme' => '切换主题',
+                'Back to workspace' => '返回工作区',
+                'Forgot your password?' => '忘记密码？',
             ],
             'ja' => [
-                'messages.forgot_password' => 'パスワードをお忘れですか？',
-                'messages.toggle_theme' => 'テーマを切り替える',
-                'messages.back_to_workspace' => 'ワークスペースに戻る',
+                'Toggle theme' => 'テーマを切り替える',
+                'Back to workspace' => 'ワークスペースに戻る',
+                'Forgot your password?' => 'パスワードをお忘れですか？',
             ],
             'tr' => [
-                'messages.forgot_password' => 'Şifrenizi mi unuttunuz?',
-                'messages.toggle_theme' => 'Temayı değiştir',
-                'messages.back_to_workspace' => 'Çalışma alanına dön',
+                'Toggle theme' => 'Temayı değiştir',
+                'Back to workspace' => 'Çalışma alanına dön',
+                'Forgot your password?' => 'Şifrenizi mi unuttunuz?',
             ],
             'hi' => [
-                'messages.forgot_password' => 'पासवर्ड भूल गए?',
-                'messages.toggle_theme' => 'थीम बदलें',
-                'messages.back_to_workspace' => 'वर्कस्पेस पर वापस जाएं',
+                'Toggle theme' => 'थीम बदलें',
+                'Back to workspace' => 'वर्कस्पेस पर वापस जाएं',
+                'Forgot your password?' => 'पासवर्ड भूल गए?',
             ],
             'ko' => [
-                'messages.forgot_password' => '비밀번호를 잊으셨나요?',
-                'messages.toggle_theme' => '테마 전환',
-                'messages.back_to_workspace' => '워크스페이스로 돌아가기',
+                'Toggle theme' => '테마 전환',
+                'Back to workspace' => '워크스페이스로 돌아가기',
+                'Forgot your password?' => '비밀번호를 잊으셨나요?',
             ],
             'nl' => [
-                'messages.forgot_password' => 'Wachtwoord vergeten?',
-                'messages.toggle_theme' => 'Thema wijzigen',
-                'messages.back_to_workspace' => 'Terug naar werkruimte',
+                'Toggle theme' => 'Thema wijzigen',
+                'Back to workspace' => 'Terug naar werkruimte',
+                'Forgot your password?' => 'Wachtwoord vergeten?',
             ],
             'id' => [
-                'messages.forgot_password' => 'Lupa kata sandi?',
-                'messages.toggle_theme' => 'Ganti tema',
-                'messages.back_to_workspace' => 'Kembali ke ruang kerja',
+                'Toggle theme' => 'Ganti tema',
+                'Back to workspace' => 'Kembali ke ruang kerja',
+                'Forgot your password?' => 'Lupa kata sandi?',
             ],
         ];
 
-        if (isset($translations[$locale])) {
-            Lang::addLines($translations[$locale], $locale);
-        }
+        $translations = $directTranslations[$locale] ?? [];
+
+        Lang::handleMissingKeysUsing(
+            static function (string $key, array $replace, ?string $missingLocale, bool $fallback) use ($translations): ?string {
+                return $translations[$key] ?? null;
+            }
+        );
 
         return $next($request);
     }
