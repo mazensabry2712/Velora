@@ -29,8 +29,6 @@ final class PublicAuthTranslationCoverageTest extends TestCase
             ])
         ));
 
-        $defaultOmittedLocale = config('localizer.omitted_locale', 'ar');
-
         $signupKeys = [
             'landing.signup_hero_line1', 'landing.signup_hero_line2', 'landing.signup_hero_sub',
             'landing.signup_benefit_1', 'landing.signup_benefit_2', 'landing.signup_benefit_3', 'landing.signup_benefit_4',
@@ -60,18 +58,15 @@ final class PublicAuthTranslationCoverageTest extends TestCase
         ];
 
         foreach ($locales as $locale) {
-            // The middleware uses app()->getLocale() for the omitted default locale
-            // (/signup), so set the locale before issuing the request. Localized
-            // routes such as /fr/signup still derive their locale from the URL.
-            $this->app->setLocale($locale);
-
-            $path = $locale === $defaultOmittedLocale
-                ? '/signup'
-                : '/'.$locale.'/signup';
+            // Use the explicit locale route for coverage so the localization
+            // middleware receives the locale from the URL segment. Arabic's
+            // omitted /signup route is covered separately by existing signup
+            // localization contract tests.
+            $path = '/'.$locale.'/signup';
 
             $response = $this->centralRequest()->get($path);
-
             $response->assertOk();
+            $this->app->setLocale($locale);
 
             foreach ($signupKeys as $key) {
                 $resolved = __($key);
