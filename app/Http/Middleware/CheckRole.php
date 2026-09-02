@@ -22,7 +22,7 @@ class CheckRole
         $user = $request->user();
         $isVersionedApi = $request->is('api/v1/*') || $request->routeIs('api.v1.*');
 
-        if (!$user) {
+        if (! $user) {
             if ($isVersionedApi && $request->expectsJson()) {
                 return response()->json([
                     'success' => false,
@@ -33,13 +33,10 @@ class CheckRole
             return redirect()->route('login');
         }
 
-        // Split roles by pipe (|) to allow multiple roles.
-        $allowedRoles = explode('|', $roles);
+        $allowedRoles = array_values(array_filter(explode('|', $roles)));
+        $hasAllowedRole = $allowedRoles !== [] && $user->hasAnyRole($allowedRoles);
 
-        // Spatie Permission is the single source of truth for roles.
-        $userRole = $user->getRoleNames()->first();
-
-        if (!$userRole || !in_array($userRole, $allowedRoles, true)) {
+        if (! $hasAllowedRole) {
             if ($isVersionedApi && $request->expectsJson()) {
                 return response()->json([
                     'success' => false,
