@@ -114,7 +114,7 @@ Route::middleware(['tenant', 'tenant.locale'])->group(function () {
         return \App\Models\User::role('Staff')->select('id', 'name')->get();
     })->middleware('throttle:60,1');
     Route::post('appointments', [\App\Http\Controllers\Tenant\PublicBookingController::class, 'store'])
-        ->middleware('throttle.api:public-booking,5,1');
+        ->middleware('throttle:public-booking');
     Route::get('queue/status/{queueNumber}', [QueueReadController::class, 'status'])
         ->middleware('throttle:60,1');
 });
