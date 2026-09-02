@@ -16,6 +16,8 @@ final class PublicAuthTranslationCoverageTest extends TestCase
             ])
         ));
 
+        $defaultOmittedLocale = config('localizer.omitted_locale', 'ar');
+
         $signupKeys = [
             'landing.signup_hero_line1', 'landing.signup_hero_line2', 'landing.signup_hero_sub',
             'landing.signup_benefit_1', 'landing.signup_benefit_2', 'landing.signup_benefit_3', 'landing.signup_benefit_4',
@@ -45,7 +47,11 @@ final class PublicAuthTranslationCoverageTest extends TestCase
         ];
 
         foreach ($locales as $locale) {
-            $response = $this->get('/'.$locale.'/signup', [
+            $path = $locale === $defaultOmittedLocale
+                ? '/signup'
+                : '/'.$locale.'/signup';
+
+            $response = $this->get($path, [
                 'HTTP_HOST' => $this->centralHost(),
                 'SERVER_NAME' => $this->centralHost(),
             ]);
