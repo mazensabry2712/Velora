@@ -12,6 +12,7 @@ This cleanup removes application code that duplicated responsibilities already p
 - **API token abilities:** Laravel Sanctum's `CheckAbilities` middleware.
 - **HTTP rate limiting:** Laravel's native named `RateLimiter`.
 - **Staff identity and scheduling:** the dedicated `Staff` entity and `staff_working_hours` table are canonical.
+- **Staff/service assignments:** `staff_services.staff_id` is the target canonical identity; the old `user_id` column remains temporarily nullable during migration.
 - **Payment, PDF, Excel, QR, HTTP, and API-auth integrations:** existing installed packages remain in place; application services are adapters/domain logic, not competing implementations.
 
 ## Removed duplicate implementations
@@ -55,10 +56,17 @@ The old `StaffSchedule` / `staff_schedules` system duplicated the newer dedicate
 
 The application model relationships keep the public `schedules` and `activeSchedules` names but resolve them through the user's `Staff` profile to the canonical working-hours records. A forward migration copies legacy schedule rows into canonical rows before removing the old table. The old `StaffSchedule` model has been removed from application code.
 
+### Staff-service identity duplication
+
+The `staff_services` pivot historically stored both `user_id` and the newer `staff_id` for the same staff/service assignment. A staged migration now backfills missing `staff_id` values, prevents duplicate staff/service pairs, and makes the old `user_id` nullable. Production code is being moved to the `Staff` relationship before the legacy column is finally dropped.
+
 ## Intentionally retained
 
 - Tenant-specific locale selection and token binding.
 - Subscription enforcement, maintenance mode, geo/country detection, onboarding redirects, and Super Admin authorization because these encode application rules.
+- `WorkingDay`, which represents tenant-level enabled business days rather than a staff member's working hours.
+- `TimeSlot`, which represents the older/admin compatibility slot catalog; it is not the generated availability DTO returned by `SlotEngine`.
+- `UsageLog` alongside `ActivityLog`: `UsageLog` records central product/usage events, while `ActivityLog` is the admin/audit trail. They are different responsibilities and should not be merged merely because both are logs.
 - Custom model translation support and legacy `_ar` / `*_i18n` columns until `spatie/laravel-translatable` is installed and tenant data is migrated.
 - Custom activity logging until `spatie/laravel-activitylog` is installed and existing audit data is migrated.
 - The custom notification-delivery ledger because it tracks channel-specific delivery/recovery state and is used by multiple notification flows.
@@ -70,7 +78,7 @@ The application model relationships keep the public `schedules` and `activeSched
 2. Migrate `ActivityLog` to `spatie/laravel-activitylog` with audit-data preservation.
 3. Migrate the legacy FCM transport to a maintained Laravel notification channel.
 4. Finish the staff-service pivot migration from `user_id` to canonical `staff_id` after all production/test consumers are converted.
-5. Reconcile remaining `customer_id` / `customer_id_new` and other legacy booking columns through a data-safe schema migration.
+5. Reconcile remaining `customer_id` / `customer_id_new`, `staff_id` / `staff_id_new`, and other legacy booking columns through a data-safe schema migration.
 
 ## Package policy
 
