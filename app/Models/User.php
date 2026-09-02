@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -111,14 +112,27 @@ class User extends Authenticatable
         return $this->belongsToMany(Service::class, 'staff_services', 'user_id', 'service_id');
     }
 
-    public function schedules()
+    /**
+     * Canonical staff weekly schedule through the dedicated Staff profile.
+     */
+    public function schedules(): HasManyThrough
     {
-        return $this->hasMany(StaffSchedule::class);
+        return $this->hasManyThrough(
+            StaffWorkingHours::class,
+            Staff::class,
+            'user_id',
+            'staff_id',
+            'id',
+            'id'
+        );
     }
 
-    public function activeSchedules()
+    /**
+     * Active working days from the canonical staff availability table.
+     */
+    public function activeSchedules(): HasManyThrough
     {
-        return $this->hasMany(StaffSchedule::class)->where('is_active', true);
+        return $this->schedules()->where('is_working', true);
     }
 
     public function isSuperAdmin(): bool
