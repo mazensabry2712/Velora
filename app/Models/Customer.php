@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -11,7 +12,7 @@ class Customer extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'first_name', 'last_name', 'email', 'phone', 'phone_country',
+        'user_id', 'first_name', 'last_name', 'email', 'phone', 'phone_country',
         'dob', 'gender', 'avatar', 'language', 'timezone', 'notes',
         'tags', 'is_blocked', 'block_reason', 'gdpr_consent',
         'gdpr_consent_at', 'gdpr_consent_ip', 'total_spent',
@@ -31,7 +32,10 @@ class Customer extends Model
         'total_visits'     => 'integer',
     ];
 
-    // ── Relationships ────────────────────────────────────────────────────
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 
     public function appointments(): HasMany
     {
@@ -51,10 +55,8 @@ class Customer extends Model
     public function pushTokens(): HasMany
     {
         return $this->hasMany(PushToken::class, 'owner_id')
-                    ->where('owner_type', 'customer');
+            ->where('owner_type', 'customer');
     }
-
-    // ── Scopes ───────────────────────────────────────────────────────────
 
     public function scopeActive($query)
     {
@@ -65,8 +67,6 @@ class Customer extends Model
     {
         return $query->where('ltv_tier', 'vip');
     }
-
-    // ── Accessors ────────────────────────────────────────────────────────
 
     public function getFullNameAttribute(): string
     {
@@ -80,12 +80,6 @@ class Customer extends Model
         );
     }
 
-    // ── Methods ──────────────────────────────────────────────────────────
-
-    /**
-     * Recalculate and update customer lifecycle stats.
-     * Called after each appointment completion.
-     */
     public function recalculateStats(): void
     {
         $stats = $this->appointments()
@@ -115,7 +109,6 @@ class Customer extends Model
             return 'regular';
         }
 
-        // Check last visit recency
         if ($this->last_visit_at && $this->last_visit_at->lt(now()->subMonths(6))) {
             return 'at_risk';
         }
