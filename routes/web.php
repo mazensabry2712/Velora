@@ -10,7 +10,6 @@ use App\Http\Controllers\PricingController;
 use App\Http\Controllers\SuperAdmin\CountryPricingController;
 use App\Http\Controllers\SuperAdmin\PromoCodeController;
 use App\Http\Controllers\SuperAdminController;
-use App\Http\Middleware\SetCentralLocale;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -174,10 +173,7 @@ Route::middleware(['web', 'maintenance'])
 // Super Admin Routes (Central - No Tenant)
 Route::prefix('super-admin')
     ->name('super-admin.')
-    ->middleware([
-        'web',
-        SetCentralLocale::class,
-    ])
+    ->middleware(['web'])
     ->group(function () {
         Route::get('/login', function () {
             if (auth()->guard('web')->check() && auth()->guard('web')->user()->isSuperAdmin()) {
