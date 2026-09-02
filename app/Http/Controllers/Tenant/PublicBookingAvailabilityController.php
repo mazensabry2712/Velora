@@ -20,17 +20,9 @@ final class PublicBookingAvailabilityController extends Controller
         $services = Service::query()
             ->onlineBookable()
             ->orderBy('sort_order')
-            ->get([
-                'id', 'name', 'name_ar', 'name_i18n',
-                'duration', 'duration_minutes', 'price',
-                'description', 'sort_order',
-            ])
+            ->get(['id', 'name', 'name_ar', 'name_i18n', 'duration', 'duration_minutes', 'price', 'description', 'sort_order'])
             ->map(fn (Service $service): array => [
                 'id' => $service->id,
-                // Keep the canonical service name stable for API consumers.
-                // The localized value is exposed separately so the public UI
-                // can opt into the tenant/request locale without changing the
-                // legacy `name` field semantics.
                 'name' => $service->name,
                 'name_localized' => $service->localized_name,
                 'name_ar' => $service->name_ar,
@@ -54,10 +46,7 @@ final class PublicBookingAvailabilityController extends Controller
 
         $staff = Staff::query()
             ->bookable()
-            ->where(function ($query) use ($service): void {
-                $query->whereHas('services', fn ($q) => $q->whereKey($service->id))
-                    ->orWhereHas('user.services', fn ($q) => $q->whereKey($service->id));
-            })
+            ->whereHas('services', fn ($q) => $q->whereKey($service->id))
             ->with('user:id,name')
             ->orderBy('sort_order')
             ->orderBy('id')
@@ -105,10 +94,7 @@ final class PublicBookingAvailabilityController extends Controller
             ]);
         }
 
-        $hasStaffService = $staff->services()->whereKey($service->id)->exists();
-        $hasLegacyUserService = $staff->user?->services()->whereKey($service->id)->exists();
-
-        if (! $hasStaffService && ! $hasLegacyUserService) {
+        if (! $staff->services()->whereKey($service->id)->exists()) {
             return response()->json([
                 'success' => true,
                 'data' => [],
