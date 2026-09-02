@@ -6,7 +6,6 @@ namespace App\Infrastructure\Staff;
 
 use App\Domain\Staff\Contracts\StaffWriter;
 use App\Models\Staff;
-use App\Models\StaffSchedule;
 use App\Models\StaffWorkingHours;
 use App\Models\UsageLog;
 use App\Models\User;
@@ -101,23 +100,22 @@ final class EloquentStaffWriter implements StaffWriter
         }
 
         $this->syncServices($staff->id, $staffRecord->id, $services);
-        // Preserve the legacy update contract: an empty schedule clears the
-        // existing staff schedule as part of a full update.
-        $this->syncSchedule($staff->id, $schedule);
+        $this->syncScheduleData($staffRecord->id, $schedule, true);
 
         return true;
     }
 
     public function delete(User $staff): bool
     {
-        StaffSchedule::where('user_id', $staff->id)->delete();
-
         $staffRecord = Staff::where('user_id', $staff->id)->first();
         if ($staffRecord) {
+            StaffWorkingHours::where('staff_id', $staffRecord->id)->delete();
+
             DB::table('staff_services')
                 ->where('staff_id', $staffRecord->id)
                 ->orWhere('user_id', $staff->id)
                 ->delete();
+
             $staffRecord->delete();
         } else {
             DB::table('staff_services')->where('user_id', $staff->id)->delete();
@@ -153,8 +151,13 @@ final class EloquentStaffWriter implements StaffWriter
         }
     }
 
-    private function syncScheduleData(int $staffId, array $schedule): void
+    private function syncScheduleData(int $staffId, array $schedule, bool $replace = false): void
     {
+        if ($replace && $schedule === []) {
+            StaffWorkingHours::where('staff_id', $staffId)->delete();
+            return;
+        }
+
         if ($schedule === []) {
             return;
         }
@@ -165,33 +168,19 @@ final class EloquentStaffWriter implements StaffWriter
             }
 
             $dayOfWeek = isset($hours['day_of_week']) ? (int) $hours['day_of_week'] : (int) $day;
-            $isWorking = filter_var($hours['is_working'] ?? $hours['working'] ?? true, FILTER_VALIDATE_BOOLEAN);
+            $isWorking = filter_var(
+                $hours['is_working'] ?? $hours['working'] ?? $hours['is_active'] ?? true,
+                FILTER_VALIDATE_BOOLEAN
+            );
 
             StaffWorkingHours::updateOrCreate(
                 ['staff_id' => $staffId, 'day_of_week' => $dayOfWeek],
                 [
-                    'start_time' => $hours['start_time'] ?? '09:00',
-                    'end_time'   => $hours['end_time'] ?? '17:00',
+                    'start_time' => $hours['start_time'] ?? null,
+                    'end_time'   => $hours['end_time'] ?? null,
                     'is_working' => $isWorking,
                 ]
             );
-        }
-
-        $this->syncSchedule($staffId, $schedule);
-    }
-
-    private function syncSchedule(int $staffId, array $schedule): void
-    {
-        StaffSchedule::where('user_id', $staffId)->delete();
-
-        foreach ($schedule as $row) {
-            StaffSchedule::create([
-                'user_id'     => $staffId,
-                'day_of_week' => $row['day_of_week'],
-                'start_time'  => $row['start_time'],
-                'end_time'    => $row['end_time'],
-                'is_active'   => $row['is_active'] ?? true,
-            ]);
         }
     }
 }
