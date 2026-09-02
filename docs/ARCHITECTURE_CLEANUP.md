@@ -2,51 +2,51 @@
 
 ## Scope
 
-This cleanup removes application code that duplicated responsibilities already provided by Laravel or installed packages, while preserving domain-specific business rules and keeping the installed package stack unchanged.
+This cleanup removes application code that duplicated responsibilities already provided by Laravel or installed packages, while preserving domain-specific business rules and keeping the installed Composer package stack unchanged.
 
 ## Canonical sources
 
 - **Locale routing and supported locales:** `niels-numbers/laravel-localizer` via `config/localizer.php`.
-- **Roles and permissions:** `spatie/laravel-permission` remains the source of truth. `App\Models\Role` is retained because the application, configuration, seeders, and tests still reference that namespace; the class extends Spatie's model without reimplementing RBAC.
-- **Multi-tenancy:** `stancl/tenancy` remains responsible for tenancy initialization. Tenant-specific middleware is application behavior and remains.
-- **API token abilities:** Laravel Sanctum is used directly through `Laravel\Sanctum\Http\Middleware\CheckAbilities`.
-- **HTTP rate limiting:** Laravel's native named `RateLimiter` is used for public booking.
-- **Payment, PDF, Excel, QR, HTTP, and API-auth integrations:** existing installed packages remain in place; their surrounding application services are domain adapters, not replacement packages.
+- **Roles and permissions:** `spatie/laravel-permission` remains the source of truth. `App\Models\Role` is retained as the application's compatibility model and extends Spatie's model without reimplementing RBAC.
+- **Multi-tenancy:** `stancl/tenancy` is the source for domain tenancy initialization.
+- **API token abilities:** Laravel Sanctum's `CheckAbilities` middleware.
+- **HTTP rate limiting:** Laravel's native named `RateLimiter`.
+- **Payment, PDF, Excel, QR, HTTP, and API-auth integrations:** existing installed packages remain in place; their application services are adapters/domain logic, not package replacements.
 
 ## Removed duplicate implementations
 
 ### Native Laravel rate limiting
 
-Removed `app/Http/Middleware/ThrottleRequests.php` and its alias. Public booking now uses the native named limiter `throttle:public-booking`.
+Removed `app/Http/Middleware/ThrottleRequests.php` and its alias. Public booking now uses `throttle:public-booking`, defined with Laravel's `RateLimiter`.
 
-The limiter preserves tenant + client-IP isolation and the JSON 429 response behavior.
-
-### Sanctum token ability middleware
+### Sanctum token abilities
 
 Removed `app/Http/Middleware/CheckTokenAbility.php` and mapped the existing `ability` alias to Sanctum's built-in `CheckAbilities` middleware.
 
-### Central locale registry duplication
+### Stancl tenancy initialization
 
-`config/locales.php` no longer owns `default` or `supported` locale decisions. It is UI metadata only. Locale resolution uses `config/localizer.php`.
+Removed `app/Http/Middleware/InitializeTenancyByDomain.php`. The application uses `Stancl\Tenancy\Middleware\InitializeTenancyByDomain` directly.
 
-### Central locale middleware duplication
+### Central locale duplication
 
-`SetCentralLocale` was removed. `EnforceCentralLocale` now handles central public locale resolution and the Super Admin persisted locale preference.
+Removed `SetCentralLocale`. `EnforceCentralLocale` is now the central-domain policy layer, while `config/localizer.php` owns the supported/default locale configuration. `config/locales.php` is UI metadata only.
 
 ### Runtime public translation injection
 
-Removed the public auth/login translation injection middleware. The supported locale files already contain the corresponding direct-string and `landing.*` translations, so Laravel's normal language loader is now the only source for this public copy.
+Removed the three public translation-injection middlewares and the unused legacy `_landing_translations.php` registry. Public copy now comes from the normal Laravel locale files and JSON language files. `InjectVeloraBrandStyles` remains only because it still provides non-translation presentation/compatibility behavior; its workspace resolver copy now comes from `landing.workspace_finder.{locale}` instead of hard-coded English strings.
 
-## Intentionally retained custom code
+### Role decision duplication
 
-Custom middleware such as tenant locale selection, tenant-token binding, subscription enforcement, maintenance mode, geo/country detection, onboarding redirects, and Super Admin authorization encode product rules or compatibility behavior that are not direct replacements for an installed package.
+`CheckRole` remains only for the platform-specific unauthorized response behavior. The actual role test now delegates to Spatie Permission with `hasAnyRole()` instead of inspecting only the first role manually.
 
-`CheckRole` remains custom only for its platform-specific redirect/JSON authorization responses; the actual role decision delegates to Spatie Permission via `hasAnyRole()`.
+## Intentionally retained
 
-The model translation trait and legacy `_ar`/`*_i18n` fields were not deleted because `spatie/laravel-translatable` is not installed. Removing them safely requires installing the replacement package, migrating existing tenant data, and updating all read/write paths first.
-
-`InjectVeloraBrandStyles` remains because it currently performs non-translation presentation behavior (branding CSS, language-switcher injection, and legacy UI compatibility). Its hard-coded user-facing copy is a separate refactor target; deleting the middleware outright would remove unrelated presentation behavior.
+- Tenant-specific locale selection and token binding.
+- Subscription enforcement, maintenance mode, geo/country detection, onboarding redirects, and Super Admin authorization because these encode application rules.
+- `App\Models\Role` because configuration, seeders, infrastructure, and tests still reference the application's namespace.
+- Custom model translation support and legacy `_ar` / `*_i18n` columns because the replacement package `spatie/laravel-translatable` is not installed and tenant data has not been migrated. These require a dedicated data migration before removal.
+- Historical migrations and compatibility schema are retained; deployed migration history must not be deleted simply for source cleanup.
 
 ## Package policy
 
-No Composer package was removed. The installed dependency set remains unchanged.
+No Composer package was removed or replaced. The installed package set remains unchanged.
