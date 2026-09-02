@@ -60,6 +60,11 @@ final class PublicAuthTranslationCoverageTest extends TestCase
         ];
 
         foreach ($locales as $locale) {
+            // The middleware uses app()->getLocale() for the omitted default locale
+            // (/signup), so set the locale before issuing the request. Localized
+            // routes such as /fr/signup still derive their locale from the URL.
+            $this->app->setLocale($locale);
+
             $path = $locale === $defaultOmittedLocale
                 ? '/signup'
                 : '/'.$locale.'/signup';
@@ -67,7 +72,6 @@ final class PublicAuthTranslationCoverageTest extends TestCase
             $response = $this->centralRequest()->get($path);
 
             $response->assertOk();
-            $this->app->setLocale($locale);
 
             foreach ($signupKeys as $key) {
                 $resolved = __($key);
