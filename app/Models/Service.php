@@ -36,41 +36,29 @@ class Service extends Model
         'buffer_after_minutes'   => 'integer',
     ];
 
-    // ── Relationships ────────────────────────────────────────────────────
-
     public function category(): BelongsTo
     {
         return $this->belongsTo(ServiceCategory::class, 'category_id');
     }
 
-    /** Legacy: staff linked via users table */
-    public function users(): BelongsToMany
-    {
-        return $this->belongsToMany(User::class, 'staff_services', 'service_id', 'user_id')
-                    ->withPivot(['override_price', 'override_duration'])
-                    ->withTimestamps();
-    }
-
-    /** New: staff linked via dedicated staff table */
+    /** Canonical staff relationship through the dedicated Staff entity. */
     public function staff(): BelongsToMany
     {
         return $this->belongsToMany(Staff::class, 'staff_services', 'service_id', 'staff_id')
-                    ->withPivot(['override_price', 'override_duration'])
-                    ->withTimestamps();
+            ->withPivot(['override_price', 'override_duration'])
+            ->withTimestamps();
     }
 
     public function resources(): BelongsToMany
     {
         return $this->belongsToMany(Resource::class, 'service_resources')
-                    ->withPivot('quantity');
+            ->withPivot('quantity');
     }
 
     public function appointments(): HasMany
     {
         return $this->hasMany(Appointment::class);
     }
-
-    // ── Scopes ───────────────────────────────────────────────────────────
 
     public function scopeActive($query)
     {
@@ -82,11 +70,6 @@ class Service extends Model
         return $query->where('is_online_bookable', true)->where('is_active', true);
     }
 
-    // ── Accessors ────────────────────────────────────────────────────────
-
-    /**
-     * Localized name — prefers name_i18n JSON, falls back to name/name_ar legacy columns.
-     */
     public function getLocalizedNameAttribute(): string
     {
         $locale = app()->getLocale();
@@ -98,9 +81,6 @@ class Service extends Model
         return ($locale === 'ar' && $this->name_ar) ? $this->name_ar : $this->name;
     }
 
-    /**
-     * Total duration including buffers (used by SlotEngine).
-     */
     public function getTotalDurationAttribute(): int
     {
         $base = $this->duration_minutes ?: (int) $this->duration;
