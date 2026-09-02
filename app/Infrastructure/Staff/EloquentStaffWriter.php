@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Infrastructure\Staff;
 
 use App\Domain\Staff\Contracts\StaffWriter;
-use App\Models\Role;
 use App\Models\Staff;
 use App\Models\StaffSchedule;
 use App\Models\StaffWorkingHours;
@@ -13,6 +12,7 @@ use App\Models\UsageLog;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 final class EloquentStaffWriter implements StaffWriter
 {
