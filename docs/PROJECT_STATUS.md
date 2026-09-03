@@ -1,199 +1,124 @@
 # Velora — Project Status
 
-> **Snapshot:** Main branch reviewed on 2026-08-29.
+> **Snapshot:** Main branch reviewed and updated on 2026-09-03.
 >
-> This document records what is already implemented in the repository and what still needs to be completed before calling Velora fully production-ready.
+> This document separates completed architecture work from work that still requires fresh verification or a deliberate future migration.
 
-## 1. Product Definition
+## Product
 
-Velora is a multi-tenant appointment-booking SaaS for businesses that need:
+Velora is a multi-tenant appointment-booking SaaS for businesses needing online booking, staff scheduling, queue management, customer management, reports, administration, localization and subscription billing.
 
-- Public online booking.
-- Services and staff management.
-- Staff schedules and availability.
-- Appointment management.
-- Queue / waiting-room management.
-- Customer management.
-- Reports and exports.
-- Admin operations.
-- Tenant-level settings and localization.
-- Subscription plans and usage limits.
-- Stripe / Moyasar billing flows.
-- Trial, grace-period and expiry lifecycle.
+## Current architecture
 
-## 2. Current Architecture
-
-The project is built around:
-
-- Laravel 12.
-- PHP 8.2+ with dependency resolution pinned to PHP 8.4.
+- Laravel 12 / PHP 8.2+.
 - Blade + Vite + Tailwind CSS 4.
-- Laravel Sanctum.
-- Spatie Laravel Permission.
-- Stancl Tenancy v3.
-- Stripe PHP SDK.
-- Moyasar integration.
-- Laravel Excel exports.
-- DomPDF and QR-code support.
-- MySQL / tenant databases.
-- Queued and scheduled background operations.
+- Stancl Tenancy v3 for tenant isolation/lifecycle.
+- Laravel Sanctum for API authentication/abilities.
+- Spatie Permission for RBAC.
+- Stripe / Moyasar billing integrations.
+- MySQL tenant databases with queued/scheduled operations.
+- Modular-monolith direction documented in `docs/FUTURE_ARCHITECTURE.md`.
 
-## 3. Implemented Areas
+## Completed cleanup
 
-### Core SaaS
+### Identity ownership
 
-- [x] Multi-tenant domain initialization.
-- [x] Tenant-specific database support.
-- [x] Tenant cache/filesystem/queue bootstrapping.
-- [x] Tenant locale switching.
-- [x] Tenant-level settings.
-- [x] Admin role separation.
-- [x] Onboarding flow.
+- `Customer` is the business customer entity.
+- `Staff` is the business staff entity.
+- `User` is the authentication/system identity and may optionally link to Customer or Staff.
+- `customers.user_id` is an account link, not the source of appointment ownership.
 
-### Authentication / Signup
+### Staff and services
 
-- [x] Central signup creates Tenant + Domain.
-- [x] Signup verification email flow.
-- [x] Verification token hashing/encryption and expiry.
-- [x] Tenant-language aware verification page.
-- [x] Arabic RTL verification rendering.
-- [x] First Tenant Admin creation gated by email verification.
-- [x] Unverified Tenant Admin cannot log in.
-- [x] Tenant handoff requires verified email + existing verified user + ready workspace.
-- [x] Provisioning/handoff regression tests.
+- `staff_services.staff_id` is the only runtime staff identity.
+- Legacy `staff_services.user_id` is removed by migration after backfill/deduplication.
+- Staff scheduling is canonical on `StaffWorkingHours` / `staff_working_hours`.
+- The legacy `StaffSchedule` runtime path was removed.
 
-### Booking
+### Appointments
 
-- [x] Public booking page.
-- [x] Services API.
-- [x] Staff API.
-- [x] Staff-service assignment.
-- [x] Working days.
-- [x] Time slots.
-- [x] Slot availability checks.
-- [x] Booking creation service.
-- [x] Appointment status operations.
-- [x] Booking-related domain events.
-- [x] Queue integration.
+- Runtime appointment ownership is canonical on `customer_id_new -> customers` and `staff_id_new -> staff` during the migration window.
+- `Appointment::customer()` and `Appointment::staff()` use those canonical relationships.
+- Booking creation, recurring creation, Admin booking, direct queue entry and appointment repository filters no longer write the old User-owned appointment IDs.
+- `User::appointments()` and `User::staffAppointments()` traverse Customer/Staff instead of directly owning appointments.
+- Migration `2026_09_03_000006_reconcile_appointment_identity.php` backfills historical appointment identities and fails closed when a legacy customer/staff mapping cannot be resolved.
 
-### Queue
+### Billing
 
-- [x] Public queue status.
-- [x] Admin queue operations.
-- [x] Call-next flow.
-- [x] Serve / complete flow.
-- [x] Return-to-waiting flow.
-- [x] Move-to-next-day flow.
-- [x] Priority handling.
-- [x] Print / export support.
-- [x] Queue lifecycle notification event generation for position changes, almost-turn transitions and turn-now transitions.
-- [x] Queue lifecycle notification delivery through the shared NotificationDelivery contract.
-- [x] Queue observer registration is tied to the model lifecycle so test teardown/model boot resets do not silently remove the observer.
-- [ ] Final local validation of the new queue lifecycle test suite.
+- `invoices.customer_id` is canonical on `customers` after reconciliation.
+- `PaymentTransaction::customer()` is based on the Customer entity.
 
-### Appointment Notifications
+### Canonical infrastructure
 
-- [x] Notification delivery ledger with event/channel/dedupe identity.
-- [x] Email reminder delivery is queue-backed and isolated from reminder discovery.
-- [x] `appointment.reminder_24h` flow.
-- [x] `appointment.reminder_1h` flow.
-- [x] Reminder deduplication by event + channel + public appointment reference.
-- [x] Delivery attempt/status tracking and retry/final-failure handling.
-- [x] ReminderLog synchronization with NotificationDelivery.
-- [x] Tenant-aware reminder processing without breaking tenant test transaction context.
-- [x] Scheduler remains the existing `reminders:process` entry point.
-- [x] Supported notification locales satisfy English notification key and placeholder parity.
-- [x] Queue lifecycle notifications use the same notification delivery foundation and locale catalog.
+- Laravel named `RateLimiter` is canonical for HTTP throttling.
+- Sanctum `CheckAbilities` is canonical for token abilities.
+- Stancl tenancy middleware is canonical for domain tenancy initialization.
+- Spatie Permission is canonical for roles/permissions.
+- NielsNumbers Localizer is canonical for platform locale routing.
 
-### Admin
+## Documentation
 
-- [x] Dashboard.
-- [x] Appointments management.
-- [x] Staff management.
-- [x] Customers management.
-- [x] Settings.
-- [x] Reports.
-- [x] Assistants management.
-- [x] Subscription management.
-- [x] Billing operations.
-- [x] Profile management.
+Architecture and cleanup decisions are documented in:
 
-### Subscription / Billing
+- `docs/FUTURE_ARCHITECTURE.md`
+- `docs/ARCHITECTURE_CLEANUP.md`
+- `docs/ARCHITECTURE_CLEANUP_2026-09-03.md`
+- `docs/CLEANUP_FINAL_STATUS_2026-09-03.md`
+- `database/migrations/README.md`
+- `database/migrations/tenant/README.md`
+- `docs/CHANGELOG_IMPLEMENTATION.md`
 
-- [x] Subscription plans.
-- [x] Active / trial / grace / expired / cancelled lifecycle.
-- [x] User usage limits.
-- [x] Appointment usage limits.
-- [x] Trial extension flow.
-- [x] Stripe customer/price fields.
-- [x] Stripe checkout / portal routes.
-- [x] Moyasar callback flow.
-- [x] Subscription history display.
-- [x] Founder trial alerts.
+## Verification status
 
-### Testing
+The historical baseline confirmed before Queue Lifecycle implementation was **570 tests / 5624 assertions / 0 failures / 0 errors**. That baseline is not certification for the later identity/schema refactors.
 
-- [x] Feature test structure.
-- [x] Admin tests.
-- [x] Billing tests.
-- [x] Public booking tests.
-- [x] Public queue tests.
-- [x] Appointment tests.
-- [x] Appointment/queue integration tests.
-- [x] Locale tests.
-- [x] Multi-region / tenancy-oriented tests.
-- [x] Super-admin test structure.
-- [x] Signup / verification / tenant-handoff regression tests.
-- [x] Appointment reminder delivery tests.
-- [x] Notification locale key/placeholder parity tests.
-- [x] Queue lifecycle notification regression test suite added.
-- [x] Last confirmed local full suite before Queue Lifecycle implementation: **570 tests, 5624 assertions, 0 failures, 0 errors**.
-- [ ] Queue lifecycle implementation requires final local test validation after pull.
+Fresh local testing is not claimed from the remote repository. Fresh GitHub Actions on the exact current `main` SHA are required before calling the branch green.
 
-## 4. Known Incomplete / Risk Areas
+## Remaining release-risk work
 
-These are not cosmetic tasks. They affect production readiness.
+### P0 / P1
 
-### Critical
+- Fresh MySQL migration and full regression of the current identity/schema changes.
+- Complete tenant isolation review for every ID-based endpoint and explicit central/tenant database access.
+- Verify billing webhooks are the only payment-state authority and are idempotent.
+- Complete object/resource-level authorization review.
+- Complete real storage usage tracking for subscription quotas.
+- Verify public/login/queue/billing rate limits.
+- Review high-volume tenant indexes and query performance.
+- Complete browser/mobile/RTL QA and real provider delivery checks.
 
-- [ ] Audit every explicit `DB::connection('mysql')` call and confirm central-vs-tenant intent.
-- [ ] Complete tenant isolation audit for every endpoint accepting a resource ID.
-- [ ] Verify billing webhooks are the source of truth for payment state.
-- [ ] Verify webhook idempotency and duplicate-event handling.
+## Deliberately deferred package migrations
 
-### High Priority
+These are not partially installed:
 
-- [ ] Implement real storage usage tracking for subscription limits.
-- [ ] Decide whether invoice history should become a real invoice/accounting model.
-- [ ] Add/verify rate limiting for login, public booking, queue polling and billing endpoints.
-- [ ] Move subscription state transitions out of ordinary request middleware where practical.
-- [ ] Review authorization at object/resource level, not only by role.
-- [ ] Review database indexes for high-volume tenant queries.
+- `spatie/laravel-translatable` — needs data migration, model refactor and regression coverage.
+- `spatie/laravel-activitylog` — needs audit-data preservation and consumer migration.
+- Maintained FCM notification channel — needs provider credentials/configuration, notification refactor and delivery tests.
+- `spatie/laravel-medialibrary` — only after confirming the current media subsystem is a true replacement candidate.
 
-### Medium Priority
+## Remaining appointment schema finalization
 
-- [ ] Split heavy dashboard query logic into dedicated services/query objects.
-- [ ] Finish localization cleanup and remove hard-coded user-facing strings from business logic.
-- [ ] Replace placeholder/dead artifacts such as empty commands when confirmed unused.
-- [ ] Improve production documentation and deployment runbook.
-- [ ] Complete browser/mobile UI QA.
+After fresh MySQL verification proves the old appointment IDs are unused at runtime:
 
-## 5. Current Readiness
+```text
+remove legacy appointment foreign keys/columns
+→ rename customer_id_new → customer_id
+→ rename staff_id_new → staff_id
+→ rebuild canonical indexes/constraints
+→ update tests/consumers
+→ run Master QA
+```
 
-Velora has a strong core SaaS implementation, but this repository should currently be treated as **production-candidate**, not as a system that has already passed a complete security, billing and deployment certification.
+Deployed historical migrations remain immutable.
 
-The latest confirmed local automated regression baseline before Queue Lifecycle implementation is green at **570 tests / 5624 assertions**.
+## Local release verification
 
-The Queue Lifecycle implementation is now present in the repository, with final local verification pending.
-
-## 6. Definition of Success
-
-Velora is considered production-ready only when all P0 and P1 items in:
-
-- `docs/PRODUCTION_ROADMAP.md`
-- `docs/SECURITY_TENANCY_AUDIT.md`
-- `docs/BILLING_HARDENING.md`
-- `docs/TESTING_QA_PLAN.md`
-- `docs/PRODUCTION_CHECKLIST.md`
-
-are complete and verified.
+```powershell
+git pull --ff-only origin main
+php artisan optimize:clear
+php artisan migrate
+php artisan tenants:migrate --force
+php artisan test --compact
+vendor/bin/pint --test
+composer validate --strict
+```
