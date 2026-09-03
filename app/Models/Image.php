@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 
 class Image extends Model
 {
@@ -20,50 +20,55 @@ class Image extends Model
         'imageable_type',
     ];
 
-    /**
-     * Base path for project images
-     */
     const BASE_PATH = 'project_img';
 
-    /**
-     * Get the parent imageable model (User, Service, etc.).
-     */
     public function imageable()
     {
         return $this->morphTo();
     }
 
-    /**
-     * Get the full URL of the image
-     */
     public function getUrlAttribute(): string
     {
+        if ($this->disk && in_array($this->disk, ['public', 's3'], true) && $this->path) {
+            return Storage::disk($this->disk)->url($this->path);
+        }
+
         return asset($this->path);
     }
 
-    /**
-     * Get the full storage path
-     */
     public function getFullPathAttribute(): string
     {
+        if ($this->disk && in_array($this->disk, ['public', 'local'], true) && $this->path) {
+            try {
+                return Storage::disk($this->disk)->path($this->path);
+            } catch (\Throwable) {
+                // Fall through to the historical path for legacy records.
+            }
+        }
+
         return base_path($this->path);
     }
 
-    /**
-     * Delete the image file from storage
-     */
     public function deleteFile(): bool
     {
+        if ($this->disk && in_array($this->disk, ['public', 'local', 's3'], true) && $this->path) {
+            try {
+                if (Storage::disk($this->disk)->exists($this->path)) {
+                    return Storage::disk($this->disk)->delete($this->path);
+                }
+            } catch (\Throwable) {
+                // Fall through to the historical filesystem location.
+            }
+        }
+
         $fullPath = $this->full_path;
         if (File::exists($fullPath)) {
             return File::delete($fullPath);
         }
+
         return false;
     }
 
-    /**
-     * Boot method to delete file when model is deleted
-     */
     protected static function boot()
     {
         parent::boot();
@@ -73,9 +78,6 @@ class Image extends Model
         });
     }
 
-    /**
-     * Available image folders
-     */
     public static function folders(): array
     {
         return [
@@ -87,9 +89,6 @@ class Image extends Model
         ];
     }
 
-    /**
-     * Get folder path by key
-     */
     public static function getFolderPath(string $folder): string
     {
         $folders = self::folders();
@@ -97,36 +96,38 @@ class Image extends Model
     }
 
     /**
-     * Upload image helper
+     * Store uploaded images through Laravel's filesystem so the active
+     * tenancy filesystem bootstrapper controls tenant-specific storage.
      */
     public static function upload($file, string $folder, $imageable = null): self
     {
-        $folderPath = self::getFolderPath($folder);
-        $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-        $path = $folderPath . '/' . $filename;
-        $fullPath = base_path($folderPath);
-
-        // Ensure directory exists
-        if (!File::isDirectory($fullPath)) {
-            File::makeDirectory($fullPath, 0755, true);
+        if (! $file->isValid()) {
+            throw new \InvalidArgumentException('The uploaded image is invalid.');
         }
 
-        // Move the file to project_img folder
-        $file->move($fullPath, $filename);
+        $folderPath = self::getFolderPath($folder);
+        $extension = strtolower((string) ($file->extension() ?: $file->getClientOriginalExtension()));
 
-        // Create the image record
-        $image = self::create([
+        if ($extension === '') {
+            throw new \InvalidArgumentException('The uploaded image has no valid extension.');
+        }
+
+        $filename = now()->format('YmdHis') . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
+        $disk = 'public';
+        $path = $folderPath . '/' . $filename;
+
+        Storage::disk($disk)->putFileAs($folderPath, $file, $filename);
+
+        return self::create([
             'name' => $file->getClientOriginalName(),
             'filename' => $filename,
             'path' => $path,
             'folder' => $folder,
-            'disk' => 'local',
-            'mime_type' => $file->getClientMimeType(),
-            'size' => File::size($fullPath . '/' . $filename),
+            'disk' => $disk,
+            'mime_type' => $file->getMimeType() ?: $file->getClientMimeType(),
+            'size' => Storage::disk($disk)->size($path),
             'imageable_id' => $imageable?->id,
             'imageable_type' => $imageable ? get_class($imageable) : null,
         ]);
-
-        return $image;
     }
 }
