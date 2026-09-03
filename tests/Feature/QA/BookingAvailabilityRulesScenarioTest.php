@@ -21,7 +21,7 @@ use Tests\TenantTestCase;
 #[Group('master-scenario')]
 final class BookingAvailabilityRulesScenarioTest extends TenantTestCase
 {
-    private function prepareDate(Carbon $date): string
+    private function prepareDate(Carbon $date, string $startTime = '09:00', string $endTime = '17:00'): string
     {
         $timezone = $this->staff->timezone ?: config('app.timezone');
         $localDate = $date->copy()->setTimezone($timezone)->startOfDay();
@@ -40,8 +40,8 @@ final class BookingAvailabilityRulesScenarioTest extends TenantTestCase
                 'day_of_week' => $localDate->dayOfWeek,
             ],
             [
-                'start_time' => '09:00',
-                'end_time' => '17:00',
+                'start_time' => $startTime,
+                'end_time' => $endTime,
                 'is_working' => true,
             ],
         );
@@ -166,5 +166,45 @@ final class BookingAvailabilityRulesScenarioTest extends TenantTestCase
                 ->whereDate('starts_at', $date->toDateString())
                 ->count(),
         );
+    }
+
+    #[Test]
+    public function working_hours_boundary_matrix_accepts_start_and_last_valid_slot_but_rejects_outside_bounds(): void
+    {
+        $timezone = $this->staff->timezone ?: config('app.timezone');
+        $date = now($timezone)->addDays(4)->startOfDay();
+        $this->prepareDate($date, '09:00', '17:00');
+
+        $engine = app(SlotEngine::class);
+
+        $beforeStart = $engine->validateSlot(
+            $this->service,
+            $this->staff,
+            Carbon::createFromFormat('Y-m-d H:i', $date->toDateString() . ' 08:59', $timezone),
+        );
+        $this->assertFalse($beforeStart->isAvailable());
+        $this->assertSame('outside_working_hours', $beforeStart->getReason());
+
+        $atStart = $engine->validateSlot(
+            $this->service,
+            $this->staff,
+            Carbon::createFromFormat('Y-m-d H:i', $date->toDateString() . ' 09:00', $timezone),
+        );
+        $this->assertTrue($atStart->isAvailable());
+
+        $lastValid = $engine->validateSlot(
+            $this->service,
+            $this->staff,
+            Carbon::createFromFormat('Y-m-d H:i', $date->toDateString() . ' 16:30', $timezone),
+        );
+        $this->assertTrue($lastValid->isAvailable());
+
+        $afterEnd = $engine->validateSlot(
+            $this->service,
+            $this->staff,
+            Carbon::createFromFormat('Y-m-d H:i', $date->toDateString() . ' 16:31', $timezone),
+        );
+        $this->assertFalse($afterEnd->isAvailable());
+        $this->assertSame('outside_working_hours', $afterEnd->getReason());
     }
 }
