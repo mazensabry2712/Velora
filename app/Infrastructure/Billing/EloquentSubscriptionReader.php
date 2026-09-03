@@ -12,7 +12,10 @@ use Illuminate\Support\Facades\Log;
 
 final class EloquentSubscriptionReader implements SubscriptionReader
 {
-    private const CENTRAL_CONNECTION = 'mysql';
+    private function centralConnection(): string
+    {
+        return (string) config('tenancy.database.central_connection', config('database.default'));
+    }
 
     public function current(): ?array
     {
@@ -20,7 +23,8 @@ final class EloquentSubscriptionReader implements SubscriptionReader
         if (! $tenantId) return null;
 
         try {
-            $subscription = DB::connection(self::CENTRAL_CONNECTION)
+            $connection = DB::connection($this->centralConnection());
+            $subscription = $connection
                 ->table('tenant_subscriptions')
                 ->join('subscription_plans', 'tenant_subscriptions.subscription_plan_id', '=', 'subscription_plans.id')
                 ->where('tenant_subscriptions.tenant_id', $tenantId)
@@ -85,7 +89,7 @@ final class EloquentSubscriptionReader implements SubscriptionReader
     {
         try {
             $current = $this->current();
-            $query = DB::connection(self::CENTRAL_CONNECTION)->table('subscription_plans')->where('is_active', true)->orderBy('price');
+            $query = DB::connection($this->centralConnection())->table('subscription_plans')->where('is_active', true)->orderBy('price');
             if ($current && isset($current['plan_id'])) $query->where('id', '!=', $current['plan_id']);
             return $query->get()->map(static fn (object $plan): array => [
                 'id' => $plan->id, 'name' => $plan->name, 'price' => $plan->price, 'billing_cycle' => $plan->billing_cycle,
@@ -104,7 +108,7 @@ final class EloquentSubscriptionReader implements SubscriptionReader
         $tenantId = tenant('id');
         if (! $tenantId) return [];
         try {
-            return DB::connection(self::CENTRAL_CONNECTION)->table('tenant_subscriptions')->join('subscription_plans', 'tenant_subscriptions.subscription_plan_id', '=', 'subscription_plans.id')->where('tenant_subscriptions.tenant_id', $tenantId)->select('tenant_subscriptions.*', 'subscription_plans.name as plan_name')->orderByDesc('tenant_subscriptions.created_at')->limit($limit)->get()->all();
+            return DB::connection($this->centralConnection())->table('tenant_subscriptions')->join('subscription_plans', 'tenant_subscriptions.subscription_plan_id', '=', 'subscription_plans.id')->where('tenant_subscriptions.tenant_id', $tenantId)->select('tenant_subscriptions.*', 'subscription_plans.name as plan_name')->orderByDesc('tenant_subscriptions.created_at')->limit($limit)->get()->all();
         } catch (\Throwable $e) {
             Log::error('Failed to get invoices: ' . $e->getMessage());
             return [];
