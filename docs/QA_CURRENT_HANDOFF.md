@@ -15,11 +15,18 @@ Always verify `refs/heads/main` before continuing. Never assume a SHA from an ol
 ## Current canonical checkpoint
 
 ```text
-SHA: 4f3860d59ec6862bb324fbaa3ae11ac36c3ab223
-Commit: align tests workflow environment with master QA and quality
+SHA: d8e32a015bf837627832dba545dfb484f9318b96
 ```
 
-This checkpoint includes the test-environment alignment that removed the old SQLite test override from the active PHPUnit/CI contract.
+The current checkpoint includes:
+
+```text
+- MySQL as the active application/test database contract
+- historical SQLite diagnostics explicitly marked as historical
+- Billing portal central-connection hardening
+- normalized Queue/Mail settings across certification workflows
+- regression guard for Billing portal connection selection
+```
 
 ## QA method
 
@@ -101,6 +108,26 @@ All certification workflows use MySQL 8.4 + PHP 8.4 and `pdo_mysql`.
 `Velora Master QA` runs `tests/Feature/QA`.
 `Velora Quality` runs dependency/security/static-quality checks plus the test suite.
 
+All three explicitly normalize test Queue/Mail behavior to `sync`/`array`.
+
+## Current Billing contract
+
+Tenant billing data that belongs to the central database must resolve the configured central connection through `tenancy.database.central_connection` rather than hard-coding `mysql` at the call site.
+
+`BillingController::portal()` now follows the same contract as the checkout path and hardened billing services.
+
+Regression guard:
+
+```text
+tests/Unit/BillingCentralConnectionContractTest.php
+```
+
+Finding record:
+
+```text
+docs/QA_FINDING_BILLING_PORTAL_CONNECTION.md
+```
+
 ## Completed hardening / coverage on the main line
 
 ```text
@@ -127,6 +154,7 @@ Holiday calendar-date comparison
 Dashboard daily appointment date reconciliation
 PHPUnit test environment bootstrap hardening
 CI environment alignment with the canonical MySQL contract
+Billing portal central-connection hardening
 ```
 
 ## Important historical findings
@@ -148,10 +176,10 @@ The historical SQLite findings remain useful as diagnosis records, but current P
 Latest pushed checkpoint:
 
 ```text
-4f3860d59ec6862bb324fbaa3ae11ac36c3ab223
+d8e32a015bf837627832dba545dfb484f9318b96
 ```
 
-Fresh GitHub Actions runs were triggered for the current `main` checkpoint. Their final result must be fetched before making a pass/fail or certification claim.
+Fresh GitHub Actions runs have been triggered by the recent `main` updates. Their final result must be fetched before making a pass/fail or certification claim.
 
 ## Current release gate
 
@@ -178,6 +206,8 @@ docs/MASTER_QA_EXECUTION_RUNBOOK.md   ← QA execution rules
 docs/QA_CURRENT_HANDOFF.md           ← current state
   ↓
 docs/QA_FINDINGS_LOG.md              ← permanent finding history
+  ↓
+docs/QA_FINDING_BILLING_PORTAL_CONNECTION.md ← latest billing finding
   ↓
 docs/QA_RUN_120_POSTMORTEM.md        ← historical checkpoint
   ↓
