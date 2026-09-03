@@ -27,7 +27,7 @@ The canonical certification environment is MySQL 8.4 + PHP 8.4. The repository's
 | Appointment actions | `AppointmentActionsTest` | PASS | 13 | 37 | 2026-09-03 |
 | Appointment/queue integration | `AppointmentQueueIntegrationTest` | PASS | 9 | 14 | 2026-09-03 |
 | Booking rules (initial) | `BookingRulesScenarioTest` | PASS | 5 | 6 | 2026-09-03 |
-| Booking availability rules | `BookingAvailabilityRulesScenarioTest` | PASS | 4 | 8 | 2026-09-03 |
+| Booking availability rules (initial) | `BookingAvailabilityRulesScenarioTest` | PASS | 4 | 8 | 2026-09-03 |
 | Appointment lifecycle (pre-fix) | `AppointmentLifecycleScenarioTest` | PASS | 3 | 11 | 2026-09-03 |
 | Appointment lifecycle (strengthened, pre-fix) | `AppointmentLifecycleScenarioTest` | FAIL | 3 passed + 1 failed | 15 | 2026-09-03 |
 | Appointment lifecycle (post-fix no-show regression) | `AppointmentLifecycleScenarioTest` | PASS | 5 | 24 | 2026-09-03 |
@@ -118,7 +118,7 @@ Current verified passing subtotal from completed passing focused runs is **74 pa
 - The resource fixture now uses the real `staff_services` pivot schema.
 - The timezone regression now compares the raw persisted `starts_at` value normalized as UTC against the requested customer's UTC instant, while separately checking staff-local `date`, `time_slot`, and stored appointment timezone.
 
-**Test correction commit:** `df16ee7b31ddda748135990421df5dc57d047640`.
+**Test correction commit:** `df16ee7b31ddda748135990421ef5dc57d047640`.
 
 **Final regression execution:** **7 tests / 12 assertions / 7.68s PASS**.
 
@@ -168,7 +168,7 @@ AppointmentQueueIntegrationTest → 9 passed / 14 assertions
 BookingRulesScenarioTest (initial) → 5 passed / 6 assertions
 BookingRulesScenarioTest (resource regression) → 6 passed / 9 assertions / 7.33s
 BookingRulesScenarioTest (timezone regression, corrected) → 7 passed / 12 assertions / 7.68s
-BookingAvailabilityRulesScenarioTest → 4 passed / 8 assertions / 7.33s
+BookingAvailabilityRulesScenarioTest (initial) → 4 passed / 8 assertions / 7.33s
 AppointmentLifecycleScenarioTest (pre-strengthening) → 3 passed / 11 assertions / 7.23s
 AppointmentLifecycleScenarioTest (post-fix no-show regression) → 5 passed / 24 assertions / 7.58s
 AppointmentLifecycleScenarioTest (corrected reschedule regression) → 6 passed / 29 assertions / 7.50s
@@ -207,14 +207,14 @@ These are local MySQL-backed runs. They are not release certification without fr
 
 ### OPEN / BLOCKED ON REGRESSION
 
-- `AVAIL-001` working-hours matrix beyond current negative-boundary coverage.
+- `AVAIL-001` working-hours matrix beyond current negative-boundary coverage — boundary regression committed; re-run required.
 - Queue/concurrency gates.
 - Fresh Master QA MySQL 8.4 CI success for current `main`.
 - Final cross-surface reconciliation and production certification.
 
 ## Next certification work
 
-1. Broader `AVAIL-001` working-hours boundary matrix.
+1. Re-run `AVAIL-001` working-hours boundary matrix.
 2. Same-slot and duplicate-booking concurrency.
 3. Queue call-next and queue mutation race coverage.
 4. Concurrent webhook delivery where applicable.
