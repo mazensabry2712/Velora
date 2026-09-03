@@ -95,12 +95,16 @@ class StripeService
 
     /**
      * Handle successful payment / subscription activation.
+     *
+     * The webhook event id is the idempotency key. Stripe may emit several
+     * events for the same subscription, so the subscription id itself cannot
+     * be used as the event key.
      */
-    public function handleSubscriptionActive(\Stripe\Subscription $stripeSubscription): void
+    public function handleSubscriptionActive(\Stripe\Subscription $stripeSubscription, ?string $webhookEventId = null): void
     {
         $tenantId  = $stripeSubscription->metadata['tenant_id'] ?? null;
         $priceId   = $stripeSubscription->items->data[0]->price->id ?? null;
-        $eventId   = $stripeSubscription->id;
+        $eventId   = $webhookEventId ?: ('stripe_subscription_' . $stripeSubscription->id);
 
         if (!$tenantId) {
             Log::warning('Stripe webhook: missing tenant_id in subscription metadata', [
@@ -111,7 +115,7 @@ class StripeService
 
         $central = $this->centralDb();
 
-        // Idempotency check
+        // Idempotency check: the Stripe Event ID belongs to one webhook delivery.
         $existing = $central->table('tenant_subscriptions')
             ->where('tenant_id', $tenantId)
             ->where('last_webhook_event', $eventId)
@@ -121,19 +125,19 @@ class StripeService
             return;
         }
 
-        // Map Stripe price → local plan
+        // Map Stripe price → local plan. Never activate against an arbitrary
+        // fallback plan when the provider price is not configured locally.
         $plan = $central->table('subscription_plans')
             ->where('stripe_price_id', $priceId)
+            ->where('is_active', true)
             ->first();
 
-        $billingCycle = 'monthly';
-        $durationDays = 30;
-        $planId = $plan?->id ?? 1;
-
-        if ($plan) {
-            $billingCycle = $plan->billing_cycle;
-            $durationDays = $plan->billing_cycle === 'yearly' ? 365 : 30;
+        if (! $plan) {
+            throw new \RuntimeException('Stripe webhook references an unknown or inactive local plan.');
         }
+
+        $durationDays = $plan->billing_cycle === 'yearly' ? 365 : 30;
+        $now = now();
 
         $central->table('tenant_subscriptions')
             ->where('tenant_id', $tenantId)
@@ -141,18 +145,18 @@ class StripeService
             ->limit(1)
             ->update([
                 'status'                  => 'active',
-                'subscription_plan_id'    => $planId,
+                'subscription_plan_id'    => $plan->id,
                 'stripe_subscription_id'  => $stripeSubscription->id,
                 'stripe_customer_id'      => $stripeSubscription->customer,
                 'stripe_price_id'         => $priceId,
                 'trial_ends_at'           => null,
                 'grace_ends_at'           => null,
-                'starts_at'               => now(),
-                'ends_at'                 => now()->addDays($durationDays),
+                'starts_at'               => $now,
+                'ends_at'                 => $now->copy()->addDays($durationDays),
                 'amount_paid'             => ($stripeSubscription->items->data[0]->price->unit_amount ?? 0) / 100,
                 'payment_method'          => 'stripe',
                 'last_webhook_event'      => $eventId,
-                'updated_at'              => now(),
+                'updated_at'              => $now,
             ]);
 
         Log::info("Tenant {$tenantId} subscription activated via Stripe.");
