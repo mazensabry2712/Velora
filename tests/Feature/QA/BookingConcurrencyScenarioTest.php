@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\QA;
 
+use App\Domain\Booking\Exceptions\SlotUnavailableException;
 use App\Models\Appointment;
 use App\Models\Customer;
 use App\Models\StaffWorkingHours;
@@ -54,6 +55,7 @@ final class BookingConcurrencyScenarioTest extends TenantTestCase
         $processes = [];
         $results = [];
 
+        // Child processes need committed fixtures because they use independent DB connections.
         if (DB::connection()->transactionLevel() > 0) {
             DB::connection()->commit();
         }
@@ -90,23 +92,14 @@ final class BookingConcurrencyScenarioTest extends TenantTestCase
                         if ($process->isRunning()) {
                             $process->stop(1);
                         }
-
-                        $stateFiles = glob($base . '/' . $token . '.state.*');
-                        $states = array_map(static function (string $file): mixed {
-                            return [
-                                'file' => basename($file),
-                                'state' => json_decode((string) file_get_contents($file), true),
-                            ];
-                        }, $stateFiles);
-
-                        $resultFiles = glob($base . '/' . $token . '.result.*');
-                        $resultsFromDisk = array_map(static function (string $file): mixed {
-                            return [
-                                'file' => basename($file),
-                                'result' => json_decode((string) file_get_contents($file), true),
-                            ];
-                        }, $resultFiles);
-
+                        $states = array_map(static fn (string $file): mixed => [
+                            'file' => basename($file),
+                            'state' => json_decode((string) file_get_contents($file), true),
+                        ], glob($base . '/' . $token . '.state.*'));
+                        $resultsFromDisk = array_map(static fn (string $file): mixed => [
+                            'file' => basename($file),
+                            'result' => json_decode((string) file_get_contents($file), true),
+                        ], glob($base . '/' . $token . '.result.*'));
                         $diagnostics[] = [
                             'worker' => $index + 1,
                             'exit_code' => $process->getExitCode(),
@@ -116,7 +109,6 @@ final class BookingConcurrencyScenarioTest extends TenantTestCase
                             'results' => $resultsFromDisk,
                         ];
                     }
-
                     $this->fail(
                         'Concurrent booking workers did not both reach the synchronized start barrier. Diagnostics: ' .
                         json_encode($diagnostics, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
@@ -129,27 +121,22 @@ final class BookingConcurrencyScenarioTest extends TenantTestCase
 
             foreach ($processes as $process) {
                 $process->wait();
-                $output = trim($process->getOutput());
-                $errors = trim($process->getErrorOutput());
                 $resultFiles = glob($base . '/' . $token . '.result.*');
                 $decoded = null;
-
                 foreach ($resultFiles as $resultFile) {
                     $candidate = json_decode((string) file_get_contents($resultFile), true);
-                    if (is_array($candidate) && !isset($candidate['_claimed'])) {
+                    if (is_array($candidate) && ! isset($candidate['_claimed'])) {
                         $candidate['_claimed'] = true;
                         file_put_contents($resultFile, json_encode($candidate));
                         $decoded = $candidate;
                         break;
                     }
                 }
-
                 $results[] = [
                     'exit_code' => $process->getExitCode(),
                     'status' => $decoded['status'] ?? null,
                     'class' => $decoded['class'] ?? null,
-                    'message' => $decoded['message'] ?? $errors ?: $output,
-                    'appointment_id' => $decoded['appointment_id'] ?? null,
+                    'message' => $decoded['message'] ?? trim($process->getErrorOutput()) ?: trim($process->getOutput()),
                 ];
             }
 
@@ -158,19 +145,16 @@ final class BookingConcurrencyScenarioTest extends TenantTestCase
 
             $this->assertCount(1, $successes, 'Expected exactly one concurrent booking worker to succeed. Results: ' . json_encode($results));
             $this->assertCount(1, $failures, 'Expected exactly one concurrent booking worker to be rejected. Results: ' . json_encode($results));
+            $this->assertSame(SlotUnavailableException::class, $failures[0]['class'] ?? null);
+
             $this->assertSame(
-                \App\Domain\Booking\Exceptions\SlotUnavailableException::class,
-                $failures[0]['class'] ?? null,
-                'The losing booking must fail through the domain slot-unavailable path. Results: ' . json_encode($results),
+                1,
+                Appointment::query()
+                    ->where('staff_id_new', $this->staff->id)
+                    ->where('starts_at', $slotStartsAt->copy()->utc())
+                    ->whereNotIn('status', [Appointment::STATUS_CANCELLED, Appointment::STATUS_NO_SHOW])
+                    ->count(),
             );
-
-            $count = Appointment::query()
-                ->where('staff_id_new', $this->staff->id)
-                ->where('starts_at', $slotStartsAt->copy()->utc())
-                ->whereNotIn('status', [Appointment::STATUS_CANCELLED, Appointment::STATUS_NO_SHOW])
-                ->count();
-
-            $this->assertSame(1, $count, 'Concurrent requests must leave exactly one active appointment for the slot.');
         } finally {
             @unlink($go);
             foreach (glob($base . '/' . $token . '.*') as $file) {
