@@ -111,7 +111,7 @@ final class BookingNotificationFailureScenarioTest extends TenantTestCase
             'timezone' => $this->staff->timezone ?: config('app.timezone'),
             'price' => $this->service->price,
             'status' => Appointment::STATUS_PENDING,
-            'source' => 'qa-booking-notification-failure',
+            'source' => 'qa-notify-fail',
         ]);
     }
 
