@@ -38,8 +38,9 @@ The canonical certification environment is MySQL 8.4 + PHP 8.4. The repository's
 | Booking rules (timezone regression, first run) | `BookingRulesScenarioTest` | FAIL | 5 passed + 2 failed | 7 | 2026-09-03 |
 | Booking rules (timezone regression, corrected) | `BookingRulesScenarioTest` | PASS | 7 | 12 | 2026-09-03 |
 | Booking notification failure isolation (first run) | `BookingNotificationFailureScenarioTest` | FAIL | 0 | 0 | 2026-09-03 |
+| Booking notification failure isolation (corrected fixture) | `BookingNotificationFailureScenarioTest` | PASS | 2 | 19 | 2026-09-03 |
 
-Current verified passing subtotal from completed passing focused runs is **72 passed test executions / 234 assertions**. Failed intermediate runs are retained as evidence and are not counted as passes.
+Current verified passing subtotal from completed passing focused runs is **74 passed test executions / 253 assertions**. Failed intermediate runs are retained as evidence and are not counted as passes.
 
 ## Defects discovered and addressed during this pass
 
@@ -135,22 +136,25 @@ Current verified passing subtotal from completed passing focused runs is **72 pa
 COMMITTED CORE + RETRYABLE SIDE EFFECT
 ```
 
-**First regression execution:** After pulling `origin/main` at `48459ccbe877eb4d1b3a34d86b4b04725f690341`, the suite did not reach the notification job assertions. Both tests failed during fixture creation with:
+**First regression execution:** After pulling `origin/main` at `48459ccbe877eb4d1b3a34d86b4b04725f690341`, the suite did not reach notification assertions. Both tests failed during fixture creation with `SQLSTATE[22001]` because the fixture used `source = qa-booking-notification-failure` while `appointments.source` is `string(20)`.
 
-```text
-SQLSTATE[22001]: String data, right truncated: 1406
-Data too long for column 'source'
-```
+**Classification:** **Test-data/schema contract defect.** No production notification failure was established by that run.
 
-The fixture used `source = qa-booking-notification-failure`, while the `appointments.source` schema is `string(20)`.
-
-**Classification:** **Test-data/schema contract defect.** No production notification failure has been established by this run because the notification jobs were never entered.
-
-**Correction:** The fixture source value was shortened to `qa-notify-fail`, preserving the semantic test intent while respecting the production schema contract.
+**Correction:** Fixture source value shortened to `qa-notify-fail`.
 
 **Fixture correction commit:** `8ec36b91b73bc6b7422a0f0f9b7740ebfb1884e6`.
 
-**Current state:** **BOOK-012 re-run required.**
+**Final regression execution:** After pulling `origin/main` at `d549d01b421e4aa40c3b597a13bc27bbccb4fdc7`, clearing caches, and running:
+
+```text
+php -d memory_limit=512M artisan test tests/Feature/QA/BookingNotificationFailureScenarioTest.php --stop-on-failure
+
+PASS Tests\\Feature\\QA\\BookingNotificationFailureScenarioTest
+Tests:    2 passed (19 assertions)
+Duration: 7.20s
+```
+
+**Final state:** **BOOK-012 PASS locally.** The regression verifies that both Email and WhatsApp provider failures leave the appointment persisted and pending while the delivery remains retryable, records the attempt/error, and remains unsent.
 
 ## Previously verified local evidence
 
@@ -169,6 +173,7 @@ AppointmentLifecycleScenarioTest (pre-strengthening) → 3 passed / 11 assertion
 AppointmentLifecycleScenarioTest (post-fix no-show regression) → 5 passed / 24 assertions / 7.58s
 AppointmentLifecycleScenarioTest (corrected reschedule regression) → 6 passed / 29 assertions / 7.50s
 AppointmentLifecycleScenarioTest (strengthened invoice reconciliation) → 6 passed / 34 assertions / 7.54s
+BookingNotificationFailureScenarioTest (corrected fixture) → 2 passed / 19 assertions / 7.20s
 ```
 
 These are local MySQL-backed runs. They are not release certification without fresh MySQL CI evidence.
@@ -188,6 +193,7 @@ These are local MySQL-backed runs. They are not release certification without fr
 - `BOOK-009` maximum advance rule.
 - `BOOK-010` occupied slot rejected.
 - `BOOK-011` customer timezone conversion.
+- `BOOK-012` booking notification failure isolation.
 - `AVAIL-002` holiday blocking and related availability rules.
 - Appointment lifecycle status-machine validation.
 - Confirm/cancel/complete queue synchronization coverage.
@@ -201,17 +207,19 @@ These are local MySQL-backed runs. They are not release certification without fr
 
 ### OPEN / BLOCKED ON REGRESSION
 
-- `BOOK-012` booking notification failure does not corrupt booking — fixture correction committed; re-run required.
 - `AVAIL-001` working-hours matrix beyond current negative-boundary coverage.
-- Final reconciliation coverage not yet represented in focused runs.
+- Queue/concurrency gates.
+- Fresh Master QA MySQL 8.4 CI success for current `main`.
+- Final cross-surface reconciliation and production certification.
 
 ## Next certification work
 
-1. Re-run `BOOK-012` notification failure isolation.
-2. Broader `AVAIL-001` working-hours boundary matrix.
-3. Queue/concurrency and webhook concurrency where applicable.
-4. Full `tests/Feature/QA` on fresh MySQL 8.4 + PHP 8.4 CI.
-5. Final cross-surface reconciliation and production certification.
+1. Broader `AVAIL-001` working-hours boundary matrix.
+2. Same-slot and duplicate-booking concurrency.
+3. Queue call-next and queue mutation race coverage.
+4. Concurrent webhook delivery where applicable.
+5. Full `tests/Feature/QA` on fresh MySQL 8.4 + PHP 8.4 CI.
+6. Final cross-surface reconciliation and production certification.
 
 ## Concurrency / certification gates still outstanding
 
