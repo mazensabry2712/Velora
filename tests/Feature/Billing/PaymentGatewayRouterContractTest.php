@@ -47,4 +47,33 @@ final class PaymentGatewayRouterContractTest extends TestCase
         $this->assertContains('stripe', $resolved);
         $this->assertSame([], array_values(array_diff($resolved, $manager->supported())));
     }
+
+    #[Test]
+    public function changing_gateway_settings_invalidates_the_enabled_gateway_cache(): void
+    {
+        CountryPricing::query()->create([
+            'country_code' => 'EG',
+            'country_name' => 'Egypt',
+            'price' => 100,
+            'currency' => 'EGP',
+            'lang' => 'ar',
+            'payment_methods' => ['paymob', 'stripe'],
+            'is_active' => true,
+        ]);
+
+        SystemSetting::set('paymob_enabled', true, 'boolean', 'payment_methods');
+        SystemSetting::set('stripe_enabled', true, 'boolean', 'payment_methods');
+
+        $router = new PaymentGatewayRouter(app(PaymentGatewayManager::class));
+        $router->flushCache('EG');
+        $this->assertContains('paymob', $router->forCountry('EG'));
+
+        SystemSetting::set('paymob_enabled', false, 'boolean', 'payment_methods');
+
+        $router->flushCache('EG');
+        $resolved = $router->forCountry('EG');
+
+        $this->assertNotContains('paymob', $resolved);
+        $this->assertContains('stripe', $resolved);
+    }
 }
