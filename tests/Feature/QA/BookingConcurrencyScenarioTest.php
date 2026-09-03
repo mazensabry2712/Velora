@@ -20,6 +20,10 @@ final class BookingConcurrencyScenarioTest extends TenantTestCase
     #[Test]
     public function two_customers_booking_the_same_slot_result_in_exactly_one_persisted_booking(): void
     {
+        if (PHP_OS_FAMILY === 'Windows') {
+            $this->markTestSkipped('CONC-001 requires independent PHP worker processes; execute the race gate in the MySQL CI/Linux environment.');
+        }
+
         $timezone = $this->staff->timezone ?: config('app.timezone');
         $date = now($timezone)->addDays(5)->startOfDay();
         $time = '10:00';
@@ -89,10 +93,9 @@ final class BookingConcurrencyScenarioTest extends TenantTestCase
 
                         $stateFiles = glob($base . '/' . $token . '.state.*');
                         $states = array_map(static function (string $file): mixed {
-                            $decoded = json_decode((string) file_get_contents($file), true);
                             return [
                                 'file' => basename($file),
-                                'state' => $decoded,
+                                'state' => json_decode((string) file_get_contents($file), true),
                             ];
                         }, $stateFiles);
 
