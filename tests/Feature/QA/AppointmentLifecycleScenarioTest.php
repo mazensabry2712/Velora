@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\QA;
 
 use App\Application\Booking\Actions\ChangeAppointmentStatus;
+use App\Application\Booking\Actions\UpdateAdminAppointment;
 use App\Domain\Booking\Rules\AppointmentStatusTransition;
 use App\Models\Appointment;
 use App\Models\AppointmentStatusHistory;
@@ -136,6 +137,35 @@ final class AppointmentLifecycleScenarioTest extends TenantTestCase
         $this->assertSame(Appointment::STATUS_NO_SHOW, $fresh->status);
         $this->assertNotNull($fresh->no_show_at);
         $this->assertSame('skipped', $fresh->queue?->status);
+    }
+
+    #[Test]
+    public function rescheduling_updates_the_canonical_schedule_and_reconciles_the_queue_date(): void
+    {
+        $appointment = $this->makeAppointment('18:00', Appointment::STATUS_CONFIRMED);
+        $queue = $this->makeQueue($appointment, 'waiting');
+        $newStartsAt = now()->addDays(3)->setTime(11, 30);
+
+        $updated = app(UpdateAdminAppointment::class)->execute($appointment->id, [
+            'customer_name' => $this->customerProfile->full_name,
+            'customer_phone' => $this->customerProfile->phone,
+            'customer_email' => $this->customerProfile->email,
+            'appointment_date' => $newStartsAt->toDateString(),
+            'appointment_time' => $newStartsAt->format('H:i'),
+            'staff_id' => $appointment->staff_id_new,
+            'service_id' => $appointment->service_id,
+            'status' => Appointment::STATUS_CONFIRMED,
+            'service_type' => $appointment->service_type,
+            'notes' => $appointment->notes,
+        ]);
+
+        $fresh = $updated->fresh(['queue']);
+
+        $this->assertTrue($fresh->starts_at?->equalTo($newStartsAt));
+        $this->assertSame($newStartsAt->toDateString(), $fresh->date);
+        $this->assertSame($newStartsAt->format('H:i'), $fresh->time_slot);
+        $this->assertSame($newStartsAt->toDateString(), $queue->fresh()->queue_date?->toDateString());
+        $this->assertSame(Appointment::STATUS_CONFIRMED, $fresh->status);
     }
 
     #[Test]
