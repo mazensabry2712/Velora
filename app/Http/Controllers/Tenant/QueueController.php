@@ -4,13 +4,10 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Application\Queue\Actions\SetQueuePriority;
 use App\Http\Controllers\Controller;
-use App\Models\Customer;
 use App\Models\Queue;
 use App\Models\Appointment;
-use App\Models\User;
 use App\Jobs\SendQueueNotification;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class QueueController extends Controller
 {
@@ -60,8 +57,8 @@ class QueueController extends Controller
             ], 400);
         }
 
-        $customer = User::find($appointment->customer_id);
-        $isVip = $customer->is_vip ?? false;
+        $customer = $appointment->customer;
+        $isVip = $customer?->ltv_tier === 'vip';
 
         $queue = Queue::create([
             'appointment_id' => $appointment->id,
@@ -198,17 +195,11 @@ class QueueController extends Controller
 
     public function myQueue(Request $request)
     {
-        $user = $request->user();
-        $customer = Customer::query()->where('email', $user->email)->first();
+        $customerId = $request->user()->customerProfile?->id;
 
         $query = Queue::query()
-            ->whereHas('appointment', function ($query) use ($user, $customer) {
-                $query->where(function ($q) use ($user, $customer) {
-                    $q->where('customer_id', $user->id);
-                    if ($customer) {
-                        $q->orWhere('customer_id_new', $customer->id);
-                    }
-                });
+            ->whereHas('appointment', function ($query) use ($customerId) {
+                $query->where('customer_id_new', $customerId);
             })
             ->where('status', 'waiting')
             ->whereDate('created_at', now()->toDateString())
