@@ -175,6 +175,18 @@ Duration: 7.48s
 
 **Final state:** **AVAIL-001 PASS locally for the covered working-hours boundary contract.** This does not replace concurrency or fresh MySQL CI certification.
 
+### QA-CONC-001 — Same-slot concurrent public booking race
+
+**Scenario:** `CONC-001` two customers attempt the same protected booking slot concurrently.
+
+**Harness added:** `tests/Feature/QA/BookingConcurrencyScenarioTest.php` launches two independent PHP worker processes against the same committed tenant, synchronizes their start through a filesystem barrier, and verifies exactly one succeeds while the other receives the domain `SlotUnavailableException`. The final DB assertion requires exactly one active appointment for the protected slot.
+
+**Worker:** `tests/Support/concurrent_booking_worker.php`.
+
+**Implementation under test:** `BookingCreationService` executes inside a transaction and locks overlapping appointment rows with `lockForUpdate()` before validating and creating the appointment. The concurrency regression is intended to verify the actual DB behavior rather than sequential calls. The booking path and lock are implemented in the production service. 
+
+**Current state:** **REGRESSION ADDED — USER RUN REQUIRED.** No local PASS is claimed yet.
+
 ## Previously verified local evidence
 
 The following focused runs were completed successfully in the current development environment:
@@ -228,17 +240,22 @@ These are local MySQL-backed runs. They are not release certification without fr
 
 ### OPEN / BLOCKED ON REGRESSION
 
-- Queue/concurrency gates.
+- `CONC-001` same-slot concurrent booking.
+- `CONC-002` duplicate concurrent booking submission.
+- `CONC-003` queue call-next concurrency.
+- `CONC-004` queue mutation race cases.
+- `CONC-005` concurrent webhook delivery where applicable.
 - Fresh Master QA MySQL 8.4 CI success for current `main`.
 - Final cross-surface reconciliation and production certification.
 
 ## Next certification work
 
-1. Same-slot and duplicate-booking concurrency.
-2. Queue call-next and queue mutation race coverage.
-3. Concurrent webhook delivery where applicable.
-4. Full `tests/Feature/QA` on fresh MySQL 8.4 + PHP 8.4 CI.
-5. Final cross-surface reconciliation and production certification.
+1. Run `CONC-001` same-slot concurrent booking.
+2. Add/run `CONC-002` duplicate concurrent booking submission.
+3. Add/run queue call-next and queue mutation race coverage.
+4. Add/run concurrent webhook delivery where applicable.
+5. Run full `tests/Feature/QA` on fresh MySQL 8.4 + PHP 8.4 CI.
+6. Perform final cross-surface reconciliation and production certification.
 
 ## Concurrency / certification gates still outstanding
 
