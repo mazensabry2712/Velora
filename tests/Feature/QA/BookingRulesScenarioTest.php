@@ -9,6 +9,7 @@ use App\Application\Booking\DTOs\PublicBookingData;
 use App\Domain\Booking\Exceptions\SlotUnavailableException;
 use App\Models\Appointment;
 use App\Models\BusinessRule;
+use App\Models\Resource;
 use App\Models\Service;
 use Illuminate\Validation\ValidationException;
 use PHPUnit\Framework\Attributes\Group;
@@ -47,7 +48,7 @@ final class BookingRulesScenarioTest extends TenantTestCase
         return [$date, $timezone];
     }
 
-    private function bookingData(string $date, string $time = '09:00', ?int $serviceId = null, ?int $staffUserId = null): PublicBookingData
+    private function bookingData(string $date, string $time = '09:00', ?int $serviceId = null, ?int $staffUserId = null, ?int $resourceId = null): PublicBookingData
     {
         return new PublicBookingData(
             customerName: 'Booking Rules Customer',
@@ -55,7 +56,7 @@ final class BookingRulesScenarioTest extends TenantTestCase
             customerPhone: '+201000000020',
             serviceId: $serviceId ?? $this->service->id,
             staffUserId: $staffUserId ?? $this->staffMember->id,
-            resourceId: null,
+            resourceId: $resourceId,
             appointmentDate: $date,
             appointmentTime: $time,
             requestedTimezone: $this->staff->timezone ?: config('app.timezone'),
@@ -122,6 +123,36 @@ final class BookingRulesScenarioTest extends TenantTestCase
 
         $this->expectException(ValidationException::class);
         app(CreatePublicBooking::class)->execute($this->bookingData($date->toDateString(), '09:00', null, $secondStaffUser->id));
+    }
+
+    #[Test]
+    public function resource_not_assigned_to_the_service_is_rejected_before_booking_creation(): void
+    {
+        [$date] = $this->prepareWorkingDay();
+
+        $resource = Resource::create([
+            'name' => ['en' => 'Unassigned Room'],
+            'type' => 'room',
+            'quantity' => 1,
+            'is_active' => true,
+        ]);
+
+        $appointmentsBefore = Appointment::count();
+
+        try {
+            app(CreatePublicBooking::class)->execute(
+                $this->bookingData($date->toDateString(), '09:00', null, null, $resource->id)
+            );
+            $this->fail('Expected invalid resource selection to be rejected.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('resource_id', $exception->errors());
+            $this->assertSame(
+                'The selected resource is not available for this service.',
+                $exception->errors()['resource_id'][0]
+            );
+        }
+
+        $this->assertSame($appointmentsBefore, Appointment::count());
     }
 
     #[Test]
