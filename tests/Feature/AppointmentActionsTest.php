@@ -11,13 +11,23 @@ class AppointmentActionsTest extends TenantTestCase
 {
     private function makeAppointment(array $overrides = []): Appointment
     {
+        $date = now()->addDay()->format('Y-m-d');
+        $time = '10:00';
+        $startsAt = now()->addDay()->setTimeFromTimeString($time);
+
         return Appointment::create(array_merge([
             'customer_id_new' => $this->customerProfile->id,
             'staff_id_new'    => $this->staff->id,
             'service_id'     => $this->service->id,
-            'date'           => now()->format('Y-m-d'),
-            'time_slot'      => '10:00',
+            'date'           => $date,
+            'time_slot'      => $time,
+            'starts_at'      => $startsAt,
+            'ends_at'        => $startsAt->copy()->addMinutes(30),
+            'ends_at_with_buffer' => $startsAt->copy()->addMinutes(30),
+            'timezone'        => config('app.timezone'),
+            'price'           => $this->service->price,
             'status'         => 'pending',
+            'source'         => 'admin',
         ], $overrides));
     }
 
