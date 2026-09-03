@@ -11,6 +11,8 @@
 - User appointment/invoice access now traverses Customer/Staff business entities.
 - Tenant-isolation and RBAC test fixtures were aligned with the canonical model/package boundaries.
 - Appointment migration `2026_09_03_000006_reconcile_appointment_identity.php` now backfills historical customer/staff references and fails closed on unresolved mappings.
+- Application/test role usage now targets `Spatie\Permission\Models\Role` directly; the legacy `App\Models\Role` compatibility wrapper was removed.
+- Analytics aggregation now reads canonical appointment timestamps and `customer_id_new` instead of the legacy appointment identity/date fields.
 
 ## Intentionally deferred
 
@@ -19,11 +21,12 @@
 - `spatie/laravel-activitylog` migration until audit-data preservation and consumer migration can land together.
 - Maintained FCM channel migration until credentials/configuration and delivery tests can be migrated together.
 - Media-library migration until the current file/image subsystem is confirmed as a true replacement candidate.
-- Deletion of `App\\Models\\Role` compatibility wrapper until fresh full-suite verification confirms no remaining dependency.
 
 ## Verification rule
 
 Current `main` is not certified green by test count alone. Remote GitHub Actions status and, when available, a fresh local run are required before release certification.
+
+The latest push triggered both the MySQL-backed `Velora Tests` workflow and the `Velora Master QA` workflow. At the latest check, both were still `in_progress`; no final pass/fail result was available yet.
 
 Expected local verification:
 
