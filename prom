@@ -1,0 +1,2791 @@
+PS C:\Herd\Velora> composer update league/commonmark --with-all-dependencies
+Loading composer repositories with package information
+Updating dependencies
+Lock file operations: 0 installs, 2 updates, 0 removals
+  - Upgrading league/commonmark (2.9.0 => 2.10.0)
+  - Upgrading nette/schema (v1.3.5 => v1.3.6)
+Writing lock file
+Installing dependencies from lock file (including require-dev)
+Package operations: 0 installs, 2 updates, 0 removals
+  - Downloading nette/schema (v1.3.6)
+  - Upgrading nette/schema (v1.3.5 => v1.3.6): Extracting archive
+  - Upgrading league/commonmark (2.9.0 => 2.10.0): Extracting archive
+Generating optimized autoload files
+> Illuminate\Foundation\ComposerScripts::postAutoloadDump
+> @php artisan package:discover --ansi
+
+   INFO  Discovering packages.
+
+  barryvdh/laravel-dompdf ....................................................................................... DONE
+  codezero/browser-locale ....................................................................................... DONE
+  laravel/pail .................................................................................................. DONE
+  laravel/sail .................................................................................................. DONE
+  laravel/sanctum ............................................................................................... DONE
+  laravel/tinker ................................................................................................ DONE
+  maatwebsite/excel ............................................................................................. DONE
+  nesbot/carbon ................................................................................................. DONE
+  niels-numbers/laravel-localizer ............................................................................... DONE
+  nunomaduro/collision .......................................................................................... DONE
+  nunomaduro/termwind ........................................................................................... DONE
+  simplesoftwareio/simple-qrcode ................................................................................ DONE
+  spatie/laravel-permission ..................................................................................... DONE
+  stancl/tenancy ................................................................................................ DONE
+
+93 packages you are using are looking for funding.
+Use the `composer fund` command to find out more!
+> @php artisan vendor:publish --tag=laravel-assets --ansi --force
+
+   INFO  No publishable resources for tag [laravel-assets].
+
+No security vulnerability advisories found.
+PS C:\Herd\Velora> composer validate --strict
+./composer.json is valid
+PS C:\Herd\Velora> composer audit
+No security vulnerability advisories found.
+PS C:\Herd\Velora> php artisan optimize:clear
+
+   INFO  Clearing cached bootstrap files.
+
+  config ................................................................................................. 1.28ms DONE
+  cache ................................................................................................. 27.10ms DONE
+  compiled ............................................................................................... 1.50ms DONE
+  events ................................................................................................. 0.51ms DONE
+  routes ................................................................................................. 0.50ms DONE
+  views ................................................................................................. 18.03ms DONE
+
+PS C:\Herd\Velora> php artisan test
+
+   PASS  Tests\Unit\Application\Queue\SetQueuePriorityTest
+  ✓ waiting queue can change priority                                                                            0.95s
+  ✓ non waiting queue is rejected                                                                                0.03s
+  ✓ persistence failure is reported                                                                              0.02s
+
+   PASS  Tests\Unit\Architecture\LayerBoundaryTest
+  ✓ domain and application layers do not depend on http or view layers                                           0.04s
+  ✓ application layer does not depend on concrete legacy services or payment providers                           0.03s
+  ✓ domain layer does not depend on concrete payment providers or database facades                               0.03s
+  ✓ domain layer does not depend on infrastructure or repository implementations                                 0.03s
+  ✓ application layer depends on abstractions not infrastructure implementations                                 0.03s
+
+   PASS  Tests\Unit\ExampleTest
+  ✓ that true is true
+
+   PASS  Tests\Unit\Payments\MoyasarGatewayTest
+  ✓ create checkout stores session data and returns route                                                        0.04s
+  ✓ create checkout converts amount to halalas correctly                                                         0.03s
+  ✓ create checkout throws when plan id missing                                                                  0.03s
+  ✓ create checkout defaults currency to sar                                                                     0.03s
+  ✓ verify payment returns true when status is paid                                                              0.03s
+  ✓ verify payment returns false when status is not paid                                                         0.03s
+  ✓ verify payment returns false when service throws                                                             0.03s
+  ✓ verify payment throws when payment id missing                                                                0.04s
+  ✓ refund returns false because moyasar refunds are manual                                                      0.02s
+  ✓ get publishable key delegates to moyasar service                                                             0.03s
+
+   PASS  Tests\Unit\Payments\PayPalGatewayTest
+  ✓ create checkout returns payer action approval url                                                            0.05s
+  ✓ create checkout falls back to approve link when payer action missing                                         0.03s
+  ✓ create checkout sends correct amount and currency to paypal                                                  0.03s
+  ✓ create checkout throws when no approval link returned                                                        0.02s
+  ✓ create checkout throws when oauth fails                                                                      0.02s
+  ✓ verify payment returns true when order status is completed                                                   0.03s
+  ✓ verify payment returns false when order not completed                                                        0.02s
+  ✓ verify payment returns false when capture api fails                                                          0.02s
+  ✓ verify payment throws when order id missing                                                                  0.03s
+  ✓ refund returns true on successful api call                                                                   0.02s
+  ✓ refund returns false when api fails                                                                          0.02s
+  ✓ uses sandbox url when mode is sandbox                                                                        0.02s
+
+   PASS  Tests\Unit\Payments\PaymentGatewayManagerTest
+  ✓ driver stripe returns stripe gateway                                                                         0.03s
+  ✓ driver moyasar returns moyasar gateway                                                                       0.03s
+  ✓ driver paymob returns paymob gateway                                                                         0.02s
+  ✓ driver paypal returns paypal gateway                                                                         0.02s
+  ✓ driver is case insensitive                                                                                   0.02s
+  ✓ driver throws for unknown gateway                                                                            0.02s
+  ✓ driver throws for empty string                                                                               0.02s
+  ✓ supported returns all registered gateway keys                                                                0.02s
+  ✓ has returns true for known gateways with data set #0                                                         0.02s
+  ✓ has returns true for known gateways with data set #1                                                         0.02s
+  ✓ has returns true for known gateways with data set #2                                                         0.02s
+  ✓ has returns true for known gateways with data set #3                                                         0.03s
+  ✓ has returns false for unknown gateway                                                                        0.02s
+  ✓ manager is registered as singleton                                                                           0.02s
+
+   PASS  Tests\Unit\Payments\PaymobGatewayTest
+  ✓ create checkout runs three step flow and returns iframe url                                                  0.03s
+  ✓ create checkout throws when auth fails                                                                       0.02s
+  ✓ verify payment returns true when success is true and hmac valid                                              0.02s
+  ✓ verify payment returns false when hmac mismatch                                                              0.03s
+  ✓ verify payment returns false when success is false                                                           0.03s
+  ✓ verify payment returns false when hmac missing                                                               0.03s
+  ✓ refund returns true on successful api call                                                                   0.02s
+  ✓ refund returns false when api call fails                                                                     0.02s
+
+   PASS  Tests\Unit\Payments\StripeGatewayTest
+  ✓ create checkout returns stripe url                                                                           0.05s
+  ✓ create checkout forwards correct data to stripe service                                                      0.02s
+  ✓ create checkout throws when stripe price id missing                                                          0.02s
+  ✓ verify payment returns true when stripe session is paid                                                      0.02s
+  ✓ verify payment returns false when session not paid                                                           0.02s
+  ✓ verify payment returns false when stripe service throws                                                      0.03s
+  ✓ verify payment throws when session id missing                                                                0.02s
+  ✓ refund returns true on success                                                                               0.02s
+  ✓ refund returns false when stripe service throws                                                              0.02s
+
+   PASS  Tests\Unit\Repositories\AppointmentRepositoryTest
+  ✓ find by id returns appointment when found                                                                    1.15s
+  ✓ find by id returns null when not found                                                                       0.03s
+  ✓ find with relations loads eager relations                                                                    0.04s
+  ✓ paginate returns all appointments with no filters                                                            0.04s
+  ✓ paginate filters by status                                                                                   0.03s
+  ✓ paginate filters by staff id                                                                                 0.03s
+  ✓ paginate date filter today returns only todays appointments                                                  0.03s
+  ✓ paginate date filter custom range works                                                                      0.03s
+  ✓ count by status returns correct count                                                                        0.03s
+  ✓ get today stats returns correct keys and counts                                                              0.03s
+  ✓ get weekly stats returns this week and last week                                                             0.04s
+  ✓ create persists appointment to database                                                                      0.03s
+  ✓ update changes appointment fields                                                                            0.04s
+  ✓ delete soft deletes the appointment                                                                          0.03s
+  ✓ get by date returns only appointments for that date                                                          0.03s
+
+   PASS  Tests\Unit\Repositories\QueueRepositoryTest
+  ✓ find by id returns queue entry                                                                               1.07s
+  ✓ find by id returns null when missing                                                                         0.03s
+  ✓ get by date returns entries for that date                                                                    0.04s
+  ✓ get by date orders vip first                                                                                 0.05s
+  ✓ get active returns only waiting and serving                                                                  0.03s
+  ✓ call next returns null when queue is empty                                                                   0.03s
+  ✓ call next picks vip before regular                                                                           0.04s
+  ✓ call next updates status to serving                                                                          0.03s
+  ✓ create persists queue entry                                                                                  0.03s
+  ✓ update changes queue fields                                                                                  0.04s
+  ✓ delete removes queue entry                                                                                   0.03s
+  ✓ get daily stats returns correct structure                                                                    0.03s
+  ✓ get overall stats returns correct keys                                                                       0.03s
+  ✓ move to next day changes queue date                                                                          0.03s
+
+   PASS  Tests\Unit\Repositories\StaffRepositoryTest
+  ✓ find by id returns user                                                                                      1.15s
+  ✓ find by id returns null for missing user                                                                     0.04s
+  ✓ find with relations eager loads services                                                                     0.03s
+  ✓ all returns only staff role users                                                                            0.03s
+  ✓ all returns at least one staff member                                                                        0.03s
+  ✓ create persists new staff user                                                                               0.03s
+  ✓ create assigns staff role                                                                                    0.03s
+  ✓ create syncs services when provided                                                                          0.03s
+  ✓ create sets default password from email prefix                                                               0.03s
+  ✓ update changes staff fields                                                                                  0.03s
+  ✓ update syncs services                                                                                        0.04s
+  ✓ delete removes staff member                                                                                  0.04s
+  ✓ get by specialization filters correctly                                                                      0.04s
+
+   PASS  Tests\Unit\SubscriptionLifecycleTest
+  ✓ canonical lifecycle is 27 days from trial start                                                              0.01s
+  ✓ lifecycle boundaries preserve the same time of day and timezone
+
+   PASS  Tests\Unit\Subscription\SubscriptionLifecycleTest
+  ✓ trial period is exactly seven days
+  ✓ read only ends fourteen days after trial end
+  ✓ deletion is six days after locked starts
+  ✓ total trial to permanent deletion window is twenty seven days
+
+   PASS  Tests\Unit\TestEnvironmentBootstrapTest
+  ✓ phpunit bootstrap provides a local environment with an application key
+  ✓ phpunit bootstrap uses a process isolated sqlite database
+  ✓ repository does not track the local environment or test database files
+
+   FAIL  Tests\Feature\Admin\AppointmentControllerTest
+  ⨯ guests cannot access appointments page                                                                       1.11s
+  ✓ admin can view appointments page                                                                             0.12s
+  ✓ admin can create appointment                                                                                 0.05s
+  ⨯ store requires customer name and phone                                                                       0.04s
+  ⨯ store rejects past appointment date                                                                          0.03s
+  ✓ admin can fetch single appointment as json                                                                   0.04s
+  ✓ show returns 404 for missing appointment                                                                     0.04s
+  ✓ admin can update appointment                                                                                 0.05s
+  ✓ quick status updates appointment status                                                                      0.04s
+  ⨯ quick status rejects invalid status value                                                                    0.04s
+  ✓ admin can delete appointment                                                                                 0.04s
+  ✓ admin can add appointment to queue                                                                           0.04s
+  ✓ admin can remove appointment from queue                                                                      0.04s
+  ✓ bulk day action can confirm all pending on a date                                                            0.04s
+  ✓ admin can rate a completed appointment                                                                       0.04s
+
+   FAIL  Tests\Feature\Admin\DashboardControllerTest
+  ⨯ guests are redirected to login                                                                               1.09s
+  ✓ admin can view dashboard                                                                                     0.08s
+  ✓ dashboard passes required variables to view                                                                  0.08s
+  ✓ staff member can access dashboard                                                                            0.06s
+  ✓ dashboard stats reflect todays appointments                                                                  0.08s
+
+   FAIL  Tests\Feature\Admin\OnboardingControllerTest
+  ⨯ guests are redirected to login                                                                               1.08s
+  ✓ admin can view wizard                                                                                        0.04s
+  ✓ already completed admin is redirected to dashboard                                                           0.04s
+  ✓ step1 saves contact info without requiring business name                                                     0.04s
+  ⨯ step1 requires phone                                                                                         0.04s
+  ✓ step2 saves service choice                                                                                   0.04s
+  ✓ step3 saves reminder preference                                                                              0.04s
+  ✓ complete marks onboarding done and redirects to dashboard                                                    0.04s
+  ✓ complete sets trial activated at on subscription                                                             0.04s
+
+   FAIL  Tests\Feature\Admin\QueueControllerTest
+  ✓ admin can view queue days listing                                                                            1.11s
+  ✓ admin can view queue for specific date                                                                       0.06s
+  ✓ admin can view print layout for queue                                                                        0.04s
+  ⨯ guests are redirected from queue page                                                                        0.04s
+  ✓ admin can add customer directly to queue                                                                     0.04s
+  ⨯ add direct validates required fields                                                                         0.04s
+  ✓ call next returns next waiting entry                                                                         0.04s
+  ✓ call next returns message when queue is empty                                                                0.03s
+  ✓ admin can fetch single queue entry                                                                           0.04s
+  ✓ admin can start serving a customer                                                                           0.04s
+  ✓ admin can complete a queue entry                                                                             0.04s
+  ✓ admin can return entry to waiting status                                                                     0.04s
+  ✓ admin can mark queue entry as vip                                                                            0.04s
+  ✓ admin can remove queue entry                                                                                 0.04s
+  ✓ admin can move waiting entry to next day                                                                     0.04s
+
+   FAIL  Tests\Feature\Admin\ServiceControllerTest
+  ✓ public services api returns active services                                                                  1.09s
+  ✓ admin can get service details                                                                                0.03s
+  ✓ admin can create service                                                                                     0.04s
+  ⨯ store validates name is required                                                                             0.03s
+  ⨯ store validates duration is between 5 and 480 minutes                                                        0.03s
+  ⨯ store validates price is non negative                                                                        0.03s
+  ✓ admin can update existing service                                                                            0.04s
+  ✓ admin can delete service                                                                                     0.04s
+  ✓ admin can create a time slot                                                                                 0.04s
+  ⨯ time slot end must be after start                                                                            0.04s
+  ✓ admin can delete time slot                                                                                   0.04s
+  ✓ admin can toggle a working day                                                                               0.04s
+
+   FAIL  Tests\Feature\Admin\SettingControllerTest
+  ✓ admin can view settings page                                                                                 1.12s
+  ⨯ guests are redirected from settings page                                                                     0.04s
+  ✓ admin can save basic settings                                                                                0.04s
+  ✓ save creates settings if not exist                                                                           0.04s
+  ✓ save updates existing settings                                                                               0.04s
+  ⨯ save rejects invalid logo mime type                                                                          0.05s
+  ✓ save accepts valid logo image                                                                                0.04s
+  ⨯ save validates social url format                                                                             0.04s
+  ✓ save accepts valid social url                                                                                0.04s
+  ✓ save returns updated settings data in response                                                               0.04s
+
+   FAIL  Tests\Feature\Admin\StaffControllerTest
+  ✓ admin can view staff management page                                                                         1.21s
+  ⨯ guests cannot access staff page                                                                              0.04s
+  ✓ admin can fetch staff member details                                                                         0.04s
+  ✓ show returns 404 for missing staff                                                                           0.03s
+  ✓ admin can create new staff member                                                                            0.04s
+  ⨯ store requires name email and specialization                                                                 0.04s
+  ⨯ store rejects duplicate email                                                                                0.04s
+  ✓ store returns default password in response                                                                   0.04s
+  ✓ admin can update staff member                                                                                0.04s
+  ✓ update allows same email for the same user                                                                   0.04s
+  ✓ admin can delete staff member                                                                                0.04s
+  ✓ admin can filter staff by specialization                                                                     0.04s
+  ✓ admin can get services assigned to staff member                                                              0.04s
+
+   PASS  Tests\Feature\AppointmentActionsTest
+  ✓ it displays appointments page                                                                                1.11s
+  ✓ it creates appointment and adds to queue automatically                                                       0.04s
+  ✓ it updates appointment status                                                                                0.04s
+  ✓ it syncs queue status when appointment is cancelled                                                          0.05s
+  ✓ it syncs queue status when appointment is completed                                                          0.04s
+  ✓ it adds appointment to queue                                                                                 0.04s
+  ✓ it prevents adding appointment to queue twice                                                                0.04s
+  ✓ it removes appointment from queue                                                                            0.04s
+  ✓ it correctly sets vip status when adding to queue                                                            0.04s
+  ✓ it filters appointments by queue status                                                                      0.12s
+  ✓ it deletes appointment and cascades queue                                                                    0.04s
+  ✓ it displays queue number in appointments list                                                                0.07s
+  ✓ it shows correct action buttons based on queue status                                                        0.08s
+
+   PASS  Tests\Feature\AppointmentQueueIntegrationTest
+  ✓ creating appointment can add to queue                                                                        1.13s
+  ✓ cancelling appointment sets queue to skipped                                                                 0.03s
+  ✓ completing appointment sets queue to completed                                                               0.03s
+  ✓ completing queue sets appointment to completed                                                               0.04s
+  ✓ cancelling queue sets appointment to cancelled                                                               0.03s
+  ✓ queue serving status confirms appointment                                                                    0.03s
+  ✓ vip queue is ordered before regular                                                                          0.03s
+  ✓ deleting appointment cascades to queue                                                                       0.03s
+  ✓ multiple status transitions are logged                                                                       0.03s
+
+   PASS  Tests\Feature\AppointmentReminderDeliveryTest
+  ✓ twenty four hour rule creates one idempotent queued delivery                                                 1.07s
+  ✓ one hour rule uses distinct event and dedupe key                                                             0.04s
+  ✓ reminder job marks delivery and legacy log sent for new customer                                             0.04s
+
+   FAIL  Tests\Feature\Billing\BillingControllerGatewayTest
+  ✓ checkout routes us country to stripe gateway                                                                 1.15s
+  ✓ checkout routes sa country to moyasar gateway                                                                0.06s
+  ✓ checkout routes eg country to paymob gateway                                                                 0.04s
+  ✓ checkout passes correct tenant and plan data to gateway                                                      0.04s
+  ✓ checkout redirects back with error when gateway throws                                                       0.04s
+  ⨯ checkout rejects invalid plan id                                                                             0.04s
+  ⨯ checkout requires plan id                                                                                    0.04s
+
+   PASS  Tests\Feature\Billing\StripeWebhookControllerTest
+  ✓ missing signature header returns 400                                                                         0.72s
+  ✓ invalid stripe signature returns 400                                                                         0.03s
+  ✓ payment failed sends email and sets grace period                                                             0.03s
+  ✓ payment failed without tenant id metadata returns ok silently                                                0.03s
+  ✓ checkout completed stamps converted at                                                                       0.03s
+  ✓ duplicate checkout event is ignored without repeating side effect                                            0.03s
+  ✓ checkout completed without tenant id returns ok                                                              0.03s
+  ✓ unknown event type returns ok and is ignored                                                                 0.03s
+
+   PASS  Tests\Feature\CompanyAdminDomainResolverTest
+  ✓ existing active tenant returns its canonical login url                                                       0.04s
+  ✓ unknown tenant does not return a login url                                                                   0.03s
+  ✓ inactive tenant cannot be used for company admin login                                                       0.04s
+
+   PASS  Tests\Feature\CustomerBookingJourneyTest
+  ✓ customer can complete booking and booked slot disappears                                                     1.21s
+  ✓ completed new booking generates invoice for the new customer                                                 0.06s
+  ✓ customer can check the queue status after booking                                                            0.06s
+  ✓ customer cannot book the same slot twice                                                                     0.06s
+  ✓ blocked customer cannot create a public booking                                                              0.04s
+
+   PASS  Tests\Feature\CustomerPortalJourneyTest
+  ✓ authenticated customer can see their new booking history                                                     1.07s
+  ✓ authenticated customer can see their new booking queue                                                       0.04s
+  ✓ authenticated customer can see their new booking invoices                                                    0.04s
+
+   PASS  Tests\Feature\Health\ApplicationSmokeTest
+  ✓ critical routes are registered                                                                               1.10s
+  ✓ public booking page is a real view                                                                           0.04s
+  ✓ public queue page is a real view                                                                             0.04s
+  ✓ authenticated admin smoke path reaches dashboard                                                             0.07s
+  ✓ authenticated staff smoke path reaches dashboard                                                             0.06s
+
+   PASS  Tests\Feature\LocalePagePreservationTest
+  ✓ language switch preserves signup page                                                                        0.04s
+  ✓ language switch from localized signup to default locale preserves page                                       0.03s
+
+   PASS  Tests\Feature\LocaleSwitchTest
+  ✓ egypt country pricing has lang column                                                                        0.03s
+  ✓ allow manual language switch is enabled                                                                      0.03s
+  ✓ set country response includes locale cookie                                                                  0.03s
+  ✓ landing renders arabic when locale cookie is ar                                                              0.05s
+  ✓ landing translations and metadata resolve for english                                                        0.04s
+  ✓ full roundtrip post set country then get landing                                                             0.04s
+
+   FAIL  Tests\Feature\MultiRegion\GeoLocalizationTest
+  ✓ it resolves country specific pricing                                                                         0.03s
+  ✓ it falls back to global for unknown country                                                                  0.03s
+  ✓ it returns correct payment methods per country                                                               0.03s
+  ✓ it formats prices with correct symbol                                                                        0.03s
+  ✓ it returns tax percentage for country                                                                        0.03s
+  ✓ it returns zero tax for country without tax                                                                  0.03s
+  ✓ geo service calculates tax amount                                                                            0.03s
+  ✓ geo service returns zero tax when feature disabled                                                           0.03s
+  ✓ geo service returns amount with tax                                                                          0.03s
+  ✓ geo service returns full pricing context                                                                     0.03s
+  ✓ geo service pricing context falls back to global                                                             0.03s
+  ✓ gateway router returns enabled gateways for egypt                                                            0.03s
+  ✓ gateway router filters out disabled gateways                                                                 0.03s
+  ✓ gateway router returns labels with metadata                                                                  0.03s
+  ✓ gateway router checks gateway availability                                                                   0.03s
+  ✓ pricing service sets and reads country override                                                              0.04s
+  ✓ pricing service summary has required keys                                                                    0.03s
+  ✓ pricing page returns 200                                                                                     0.04s
+  ✓ pricing page contains expected html elements                                                                 0.04s
+  ✓ pricing page shows geo detected country by default                                                           0.04s
+  ✓ set country endpoint returns pricing json                                                                    0.03s
+  ✓ set country endpoint accepts lowercase code                                                                  0.03s
+  ⨯ set country endpoint validates country code format                                                           0.04s
+  ✓ set country endpoint falls back to global for unknown country                                                0.03s
+  ✓ set country stores override in session                                                                       0.03s
+  ✓ geo service detects country from cloudflare header                                                           0.03s
+  ✓ geo service ignores invalid cloudflare header xx                                                             0.03s
+  ✓ geo service falls back to us with no headers                                                                 0.03s
+  ✓ country pricing cache is flushed on save                                                                     0.03s
+
+   PASS  Tests\Feature\OnboardingBookingReadinessTest
+  ✓ new tenant can finish onboarding and immediately receive booking slots                                       1.07s
+
+   PASS  Tests\Feature\PublicAppointmentReferenceTest
+  ✓ new appointments receive an unguessable public reference                                                     1.06s
+  ✓ public reference can retrieve only the same tenant appointment                                               0.04s
+  ✓ queue status page accepts public reference and prefills lookup                                               0.04s
+
+   FAIL  Tests\Feature\PublicAuthTranslationCoverageTest
+  ⨯ signup and login copy has non english translation for every supported locale                                 0.05s
+  ✓ signup blade routes visible copy through translation keys                                                    0.03s
+  ✓ login blade uses translation keys for core copy                                                              0.02s
+
+   PASS  Tests\Feature\PublicBookingAvailabilityTest
+  ✓ public availability matches service duration and staff hours                                                 1.08s
+  ✓ public availability rejects non bookable selection without exposing internal error                           0.04s
+
+   PASS  Tests\Feature\PublicBookingNotificationTest
+  ✓ successful public booking creates one queued email delivery                                                  1.16s
+  ✓ email job marks delivery sent after successful send                                                          0.03s
+
+   PASS  Tests\Feature\PublicBookingSurfaceContractTest
+  ✓ booking surface uses tenant branding and v3 contract                                                         1.07s
+  ✓ unsupported tenant language is rejected                                                                      0.03s
+  ✓ public service payload exposes only booking fields                                                           0.03s
+  ✓ public staff payload does not expose staff email                                                             0.03s
+
+   FAIL  Tests\Feature\PublicBookingTest
+  ✓ booking page loads successfully                                                                              1.09s
+  ✓ booking page displays business name                                                                          0.04s
+  ✓ services api returns active services                                                                         0.03s
+  ✓ staff by service api returns correct staff                                                                   0.03s
+  ✓ timeslots api returns active slots                                                                           0.03s
+  ✓ workingdays api returns active days                                                                          0.04s
+  ⨯ public booking is rate limited per tenant and ip                                                             0.04s
+  ✓ language can be changed                                                                                      0.03s
+  ✓ invalid language is rejected                                                                                 0.03s
+  ✓ booking page has link to queue                                                                               0.04s
+
+   PASS  Tests\Feature\PublicBookingWhatsAppDeliveryTest
+  ✓ unconfigured whatsapp provider marks delivery skipped instead of sent                                        1.07s
+  ✓ successful provider marks whatsapp delivery sent with provider message id                                    0.03s
+
+   PASS  Tests\Feature\PublicDesignSystemContractTest
+  ✓ public design system is explicitly layered and shared                                                        0.03s
+  ✓ public design system does not define a second brand palette                                                  0.02s
+
+   PASS  Tests\Feature\PublicQueueSurfaceContractTest
+  ✓ queue status uses tenant branding and v3 surface                                                             1.07s
+  ✓ queue status accepts reference in query string                                                               0.04s
+
+   PASS  Tests\Feature\PublicQueueTest
+  ✓ queue status page loads successfully                                                                         1.19s
+  ✓ queue route redirects to status page                                                                         0.03s
+  ✓ queue status page has link to booking                                                                        0.04s
+  ✓ public queue api returns correct structure                                                                   0.04s
+  ✓ public queue api shows current serving                                                                       0.04s
+  ✓ public queue api shows waiting queues                                                                        0.04s
+  ✓ public queue api returns null when no one serving                                                            0.03s
+  ✓ public queue api does not expose customer names                                                              0.03s
+  ✓ public queue api only returns safe fields for waiting                                                        0.04s
+  ✓ public queue api filters by today only                                                                       0.04s
+
+   PASS  Tests\Feature\PublicUiArchitectureContractTest
+  ✓ public design system is loaded by public auth and landing surfaces                                           0.04s
+  ✓ public pages do not define a second root brand palette                                                       0.02s
+
+   FAIL  Tests\Feature\QA\AdminAuthorizationMatrixScenarioTest
+  ⨯ staff cannot mutate services but can read them                                                               1.11s
+  ⨯ assistant cannot mutate settings or services                                                                 0.04s
+  ✓ tenant admin can mutate services                                                                             0.04s
+
+   PASS  Tests\Feature\QA\AppointmentLifecycleScenarioTest
+  ✓ appointment status machine allows only declared forward lifecycle transitions                                1.07s
+  ✓ completed appointment moves its queue entry to completed                                                     0.04s
+  ✓ cancelled appointment moves its queue entry to skipped                                                       0.04s
+
+   FAIL  Tests\Feature\QA\AuthorizationMatrixExpandedScenarioTest
+  ⨯ staff cannot create or delete staff accounts                                                                 1.08s
+  ⨯ assistant cannot change schedule configuration                                                               0.04s
+  ⨯ staff and assistant cannot mutate onboarding                                                                 0.04s
+  ✓ tenant admin can manage staff and schedule configuration                                                     0.04s
+
+   PASS  Tests\Feature\QA\BookingAvailabilityRulesScenarioTest
+  ✓ holiday makes the staff unavailable even when working hours exist                                            1.13s
+  ✓ same day booking can be disabled by business rule                                                            0.04s
+  ✓ maximum advance booking days are enforced                                                                    0.04s
+  ✓ customer daily booking limit is enforced without creating a second appointment                               0.04s
+
+   PASS  Tests\Feature\QA\BookingReconciliationScenarioTest
+  ✓ real booking reconciles across database queue notifications and tenant dashboard                             1.11s
+
+   PASS  Tests\Feature\QA\BookingRulesScenarioTest
+  ✓ inactive service is rejected before a public booking is created                                              1.08s
+  ✓ staff who does not offer the service is rejected                                                             0.03s
+  ✓ outside working hours is rejected by the slot engine                                                         0.04s
+  ✓ the same staff slot cannot be booked twice                                                                   0.04s
+  ✓ configured minimum advance notice is enforced                                                                0.04s
+
+   PASS  Tests\Feature\QA\CustomerReconciliationScenarioTest
+  ✓ booking customer is counted by customer api and tenant dashboard                                             1.14s
+  ✓ blocked customer cannot create a public booking                                                              0.04s
+
+   PASS  Tests\Feature\QA\EnvironmentFoundationScenarioTest
+  ✓ central database has the required platform tables                                                            0.03s
+  ✓ migrations are idempotent in a clean environment                                                             0.05s
+  ✓ configured central connection is reachable                                                                   0.02s
+
+   PASS  Tests\Feature\QA\MasterBusinessFlowScenarioTest
+  ✓ business rule schema matches the contract used by the booking engine                                         1.04s
+  ✓ appointment status history schema matches the model contract                                                 0.03s
+  ✓ application booking use case creates a consistent booking without http infrastructure                        0.04s
+  ✓ golden booking flow keeps appointment queue customer and notification state consistent                       0.07s
+  ✓ dashboard reconciles exactly with database truth for the golden dataset                                      0.09s
+  ✓ appointment and queue state transitions remain consistent                                                    0.04s
+
+   PASS  Tests\Feature\QA\MoyasarCentralConnectionScenarioTest
+  ✓ activation uses the central subscription connection inside tenant context                                    1.12s
+
+   PASS  Tests\Feature\QA\MoyasarWebhookProcessingScenarioTest
+  ✓ paid webhook verifies with moyasar api and activates subscription                                            0.06s
+  ✓ processing failure removes unprocessed event so the provider can retry                                       0.03s
+
+   PASS  Tests\Feature\QA\MoyasarWebhookSecurityScenarioTest
+  ✓ missing webhook secret is rejected before any ledger or payment side effect                                  0.02s
+  ✓ invalid signature is rejected before the event is recorded                                                   0.02s
+  ✓ valid signature records and processes the event once                                                         0.03s
+  ✓ duplicate event is acknowledged without creating a second ledger record                                      0.03s
+
+   PASS  Tests\Feature\QA\NotificationDeliveryRecoveryScenarioTest
+  ✓ successful email delivery is marked sent and records attempt                                                 1.06s
+  ✓ failed whatsapp delivery is requeued and failed callback marks terminal failure                              0.03s
+
+   PASS  Tests\Feature\QA\QueueLifecycleScenarioTest
+  ✓ future queue is read by business date not creation timestamp                                                 1.07s
+  ✓ call next does not consume a future queue entry                                                              0.04s
+  ✓ queue state transitions keep the appointment consistent                                                      0.04s
+  ✓ queue status order prioritizes vip before regular customers                                                  0.03s
+  ✓ call next selects the highest priority waiting customer                                                      0.04s
+  ✓ completed queue entry cannot return to waiting                                                               0.03s
+
+   PASS  Tests\Feature\QA\QueueNotificationLifecycleScenarioTest
+  ✓ queue status change dispatches the canonical lifecycle event                                                 1.06s
+  ✓ lifecycle listener persists one delivery per available channel and dispatches jobs                           0.04s
+  ✓ repeated lifecycle event is idempotent for delivery records                                                  0.03s
+
+   PASS  Tests\Feature\QA\ReportingReconciliationScenarioTest
+  ✓ report customer metric uses the same canonical customer population as dashboard                              1.23s
+
+   PASS  Tests\Feature\QA\SuperAdminBillingReconciliationScenarioTest
+  ✓ subscription statistics and revenue match central subscription records                                       0.05s
+
+   PASS  Tests\Feature\QA\SuperAdminReconciliationScenarioTest
+  ✓ dashboard tenant and subscription counts reconcile with central database                                     0.04s
+  ✓ subscription statistics reconcile revenue and plan counts with central database                              0.04s
+
+   PASS  Tests\Feature\QA\TenantDeletionSafetyScenarioTest
+  ✓ failed resource cleanup retains tenant and subscription for retry                                            0.05s
+  ✓ successful resource cleanup removes tenant subscription and tenant record                                    0.05s
+
+   PASS  Tests\Feature\QA\TenantIsolationResourceScenarioTest
+  ✓ appointment and queue from tenant a are not visible after switching to tenant b                              2.05s
+  ✓ tenant database switching does not change the business identity of the current tenant                        0.04s
+
+   PASS  Tests\Feature\QA\TenantIsolationSecurityScenarioTest
+  ✓ token scoped to current tenant is accepted                                                                   1.06s
+  ✓ token from tenant a is rejected when tenant b is initialized                                                 0.03s
+
+   PASS  Tests\Feature\QueueLifecycleNotificationTest
+  ✓ waiting to serving emits turn now                                                                            1.20s
+  ✓ queue advance emits almost turn for new position one and position update for others                          0.04s
+  ✓ vip insertion notifies only existing entries that shift                                                      0.04s
+  ✓ delivery listener creates email and whatsapp once                                                            0.04s
+  ✓ email job marks delivery sent                                                                                0.04s
+  ✓ unconfigured whatsapp provider marks delivery skipped without fake success                                   0.04s
+  ✓ failed job records final failure                                                                             0.04s
+
+   PASS  Tests\Feature\RepositoryServiceProviderTest
+  ✓ appointment interface resolves to eloquent implementation                                                    1.06s
+  ✓ queue interface resolves to eloquent implementation                                                          0.03s
+  ✓ staff interface resolves to eloquent implementation                                                          0.03s
+  ✓ each resolution returns a fresh instance                                                                     0.03s
+  ✓ service provider is registered in bootstrap                                                                  0.03s
+
+   FAIL  Tests\Feature\Requests\AppointmentRequestTest
+  ✓ store passes with all required fields                                                                        1.06s
+  ⨯ store requires customer name                                                                                 0.04s
+  ⨯ store requires customer phone                                                                                0.04s
+  ⨯ store requires appointment date                                                                              0.04s
+  ⨯ store requires appointment time                                                                              0.04s
+  ⨯ store rejects appointment date in the past                                                                   0.04s
+  ✓ store accepts today as appointment date                                                                      0.04s
+  ⨯ store rejects invalid email format                                                                           0.04s
+  ⨯ store rejects non existent staff id                                                                          0.04s
+  ✓ update accepts valid status values                                                                           0.07s
+  ⨯ update rejects invalid status                                                                                0.04s
+
+   FAIL  Tests\Feature\Requests\StaffRequestTest
+  ✓ store passes with valid data                                                                                 1.08s
+  ⨯ store requires name                                                                                          0.04s
+  ⨯ store requires email                                                                                         0.04s
+  ⨯ store requires specialization                                                                                0.04s
+  ⨯ store rejects invalid email format                                                                           0.04s
+  ⨯ store rejects email already used by another user                                                             0.04s
+  ✓ store accepts optional schedule array                                                                        0.04s
+  ⨯ store rejects schedule with end time before start time                                                       0.04s
+  ⨯ store rejects service id that does not exist                                                                 0.04s
+  ✓ store accepts valid services array                                                                           0.04s
+  ✓ update allows same email for current user                                                                    0.04s
+  ⨯ update rejects email taken by another user                                                                   0.04s
+
+   FAIL  Tests\Feature\Security\AuthorizationMatrixTest
+  ⨯ guest is rejected from admin dashboard                                                                       1.05s
+  ✓ customer is rejected from admin dashboard                                                                    0.03s
+  ✓ staff can access common admin dashboard                                                                      0.06s
+  ✓ staff is rejected from admin only assistants page                                                            0.03s
+  ✓ staff is rejected from admin only subscription page                                                          0.06s
+  ✓ customer cannot call admin appointment api                                                                   0.05s
+  ✓ customer cannot call admin staff api                                                                         0.04s
+
+   FAIL  Tests\Feature\Security\PublicBookingInputIntegrityTest
+  ✓ public booking rejects non bookable staff                                                                    1.06s
+  ⨯ public booking rejects non bookable service                                                                  0.04s
+  ✓ public booking rejects staff not assigned to service                                                         0.04s
+  ✓ public booking rejects resource not assigned to service                                                      0.04s
+
+   PASS  Tests\Feature\Security\PublicQueueRateLimitTest
+  ✓ public queue status lookup is rate limited per tenant and ip                                                 1.20s
+
+   PASS  Tests\Feature\Security\SpatieRoleSourceOfTruthTest
+  ✓ tenant users do not use a legacy role id column                                                              1.05s
+  ✓ tenant users use spatie role assignments                                                                     0.03s
+
+   PASS  Tests\Feature\Security\SuperAdminWebLoginRateLimitTest
+  ✓ invalid super admin web login attempts are rate limited                                                      0.71s
+  ✓ successful super admin web login clears rate limiter                                                         0.83s
+
+   PASS  Tests\Feature\Security\TenantIsolationTest
+  ✓ tenant databases are isolated                                                                                2.03s
+
+   PASS  Tests\Feature\Security\TenantTokenBindingTest
+  ✓ initialize tenancy does not treat bearer token as tenant id                                                  1.06s
+  ✓ token binding accepts token scoped to current tenant                                                         0.04s
+  ✓ token binding rejects token scoped to another tenant                                                         0.04s
+
+   FAIL  Tests\Feature\Security\V1PushTokenOwnershipTest
+  ✓ push token registration ignores client owner override                                                        1.22s
+  ⨯ user cannot deactivate another users push token                                                              0.04s
+
+   PASS  Tests\Feature\Security\V1RoleMatrixTest
+  ✓ customer cannot manage v1 appointments                                                                       3.65s
+  ✓ customer cannot manage v1 queues                                                                             0.03s
+  ✓ staff cannot access v1 invoices                                                                              0.03s
+  ✓ customer cannot access v1 analytics                                                                          0.03s
+  ✓ staff can access v1 appointments endpoint                                                                    0.04s
+
+   FAIL  Tests\Feature\SignupClientFlowTest
+  ✓ signup page is rendered for default and non default locale                                                   0.06s
+  ✓ successful signup creates only the tenant domain and verification mail                                       5.06s
+  ✓ json signup returns machine readable provisioning contract                                                   4.03s
+  ⨯ signup validation rejects missing required fields without creating a tenant                                  0.05s
+  ⨯ signup rejects password mismatch and does not persist password in session                                    0.05s
+  ⨯ signup rejects terms without creating a tenant                                                               0.05s
+  ⨯ signup rejects invalid subdomain and unsupported language                                                    0.05s
+  ✓ duplicate subdomain and duplicate email are rejected without creating a second tenant                        4.10s
+  ✓ supported signup languages become the tenant default                                                        59.48s
+  ✓ signup without language uses the configured public default                                                   4.11s
+  ⨯ email verification is single use and creates the first admin with tenant language                            4.07s
+  ⨯ expired email verification token is rejected and does not create admin                                       3.99s
+  ⨯ expired provisioning link is rejected                                                                        4.06s
+  ✓ resend verification is throttled before verification and idempotent after verification                       4.08s
+  ⨯ nonexistent tokens are not oracle endpoints                                                                  0.04s
+
+   PASS  Tests\Feature\SignupCountryDataTest
+  ✓ signup country catalog is populated                                                                          0.04s
+  ✓ signup page renders country options                                                                          0.06s
+
+   FAIL  Tests\Feature\SignupPageContractTest
+  ✓ arabic signup page resolves on the central domain                                                            0.06s
+  ✓ signup markup uses backend field names and has no promo code ui                                              0.03s
+  ✓ signup backend does not accept promo code as part of registration contract                                   0.04s
+  ⨯ signup post rejects missing required fields before registration                                              0.04s
+  ⨯ signup post rejects invalid subdomain before registration                                                    0.11s
+  ⨯ signup post rejects mismatched passwords before registration                                                 0.04s
+
+   FAIL  Tests\Feature\SignupTenantHandoffTest
+  ✓ registration action surfaces real signup failure                                                             4.09s
+  ✓ signup http persists tenant and returns redirect                                                             4.10s
+  ✓ signup redirects to provisioning page for async setup                                                        3.93s
+  ✓ tenant dashboard route is registered                                                                         0.04s
+  ✓ tenant domain identification works for the created domain                                                    4.06s
+  ✓ signup session cookie is valid for the tenant subdomain                                                      4.06s
+  ⨯ unverified tenant is not authenticated on dashboard                                                          3.92s
+  ✓ verified email while provisioning pending keeps user on provisioning flow                                    4.08s
+
+   FAIL  Tests\Feature\SignupUiContractTest
+  ✓ signup page exposes the complete registration form contract                                                  0.07s
+  ✓ signup page is rendered with the configured direction for every supported locale                             0.21s
+  ⨯ signup page preserves old values without rendering sensitive password values                                 0.04s
+
+   FAIL  Tests\Feature\SignupValidationTest
+  ✓ signup page is gettable                                                                                      0.07s
+  ⨯ business name is required                                                                                    0.05s
+  ⨯ business name requires at least two characters                                                               0.04s
+  ✓ business name accepts two characters                                                                         4.06s
+  ⨯ business name rejects more than 100 characters                                                               0.05s
+  ✓ business type is optional                                                                                    3.95s
+  ⨯ business type rejects more than 60 characters                                                                0.05s
+  ⨯ subdomain is required                                                                                        0.05s
+  ⨯ subdomain minimum length is three                                                                            0.05s
+  ⨯ subdomain maximum length is 32                                                                               0.05s
+  ⨯ subdomain rejects uppercase and is not silently accepted                                                     0.05s
+  ⨯ subdomain rejects underscore                                                                                 0.05s
+  ⨯ subdomain rejects leading hyphen                                                                             0.05s
+  ⨯ subdomain rejects trailing hyphen                                                                            0.06s
+  ⨯ email is required                                                                                            0.05s
+  ⨯ email rejects malformed values                                                                               0.05s
+  ✓ email accepts a valid address                                                                                4.07s
+  ✓ email is not accepted twice case insensitively                                                               4.02s
+  ⨯ password is required                                                                                         0.05s
+  ⨯ password requires at least eight characters                                                                  0.05s
+  ⨯ password confirmation must match                                                                             0.04s
+  ✓ country is optional                                                                                          4.01s
+  ⨯ country must be exactly two characters when present                                                          0.05s
+  ⨯ language must be supported                                                                                   0.04s
+  ✓ supported language is accepted                                                                               4.01s
+  ⨯ terms are required and must be accepted                                                                      0.06s
+  ✓ terms accept one                                                                                             3.96s
+  ✓ plan id is optional                                                                                          4.00s
+  ⨯ plan id must be an integer when present                                                                      0.06s
+  ⨯ plan id must exist when present                                                                              0.05s
+  ✓ unknown fields are not used for mass assignment                                                              3.99s
+  ✓ valid signup creates a tenant                                                                                4.01s
+
+   FAIL  Tests\Feature\SuperAdmin\DashboardApiTest
+  ⨯ unauthenticated request returns 401                                                                          1.98s
+  ✓ non super admin returns 403                                                                                  1.86s
+  ✓ dashboard returns success response                                                                           1.83s
+  ✓ dashboard response contains required keys                                                                    2.01s
+  ✓ dashboard total tenants is zero when no tenants                                                              2.02s
+  ✓ dashboard total tenants reflects db count                                                                    2.42s
+  ✓ dashboard recent tenants includes name and is active                                                         2.42s
+  ✓ dashboard recent tenants returns all tenants                                                                 2.50s
+  ✓ tenants overview returns success                                                                             2.58s
+  ✓ tenants overview returns all tenants                                                                         2.57s
+  ✓ system stats returns success                                                                                 2.69s
+  ✓ system stats contains required keys                                                                          2.52s
+  ✓ system stats chart has 30 days                                                                               2.54s
+  ✓ subscription stats returns success                                                                           2.72s
+  ✓ subscription stats contains required keys                                                                    2.45s
+  ✓ activity summary returns success                                                                             2.76s
+  ✓ activity summary contains required keys                                                                      2.42s
+  ✓ activity summary today count is zero when no logs                                                            2.39s
+  ✓ growth metrics returns success                                                                               2.60s
+  ✓ growth metrics returns 12 months                                                                             2.41s
+  ✓ growth metrics each entry has required keys                                                                  2.67s
+  ✓ revenue metrics returns success                                                                              2.51s
+  ⨯ revenue metrics unauthenticated returns 401                                                                  2.48s
+
+   FAIL  Tests\Feature\SuperAdmin\PromoCodeTest
+  ✓ guests are redirected to login                                                                               2.61s
+  ✓ super admin can view promo codes index                                                                       2.55s
+  ✓ index lists existing promo codes                                                                             2.63s
+  ✓ super admin can create a promo code                                                                          2.55s
+  ✓ promo code is uppercased on store                                                                            2.44s
+  ⨯ store requires code                                                                                          2.56s
+  ⨯ store requires valid discount type                                                                           2.53s
+  ✓ store rejects duplicate code                                                                                 2.16s
+  ⨯ store rejects past expiry date                                                                               2.47s
+  ✓ super admin can toggle promo code active status                                                              2.41s
+  ✓ toggle activates an inactive code                                                                            2.54s
+  ✓ toggle redirects with success message                                                                        2.52s
+  ⨯ toggle returns 404 for nonexistent code                                                                      2.62s
+  ✓ super admin can delete a promo code                                                                          2.56s
+  ⨯ destroy returns 404 for nonexistent code                                                                     2.47s
+
+   PASS  Tests\Feature\SuperAdmin\SuperAdminRoutesTest
+  ✓ unauthenticated request to dashboard redirects to login                                                      2.66s
+  ✓ unauthenticated request to analytics redirects to login                                                      2.52s
+  ✓ unauthenticated request to promo codes redirects to login                                                    2.55s
+  ✓ login page is accessible as guest                                                                            2.54s
+  ✓ authenticated super admin is redirected from login page                                                      2.53s
+  ✓ super admin can access analytics                                                                             2.58s
+  ✓ analytics page shows kpis tab by default                                                                     2.55s
+  ✓ legacy reports route redirects to analytics                                                                  2.57s
+  ✓ legacy reports route redirects to analytics reports tab                                                      2.51s
+  ✓ legacy kpis route redirects to analytics                                                                     2.40s
+  ✓ legacy kpis route redirects to analytics kpis tab                                                            2.59s
+  ✓ super admin can access tenants page                                                                          2.51s
+  ✓ super admin can access subscription plans page                                                               2.52s
+  ✓ super admin can access settings page                                                                         2.63s
+  ✓ super admin can access notifications page                                                                    2.48s
+  ✓ super admin can access activity logs page                                                                    2.51s
+
+   FAIL  Tests\Feature\SuperAdmin\TenantApiTest
+  ⨯ unauthenticated request returns 401                                                                          2.56s
+  ✓ admin can list all tenants                                                                                   2.55s
+  ✓ index returns empty array when no tenants                                                                    2.59s
+  ✓ admin can view a single tenant                                                                               2.52s
+  ⨯ show returns 404 for nonexistent tenant                                                                      2.50s
+  ✓ admin can update tenant name                                                                                 2.63s
+  ✓ admin can deactivate tenant                                                                                  2.51s
+  ⨯ update returns 404 for nonexistent tenant                                                                    2.65s
+  ✓ admin can delete a tenant                                                                                    2.54s
+  ⨯ destroy returns 404 for nonexistent tenant                                                                   2.42s
+  ✓ admin can toggle tenant status                                                                               2.58s
+  ⨯ toggle status returns 404 for nonexistent tenant                                                             2.38s
+  ✓ toggle flips active tenant to inactive                                                                       2.67s
+  ✓ toggle flips inactive tenant to active                                                                       2.46s
+  ⨯ update validates name cannot exceed 255 characters                                                           2.59s
+  ✓ admin can reactivate a deactivated tenant                                                                    2.53s
+  ✓ admin can update tenant domain                                                                               2.58s
+  ✓ updating domain removes old domain records                                                                   2.68s
+  ✓ index returns tenants ordered by latest created                                                              2.51s
+  ⨯ reset admin password returns 404 for nonexistent tenant                                                      2.55s
+  ✓ update writes activity log entry                                                                             2.54s
+  ✓ destroy writes activity log entry                                                                            2.57s
+  ✓ toggle status writes activity log entry                                                                      2.62s
+  ✓ toggle status logs activated when flipping inactive tenant                                                   2.43s
+  ✓ update allows saving with same domain                                                                        2.49s
+  ⨯ update rejects domain already used by another tenant                                                         2.64s
+  ⨯ statistics returns 404 for nonexistent tenant                                                                2.52s
+  ✓ destroy soft deletes tenant instead of hard delete                                                           2.67s
+  ✓ soft deleted tenant does not appear in index                                                                 2.42s
+  ✓ trash endpoint returns only soft deleted tenants                                                             2.46s
+  ✓ trash endpoint returns empty when no deletes                                                                 2.64s
+  ✓ admin can restore a soft deleted tenant                                                                      2.43s
+  ✓ restored tenant reappears in index                                                                           2.72s
+  ⨯ restore returns 404 for non trashed tenant                                                                   2.36s
+  ✓ restore writes activity log entry                                                                            2.57s
+  ✓ admin can force delete a trashed tenant                                                                      2.63s
+  ⨯ force delete returns 404 for non trashed tenant                                                              2.58s
+  ✓ force delete writes activity log entry                                                                       2.72s
+
+   PASS  Tests\Feature\SupportedLocaleCoreCoverageTest
+  ✓ every supported locale has core tenant translation bundles                                                   0.04s
+  ✓ every supported locale declares a text direction                                                             0.02s
+  ✓ notification translation keys and placeholders match the english catalog                                     0.03s
+
+   PASS  Tests\Feature\TenantDefaultLocaleTest
+  ✓ signup language becomes tenant default and available language                                                5.07s
+
+   PASS  Tests\Feature\TenantEmailVerificationGateTest
+  ✓ signup does not create tenant admin before email verification                                                4.03s
+  ✓ signup without explicit language inherits current public default                                             4.02s
+  ✓ explicit signup language becomes tenant default                                                              3.97s
+  ✓ verified email creates the admin and keeps tenant language                                                   4.08s
+
+   PASS  Tests\Feature\TenantEmailVerificationTest
+  ✓ email verification route is registered on central domain                                                     0.03s
+  ✓ resend verification route is registered on central signup flow                                               0.03s
+  ✓ verification mail contains the verification url                                                              0.04s
+  ✓ tenant table contains expected provisioning columns                                                          0.03s
+
+   PASS  Tests\Feature\TenantLanguageConfigurationTest
+  ✓ admin language switcher matches configured locales                                                           0.03s
+  ✓ tenant language switch route accepts the configured locale set                                               0.03s
+  ✓ arabic is rtl and other configured locales are ltr                                                           0.03s
+
+
+   PASS  Tests\Feature\TenantLoginLocaleUiTest
+  ✓ login view uses locale aware translation keys                                                                0.03s
+  ✓ login view has one language dropdown and working password reset link                                         0.03s
+  ✓ login view preserves single submit guard and locale direction                                                0.03s
+  ✓ login core copy resolves for every supported locale                                                          0.04s
+  ✓ login direction contract lists only rtl locales                                                              0.03s
+
+   PASS  Tests\Feature\TenantPasswordResetContractTest
+  ✓ password recovery routes are registered with expected methods                                                0.03s
+  ✓ password recovery translation bundle is complete for every supported locale                                  0.03s
+  ✓ reset pages use tenant locale and do not expose plain tokens in markup                                       0.03s
+
+   PASS  Tests\Feature\TenantPasswordResetFlowTest
+  ✓ verified user can request and complete password reset                                                        4.07s
+  ✓ unknown email does not disclose account existence                                                            4.00s
+  ✓ reset token cannot be used across tenants                                                                    8.00s
+
+   PASS  Tests\Feature\TenantRegistrationResilienceTest
+  ✓ soft deleted tenant id is treated as taken                                                                   0.05s
+  ✓ soft deleted tenant id rejects registration before insert                                                    0.07s
+  ✓ signup subdomain collision does not become generic server error                                              0.06s
+
+   PASS  Tests\Feature\TenantVerificationLocaleTest
+  ✓ email verification page uses tenant signup language                                                          2.80s
+  ✓ explicit supported language can override tenant default on verification page                                 2.66s
+
+   PASS  Tests\Feature\VerificationLocaleCoverageTest
+  ✓ every supported locale has a complete verification bundle                                                    0.03s
+
+   PASS  Tests\Feature\WorkspaceFinderTranslationTest
+  ✓ workspace finder has complete localized copy for every supported locale                                      0.04s
+
+   PASS  Tests\Feature\WorkspaceFinderUiLocalizationTest
+  ✓ english workspace finder uses workspace copy                                                                 0.04s
+  ✓ arabic workspace finder uses arabic copy                                                                     0.04s
+  ✓ french workspace finder uses french ui copy                                                                  0.04s
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Admin\AppointmentControllerTest > guests cannot access appointm…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Admin\AppointmentControllerTest > store requires customer name…   BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Admin\AppointmentControllerTest > store rejects past appointmen…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Admin\AppointmentControllerTest > quick status rejects invalid…   BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Admin\DashboardControllerTest > guests are redirected to login    BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Admin\OnboardingControllerTest > guests are redirected to login   BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Admin\OnboardingControllerTest > step1 requires phone             BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Admin\QueueControllerTest > guests are redirected from queue pa…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Admin\QueueControllerTest > add direct validates required field…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Admin\ServiceControllerTest > store validates name is required    BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Admin\ServiceControllerTest > store validates duration is betwe…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Admin\ServiceControllerTest > store validates price is non nega…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Admin\ServiceControllerTest > time slot end must be after start   BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Admin\SettingControllerTest > guests are redirected from settin…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Admin\SettingControllerTest > save rejects invalid logo mime ty…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Admin\SettingControllerTest > save validates social url format    BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Admin\StaffControllerTest > guests cannot access staff page       BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Admin\StaffControllerTest > store requires name email and speci…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Admin\StaffControllerTest > store rejects duplicate email         BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Billing\BillingControllerGatewayTest > checkout rejects invalid…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Billing\BillingControllerGatewayTest > checkout requires plan i…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\MultiRegion\GeoLocalizationTest > set country endpoint validate…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\PublicAuthTranslationCoverageTest > signup and login copy has non english translation for e…
+  Missing translation [Toggle theme] in [ar].
+Failed asserting that two strings are not identical.
+
+  at tests\Feature\PublicAuthTranslationCoverageTest.php:90
+     86▕                 $resolved = __($key);
+     87▕                 $this->assertIsString($resolved, "Translation [{$key}] in [{$locale}] must be a string.");
+     88▕                 $this->assertNotSame('', trim($resolved), "Translation [{$key}] in [{$locale}] is empty.");
+     89▕                 if ($locale !== 'en') {
+  ➜  90▕                     $this->assertNotSame($key, $resolved, "Missing translation [{$key}] in [{$locale}].");
+     91▕                 }
+     92▕             }
+     93▕         }
+     94▕     }
+
+  1   tests\Feature\PublicAuthTranslationCoverageTest.php:90
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\PublicBookingTest > public booking is rate limited per tenant a…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\QA\AdminAuthorizationMatrixScenarioTest > staff cannot mutate s…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\QA\AdminAuthorizationMatrixScenarioTest > assistant cannot muta…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\QA\AuthorizationMatrixExpandedScenarioTest > staff cannot creat…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\QA\AuthorizationMatrixExpandedScenarioTest > assistant cannot c…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\QA\AuthorizationMatrixExpandedScenarioTest > staff and assistan…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Requests\AppointmentRequestTest > store requires customer name    BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Requests\AppointmentRequestTest > store requires customer phone   BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Requests\AppointmentRequestTest > store requires appointment da…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Requests\AppointmentRequestTest > store requires appointment ti…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Requests\AppointmentRequestTest > store rejects appointment dat…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Requests\AppointmentRequestTest > store rejects invalid email f…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Requests\AppointmentRequestTest > store rejects non existent st…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Requests\AppointmentRequestTest > update rejects invalid status   BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Requests\StaffRequestTest > store requires name                   BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Requests\StaffRequestTest > store requires email                  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Requests\StaffRequestTest > store requires specialization         BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Requests\StaffRequestTest > store rejects invalid email format    BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Requests\StaffRequestTest > store rejects email already used by…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Requests\StaffRequestTest > store rejects schedule with end tim…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Requests\StaffRequestTest > store rejects service id that does…   BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Requests\StaffRequestTest > update rejects email taken by anoth…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Security\AuthorizationMatrixTest > guest is rejected from admin…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Security\PublicBookingInputIntegrityTest > public booking rejec…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\Security\V1PushTokenOwnershipTest > user cannot deactivate anot…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupClientFlowTest > signup validation rejects missing requir…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupClientFlowTest > signup rejects password mismatch and doe…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupClientFlowTest > signup rejects terms without creating a…   BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupClientFlowTest > signup rejects invalid subdomain and uns…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupClientFlowTest > email verification is single use and cre…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupClientFlowTest > expired email verification token is reje…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupClientFlowTest > expired provisioning link is rejected      BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupClientFlowTest > nonexistent tokens are not oracle endpoi…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupPageContractTest > signup post rejects missing required f…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupPageContractTest > signup post rejects invalid subdomain…   BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupPageContractTest > signup post rejects mismatched passwor…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupTenantHandoffTest > unverified tenant is not authenticate…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupUiContractTest > signup page preserves old values without…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupValidationTest > business name is required                  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupValidationTest > business name requires at least two char…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupValidationTest > business name rejects more than 100 char…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupValidationTest > business type rejects more than 60 chara…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupValidationTest > subdomain is required                      BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupValidationTest > subdomain minimum length is three          BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupValidationTest > subdomain maximum length is 32             BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupValidationTest > subdomain rejects uppercase and is not s…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupValidationTest > subdomain rejects underscore               BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupValidationTest > subdomain rejects leading hyphen           BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupValidationTest > subdomain rejects trailing hyphen          BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupValidationTest > email is required                          BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupValidationTest > email rejects malformed values             BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupValidationTest > password is required                       BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupValidationTest > password requires at least eight charact…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupValidationTest > password confirmation must match           BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupValidationTest > country must be exactly two characters w…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupValidationTest > language must be supported                 BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupValidationTest > terms are required and must be accepted    BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupValidationTest > plan id must be an integer when present    BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SignupValidationTest > plan id must exist when present            BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SuperAdmin\DashboardApiTest > unauthenticated request returns 4…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SuperAdmin\DashboardApiTest > revenue metrics unauthenticated r…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SuperAdmin\PromoCodeTest > store requires code                    BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SuperAdmin\PromoCodeTest > store requires valid discount type     BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SuperAdmin\PromoCodeTest > store rejects past expiry date         BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SuperAdmin\PromoCodeTest > toggle returns 404 for nonexistent c…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SuperAdmin\PromoCodeTest > destroy returns 404 for nonexistent…   BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SuperAdmin\TenantApiTest > unauthenticated request returns 401    BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SuperAdmin\TenantApiTest > show returns 404 for nonexistent ten…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SuperAdmin\TenantApiTest > update returns 404 for nonexistent t…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SuperAdmin\TenantApiTest > destroy returns 404 for nonexistent…   BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SuperAdmin\TenantApiTest > toggle status returns 404 for nonexi…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SuperAdmin\TenantApiTest > update validates name cannot exceed…   BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SuperAdmin\TenantApiTest > reset admin password returns 404 for…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SuperAdmin\TenantApiTest > update rejects domain already used b…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SuperAdmin\TenantApiTest > statistics returns 404 for nonexiste…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SuperAdmin\TenantApiTest > restore returns 404 for non trashed…   BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   FAILED  Tests\Feature\SuperAdmin\TenantApiTest > force delete returns 404 for non tra…  BindingResolutionException
+  Target [Illuminate\Contracts\Debug\ExceptionHandler] is not instantiable.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+    1407▕         } else {
+    1408▕             $message = "Target [$concrete] is not instantiable.";
+    1409▕         }
+    1410▕
+  ➜ 1411▕         throw new BindingResolutionException($message);
+    1412▕     }
+    1413▕
+    1414▕     /**
+    1415▕      * Throw an exception for an unresolvable primitive.
+
+  1   vendor\laravel\framework\src\Illuminate\Container\Container.php:1411
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1131
+
+
+  Tests:    100 failed, 543 passed (5854 assertions)
+  Duration: 518.49s
+
+PS C:\Herd\Velora>
+PS C:\Herd\Velora>
+PS C:\Herd\Velora>
+PS C:\Herd\Velora>
+PS C:\Herd\Velora> git status
+On branch main
+Your branch is behind 'origin/main' by 57 commits, and can be fast-forwarded.
+  (use "git pull" to update your local branch)
+
+Changes not staged for commit:
+  (use "git add/rm <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+        modified:   .phpunit.result.cache
+        modified:   composer.lock
+        deleted:    prom_img/image.png
+        modified:   resources/views/landing/registration-disabled.blade.php
+        modified:   vendor/composer/autoload_classmap.php
+        modified:   vendor/composer/autoload_static.php
+        modified:   vendor/composer/installed.json
+        modified:   vendor/composer/installed.php
+        modified:   vendor/league/commonmark/CHANGELOG.md
+        modified:   vendor/league/commonmark/composer.json
+        modified:   vendor/league/commonmark/src/Environment/Environment.php
+        modified:   vendor/league/commonmark/src/Extension/Attributes/Event/AttributesListener.php
+        modified:   vendor/league/commonmark/src/Extension/Attributes/Parser/AttributesBlockContinueParser.php
+        modified:   vendor/league/commonmark/src/Extension/Attributes/Util/AttributesHelper.php
+        modified:   vendor/league/commonmark/src/Extension/CommonMark/Delimiter/Processor/EmphasisDelimiterProcessor.php
+        modified:   vendor/league/commonmark/src/Extension/CommonMark/Parser/Block/FencedCodeStartParser.php
+        modified:   vendor/league/commonmark/src/Extension/CommonMark/Parser/Inline/BacktickParser.php
+        modified:   vendor/league/commonmark/src/Extension/CommonMark/Parser/Inline/CloseBracketParser.php
+        modified:   vendor/league/commonmark/src/Extension/DefaultAttributes/ApplyDefaultAttributesProcessor.php
+        modified:   vendor/league/commonmark/src/Extension/DefaultAttributes/DefaultAttributesExtension.php
+        modified:   vendor/league/commonmark/src/Extension/DescriptionList/Parser/DescriptionStartParser.php
+        modified:   vendor/league/commonmark/src/Extension/FrontMatter/FrontMatterParser.php
+        modified:   vendor/league/commonmark/src/Extension/HeadingPermalink/HeadingPermalinkRenderer.php
+        modified:   vendor/league/commonmark/src/Extension/Highlight/MarkDelimiterProcessor.php
+        modified:   vendor/league/commonmark/src/Extension/Strikethrough/StrikethroughDelimiterProcessor.php
+        modified:   vendor/league/commonmark/src/Extension/Table/TableStartParser.php
+        modified:   vendor/league/commonmark/src/Extension/TableOfContents/TableOfContentsBuilder.php
+        modified:   vendor/league/commonmark/src/Extension/TableOfContents/TableOfContentsExtension.php
+        modified:   vendor/league/commonmark/src/Extension/TableOfContents/TableOfContentsPlaceholderParser.php
+        modified:   vendor/league/commonmark/src/Node/Inline/AdjacentTextMerger.php
+        modified:   vendor/league/commonmark/src/Node/Node.php
+        modified:   vendor/league/commonmark/src/Normalizer/UniqueSlugNormalizer.php
+        modified:   vendor/league/commonmark/src/Parser/Cursor.php
+        modified:   vendor/league/commonmark/src/Util/LinkParserHelper.php
+        modified:   vendor/league/commonmark/src/Util/RegexHelper.php
+        modified:   vendor/nette/schema/readme.md
+        modified:   vendor/nette/schema/src/Schema/Context.php
+        modified:   vendor/nette/schema/src/Schema/Elements/AnyOf.php
+        modified:   vendor/nette/schema/src/Schema/Elements/Base.php
+        modified:   vendor/nette/schema/src/Schema/Elements/Structure.php
+        modified:   vendor/nette/schema/src/Schema/Elements/Type.php
+        modified:   vendor/nette/schema/src/Schema/Expect.php
+        modified:   vendor/nette/schema/src/Schema/Helpers.php
+        modified:   vendor/nette/schema/src/Schema/Message.php
+        modified:   vendor/nette/schema/src/Schema/Processor.php
+        modified:   vendor/nette/schema/src/Schema/Schema.php
+        modified:   vendor/nette/schema/src/Schema/ValidationException.php
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+        vendor/league/commonmark/src/Extension/TableOfContents/Node/TableOfContentsReference.php
+        vendor/league/commonmark/src/Extension/TableOfContents/TableOfContentsReferenceRenderer.php
+        vendor/league/commonmark/src/Extension/TableOfContents/TableOfContentsRenderCache.php
+
+no changes added to commit (use "git add" and/or "git commit -a")
+PS C:\Herd\Velora> git add composer.lock
+PS C:\Herd\Velora> git commit -m "upgrade commonmark security dependency"
+[main af19cec5] upgrade commonmark security dependency
+ 1 file changed, 12 insertions(+), 12 deletions(-)
+PS C:\Herd\Velora> git push origin main
+To https://github.com/mazensabry2712/Velora.git
+ ! [rejected]          main -> main (fetch first)
+error: failed to push some refs to 'https://github.com/mazensabry2712/Velora.git'
+hint: Updates were rejected because the remote contains work that you do not
+hint: have locally. This is usually caused by another repository pushing to
+hint: the same ref. If you want to integrate the remote changes, use
+hint: 'git pull' before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+PS C:\Herd\Velora>
+PS C:\Herd\Velora>
+PS C:\Herd\Velora>
