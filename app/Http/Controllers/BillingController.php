@@ -149,8 +149,6 @@ final class BillingController extends Controller
     public function moyasarCallback(Request $request)
     {
         $paymentId = $request->query('id');
-        $status = $request->query('status');
-        $planId = $request->query('plan_id') ?? session('moyasar_plan_id');
 
         if (!$paymentId) {
             return redirect()->route('billing.expired')
@@ -158,42 +156,50 @@ final class BillingController extends Controller
         }
 
         try {
-            $verified = $this->paymentManager->driver('moyasar')->verifyPayment(['payment_id' => $paymentId]);
             $payment = $this->moyasarService->verifyPayment($paymentId);
-            if (!$verified) {
+            $expectedAmount = (int) session('moyasar_amount', 0);
+            $expectedCurrency = strtoupper((string) session('moyasar_currency', 'SAR'));
+            $paymentAmount = (int) ($payment['amount'] ?? 0);
+            $paymentCurrency = strtoupper((string) ($payment['currency'] ?? ''));
+
+            if (($payment['status'] ?? null) !== 'paid') {
                 Log::warning('Moyasar callback: payment not paid', [
                     'payment_id' => $paymentId,
                     'status' => $payment['status'] ?? 'unknown',
                     'tenant' => tenant('id'),
                 ]);
+
                 return redirect()->route('billing.expired')
                     ->withErrors(['payment' => 'لم يتم تأكيد الدفع. تواصل مع الدعم إذا تم خصم المبلغ.']);
             }
 
-            $tenantId = tenant('id');
-            $resolvedPlanId = $planId ?? ($payment['metadata']['plan_id'] ?? null);
-            if (!$resolvedPlanId) {
-                Log::error('Moyasar callback: missing plan_id', ['payment_id' => $paymentId]);
+            if (($expectedAmount > 0 && $paymentAmount !== $expectedAmount) || $paymentCurrency !== $expectedCurrency) {
+                Log::error('Moyasar callback: verified payment does not match checkout session', [
+                    'payment_id' => $paymentId,
+                    'expected_amount' => $expectedAmount,
+                    'payment_amount' => $paymentAmount,
+                    'expected_currency' => $expectedCurrency,
+                    'payment_currency' => $paymentCurrency,
+                    'tenant' => tenant('id'),
+                ]);
+
                 return redirect()->route('billing.expired')
-                    ->withErrors(['payment' => 'حدث خطأ في تحديد الخطة. الرجاء التواصل مع الدعم.']);
+                    ->withErrors(['payment' => 'بيانات الدفع لا تطابق عملية الشراء الأصلية. تواصل مع الدعم.']);
             }
 
-            $this->moyasarService->activateSubscription(
-                $tenantId,
-                (int) $resolvedPlanId,
-                (int) ($payment['amount'] ?? 0),
-                $paymentId
-            );
-
+            // The browser callback is informational only. Subscription state is
+            // changed exclusively by the authenticated/idempotent webhook.
             session()->forget(['moyasar_plan_id', 'moyasar_amount', 'moyasar_plan_name', 'moyasar_currency']);
-            return redirect()->route('admin.dashboard')->with('success', 'تم تفعيل اشتراكك بنجاح! 🎉');
+
+            return redirect()->route('admin.dashboard')
+                ->with('success', 'تم استلام الدفع بنجاح، وسيتم تفعيل الاشتراك تلقائيًا بعد تأكيد مزود الدفع.');
         } catch (\Exception $e) {
             Log::error('Moyasar callback error: ' . $e->getMessage(), [
                 'payment_id' => $paymentId,
                 'tenant' => tenant('id'),
             ]);
             return redirect()->route('billing.expired')
-                ->withErrors(['payment' => 'حدث خطأ أثناء تفعيل الاشتراك. الرجاء التواصل مع الدعم.']);
+                ->withErrors(['payment' => 'حدث خطأ أثناء التحقق من الدفع. الرجاء التواصل مع الدعم.']);
         }
     }
 
