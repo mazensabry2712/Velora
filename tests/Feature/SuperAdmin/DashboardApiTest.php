@@ -2,13 +2,13 @@
 
 namespace Tests\Feature\SuperAdmin;
 
-use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
+use Spatie\Permission\Models\Role;
 use Tests\SuperAdminTestCase;
 
 #[Group('feature')]
@@ -16,74 +16,58 @@ use Tests\SuperAdminTestCase;
 #[Group('dashboard-api')]
 class DashboardApiTest extends SuperAdminTestCase
 {
-    // ════════════════════════════════════════════════════════════════════════
-    // Auth guards
-    // ════════════════════════════════════════════════════════════════════════
-
     #[Test]
     public function unauthenticated_request_returns_401(): void
     {
-        $this->getJson('/api/super-admin/dashboard')
-             ->assertUnauthorized();
+        $this->getJson('/api/super-admin/dashboard')->assertUnauthorized();
     }
 
     #[Test]
     public function non_super_admin_returns_403(): void
     {
-        $regularRole = Role::create(['name' => 'Admin Tenant']);
+        $regularRole = Role::create(['name' => 'Admin Tenant', 'guard_name' => 'web']);
         $regularUser = User::create([
-            'name'     => 'Regular User',
-            'email'    => 'regular@test.com',
+            'name' => 'Regular User',
+            'email' => 'regular@test.com',
             'password' => Hash::make('password'),
-            'role_id'  => $regularRole->id,
         ]);
+        $regularUser->assignRole($regularRole);
 
         $this->actingAs($regularUser)
-             ->getJson('/api/super-admin/dashboard')
-             ->assertForbidden();
+            ->getJson('/api/super-admin/dashboard')
+            ->assertForbidden();
     }
-
-    // ════════════════════════════════════════════════════════════════════════
-    // Dashboard stats endpoint
-    // ════════════════════════════════════════════════════════════════════════
 
     #[Test]
     public function dashboard_returns_success_response(): void
     {
         $this->actingAs($this->superAdmin)
-             ->getJson('/api/super-admin/dashboard')
-             ->assertOk()
-             ->assertJsonPath('success', true);
+            ->getJson('/api/super-admin/dashboard')
+            ->assertOk()
+            ->assertJsonPath('success', true);
     }
 
     #[Test]
     public function dashboard_response_contains_required_keys(): void
     {
         $this->actingAs($this->superAdmin)
-             ->getJson('/api/super-admin/dashboard')
-             ->assertOk()
-             ->assertJsonStructure([
-                 'success',
-                 'data' => [
-                     'total_tenants',
-                     'active_tenants',
-                     'paid_tenants',
-                     'trial_tenants',
-                     'inactive_tenants',
-                     'tenants_this_month',
-                     'pending_upgrade_requests',
-                     'recent_tenants',
-                 ],
-             ]);
+            ->getJson('/api/super-admin/dashboard')
+            ->assertOk()
+            ->assertJsonStructure([
+                'success',
+                'data' => [
+                    'total_tenants', 'active_tenants', 'paid_tenants',
+                    'trial_tenants', 'inactive_tenants', 'tenants_this_month',
+                    'pending_upgrade_requests', 'recent_tenants',
+                ],
+            ]);
     }
 
     #[Test]
     public function dashboard_total_tenants_is_zero_when_no_tenants(): void
     {
         $data = $this->actingAs($this->superAdmin)
-                     ->getJson('/api/super-admin/dashboard')
-                     ->assertOk()
-                     ->json('data');
+            ->getJson('/api/super-admin/dashboard')->assertOk()->json('data');
 
         $this->assertEquals(0, $data['total_tenants']);
         $this->assertEquals(0, $data['active_tenants']);
@@ -100,9 +84,7 @@ class DashboardApiTest extends SuperAdminTestCase
         ]);
 
         $data = $this->actingAs($this->superAdmin)
-                     ->getJson('/api/super-admin/dashboard')
-                     ->assertOk()
-                     ->json('data');
+            ->getJson('/api/super-admin/dashboard')->assertOk()->json('data');
 
         $this->assertEquals(2, $data['total_tenants']);
     }
@@ -111,16 +93,14 @@ class DashboardApiTest extends SuperAdminTestCase
     public function dashboard_recent_tenants_includes_name_and_is_active(): void
     {
         DB::table('tenants')->insert([
-            'id'         => 'tenant-struct-1',
-            'data'       => json_encode(['name' => 'Struct Co']),
+            'id' => 'tenant-struct-1',
+            'data' => json_encode(['name' => 'Struct Co']),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
         $recentTenants = $this->actingAs($this->superAdmin)
-                              ->getJson('/api/super-admin/dashboard')
-                              ->assertOk()
-                              ->json('data.recent_tenants');
+            ->getJson('/api/super-admin/dashboard')->assertOk()->json('data.recent_tenants');
 
         $this->assertNotEmpty($recentTenants);
         $this->assertArrayHasKey('id', $recentTenants[0]);
@@ -135,8 +115,8 @@ class DashboardApiTest extends SuperAdminTestCase
         $inserts = [];
         for ($i = 1; $i <= 15; $i++) {
             $inserts[] = [
-                'id'         => "tenant-limit-{$i}",
-                'data'       => json_encode(['name' => "Company {$i}"]),
+                'id' => "tenant-limit-{$i}",
+                'data' => json_encode(['name' => "Company {$i}"]),
                 'created_at' => now()->subDays($i),
                 'updated_at' => now()->subDays($i),
             ];
@@ -144,25 +124,18 @@ class DashboardApiTest extends SuperAdminTestCase
         DB::table('tenants')->insert($inserts);
 
         $recentTenants = $this->actingAs($this->superAdmin)
-                              ->getJson('/api/super-admin/dashboard')
-                              ->assertOk()
-                              ->json('data.recent_tenants');
+            ->getJson('/api/super-admin/dashboard')->assertOk()->json('data.recent_tenants');
 
         $this->assertCount(15, $recentTenants);
     }
-
-    // ════════════════════════════════════════════════════════════════════════
-    // Tenants overview endpoint
-    // ════════════════════════════════════════════════════════════════════════
 
     #[Test]
     public function tenants_overview_returns_success(): void
     {
         $this->actingAs($this->superAdmin)
-             ->getJson('/api/super-admin/dashboard/tenants-overview')
-             ->assertOk()
-             ->assertJsonPath('success', true)
-             ->assertJsonStructure(['success', 'data']);
+            ->getJson('/api/super-admin/dashboard/tenants-overview')
+            ->assertOk()->assertJsonPath('success', true)
+            ->assertJsonStructure(['success', 'data']);
     }
 
     #[Test]
@@ -174,151 +147,84 @@ class DashboardApiTest extends SuperAdminTestCase
         ]);
 
         $data = $this->actingAs($this->superAdmin)
-                     ->getJson('/api/super-admin/dashboard/tenants-overview')
-                     ->assertOk()
-                     ->json('data');
-
+            ->getJson('/api/super-admin/dashboard/tenants-overview')->assertOk()->json('data');
         $this->assertCount(2, $data);
     }
-
-    // ════════════════════════════════════════════════════════════════════════
-    // System stats endpoint
-    // ════════════════════════════════════════════════════════════════════════
 
     #[Test]
     public function system_stats_returns_success(): void
     {
         $this->actingAs($this->superAdmin)
-             ->getJson('/api/super-admin/dashboard/system-stats')
-             ->assertOk()
-             ->assertJsonPath('success', true);
+            ->getJson('/api/super-admin/dashboard/system-stats')->assertOk()->assertJsonPath('success', true);
     }
 
     #[Test]
     public function system_stats_contains_required_keys(): void
     {
         $this->actingAs($this->superAdmin)
-             ->getJson('/api/super-admin/dashboard/system-stats')
-             ->assertOk()
-             ->assertJsonStructure([
-                 'success',
-                 'data' => [
-                     'stats' => [
-                         'total_tenants',
-                         'active_tenants',
-                         'tenants_this_month',
-                         'tenants_today',
-                     ],
-                     'chart',
-                 ],
-             ]);
+            ->getJson('/api/super-admin/dashboard/system-stats')->assertOk()
+            ->assertJsonStructure(['success', 'data' => ['stats' => ['total_tenants', 'active_tenants', 'tenants_this_month', 'tenants_today'], 'chart']]);
     }
 
     #[Test]
     public function system_stats_chart_has_30_days(): void
     {
         $chart = $this->actingAs($this->superAdmin)
-                      ->getJson('/api/super-admin/dashboard/system-stats')
-                      ->assertOk()
-                      ->json('data.chart');
-
+            ->getJson('/api/super-admin/dashboard/system-stats')->assertOk()->json('data.chart');
         $this->assertCount(30, $chart);
     }
-
-    // ════════════════════════════════════════════════════════════════════════
-    // Subscription stats endpoint
-    // ════════════════════════════════════════════════════════════════════════
 
     #[Test]
     public function subscription_stats_returns_success(): void
     {
         $this->actingAs($this->superAdmin)
-             ->getJson('/api/super-admin/dashboard/subscription-stats')
-             ->assertOk()
-             ->assertJsonPath('success', true);
+            ->getJson('/api/super-admin/dashboard/subscription-stats')->assertOk()->assertJsonPath('success', true);
     }
 
     #[Test]
     public function subscription_stats_contains_required_keys(): void
     {
         $this->actingAs($this->superAdmin)
-             ->getJson('/api/super-admin/dashboard/subscription-stats')
-             ->assertOk()
-             ->assertJsonStructure([
-                 'success',
-                 'data' => [
-                     'plans',
-                     'total_revenue',
-                     'monthly_revenue',
-                     'total_subscriptions',
-                     'active_subscriptions',
-                     'trial_subscriptions',
-                 ],
-             ]);
+            ->getJson('/api/super-admin/dashboard/subscription-stats')->assertOk()
+            ->assertJsonStructure(['success', 'data' => ['plans', 'total_revenue', 'monthly_revenue', 'total_subscriptions', 'active_subscriptions', 'trial_subscriptions']]);
     }
-
-    // ════════════════════════════════════════════════════════════════════════
-    // Activity summary endpoint
-    // ════════════════════════════════════════════════════════════════════════
 
     #[Test]
     public function activity_summary_returns_success(): void
     {
         $this->actingAs($this->superAdmin)
-             ->getJson('/api/super-admin/dashboard/activity-summary')
-             ->assertOk()
-             ->assertJsonPath('success', true);
+            ->getJson('/api/super-admin/dashboard/activity-summary')->assertOk()->assertJsonPath('success', true);
     }
 
     #[Test]
     public function activity_summary_contains_required_keys(): void
     {
         $this->actingAs($this->superAdmin)
-             ->getJson('/api/super-admin/dashboard/activity-summary')
-             ->assertOk()
-             ->assertJsonStructure([
-                 'success',
-                 'data' => [
-                     'recent',
-                     'today_count',
-                     'week_count',
-                 ],
-             ]);
+            ->getJson('/api/super-admin/dashboard/activity-summary')->assertOk()
+            ->assertJsonStructure(['success', 'data' => ['recent', 'today_count', 'week_count']]);
     }
 
     #[Test]
     public function activity_summary_today_count_is_zero_when_no_logs(): void
     {
         $data = $this->actingAs($this->superAdmin)
-                     ->getJson('/api/super-admin/dashboard/activity-summary')
-                     ->assertOk()
-                     ->json('data');
-
+            ->getJson('/api/super-admin/dashboard/activity-summary')->assertOk()->json('data');
         $this->assertEquals(0, $data['today_count']);
         $this->assertIsArray($data['recent']);
     }
-
-    // ════════════════════════════════════════════════════════════════════════
-    // Growth metrics endpoint
-    // ════════════════════════════════════════════════════════════════════════
 
     #[Test]
     public function growth_metrics_returns_success(): void
     {
         $this->actingAs($this->superAdmin)
-             ->getJson('/api/super-admin/dashboard/growth-metrics')
-             ->assertOk()
-             ->assertJsonPath('success', true);
+            ->getJson('/api/super-admin/dashboard/growth-metrics')->assertOk()->assertJsonPath('success', true);
     }
 
     #[Test]
     public function growth_metrics_returns_12_months(): void
     {
         $data = $this->actingAs($this->superAdmin)
-                     ->getJson('/api/super-admin/dashboard/growth-metrics')
-                     ->assertOk()
-                     ->json('data');
-
+            ->getJson('/api/super-admin/dashboard/growth-metrics')->assertOk()->json('data');
         $this->assertCount(12, $data);
     }
 
@@ -326,10 +232,7 @@ class DashboardApiTest extends SuperAdminTestCase
     public function growth_metrics_each_entry_has_required_keys(): void
     {
         $data = $this->actingAs($this->superAdmin)
-                     ->getJson('/api/super-admin/dashboard/growth-metrics')
-                     ->assertOk()
-                     ->json('data');
-
+            ->getJson('/api/super-admin/dashboard/growth-metrics')->assertOk()->json('data');
         foreach ($data as $entry) {
             $this->assertArrayHasKey('month', $entry);
             $this->assertArrayHasKey('year', $entry);
@@ -338,23 +241,16 @@ class DashboardApiTest extends SuperAdminTestCase
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // Revenue metrics endpoint
-    // ════════════════════════════════════════════════════════════════════════
-
     #[Test]
     public function revenue_metrics_returns_success(): void
     {
         $this->actingAs($this->superAdmin)
-             ->getJson('/api/super-admin/dashboard/revenue-metrics')
-             ->assertOk()
-             ->assertJsonPath('success', true);
+            ->getJson('/api/super-admin/dashboard/revenue-metrics')->assertOk()->assertJsonPath('success', true);
     }
 
     #[Test]
     public function revenue_metrics_unauthenticated_returns_401(): void
     {
-        $this->getJson('/api/super-admin/dashboard/revenue-metrics')
-             ->assertUnauthorized();
+        $this->getJson('/api/super-admin/dashboard/revenue-metrics')->assertUnauthorized();
     }
 }
