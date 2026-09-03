@@ -30,24 +30,33 @@ class Queue extends Model
         static::observe(QueueObserver::class);
 
         static::updating(function ($queue) {
-            if ($queue->isDirty('status') && $queue->appointment) {
-                $newStatus = $queue->status;
-                $appointment = $queue->appointment;
+            if (! $queue->isDirty('status') || ! $queue->appointment) {
+                return;
+            }
 
-                if ($newStatus === 'completed') {
+            $newStatus = $queue->status;
+            $appointment = $queue->appointment;
+
+            if ($newStatus === 'completed') {
+                Model::withoutEvents(fn () =>
+                    $appointment->update(['status' => 'completed'])
+                );
+            } elseif (in_array($newStatus, ['cancelled', 'skipped'], true)) {
+                // A no-show is a terminal appointment lifecycle state. Queue
+                // cleanup may still mark the queue row as skipped, but it must
+                // never downgrade the appointment back to cancelled.
+                $appointmentStatus = $appointment->status === Appointment::STATUS_NO_SHOW
+                    ? Appointment::STATUS_NO_SHOW
+                    : Appointment::STATUS_CANCELLED;
+
+                Model::withoutEvents(fn () =>
+                    $appointment->update(['status' => $appointmentStatus])
+                );
+            } elseif ($newStatus === 'serving') {
+                if ($appointment->status !== 'confirmed') {
                     Model::withoutEvents(fn () =>
-                        $appointment->update(['status' => 'completed'])
+                        $appointment->update(['status' => 'confirmed'])
                     );
-                } elseif (in_array($newStatus, ['cancelled', 'skipped'], true)) {
-                    Model::withoutEvents(fn () =>
-                        $appointment->update(['status' => 'cancelled'])
-                    );
-                } elseif ($newStatus === 'serving') {
-                    if ($appointment->status !== 'confirmed') {
-                        Model::withoutEvents(fn () =>
-                            $appointment->update(['status' => 'confirmed'])
-                        );
-                    }
                 }
             }
         });
