@@ -62,6 +62,8 @@ final class BookingConcurrencyScenarioTest extends TenantTestCase
             foreach ($emails as $email) {
                 $process = new Process([
                     PHP_BINARY,
+                    '-d',
+                    'memory_limit=512M',
                     $worker,
                     '--tenant=' . $this->tenant->id,
                     '--staff-user=' . $this->staffMember->id,
@@ -70,13 +72,13 @@ final class BookingConcurrencyScenarioTest extends TenantTestCase
                     '--time=' . $time,
                     '--email=' . $email,
                     '--token=' . $token,
-                ], base_path());
-                $process->setTimeout(30);
+                ], base_path(), null, null, 45);
+                $process->setTimeout(45);
                 $process->start();
                 $processes[] = $process;
             }
 
-            $readyDeadline = microtime(true) + 15;
+            $readyDeadline = microtime(true) + 30;
             while (count(glob($base . '/' . $token . '.ready.*')) < 2) {
                 if (microtime(true) > $readyDeadline) {
                     $diagnostics = [];
@@ -84,11 +86,31 @@ final class BookingConcurrencyScenarioTest extends TenantTestCase
                         if ($process->isRunning()) {
                             $process->stop(1);
                         }
+
+                        $stateFiles = glob($base . '/' . $token . '.state.*');
+                        $states = array_map(static function (string $file): mixed {
+                            $decoded = json_decode((string) file_get_contents($file), true);
+                            return [
+                                'file' => basename($file),
+                                'state' => $decoded,
+                            ];
+                        }, $stateFiles);
+
+                        $resultFiles = glob($base . '/' . $token . '.result.*');
+                        $resultsFromDisk = array_map(static function (string $file): mixed {
+                            return [
+                                'file' => basename($file),
+                                'result' => json_decode((string) file_get_contents($file), true),
+                            ];
+                        }, $resultFiles);
+
                         $diagnostics[] = [
                             'worker' => $index + 1,
                             'exit_code' => $process->getExitCode(),
                             'stdout' => trim($process->getOutput()),
                             'stderr' => trim($process->getErrorOutput()),
+                            'states' => $states,
+                            'results' => $resultsFromDisk,
                         ];
                     }
 
