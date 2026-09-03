@@ -25,6 +25,14 @@ class CountryPricing extends Model
         'is_active'       => 'boolean',
     ];
 
+    /**
+     * Global pricing configuration is stored on the central database.
+     */
+    public function getConnectionName(): string
+    {
+        return (string) config('tenancy.database.central_connection', parent::getConnectionName() ?? 'mysql');
+    }
+
     // ─── Scopes ────────────────────────────────────────────────────────────────
 
     public function scopeActive($query)
