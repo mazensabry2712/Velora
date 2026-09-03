@@ -14,16 +14,16 @@ class UpdateAppointmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'customer_name'    => 'required|string|max:255',
-            'customer_phone'   => 'required|string|max:20',
-            'customer_email'   => 'nullable|email|max:255',
+            'customer_name' => 'required|string|max:255',
+            'customer_phone' => 'required|string|max:20',
+            'customer_email' => 'nullable|email|max:255',
             'appointment_date' => 'required|date',
-            'appointment_time' => 'required|string',
-            'staff_id'         => 'nullable|exists:users,id',
-            'service_id'       => 'nullable|exists:services,id',
-            'service_type'     => 'nullable|string|max:255',
-            'status'           => 'required|in:pending,confirmed,completed,cancelled',
-            'notes'            => 'nullable|string|max:2000',
+            'appointment_time' => 'required|date_format:H:i',
+            'staff_id' => 'nullable|integer|exists:staff,id',
+            'service_id' => 'nullable|integer|exists:services,id',
+            'service_type' => 'nullable|string|max:255',
+            'status' => 'required|in:pending,confirmed,completed,cancelled',
+            'notes' => 'nullable|string|max:2000',
         ];
     }
 }
