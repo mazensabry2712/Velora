@@ -17,7 +17,7 @@ use App\Http\Requests\Admin\StoreAppointmentRequest;
 use App\Http\Requests\Admin\UpdateAppointmentRequest;
 use App\Models\Appointment;
 use App\Models\Service;
-use App\Models\User;
+use App\Models\Staff;
 use App\Repositories\Contracts\AppointmentRepositoryInterface;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
@@ -58,17 +58,19 @@ final class AppointmentController extends Controller
 
         $all = Appointment::with(['customer', 'staff', 'service', 'queue'])
             ->when(! empty($filters['status']) && $filters['status'] !== 'all', fn ($q) => $q->where('status', $filters['status']))
-            ->when(! empty($filters['staff_id']), fn ($q) => $q->where('staff_id', $filters['staff_id']))
+            ->when(! empty($filters['staff_id']), fn ($q) => $q->where('staff_id_new', $filters['staff_id']))
             ->when(! empty($filters['date_filter']), fn ($q) => match ($filters['date_filter']) {
-                'today' => $q->whereDate('date', today()),
-                'week' => $q->whereBetween('date', [now()->startOfWeek(), now()->endOfWeek()]),
-                'month' => $q->whereMonth('date', now()->month)->whereYear('date', now()->year),
+                'today' => $q->whereDate('starts_at', today()),
+                'week' => $q->whereBetween('starts_at', [now()->startOfWeek(), now()->endOfWeek()]),
+                'month' => $q->whereMonth('starts_at', now()->month)->whereYear('starts_at', now()->year),
                 default => $q,
             })
-            ->orderByDesc('date')->orderBy('time_slot')->get();
+            ->orderByDesc('starts_at')
+            ->get();
 
         $appointmentsByDate = $all
-            ->groupBy(fn ($a) => $a->date->format('Y-m-d'))
+            ->groupBy(fn ($a) => $a->starts_at?->format('Y-m-d') ?? 'unknown')
+            ->filter(fn ($day, $date) => $date !== 'unknown')
             ->map(function ($day, $date) {
                 $total = $day->count();
                 $dateCarbon = \Carbon\Carbon::parse($date);
@@ -79,7 +81,7 @@ final class AppointmentController extends Controller
                     'is_today' => $dateCarbon->isToday(),
                     'is_past' => $dateCarbon->isPast() && ! $dateCarbon->isToday(),
                     'diff_humans' => $dateCarbon->diffForHumans(),
-                    'appointments' => $day->sortBy('time_slot')->values(),
+                    'appointments' => $day->sortBy('starts_at')->values(),
                     'appointment_ids' => $day->pluck('id')->toArray(),
                     'total' => $total,
                     'confirmed' => $day->where('status', 'confirmed')->count(),
@@ -95,15 +97,19 @@ final class AppointmentController extends Controller
                     'revenue' => $day->sum(fn ($a) => $a->service?->price ?? 0),
                 ];
             })
-            ->sortKeysDesc()->values();
+            ->sortKeysDesc()
+            ->values();
 
         $stats = $this->appointments->getTodayStats();
         $stats['no_show_rate'] = $this->noShowRate();
         $stats['this_week'] = $this->appointments->getWeeklyStats()['this_week'];
-        $stats['cancelled_month'] = Appointment::where('status', 'cancelled')->whereMonth('date', now()->month)->count();
+        $stats['cancelled_month'] = Appointment::where('status', 'cancelled')
+            ->whereMonth('starts_at', now()->month)
+            ->whereYear('starts_at', now()->year)
+            ->count();
         $stats['avg_daily'] = $this->avgDaily();
 
-        $staffMembers = User::role(['Staff', 'Admin Tenant'])->get();
+        $staffMembers = Staff::active()->orderBy('sort_order')->orderBy('id')->get();
         $services = Service::where('is_active', true)->get();
 
         return view('admin.appointments.index', compact(
@@ -151,13 +157,16 @@ final class AppointmentController extends Controller
                 'customer_name' => $a->customer?->name ?? '-',
                 'customer_phone' => $a->customer?->phone ?? '-',
                 'customer_email' => $a->customer?->email ?? '-',
-                'date' => $a->date->format('Y-m-d'),
-                'time_slot' => $a->time_slot,
+                // Keep the established response keys for frontend compatibility,
+                // but derive them from the canonical appointment timestamp.
+                'date' => $a->starts_at?->format('Y-m-d'),
+                'time_slot' => $a->starts_at?->format('H:i'),
+                'starts_at' => $a->starts_at?->toIso8601String(),
                 'service_type' => $a->service_type,
                 'notes' => $a->notes,
                 'status' => $a->status,
                 'staff_name' => $a->staff?->name ?? '-',
-                'staff_id' => $a->staff_id,
+                'staff_id' => $a->staff_id_new,
             ]]);
         } catch (\Throwable) {
             return response()->json(['success' => false, 'message' => __('Not found')], 404);
@@ -260,8 +269,12 @@ final class AppointmentController extends Controller
                 return response()->json(['success' => false, 'message' => __('Cannot send reminder for this status.')], 400);
             }
 
-            if ($a->date->lt(now())) {
+            if (! $a->starts_at || $a->starts_at->lt(now())) {
                 return response()->json(['success' => false, 'message' => __('Past appointment.')], 400);
+            }
+
+            if (! $a->customer?->email) {
+                return response()->json(['success' => false, 'message' => __('Customer email is missing.')], 422);
             }
 
             Mail::to($a->customer->email)->send(
@@ -308,8 +321,8 @@ final class AppointmentController extends Controller
                 'Phone: ' . ($a->customer?->phone ?? 'N/A'),
                 'Service: ' . ($a->service?->name ?? $a->service_type ?? 'N/A'),
                 'Staff: ' . ($a->staff?->name ?? 'N/A'),
-                'Date: ' . $a->date->format('Y-m-d'),
-                'Time: ' . $a->time_slot,
+                'Date: ' . ($a->starts_at?->format('Y-m-d') ?? 'N/A'),
+                'Time: ' . ($a->starts_at?->format('H:i') ?? 'N/A'),
                 'Status: ' . ucfirst($a->status),
                 '==================',
                 'Tenant: ' . tenant()->name,
@@ -370,17 +383,19 @@ final class AppointmentController extends Controller
 
     private function noShowRate(): float
     {
-        $past = Appointment::where('date', '<', today()->format('Y-m-d'))->count();
-        $completed = Appointment::where('date', '<', today()->format('Y-m-d'))
-            ->where('status', 'completed')->count();
+        $past = Appointment::where('starts_at', '<', now())->count();
+        $completed = Appointment::where('starts_at', '<', now())
+            ->where('status', 'completed')
+            ->count();
 
         return $past > 0 ? round((($past - $completed) / $past) * 100, 1) : 0;
     }
 
     private function avgDaily(): float
     {
-        $count = Appointment::whereMonth('date', now()->month)
-            ->whereYear('date', now()->year)->count();
+        $count = Appointment::whereMonth('starts_at', now()->month)
+            ->whereYear('starts_at', now()->year)
+            ->count();
 
         return now()->day > 0 ? round($count / now()->day, 1) : 0;
     }
