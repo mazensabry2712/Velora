@@ -22,19 +22,17 @@ abstract class SuperAdminTestCase extends TestCase
     {
         parent::setUp();
 
-        $centralConn = config('tenancy.database.central_connection', 'sqlite');
+        $centralConn = (string) config('tenancy.database.central_connection', 'mysql');
 
         Artisan::call('migrate:fresh', [
             '--database' => $centralConn,
             '--force' => true,
         ]);
 
-        config(['database.connections.mysql' => config('database.connections.sqlite')]);
-        DB::purge('mysql');
+        $schema = Schema::connection($centralConn);
 
-        $mysqlSchema = Schema::connection('mysql');
-        if (! $mysqlSchema->hasTable('upgrade_requests')) {
-            $mysqlSchema->create('upgrade_requests', function (Blueprint $table) {
+        if (! $schema->hasTable('upgrade_requests')) {
+            $schema->create('upgrade_requests', function (Blueprint $table) {
                 $table->id();
                 $table->string('tenant_id');
                 $table->unsignedBigInteger('current_plan_id')->nullable();
@@ -49,8 +47,6 @@ abstract class SuperAdminTestCase extends TestCase
                 $table->timestamps();
             });
         }
-
-        $schema = Schema::connection($centralConn);
 
         if (! $schema->hasTable('roles')) {
             $schema->create('roles', function (Blueprint $table) {
