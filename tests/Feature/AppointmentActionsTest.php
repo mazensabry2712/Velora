@@ -144,7 +144,7 @@ class AppointmentActionsTest extends TenantTestCase
     public function it_correctly_sets_vip_status_when_adding_to_queue(): void
     {
         $this->actingAs($this->admin);
-        $this->customer->forceFill(['is_vip' => true])->save();
+        $this->customerProfile->forceFill(['ltv_tier' => 'vip'])->save();
         $appointment = $this->makeAppointment(['status' => 'confirmed']);
         $response = $this->postJson(route('admin.api.appointments.addToQueue', $appointment->id));
         $response->assertStatus(200);
