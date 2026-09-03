@@ -17,6 +17,37 @@ use Tests\TenantTestCase;
 #[Group('master-scenario')]
 final class AppointmentLifecycleScenarioTest extends TenantTestCase
 {
+    private function makeAppointment(string $time = '14:00', string $status = Appointment::STATUS_CONFIRMED): Appointment
+    {
+        $startsAt = now()->addDay()->setTimeFromTimeString($time);
+
+        return Appointment::create([
+            'customer_id_new' => $this->customerProfile->id,
+            'staff_id_new' => $this->staff->id,
+            'service_id' => $this->service->id,
+            'date' => $startsAt->toDateString(),
+            'time_slot' => $time,
+            'starts_at' => $startsAt,
+            'ends_at' => $startsAt->copy()->addMinutes(30),
+            'ends_at_with_buffer' => $startsAt->copy()->addMinutes(30),
+            'timezone' => config('app.timezone'),
+            'price' => $this->service->price,
+            'status' => $status,
+            'source' => 'qa-lifecycle',
+        ]);
+    }
+
+    private function makeQueue(Appointment $appointment, string $status = 'waiting'): Queue
+    {
+        return Queue::create([
+            'appointment_id' => $appointment->id,
+            'queue_number' => 'LIF' . str_pad((string) $appointment->id, 3, '0', STR_PAD_LEFT),
+            'queue_date' => $appointment->starts_at->toDateString(),
+            'status' => $status,
+            'is_vip' => false,
+        ]);
+    }
+
     #[Test]
     public function appointment_status_machine_allows_only_declared_forward_lifecycle_transitions(): void
     {
@@ -40,10 +71,7 @@ final class AppointmentLifecycleScenarioTest extends TenantTestCase
                 $rule->assertAllowed($terminal, 'confirmed');
                 $this->fail("Terminal appointment status [{$terminal}] must not transition to confirmed.");
             } catch (DomainException $exception) {
-                $this->assertStringContainsString(
-                    "{$terminal} -> confirmed",
-                    $exception->getMessage(),
-                );
+                $this->assertStringContainsString("{$terminal} -> confirmed", $exception->getMessage());
             }
         }
     }
@@ -51,60 +79,34 @@ final class AppointmentLifecycleScenarioTest extends TenantTestCase
     #[Test]
     public function completed_appointment_moves_its_queue_entry_to_completed(): void
     {
-        $appointment = Appointment::create([
-            'customer_id' => $this->customer->id,
-            'staff_id' => $this->staffMember->id,
-            'service_id' => $this->service->id,
-            'date' => today()->toDateString(),
-            'time_slot' => '14:00',
-            'status' => Appointment::STATUS_CONFIRMED,
-            'price' => 100,
-        ]);
-
-        Queue::create([
-            'appointment_id' => $appointment->id,
-            'queue_number' => 'LIF001',
-            'queue_date' => today()->toDateString(),
-            'status' => 'serving',
-            'is_vip' => false,
-        ]);
+        $appointment = $this->makeAppointment('14:00', Appointment::STATUS_CONFIRMED);
+        $this->makeQueue($appointment, 'serving');
 
         $updated = app(ChangeAppointmentStatus::class)->execute(
             $appointment->id,
             Appointment::STATUS_COMPLETED,
         );
 
-        $this->assertSame(Appointment::STATUS_COMPLETED, $updated->status);
-        $this->assertSame('completed', $updated->queue?->fresh()->status);
+        $this->assertSame(Appointment::STATUS_COMPLETED, $updated->fresh()->status);
+        $this->assertSame('completed', $updated->fresh()->queue?->status);
+        $this->assertSame($this->customerProfile->id, $updated->customer_id_new);
+        $this->assertSame($this->staff->id, $updated->staff_id_new);
     }
 
     #[Test]
     public function cancelled_appointment_moves_its_queue_entry_to_skipped(): void
     {
-        $appointment = Appointment::create([
-            'customer_id' => $this->customer->id,
-            'staff_id' => $this->staffMember->id,
-            'service_id' => $this->service->id,
-            'date' => today()->toDateString(),
-            'time_slot' => '15:00',
-            'status' => Appointment::STATUS_CONFIRMED,
-            'price' => 100,
-        ]);
-
-        Queue::create([
-            'appointment_id' => $appointment->id,
-            'queue_number' => 'LIF002',
-            'queue_date' => today()->toDateString(),
-            'status' => 'waiting',
-            'is_vip' => false,
-        ]);
+        $appointment = $this->makeAppointment('15:00', Appointment::STATUS_CONFIRMED);
+        $this->makeQueue($appointment, 'waiting');
 
         $updated = app(ChangeAppointmentStatus::class)->execute(
             $appointment->id,
             Appointment::STATUS_CANCELLED,
         );
 
-        $this->assertSame(Appointment::STATUS_CANCELLED, $updated->status);
-        $this->assertSame('skipped', $updated->queue?->fresh()->status);
+        $this->assertSame(Appointment::STATUS_CANCELLED, $updated->fresh()->status);
+        $this->assertSame('skipped', $updated->fresh()->queue?->status);
+        $this->assertSame($this->customerProfile->id, $updated->customer_id_new);
+        $this->assertSame($this->staff->id, $updated->staff_id_new);
     }
 }
