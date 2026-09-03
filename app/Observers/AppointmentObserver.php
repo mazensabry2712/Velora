@@ -66,7 +66,7 @@ class AppointmentObserver
         NotifyWaitingListOnAvailability::dispatch(
             $appointment->service_id,
             $appointment->staff_id_new,
-            $appointment->date ? (string) $appointment->date : null,
+            $appointment->starts_at?->toDateString(),
         );
     }
 
@@ -118,8 +118,8 @@ class AppointmentObserver
     private function createCommission(Appointment $appointment): void
     {
         try {
-            // Resolve the Staff model (uses staff_id_new column)
-            $staff = $appointment->staffMember; // BelongsTo Staff via staff_id_new
+            // Resolve the canonical Staff relation.
+            $staff = $appointment->staff;
 
             if (! $staff) {
                 return;
