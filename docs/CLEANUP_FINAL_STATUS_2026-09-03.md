@@ -18,8 +18,9 @@
 - Appointment date-oriented scopes/helpers now use canonical `starts_at` instead of the legacy `date` field for runtime calculations.
 - Tenant-isolation and RBAC test fixtures were aligned with the canonical model/package boundaries.
 - Appointment migration `2026_09_03_000006_reconcile_appointment_identity.php` backfills historical customer/staff references and fails closed on unresolved mappings.
-- Application/test role usage now targets `Spatie\Permission\Models\Role` directly; the legacy `App\Models\Role` compatibility wrapper was removed.
+- Application/test role usage now targets `Spatie\\Permission\\Models\\Role` directly; the legacy `App\\Models\\Role` compatibility wrapper was removed.
 - Analytics aggregation now reads canonical appointment timestamps and `customer_id_new` instead of the legacy appointment identity/date fields.
+- `EloquentAppointmentReader` was corrected to eager-load the canonical `Appointment::staff` relation; the stale `staffNew` relation reference was removed.
 
 ## Intentionally deferred
 
@@ -33,7 +34,9 @@
 
 Current `main` is not certified green by test count alone. Remote GitHub Actions status and, when available, a fresh local run are required before release certification.
 
-The latest pushes triggered the repository's MySQL-backed tests, quality checks and Master QA workflows. At the latest check they were queued; no terminal pass/fail result is recorded. This status is deliberately conservative and prevents undocumented assumptions from being treated as release certification.
+The latest cleanup pushes triggered or are expected to trigger the repository's MySQL-backed tests, quality checks and Master QA workflows. At the latest API check for the corrective reader commit, no combined status checks were yet reported. This status remains deliberately conservative and does not treat missing checks as a pass.
+
+A concrete runtime defect found during the current review was fixed in commit `cfea0723c263784ed071cf68620323c44f5948ae`: `EloquentAppointmentReader::forCustomer()` now loads `staff` instead of the removed `staffNew` relation.
 
 Expected local verification:
 
