@@ -162,7 +162,7 @@ final class AppointmentLifecycleScenarioTest extends TenantTestCase
         $fresh = $updated->fresh(['queue']);
 
         $this->assertTrue($fresh->starts_at?->equalTo($newStartsAt));
-        $this->assertSame($newStartsAt->toDateString(), $fresh->date);
+        $this->assertSame($newStartsAt->toDateString(), $fresh->date->toDateString());
         $this->assertSame($newStartsAt->format('H:i'), $fresh->time_slot);
         $this->assertSame($newStartsAt->toDateString(), $queue->fresh()->queue_date?->toDateString());
         $this->assertSame(Appointment::STATUS_CONFIRMED, $fresh->status);
