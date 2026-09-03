@@ -53,7 +53,7 @@ Velora is a multi-tenant appointment-booking SaaS for businesses needing online 
 - Laravel named `RateLimiter` is canonical for HTTP throttling.
 - Sanctum `CheckAbilities` is canonical for token abilities.
 - Stancl tenancy middleware is canonical for domain tenancy initialization.
-- Spatie Permission is canonical for roles/permissions.
+- Spatie Permission is canonical for roles/permissions, with direct use of the package Role model and no application Role wrapper.
 - NielsNumbers Localizer is canonical for platform locale routing.
 
 ## Documentation
@@ -72,7 +72,7 @@ Architecture and cleanup decisions are documented in:
 
 The historical baseline confirmed before Queue Lifecycle implementation was **570 tests / 5624 assertions / 0 failures / 0 errors**. That baseline is not certification for the later identity/schema refactors.
 
-Fresh local testing is not claimed from the remote repository. Fresh GitHub Actions on the exact current `main` SHA are required before calling the branch green.
+Fresh local testing is not claimed from the remote repository. The current remote `main` has no completed workflow result available yet for certification; a fresh GitHub Actions run and, when available, a fresh local run are required before calling the branch green.
 
 ## Remaining release-risk work
 
