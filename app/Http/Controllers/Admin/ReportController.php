@@ -17,10 +17,16 @@ final class ReportController extends Controller
 
     public function index(Request $request)
     {
+        $validated = $request->validate([
+            'period' => ['nullable', 'string', 'in:today,week,month,year,all,custom'],
+            'start_date' => ['nullable', 'date', 'required_if:period,custom'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date', 'required_if:period,custom'],
+        ]);
+
         $data = $this->dashboardReport->execute(
-            (string) $request->get('period', 'month'),
-            $request->get('start_date'),
-            $request->get('end_date'),
+            $validated['period'] ?? 'month',
+            $validated['start_date'] ?? null,
+            $validated['end_date'] ?? null,
         );
 
         return view('admin.reports.index', $data);
@@ -28,9 +34,15 @@ final class ReportController extends Controller
 
     public function exportAppointments(Request $request): BinaryFileResponse
     {
-        $period = (string) $request->get('period', 'month');
-        $startDate = $request->get('start_date');
-        $endDate = $request->get('end_date');
+        $validated = $request->validate([
+            'period' => ['nullable', 'string', 'in:today,week,month,year,all,custom'],
+            'start_date' => ['nullable', 'date', 'required_if:period,custom'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date', 'required_if:period,custom'],
+        ]);
+
+        $period = $validated['period'] ?? 'month';
+        $startDate = $validated['start_date'] ?? null;
+        $endDate = $validated['end_date'] ?? null;
         $fileName = 'appointments-' . $period . '-' . now()->format('Y-m-d') . '.xlsx';
 
         return \Maatwebsite\Excel\Facades\Excel::download(
