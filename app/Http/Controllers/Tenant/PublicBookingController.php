@@ -51,15 +51,16 @@ final class PublicBookingController extends Controller
             $trackingUrl = route('customer.queue.status') . '?ref=' . rawurlencode($reference);
 
             try {
-                $appointment->loadMissing(['service', 'newStaff']);
+                $appointment->loadMissing(['service', 'staff']);
                 $tenant = tenant();
                 $tenantName = (string) ($tenant?->name ?? config('app.name'));
                 $locale = app()->getLocale() ?: 'en';
                 $customerName = trim($customer->first_name . ' ' . $customer->last_name);
                 $serviceName = (string) ($appointment->service_name ?? $appointment->service?->name ?? 'Appointment');
-                $staffName = (string) ($appointment->newStaff?->full_name ?? trim(($appointment->newStaff?->first_name ?? '') . ' ' . ($appointment->newStaff?->last_name ?? '')) ?: '—');
-                $appointmentDate = $appointment->date?->format('Y-m-d') ?? '';
-                $appointmentTime = $appointment->time_slot ?? '';
+                $staffName = (string) ($appointment->staff?->full_name ?? '—');
+                $startsAt = $appointment->starts_at;
+                $appointmentDate = $startsAt?->format('Y-m-d') ?? '';
+                $appointmentTime = $startsAt?->format('H:i') ?? '';
                 $duration = (string) ($appointment->service?->duration_minutes ?? $appointment->service?->duration ?? '');
                 $notificationData = [
                     'tenant_name' => $tenantName,
