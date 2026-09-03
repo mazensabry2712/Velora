@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document is the living execution record for the current Velora Master QA pass. It records verified local evidence, the fixes applied during the current run, and the remaining gates. It does not replace `docs/QA_FINDINGS_LOG.md` or the Master QA runbook.
+This document is the living execution record for the current Velora Master QA pass. It records verified local evidence, fixes applied during the current run, and remaining gates. It does not replace `docs/QA_FINDINGS_LOG.md` or the Master QA runbook.
 
 ## Certification rule
 
@@ -16,7 +16,7 @@ A feature family is not considered certified from test count alone. Required evi
 6. MySQL CI evidence for release certification.
 7. Concurrency/security gates where applicable.
 
-The canonical certification environment is MySQL 8.4 + PHP 8.4. The repository's Master QA workflow runs the `tests/Feature/QA` suite against MySQL 8.4.
+The canonical certification environment is MySQL 8.4 + PHP 8.4. The repository Master QA workflow runs `tests/Feature/QA` against MySQL 8.4.
 
 ## Verified local evidence — current session
 
@@ -28,11 +28,11 @@ The canonical certification environment is MySQL 8.4 + PHP 8.4. The repository's
 | Appointment/queue integration | `AppointmentQueueIntegrationTest` | PASS | 9 | 14 | 2026-09-03 |
 | Booking rules | `BookingRulesScenarioTest` | PASS | 5 | 6 | 2026-09-03 |
 | Booking availability rules | `BookingAvailabilityRulesScenarioTest` | PASS | 4 | 8 | 2026-09-03 |
-| Appointment lifecycle | `AppointmentLifecycleScenarioTest` | PASS | 3 | 11 | 2026-09-03 |
+| Appointment lifecycle baseline | `AppointmentLifecycleScenarioTest` | PASS | 3 | 11 | 2026-09-03 |
 
 Current verified subtotal: **42 passed tests / 133 assertions**.
 
-The latest focused command was:
+The latest observed local lifecycle command was:
 
 ```text
 php -d memory_limit=512M artisan test tests/Feature/QA/AppointmentLifecycleScenarioTest.php --stop-on-failure
@@ -41,97 +41,34 @@ php -d memory_limit=512M artisan test tests/Feature/QA/AppointmentLifecycleScena
 
 These results are local MySQL-backed runs from the developer environment. They are not, by themselves, release certification.
 
-## Fixes made during this QA pass
+## Current branch state
 
-### QA-SCHEMA-003 — Appointment `deposit_amount` schema drift
+After the baseline lifecycle run, the lifecycle coverage was strengthened on `main`.
 
-**Observed:** Public booking returned HTTP 500 because `BookingCreationService` wrote `appointments.deposit_amount` while the tenant migration did not create the column.
+### Production fix committed
 
-**Fix:** Added tenant migration `2026_09_03_000007_add_appointment_deposit_amount.php` with a decimal `deposit_amount` column and rollback support.
+`47fbcf9ce72d7c4e10d3b73d3e7edd47eec74edd`
 
-**Regression/evidence:** `CustomerBookingJourneyTest` subsequently passed all 5 tests / 41 assertions.
+`ChangeAppointmentStatus` now:
 
-### QA-TEST-BOOK-001 — Customer booking working-hours fixture was not idempotent
+- persists `confirmed_at`, `completed_at`, `cancelled_at`, or `no_show_at` with the status transition;
+- treats `no_show` as a terminal queue state and moves its queue entry to `skipped`;
+- returns the appointment with status history loaded.
 
-**Observed:** Repeated tests targeting the same staff/day violated the unique `staff_working_hours` constraint.
+### Regression coverage committed
 
-**Fix:** `CustomerBookingJourneyTest` now uses `updateOrCreate()` for the controlled staff/day fixture.
+`dce556b0f9b6b04ca4a6ce3a19fa6861818e1621`
 
-**Regression/evidence:** `CustomerBookingJourneyTest` subsequently passed all 5 tests / 41 assertions.
+`AppointmentLifecycleScenarioTest` now also verifies:
 
-### QA-TEST-BOOK-002 — Customer booking slot leaked between tests
+- completion creates the expected appointment invoice and completes its queue entry;
+- cancellation records `cancelled_at` and skips the queue entry;
+- no-show records `no_show_at` and skips the queue entry;
+- each status transition produces a persisted status-history row.
 
-**Observed:** A later independent test received HTTP 409 because a previous test's appointment remained visible to slot conflict detection.
+**Execution status:** The strengthened lifecycle suite is **PENDING LOCAL EXECUTION**. The previous 3-test PASS was against the earlier baseline and does not certify the newly added cases.
 
-**Fix:** The journey fixture clears only appointments for its controlled staff/date slot before preparing the fixture. Production double-booking logic remains unchanged.
-
-**Regression/evidence:** `CustomerBookingJourneyTest` subsequently passed all 5 tests / 41 assertions.
-
-### QA-TEST-PORTAL-001 — Portal fixture duplicated the canonical customer email
-
-**Observed:** `CustomerPortalJourneyTest` attempted to insert `customer@test.com` although the tenant test base already owns that unique email.
-
-**Fix:** Portal tests reuse the canonical customer identity fixture instead of creating a duplicate record.
-
-**Regression/evidence:** `CustomerPortalJourneyTest` passed all 3 tests / 16 assertions.
-
-### QA-TEST-IDENTITY-002 — Appointment action test still used legacy staff identity fields
-
-**Observed:** `AppointmentActionsTest` posted a User ID to a request that validates against `staff.id`, returning a 422.
-
-**Fix:** Test fixtures and assertions were aligned with canonical `staff_id_new` / `Staff` identity.
-
-**Regression/evidence:** `AppointmentActionsTest` progressed to its next real defect and ultimately passed 13 tests / 37 assertions after the follow-up fixes.
-
-### QA-BOOK-003 — Customer portal reader selected a non-existent `staff.name` column
-
-**Observed:** `EloquentAppointmentReader::forCustomer()` eager-loaded `staff:id,name`, but `staff` stores `first_name` and `last_name`; `name` is an accessor.
-
-**Fix:** Reader now selects real staff columns (`id, first_name, last_name`) while retaining the accessor-generated display name.
-
-**Regression/evidence:** `CustomerPortalJourneyTest` passed all 3 tests / 16 assertions.
-
-### QA-TEST-APT-001 — Appointment queue fixture omitted canonical start time
-
-**Observed:** `AddAppointmentToQueue` correctly rejected an appointment without `starts_at`, returning `Appointment start time is missing.`
-
-**Fix:** `AppointmentActionsTest` fixture now supplies `starts_at`, `ends_at`, `ends_at_with_buffer`, timezone, price and source.
-
-**Regression/evidence:** `AppointmentActionsTest` passed 13 tests / 37 assertions.
-
-### QA-TEST-QUEUE-001 — VIP queue fixture updated the wrong entity
-
-**Observed:** Test changed `User::is_vip`, while queue derivation uses the canonical `Customer` business state.
-
-**Fix:** Test now sets the canonical `Customer::ltv_tier = vip` state.
-
-**Regression/evidence:** `AppointmentActionsTest` passed 13 tests / 37 assertions.
-
-### QA-TEST-BOOKRULES-001 — Booking rules QA fixtures were not idempotent
-
-**Observed:** Re-running the focused booking-rules scenario classes against the shared tenant fixture could collide with the unique `staff_working_hours` constraint for the same staff/day.
-
-**Root cause:** The scenarios created the same controlled staff/day working-hours row on every method without first reconciling an existing fixture.
-
-**Fix:** The focused booking rules/availability fixture setup was made idempotent for repeated class execution while preserving the production working-hours contract.
-
-**Regression/evidence:**
-- `BookingRulesScenarioTest` → **5 passed / 6 assertions / 7.56s**
-- `BookingAvailabilityRulesScenarioTest` → **4 passed / 8 assertions / 7.33s**
-
-### QA-TEST-APT-002 — Appointment lifecycle QA fixture used legacy identity contract
-
-**Observed:** `AppointmentLifecycleScenarioTest` created appointments using legacy `customer_id`, `staff_id`, `date`, and `time_slot` fields, while the current runtime contract uses `customer_id_new`, `staff_id_new`, and canonical appointment timestamps.
-
-**Root cause:** The lifecycle regression test had not yet been migrated with the broader appointment identity cleanup.
-
-**Fix:** Lifecycle fixtures now create appointments through `customer_id_new` / `staff_id_new`, populate `starts_at`, `ends_at`, `ends_at_with_buffer`, timezone and source, and assert the canonical relationships after state transitions. Production appointment status behavior was not changed by this test-only fix.
-
-**Commit:** `07c84e60612c131bfab4535447a1bcadf03dce18`.
-
-**Regression/evidence:** `AppointmentLifecycleScenarioTest` → **3 passed / 11 assertions / 7.23s** on 2026-09-03.
-
-## Current booking/appointment gate status
+## Booking/appointment gate status
 
 ### PASS — locally verified in the current session
 
@@ -145,32 +82,44 @@ These results are local MySQL-backed runs from the developer environment. They a
 - `BOOK-009` maximum advance rule.
 - `BOOK-010` occupied slot rejected.
 - `AVAIL-002` holiday blocking and related availability rules.
-- Appointment lifecycle status-machine validation and queue synchronization currently covered by `AppointmentLifecycleScenarioTest`.
+- Appointment state-machine and queue synchronization baseline.
 - Customer history/queue/invoice access.
-- Appointment action and queue synchronization coverage.
 - Appointment/queue integration lifecycle.
 
 ### PARTIAL / STILL REQUIRED
 
-The current focused suites do **not yet prove every catalog item end-to-end**. In particular:
+The focused suites still need dedicated proof for:
 
 - `BOOK-005` invalid resource rejected.
 - `BOOK-011` timezone conversion.
 - `BOOK-012` notification failure must not corrupt booking.
-- `AVAIL-001` working-hours matrix beyond the currently covered negative boundary.
+- `AVAIL-001` complete working-hours matrix, not only the negative boundary.
 - `APT-004` reschedule.
-- `APT-006` no-show.
-- `APT-008` persisted status-history completeness.
-- `APT-009` completion/invoice consistency.
+- strengthened `APT-006` no-show behavior after the latest production fix.
+- strengthened `APT-008` persisted status-history completeness.
+- strengthened `APT-009` completion/invoice consistency.
 
-These remain open until a dedicated scenario or equivalent existing regression proves the business outcome and downstream invariants.
+### Reschedule note
 
-## Next lifecycle gates
+The current appointment domain status machine has no `rescheduled` status and the current application search did not reveal a dedicated reschedule application action. Documentation mentions rescheduling, but the runtime contract currently models only pending/confirmed/checked_in/in_service/completed/cancelled/no_show. Therefore `APT-004` is not being falsely marked PASS; it remains an explicit product/runtime gap until a real reschedule workflow is identified or implemented and tested.
 
-- `APT-004` reschedule.
-- `APT-006` no-show.
-- `APT-008` status history.
-- `APT-009` completion/invoice consistency.
+## Findings created during the current pass
+
+### QA-BOOK-002 — Holiday date comparison
+
+Already fixed and regression-covered by `BookingAvailabilityRulesScenarioTest`.
+
+### QA-TEST-BOOKRULES-001 — Booking rules fixture idempotency
+
+Focused booking rules/availability fixtures were made safe for repeated execution.
+
+### QA-BOOK-003 / related appointment identity regressions
+
+Canonical `Customer`/`Staff` appointment identity is now used by the tested appointment flows.
+
+### Current lifecycle finding
+
+`QA-BOOK-003`-style lifecycle side-effect gap was identified and fixed as described above. The required next step is actual execution of the strengthened regression; no new PASS is claimed until the new suite is observed.
 
 ## Concurrency / certification gates still outstanding
 
@@ -181,21 +130,8 @@ These remain open until a dedicated scenario or equivalent existing regression p
 - Fresh Master QA MySQL CI success for the current `main` SHA.
 - Final cross-surface reconciliation and production certification.
 
-## Important evidence interpretation
-
-The local results above prove the exact commands executed in the current development environment. They do not prove that the current `main` SHA has a successful GitHub Actions run unless such a run is explicitly observed and recorded. The Master QA workflow is configured for MySQL 8.4 + PHP 8.4 and runs the complete `tests/Feature/QA` suite.
-
 ## Working contract
 
-Every new defect discovered in this pass must leave an audit trail containing:
+Every meaningful defect/change in this pass must leave an audit trail containing scenario ID/area, observed failure, root cause, smallest correct fix, regression coverage, exact commit, observed local result, and CI status when available.
 
-- scenario ID / area,
-- observed failure,
-- root cause,
-- smallest correct fix,
-- regression coverage,
-- exact commit,
-- observed local result,
-- CI status once available.
-
-The Master QA runbook requires root-cause fixes rather than assertion weakening, and requires documentation after meaningful QA changes.
+The Master QA runbook requires root-cause fixes rather than assertion weakening and requires documentation after meaningful QA changes.
