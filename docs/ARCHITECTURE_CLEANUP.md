@@ -7,7 +7,7 @@ This cleanup removes application code that duplicated responsibilities already p
 ## Canonical sources
 
 - **Locale routing and supported locales:** `niels-numbers/laravel-localizer` via `config/localizer.php`.
-- **Roles and permissions:** `spatie/laravel-permission` is the source of truth. The compatibility `App\Models\Role` wrapper remains only where the existing application/test namespace is still used.
+- **Roles and permissions:** `spatie/laravel-permission` is the source of truth, including direct use of `Spatie\Permission\Models\Role`.
 - **Multi-tenancy:** `stancl/tenancy` is the source for domain tenancy initialization and tenant lifecycle jobs.
 - **API token abilities:** Laravel Sanctum's `CheckAbilities` middleware.
 - **HTTP rate limiting:** Laravel's native named `RateLimiter`.
@@ -40,7 +40,7 @@ Removed obsolete public translation-injection middlewares and the unused landing
 
 ### Role decision duplication
 
-`CheckRole` is the only remaining application role middleware. Actual authorization delegates to Spatie Permission with `hasAnyRole()`.
+`CheckRole` is the only remaining application role middleware. Actual authorization delegates to Spatie Permission with `hasAnyRole()`. The former `App\Models\Role` compatibility wrapper has now been removed; application and test code use Spatie's model directly.
 
 ### Thin infrastructure adapters
 
@@ -68,7 +68,6 @@ The `staff_services` pivot previously stored both `user_id` and `staff_id` for t
 - `WorkingDay`, which represents tenant-level enabled business days rather than a staff member's working hours.
 - `TimeSlot`, which represents the older/admin compatibility slot catalog; it is not the generated availability DTO returned by `SlotEngine`.
 - `UsageLog` alongside `ActivityLog`: `UsageLog` records central product/usage events, while `ActivityLog` is the admin/audit trail. They are different responsibilities and should not be merged merely because both are logs.
-- The `App\Models\Role` wrapper until all configuration, seeders, infrastructure, and test imports are converted to Spatie's model namespace.
 - Custom model translation support and legacy `_ar` / `*_i18n` columns until `spatie/laravel-translatable` is installed and tenant data is migrated.
 - Custom activity logging until `spatie/laravel-activitylog` is installed and existing audit data is migrated.
 - The custom notification-delivery ledger because it tracks channel-specific delivery/recovery state and is used by multiple notification flows.
@@ -80,7 +79,6 @@ The `staff_services` pivot previously stored both `user_id` and `staff_id` for t
 2. Migrate `ActivityLog` to `spatie/laravel-activitylog` with audit-data preservation.
 3. Migrate the legacy FCM transport to a maintained Laravel notification channel.
 4. Reconcile historical `appointments.customer_id` / `appointments.staff_id` rows into the dedicated `customers` / `staff` identities, then remove the old appointment columns and rename the current `*_new` columns to canonical names.
-5. Convert the remaining `App\Models\Role` imports to `Spatie\Permission\Models\Role`, then remove the compatibility wrapper.
 
 ## Verification requirement
 
@@ -90,6 +88,7 @@ After pulling `main`, run:
 git pull --ff-only origin main
 php artisan optimize:clear
 php artisan migrate
+php artisan tenants:migrate --force
 php artisan test --compact
 vendor/bin/pint --test
 composer validate --strict
