@@ -4,14 +4,19 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Events\TenantProvisioningRequested;
+use App\Jobs\FinalizeTenantProvisioning;
 use App\Models\Setting;
 use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 final class TenantDefaultLocaleTest extends TestCase
 {
+    private ?string $tenantDbPath = null;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -23,8 +28,22 @@ final class TenantDefaultLocaleTest extends TestCase
         ]);
     }
 
+    protected function tearDown(): void
+    {
+        tenancy()->end();
+        \DB::purge('tenant');
+
+        if ($this->tenantDbPath !== null && file_exists($this->tenantDbPath)) {
+            @unlink($this->tenantDbPath);
+        }
+
+        parent::tearDown();
+    }
+
     public function test_signup_language_becomes_tenant_default_and_available_language(): void
     {
+        Event::fake([TenantProvisioningRequested::class]);
+
         $plan = SubscriptionPlan::create([
             'name' => 'Locale Test Plan',
             'slug' => 'locale-test-' . bin2hex(random_bytes(4)),
@@ -60,8 +79,24 @@ final class TenantDefaultLocaleTest extends TestCase
 
         $response->assertRedirect();
 
+        Event::assertDispatched(TenantProvisioningRequested::class);
+
         $tenant = Tenant::findOrFail($subdomain);
         $this->assertSame('fr', $tenant->language);
+        $this->assertSame('queued', $tenant->provisioning_status);
+
+        tenancy()->initialize($tenant);
+        Artisan::call('tenants:migrate', [
+            '--tenants' => [$tenant->id],
+            '--force' => true,
+        ]);
+        tenancy()->end();
+
+        $this->tenantDbPath = database_path(
+            config('tenancy.database.prefix', 'tenant').$tenant->id
+        );
+
+        (new FinalizeTenantProvisioning($tenant->refresh()))->handle();
 
         $tenantSettings = $tenant->run(
             fn () => Setting::query()->where('id', 1)->first()
