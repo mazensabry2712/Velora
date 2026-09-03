@@ -7,6 +7,7 @@ namespace App\Infrastructure\Payments;
 use App\Domain\Shared\Contracts\PaymentGatewayResolver;
 use App\Models\CountryPricing;
 use App\Models\SystemSetting;
+use App\Payments\PaymentGatewayManager;
 use Illuminate\Support\Facades\Cache;
 
 final class PaymentGatewayRouter implements PaymentGatewayResolver
@@ -16,6 +17,10 @@ final class PaymentGatewayRouter implements PaymentGatewayResolver
         'razorpay' => 'Razorpay', 'moyasar' => 'Moyasar', 'paymob' => 'Paymob', 'telr' => 'Telr',
         'tap' => 'Tap Payments', 'iyzico' => 'Iyzico', 'pagseguro' => 'PagSeguro',
     ];
+
+    public function __construct(
+        private readonly PaymentGatewayManager $gatewayManager,
+    ) {}
 
     public function forCountry(string $countryCode): array
     {
@@ -61,20 +66,28 @@ final class PaymentGatewayRouter implements PaymentGatewayResolver
     private function getCountryPreferred(string $countryCode): array
     {
         $pricing = CountryPricing::forCountry($countryCode);
-        return array_map('strtolower', $pricing->payment_methods ?? []);
+        $supported = $this->gatewayManager->supported();
+
+        return array_values(array_filter(
+            array_map('strtolower', $pricing->payment_methods ?? []),
+            static fn (string $gateway): bool => in_array($gateway, $supported, true),
+        ));
     }
 
     /** @return array<int, string> */
     private function getGloballyEnabled(): array
     {
         return Cache::remember('gateway_router:enabled', 600, function (): array {
+            $supported = $this->gatewayManager->supported();
             $enabled = [];
+
             foreach (array_keys(self::GATEWAYS) as $key) {
-                if (SystemSetting::get("{$key}_enabled", false)) {
+                if (in_array($key, $supported, true) && SystemSetting::get("{$key}_enabled", false)) {
                     $enabled[] = $key;
                 }
             }
-            return $enabled ?: ['stripe'];
+
+            return $enabled ?: (in_array('stripe', $supported, true) ? ['stripe'] : []);
         });
     }
 }
