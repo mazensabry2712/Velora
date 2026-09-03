@@ -32,8 +32,9 @@ The canonical certification environment is MySQL 8.4 + PHP 8.4. The repository's
 | Appointment lifecycle (strengthened, pre-fix) | `AppointmentLifecycleScenarioTest` | FAIL | 3 passed + 1 failed | 15 | 2026-09-03 |
 | Appointment lifecycle (post-fix regression) | `AppointmentLifecycleScenarioTest` | PASS | 5 | 24 | 2026-09-03 |
 | Appointment lifecycle (reschedule regression, first run) | `AppointmentLifecycleScenarioTest` | FAIL | 4 passed + 1 failed | 19 | 2026-09-03 |
+| Appointment lifecycle (reschedule regression, corrected) | `AppointmentLifecycleScenarioTest` | PASS | 6 | 29 | 2026-09-03 |
 
-Verified passing subtotal remains **47 passed tests / 157 assertions** from completed passing focused runs. The reschedule regression has not yet produced a passing result.
+Current verified passing subtotal from completed passing focused runs is **53 passed tests / 186 assertions**. This counts passing executions as evidence records; it does not treat failed intermediate runs as passes and does not constitute release certification.
 
 ## Defects discovered and addressed during this pass
 
@@ -73,11 +74,21 @@ Failed asserting that Illuminate\\Support\\Carbon Object ... is identical to '20
 
 **Root cause classification:** This was a **test-contract defect**, not evidence of a production schedule mismatch. `Appointment::$casts` intentionally casts the legacy `date` column to a Carbon date object. The regression used `assertSame()` against a string instead of comparing normalized date values.
 
-**Regression correction:** The assertion was changed to `assertSame($newStartsAt->toDateString(), $fresh->date->toDateString())`, preserving the semantic requirement while respecting the model's canonical cast behavior.
+**Regression correction:** The assertion was changed to compare normalized date strings using the model's existing cast semantics.
 
-**Test commit:** `e9ab0e2a217be34d56e6530338419516d9e72430`.
+**Test correction commit:** `e9ab0e2a217be34d56e6530338419516d9e72430`.
 
-**Current state:** **Re-run required.** A passing result has not yet been observed for the corrected regression.
+**Final regression execution:** Pulled `origin/main` at `08ea3bb94e3aea1caa676a0eaa1004a99049b117`, cleared caches, and ran:
+
+```text
+php -d memory_limit=512M artisan test tests/Feature/QA/AppointmentLifecycleScenarioTest.php --stop-on-failure
+
+PASS Tests\\Feature\\QA\\AppointmentLifecycleScenarioTest
+Tests:    6 passed (29 assertions)
+Duration: 7.50s
+```
+
+**Final state:** **APT-004 PASS locally.** The regression verifies canonical `starts_at`, legacy compatibility `date`/`time_slot`, queue `queue_date` reconciliation, and preservation of the explicit confirmed status.
 
 ## Previously verified local evidence
 
@@ -92,6 +103,7 @@ BookingRulesScenarioTest → 5 passed / 6 assertions / 7.56s
 BookingAvailabilityRulesScenarioTest → 4 passed / 8 assertions / 7.33s
 AppointmentLifecycleScenarioTest (pre-strengthening) → 3 passed / 11 assertions / 7.23s
 AppointmentLifecycleScenarioTest (post-fix strengthened no-show regression) → 5 passed / 24 assertions / 7.58s
+AppointmentLifecycleScenarioTest (corrected reschedule regression) → 6 passed / 29 assertions / 7.50s
 ```
 
 These are local MySQL-backed runs. They are not release certification without fresh MySQL CI evidence.
@@ -113,6 +125,7 @@ These are local MySQL-backed runs. They are not release certification without fr
 - Appointment lifecycle status-machine validation.
 - Confirm/cancel/complete queue synchronization coverage.
 - `APT-006` no-show lifecycle, including `no_show` persistence, `no_show_at`, and queue `skipped` synchronization.
+- `APT-004` reschedule, including canonical schedule and queue-date reconciliation.
 - Appointment status-history completeness for the strengthened lifecycle scenario.
 - Appointment completion/invoice creation coverage in the strengthened lifecycle scenario.
 - Appointment/queue integration lifecycle.
@@ -121,7 +134,7 @@ These are local MySQL-backed runs. They are not release certification without fr
 
 ### OPEN / BLOCKED ON REGRESSION
 
-- `APT-004` reschedule — **production fix applied; corrected regression re-run required**.
+- `APT-009` completion/invoice consistency — stronger persisted-data reconciliation still required.
 - `BOOK-005` invalid resource rejected.
 - `BOOK-011` timezone conversion.
 - `BOOK-012` booking notification failure does not corrupt booking.
@@ -130,13 +143,12 @@ These are local MySQL-backed runs. They are not release certification without fr
 
 ## Next certification work
 
-1. Re-run corrected `APT-004` reschedule regression against the Queue reconciliation fix.
-2. `APT-009` completion/invoice consistency with explicit persisted-data assertions.
-3. `BOOK-005`, `BOOK-011`, and `BOOK-012`.
-4. Broader `AVAIL-001` working-hours boundary matrix.
-5. Queue/concurrency and webhook concurrency where applicable.
-6. Full `tests/Feature/QA` on fresh MySQL 8.4 + PHP 8.4 CI.
-7. Final cross-surface reconciliation and production certification.
+1. Strengthen `APT-009` completion/invoice consistency with explicit persisted invoice/customer/appointment amount and uniqueness assertions.
+2. `BOOK-005`, `BOOK-011`, and `BOOK-012`.
+3. Broader `AVAIL-001` working-hours boundary matrix.
+4. Queue/concurrency and webhook concurrency where applicable.
+5. Full `tests/Feature/QA` on fresh MySQL 8.4 + PHP 8.4 CI.
+6. Final cross-surface reconciliation and production certification.
 
 ## Concurrency / certification gates still outstanding
 
