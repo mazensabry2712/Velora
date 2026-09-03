@@ -40,9 +40,9 @@ The canonical certification environment is MySQL 8.4 + PHP 8.4. The repository's
 | Booking rules (timezone regression, corrected) | `BookingRulesScenarioTest` | PASS | 7 | 12 | 2026-09-03 |
 | Booking notification failure isolation (first run) | `BookingNotificationFailureScenarioTest` | FAIL | 0 | 0 | 2026-09-03 |
 | Booking notification failure isolation (corrected fixture) | `BookingNotificationFailureScenarioTest` | PASS | 2 | 19 | 2026-09-03 |
-| Queue stale-transition regression | `QueueLifecycleScenarioTest` | PENDING | — | — | 2026-09-03 |
+| Queue stale-transition regression | `QueueLifecycleScenarioTest` | PASS | 7 | 12 | 2026-09-03 |
 
-Current verified passing subtotal from completed passing focused runs remains **79 passed test executions / 267 assertions**. Failed intermediate runs are retained as evidence and are not counted as passes. `CONC-001`/`CONC-002`/`CONC-003` are CI-gated on Windows and are not counted in this local subtotal.
+Current verified passing subtotal from completed passing focused runs remains **79 passed test executions / 267 assertions** for the previously reconciled suites. The newly confirmed `QueueLifecycleScenarioTest` run is tracked separately because it contains a new regression added after that subtotal was calculated. `CONC-001`/`CONC-002`/`CONC-003` remain CI-gated on Windows and are not counted in the local subtotal.
 
 ## Defects discovered and addressed during this pass
 
@@ -162,7 +162,7 @@ Current verified passing subtotal from completed passing focused runs remains **
 
 ### QA-QUEUE-001 — Stale queue transition race
 
-**Scenario:** `CONC-004`/queue mutation race. Two actors can hold different in-memory versions of one queue row and attempt incompatible transitions.
+**Scenario:** `CONC-004` queue mutation race. Two actors can hold different in-memory versions of one queue row and attempt incompatible transitions.
 
 **Observed risk:** `TransitionQueueEntry` previously validated the transition against the caller's in-memory status and updated without a DB transaction or row lock. A stale actor could therefore overwrite a newer persisted state.
 
@@ -174,7 +174,17 @@ Current verified passing subtotal from completed passing focused runs remains **
 
 **Regression commit:** `dbf711bd4166a2e4ccd700d2a2f7bf5fc4bd9ede`.
 
-**Current state:** **PENDING focused local regression + MySQL CI.**
+**Local verification:** **7 tests / 12 assertions / 7.51s PASS** on Windows/Herd PHP 8.5.9.
+
+**Current state:** **Focused local regression PASS; fresh MySQL CI still required.**
+
+### QA-CONC-005 — Concurrent webhook delivery gate
+
+**Applicable provider paths:** Moyasar and Stripe both persist provider event IDs in `webhook_events` and use a unique `(provider,event_id)` constraint as the first idempotency boundary. Existing tests already cover duplicate webhook delivery behavior; the database uniqueness constraint is concurrency-safe at the storage layer.
+
+**Current assessment:** The repository has a real concurrency-safe deduplication primitive, but there is not yet an independent multi-process processor race test in the current QA suite. This remains an explicit CI/certification gate rather than being marked PASS from sequential duplicate tests alone.
+
+**Current state:** **PENDING concurrency race test + MySQL CI.**
 
 ## Current booking/appointment/queue gate status
 
@@ -185,22 +195,23 @@ Current verified passing subtotal from completed passing focused runs remains **
 - Appointment lifecycle status machine and queue synchronization.
 - `APT-004`, `APT-006`, `APT-008`, `APT-009`.
 - Customer history/queue/invoice access.
+- `CONC-004` focused stale-transition regression.
 
 ### OPEN / BLOCKED ON REGRESSION / CI
 
 - `CONC-001` same-slot concurrent booking.
 - `CONC-002` duplicate concurrent booking submission.
 - `CONC-003` queue call-next concurrency.
-- `CONC-004` queue mutation race / stale transition regression.
-- `CONC-005` concurrent webhook delivery where applicable.
+- MySQL concurrency verification for `CONC-004`.
+- `CONC-005` concurrent webhook delivery.
 - Fresh Master QA MySQL 8.4 CI success for the final current `main`.
 - Final cross-surface reconciliation and production certification.
 
 ## Next certification work
 
-1. Run the focused `QueueLifecycleScenarioTest` regression locally.
+1. Confirm the new queue stale-transition fix in Master QA MySQL 8.4 CI.
 2. Confirm `CONC-001`, `CONC-002`, and `CONC-003` in Ubuntu/MySQL 8.4 CI.
-3. Add/run concurrent webhook delivery where applicable.
+3. Add/run an independent concurrent webhook delivery race for the provider idempotency boundary.
 4. Run the full `tests/Feature/QA` suite on a fresh MySQL 8.4 + PHP 8.4 CI run after all current changes settle.
 5. Perform final cross-surface reconciliation and production certification.
 
