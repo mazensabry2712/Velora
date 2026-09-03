@@ -41,7 +41,7 @@ The canonical certification environment is MySQL 8.4 + PHP 8.4. The repository's
 | Booking notification failure isolation (first run) | `BookingNotificationFailureScenarioTest` | FAIL | 0 | 0 | 2026-09-03 |
 | Booking notification failure isolation (corrected fixture) | `BookingNotificationFailureScenarioTest` | PASS | 2 | 19 | 2026-09-03 |
 
-Current verified passing subtotal from completed passing focused runs is **79 passed test executions / 267 assertions**. Failed intermediate runs are retained as evidence and are not counted as passes. `CONC-001` Windows runs are not counted because the supported regression is intentionally gated to the CI/Linux process environment.
+Current verified passing subtotal from completed passing focused runs is **79 passed test executions / 267 assertions**. Failed intermediate runs are retained as evidence and are not counted as passes. `CONC-001`/`CONC-002` are CI-gated on Windows and therefore are not counted in this local subtotal.
 
 ## Defects discovered and addressed during this pass
 
@@ -114,10 +114,7 @@ Current verified passing subtotal from completed passing focused runs is **79 pa
 
 **Classification:** Both were **test/fixture contract defects**. The run did not establish a production timezone defect.
 
-**Correction:**
-
-- The resource fixture now uses the real `staff_services` pivot schema.
-- The timezone regression now compares the raw persisted `starts_at` value normalized as UTC against the requested customer's UTC instant, while separately checking staff-local `date`, `time_slot`, and stored appointment timezone.
+**Correction:** The resource fixture now uses the real `staff_services` pivot schema. The timezone regression now compares the raw persisted UTC instant and separately verifies staff-local compatibility fields.
 
 **Test correction commit:** `df16ee7b31ddda748135990421df5dc57d047640`.
 
@@ -129,71 +126,63 @@ Current verified passing subtotal from completed passing focused runs is **79 pa
 
 **Scenario:** `BOOK-012` booking notification failure does not corrupt the booking core.
 
-**Production flow reviewed:** Public booking persists the appointment and queue inside the booking transaction; notification delivery is a separate side-effect boundary. Email and WhatsApp jobs track delivery attempts, requeue transient failures, and expose a terminal `failed` state through the queue job failure callback.
+**Regression added:** `tests/Feature/QA/BookingNotificationFailureScenarioTest.php` covers both Email and WhatsApp failure behavior.
 
-**Regression added:** `tests/Feature/QA/BookingNotificationFailureScenarioTest.php` covers both channels and asserts the failure classification:
+**First run:** Test fixtures violated `appointments.source` length and failed before entering the notification jobs.
 
-```text
-COMMITTED CORE + RETRYABLE SIDE EFFECT
-```
+**Classification:** **Test-data/schema contract defect.**
 
-**First regression execution:** After pulling `origin/main` at `48459ccbe877eb4d1b3a34d86b4b04725f690341`, the suite did not reach notification assertions. Both tests failed during fixture creation with `SQLSTATE[22001]` because the fixture used `source = qa-booking-notification-failure` while `appointments.source` is `string(20)`.
-
-**Classification:** **Test-data/schema contract defect.** No production notification failure was established by that run.
-
-**Correction:** Fixture source value shortened to `qa-notify-fail`.
+**Correction:** Fixture source shortened to `qa-notify-fail`.
 
 **Fixture correction commit:** `8ec36b91b73bc6b7422a0f0f9b7740ebfb1884e6`.
 
-**Final regression execution:** After pulling `origin/main` at `d549d01b421e4aa40c3b597a13bc27bbccb4fdc7`, clearing caches, and running:
+**Final regression:** **2 tests / 19 assertions / 7.20s PASS**.
 
-```text
-php -d memory_limit=512M artisan test tests/Feature/QA/BookingNotificationFailureScenarioTest.php --stop-on-failure
-
-PASS Tests\\Feature\\QA\\BookingNotificationFailureScenarioTest
-Tests:    2 passed (19 assertions)
-Duration: 7.20s
-```
-
-**Final state:** **BOOK-012 PASS locally.** The regression verifies that both Email and WhatsApp provider failures leave the appointment persisted and pending while the delivery remains retryable, records the attempt/error, and remains unsent.
+**Final state:** **BOOK-012 PASS locally.**
 
 ### QA-AVAIL-001 — Working-hours boundary matrix
 
 **Scenario:** `AVAIL-001` working-hours validity at the exact operating window boundaries.
 
-**Regression added:** `BookingAvailabilityRulesScenarioTest` now explicitly exercises the working-hours matrix for the configured 09:00–17:00 window with a 30-minute service: before opening, exact opening, last slot that fits, and a start time that would overrun the closing boundary.
+**Regression added:** `BookingAvailabilityRulesScenarioTest` explicitly covers the 09:00–17:00 operating window with a 30-minute service: before opening, exact opening, last fitting slot, and a slot that overruns closing.
 
-**Observed result:** User-run local MySQL-backed execution on `main` commit `39d2d0cac8e897fd4451e9ac39e11c817f514a77` passed all existing availability rules plus the new matrix:
-
-```text
-PASS Tests\\Feature\\QA\\BookingAvailabilityRulesScenarioTest
-Tests:    5 passed (14 assertions)
-Duration: 7.48s
-```
+**Final regression:** **5 tests / 14 assertions / 7.48s PASS**.
 
 **Test commit:** `27d063ef50d6b562fb4e3278acb02846cfd564ec`.
 
-**Final state:** **AVAIL-001 PASS locally for the covered working-hours boundary contract.** This does not replace concurrency or fresh MySQL CI certification.
+**Final state:** **AVAIL-001 PASS locally for the covered working-hours boundary contract.**
 
 ### QA-CONC-001 — Same-slot concurrent public booking race
 
 **Scenario:** `CONC-001` two customers attempt the same protected booking slot concurrently.
 
-**Harness:** `tests/Feature/QA/BookingConcurrencyScenarioTest.php` uses two independent PHP worker processes, a filesystem barrier, and a final DB invariant requiring exactly one active appointment.
+**Harness:** `tests/Feature/QA/BookingConcurrencyScenarioTest.php` launches two independent PHP worker processes, synchronizes them with a filesystem barrier, and requires exactly one successful booking plus exactly one `SlotUnavailableException` with one active appointment persisted.
 
-**Worker:** `tests/Support/concurrent_booking_worker.php`.
+**Implementation under test:** `BookingCreationService` runs inside a DB transaction and locks overlapping appointment rows with `lockForUpdate()` before validation and creation.
 
-**Production implementation under test:** `BookingCreationService` executes inside a transaction and locks overlapping appointment rows with `lockForUpdate()` before slot validation and creation.
+**Local investigation:** Multiple Windows/Herd runs failed before worker readiness. The user's environment reports PHP 8.5.9 CLI. Direct worker invocation succeeds, while the PHPUnit/Symfony Process path does not produce worker checkpoints.
 
-**Local Windows investigation:** Three consecutive local attempts reached the worker-launch layer but never produced worker checkpoints. The user's environment is Windows/Herd with PHP 8.5.9 CLI. Direct invocation of the worker script succeeds, but the Symfony Process invocation from PHPUnit exits before the worker's first filesystem checkpoint. These runs are classified as **test-harness/environment limitation**, not application defects.
+**Harness correction:** An additional ordering defect was identified: child workers must not start until the parent has committed the tenant and fixture rows because each worker uses an independent DB connection. `CONC-001` was corrected accordingly in commit `6100a711104c7cf05e217c6a12b1cc720b8a394e`.
 
-**Resolution:** `BookingConcurrencyScenarioTest` now explicitly skips on Windows and remains fully enforced on CI/Linux. The race gate is therefore not weakened; it is moved to the supported process-execution environment where independent workers can be started deterministically.
+**Platform policy:** The test explicitly skips on Windows and remains enforced in the Ubuntu/MySQL 8.4 Master QA workflow. This is a test-environment constraint, not a relaxation of the concurrency assertion.
 
-**Current state:** **CONC-001 pending CI execution. No local PASS claimed.**
+**Current state:** **PENDING CI EXECUTION. No local PASS claimed.**
+
+### QA-CONC-002 — Duplicate concurrent booking submission
+
+**Scenario:** `CONC-002` the same customer submits the same booking concurrently.
+
+**Regression added:** `tests/Feature/QA/DuplicateBookingConcurrencyScenarioTest.php` uses two independent workers with the same customer email and protected slot, requiring exactly one successful appointment, one `SlotUnavailableException`, one active appointment, and one customer row for the email.
+
+**Harness correction:** Fixture rows are committed before spawning workers so independent DB connections can see the same committed state. Final test commit: `e9360d6d28521d87280f5943b992ef80d7617ee0`.
+
+**Platform policy:** Windows execution is explicitly skipped; CI/Linux is the enforcing environment.
+
+**Current state:** **PENDING CI EXECUTION. No local PASS claimed.**
 
 ## Previously verified local evidence
 
-The following focused runs were completed successfully in the current development environment:
+The focused local runs below are the verified evidence set in the current development environment:
 
 ```text
 CustomerBookingJourneyTest → 5 passed / 41 assertions
@@ -203,7 +192,6 @@ AppointmentQueueIntegrationTest → 9 passed / 14 assertions
 BookingRulesScenarioTest (initial) → 5 passed / 6 assertions
 BookingRulesScenarioTest (resource regression) → 6 passed / 9 assertions / 7.33s
 BookingRulesScenarioTest (timezone regression, corrected) → 7 passed / 12 assertions / 7.68s
-BookingAvailabilityRulesScenarioTest (initial) → 4 passed / 8 assertions / 7.33s
 BookingAvailabilityRulesScenarioTest (working-hours matrix) → 5 passed / 14 assertions / 7.48s
 AppointmentLifecycleScenarioTest (pre-strengthening) → 3 passed / 11 assertions / 7.23s
 AppointmentLifecycleScenarioTest (post-fix no-show regression) → 5 passed / 24 assertions / 7.58s
@@ -245,7 +233,7 @@ These are local MySQL-backed runs. They are not release certification without fr
 ### OPEN / BLOCKED ON REGRESSION / CI
 
 - `CONC-001` same-slot concurrent booking — CI/Linux execution required.
-- `CONC-002` duplicate concurrent booking submission.
+- `CONC-002` duplicate concurrent booking submission — CI/Linux execution required.
 - `CONC-003` queue call-next concurrency.
 - `CONC-004` queue mutation race cases.
 - `CONC-005` concurrent webhook delivery where applicable.
@@ -254,12 +242,11 @@ These are local MySQL-backed runs. They are not release certification without fr
 
 ## Next certification work
 
-1. Execute `CONC-001` in MySQL 8.4/Linux CI.
-2. Add/run `CONC-002` duplicate concurrent booking submission.
-3. Add/run queue call-next and queue mutation race coverage.
-4. Add/run concurrent webhook delivery where applicable.
-5. Run full `tests/Feature/QA` on fresh MySQL 8.4 + PHP 8.4 CI.
-6. Perform final cross-surface reconciliation and production certification.
+1. Execute `CONC-001` and `CONC-002` in the Master QA Ubuntu/MySQL 8.4 environment.
+2. Add/run queue call-next and queue mutation race coverage.
+3. Add/run concurrent webhook delivery where applicable.
+4. Run full `tests/Feature/QA` on fresh MySQL 8.4 + PHP 8.4 CI.
+5. Perform final cross-surface reconciliation and production certification.
 
 ## Concurrency / certification gates still outstanding
 
