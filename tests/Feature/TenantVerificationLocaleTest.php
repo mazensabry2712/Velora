@@ -19,7 +19,7 @@ final class TenantVerificationLocaleTest extends TestCase
         parent::setUp();
 
         Artisan::call('migrate', [
-            '--database' => config('tenancy.database.central_connection', 'sqlite'),
+            '--database' => config('tenancy.database.central_connection', 'mysql'),
             '--path' => 'database/migrations',
             '--force' => true,
         ]);
