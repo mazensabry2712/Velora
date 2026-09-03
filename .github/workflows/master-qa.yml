@@ -44,9 +44,14 @@ jobs:
         env:
           APP_ENV: testing
           APP_DEBUG: true
+          APP_URL: http://velora.test
+          APP_DOMAIN: velora.test
+          APP_BASE_DOMAIN: velora.test
           CACHE_STORE: array
           CACHE_DRIVER: array
           SESSION_DRIVER: array
+          QUEUE_CONNECTION: sync
+          MAIL_MAILER: array
           DB_CONNECTION: mysql
           DB_HOST: 127.0.0.1
           DB_PORT: 3306
@@ -54,9 +59,6 @@ jobs:
           DB_USERNAME: root
           DB_PASSWORD: root
           TENANCY_CENTRAL_CONNECTION: mysql
-          APP_URL: http://velora.test
-          APP_DOMAIN: velora.test
-          APP_BASE_DOMAIN: velora.test
         run: |
           cp .env.example .env
           php artisan key:generate --ansi
@@ -67,9 +69,14 @@ jobs:
         env:
           APP_ENV: testing
           APP_DEBUG: true
+          APP_URL: http://velora.test
+          APP_DOMAIN: velora.test
+          APP_BASE_DOMAIN: velora.test
           CACHE_STORE: array
           CACHE_DRIVER: array
           SESSION_DRIVER: array
+          QUEUE_CONNECTION: sync
+          MAIL_MAILER: array
           DB_CONNECTION: mysql
           DB_HOST: 127.0.0.1
           DB_PORT: 3306
@@ -77,7 +84,4 @@ jobs:
           DB_USERNAME: root
           DB_PASSWORD: root
           TENANCY_CENTRAL_CONNECTION: mysql
-          APP_URL: http://velora.test
-          APP_DOMAIN: velora.test
-          APP_BASE_DOMAIN: velora.test
         run: php artisan test tests/Feature/QA --compact
