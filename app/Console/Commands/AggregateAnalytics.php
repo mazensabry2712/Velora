@@ -60,8 +60,12 @@ class AggregateAnalytics extends Command
     {
         $dateStr = $date->toDateString();
 
-        // ── 1. Business-level daily KPIs ──────────────────────────────────────
-        $appointments = Appointment::whereDate('date', $dateStr)->get();
+        // The appointment source of truth is the canonical UTC interval plus
+        // the canonical Customer identity. Legacy date/time/customer_id fields
+        // are intentionally not used by analytics.
+        $appointments = Appointment::whereDate('starts_at', $dateStr)
+            ->with('service')
+            ->get();
 
         $total        = $appointments->count();
         $confirmed    = $appointments->where('status', 'confirmed')->count();
@@ -75,16 +79,16 @@ class AggregateAnalytics extends Command
             ->sum(fn ($a) => $a->service?->price ?? 0);
 
         // Customer metrics
-        $customerIds      = $appointments->pluck('customer_id')->filter()->unique();
+        $customerIds      = $appointments->pluck('customer_id_new')->filter()->unique();
         $uniqueCustomers  = $customerIds->count();
 
         // New vs returning: customer made a first appointment today
         $newCustomers = 0;
         $returningCustomers = 0;
         foreach ($customerIds as $customerId) {
-            $firstAppt = Appointment::where('customer_id', $customerId)
-                ->oldest('date')
-                ->value('date');
+            $firstAppt = Appointment::where('customer_id_new', $customerId)
+                ->oldest('starts_at')
+                ->value('starts_at');
             if ($firstAppt && Carbon::parse($firstAppt)->isSameDay($date)) {
                 $newCustomers++;
             } else {
@@ -92,7 +96,6 @@ class AggregateAnalytics extends Command
             }
         }
 
-        // DB upsert
         DB::table('analytics_daily')->updateOrInsert(
             ['date' => $dateStr],
             [
@@ -131,7 +134,6 @@ class AggregateAnalytics extends Command
             $sRevenue   = $serviceAppts->where('status', 'completed')
                 ->sum(fn ($a) => $a->service?->price ?? 0);
 
-            // Only upsert if service exists
             if (! Service::find($serviceId)) {
                 continue;
             }
@@ -154,8 +156,8 @@ class AggregateAnalytics extends Command
         $weekStart = $date->copy()->startOfWeek()->toDateString();
 
         $heatRows = $appointments->groupBy(function ($a) {
-            // day_of_week 0=Sunday...6=Saturday
-            return Carbon::parse($a->date)->dayOfWeek . ':' . (int) substr((string) $a->time_slot, 0, 2);
+            $startsAt = Carbon::parse($a->starts_at);
+            return $startsAt->dayOfWeek . ':' . $startsAt->hour;
         });
 
         foreach ($heatRows as $key => $group) {
