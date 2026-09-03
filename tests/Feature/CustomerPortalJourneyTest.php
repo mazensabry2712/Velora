@@ -13,14 +13,7 @@ class CustomerPortalJourneyTest extends TenantTestCase
 {
     private function customerRecordForUser(): Customer
     {
-        return Customer::create([
-            'first_name' => 'Test',
-            'last_name' => 'Customer',
-            'email' => $this->customer->email,
-            'phone' => $this->customer->phone ?? '+201000000000',
-            'acquisition_source' => 'online',
-            'is_blocked' => false,
-        ]);
+        return $this->customerProfile;
     }
 
     private function appointmentAttributes(Customer $customer, string $time, string $status = Appointment::STATUS_PENDING): array
