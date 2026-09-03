@@ -77,6 +77,8 @@ class Appointment extends Model
                     ? $model->starts_at
                     : \Carbon\Carbon::parse($model->starts_at);
 
+                // Temporary compatibility sync until legacy date/time columns are
+                // removed after the final schema-consolidation verification.
                 $model->date ??= $startsAt->toDateString();
                 $model->time_slot ??= $startsAt->format('H:i');
             }
@@ -122,16 +124,19 @@ class Appointment extends Model
 
             $newStatus = $appointment->status;
             $customer  = $appointment->customer;
+            $startsAt  = $appointment->starts_at;
+            $dateLabel = $startsAt?->format('Y-m-d') ?? '—';
+            $timeLabel = $startsAt?->format('H:i') ?? '—';
 
             if ($customer?->user_id) {
                 $messages = [
                     'confirmed' => [
-                        'ar' => 'تم تأكيد موعدك بتاريخ ' . $appointment->date?->format('Y-m-d') . ' الساعة ' . $appointment->time_slot,
-                        'en' => 'Your appointment on ' . $appointment->date?->format('Y-m-d') . ' at ' . $appointment->time_slot . ' has been confirmed.',
+                        'ar' => 'تم تأكيد موعدك بتاريخ ' . $dateLabel . ' الساعة ' . $timeLabel,
+                        'en' => 'Your appointment on ' . $dateLabel . ' at ' . $timeLabel . ' has been confirmed.',
                     ],
                     'cancelled' => [
-                        'ar' => 'تم إلغاء موعدك بتاريخ ' . $appointment->date?->format('Y-m-d'),
-                        'en' => 'Your appointment on ' . $appointment->date?->format('Y-m-d') . ' has been cancelled.',
+                        'ar' => 'تم إلغاء موعدك بتاريخ ' . $dateLabel,
+                        'en' => 'Your appointment on ' . $dateLabel . ' has been cancelled.',
                     ],
                     'completed' => [
                         'ar' => 'تمت خدمتك بنجاح، شكراً لزيارتك!',
