@@ -14,13 +14,19 @@ final class CheckSubscriptionStatus extends Command
     protected $signature = 'subscriptions:check-status';
     protected $description = 'Transition subscriptions through trial, read-only and locked lifecycle states';
 
+    private function centralConnection(): string
+    {
+        return (string) config('tenancy.database.central_connection', 'mysql');
+    }
+
     public function handle(): int
     {
         $this->info('Checking subscription lifecycles...');
         $now = now();
         $processed = 0;
+        $connection = DB::connection($this->centralConnection());
 
-        $trialExpired = DB::connection('mysql')
+        $trialExpired = $connection
             ->table('tenant_subscriptions')
             ->where('status', 'trial')
             ->whereNotNull('trial_ends_at')
@@ -32,7 +38,7 @@ final class CheckSubscriptionStatus extends Command
             $processed++;
         }
 
-        $activeExpired = DB::connection('mysql')
+        $activeExpired = $connection
             ->table('tenant_subscriptions')
             ->where('status', 'active')
             ->whereNotNull('ends_at')
@@ -44,7 +50,7 @@ final class CheckSubscriptionStatus extends Command
             $processed++;
         }
 
-        $legacy = DB::connection('mysql')
+        $legacy = $connection
             ->table('tenant_subscriptions')
             ->whereIn('status', ['grace', 'expired'])
             ->get();
@@ -61,7 +67,7 @@ final class CheckSubscriptionStatus extends Command
             }
         }
 
-        $readOnlyExpired = DB::connection('mysql')
+        $readOnlyExpired = $connection
             ->table('tenant_subscriptions')
             ->where('status', 'read_only')
             ->whereNotNull('read_only_ends_at')
@@ -76,7 +82,7 @@ final class CheckSubscriptionStatus extends Command
                 ? now()->parse($sub->deletion_at)
                 : $lockedAt->copy()->addDays(SubscriptionLifecycle::LOCKED_DAYS);
 
-            DB::connection('mysql')
+            $connection
                 ->table('tenant_subscriptions')
                 ->where('id', $sub->id)
                 ->update([
@@ -106,7 +112,7 @@ final class CheckSubscriptionStatus extends Command
         $now = now();
         $status = $now->lt($readOnlyEndsAt) ? 'read_only' : 'locked';
 
-        DB::connection('mysql')
+        DB::connection($this->centralConnection())
             ->table('tenant_subscriptions')
             ->where('id', $subscriptionId)
             ->update([
