@@ -6,6 +6,7 @@ use App\Domain\Shared\Contracts\PaymentGatewayResolver;
 use App\Payments\Contracts\PaymentGatewayInterface;
 use App\Payments\PaymentGatewayManager;
 use App\Services\GeoService;
+use App\Services\MoyasarService;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
@@ -156,6 +157,72 @@ class BillingControllerGatewayTest extends TenantTestCase
             ->withSession(['detected_country' => 'US'])
             ->post('/billing/checkout', [])
             ->assertSessionHasErrors('plan_id');
+    }
+
+    #[Test]
+    public function moyasar_browser_callback_only_verifies_payment_and_never_activates_subscription(): void
+    {
+        $paymentId = 'pay_callback_001';
+
+        $moyasar = $this->createMock(MoyasarService::class);
+        $moyasar->expects($this->once())
+            ->method('verifyPayment')
+            ->with($paymentId)
+            ->willReturn([
+                'id' => $paymentId,
+                'status' => 'paid',
+                'amount' => 4900,
+                'currency' => 'SAR',
+                'metadata' => [
+                    'tenant_id' => $this->tenant->id,
+                    'plan_id' => $this->planId,
+                ],
+            ]);
+        $moyasar->expects($this->never())->method('activateSubscription');
+
+        $this->app->instance(MoyasarService::class, $moyasar);
+
+        $this->actingAs($this->admin)
+            ->withSession([
+                'moyasar_plan_id' => $this->planId,
+                'moyasar_amount' => 4900,
+                'moyasar_currency' => 'SAR',
+            ])
+            ->get(route('billing.moyasar.callback', ['id' => $paymentId]))
+            ->assertRedirect(route('admin.dashboard'))
+            ->assertSessionHas('success', 'تم استلام الدفع بنجاح، وسيتم تفعيل الاشتراك تلقائيًا بعد تأكيد مزود الدفع.')
+            ->assertSessionMissing('moyasar_plan_id');
+    }
+
+    #[Test]
+    public function moyasar_browser_callback_rejects_amount_or_currency_mismatch(): void
+    {
+        $paymentId = 'pay_callback_mismatch_001';
+
+        $moyasar = $this->createMock(MoyasarService::class);
+        $moyasar->expects($this->once())
+            ->method('verifyPayment')
+            ->with($paymentId)
+            ->willReturn([
+                'id' => $paymentId,
+                'status' => 'paid',
+                'amount' => 5000,
+                'currency' => 'SAR',
+            ]);
+        $moyasar->expects($this->never())->method('activateSubscription');
+
+        $this->app->instance(MoyasarService::class, $moyasar);
+
+        $this->from('/billing/expired')
+            ->actingAs($this->admin)
+            ->withSession([
+                'moyasar_plan_id' => $this->planId,
+                'moyasar_amount' => 4900,
+                'moyasar_currency' => 'SAR',
+            ])
+            ->get(route('billing.moyasar.callback', ['id' => $paymentId]))
+            ->assertRedirect(route('billing.expired'))
+            ->assertSessionHasErrors('payment');
     }
 
     private function mockGatewayForCountry(string $country, string $expectedGateway, string $redirectsTo): void
