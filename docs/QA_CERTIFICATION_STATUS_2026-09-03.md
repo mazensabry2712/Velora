@@ -121,6 +121,18 @@ These results are local MySQL-backed runs from the developer environment. They a
 - `BookingRulesScenarioTest` → **5 passed / 6 assertions / 7.56s**
 - `BookingAvailabilityRulesScenarioTest` → **4 passed / 8 assertions / 7.33s**
 
+### QA-TEST-APT-002 — Appointment lifecycle QA fixture used legacy identity contract
+
+**Observed:** `AppointmentLifecycleScenarioTest` created appointments using legacy `customer_id`, `staff_id`, `date`, and `time_slot` fields, while the current runtime contract uses `customer_id_new`, `staff_id_new`, and canonical appointment timestamps.
+
+**Root cause:** The lifecycle regression test had not yet been migrated with the broader appointment identity cleanup.
+
+**Fix:** Lifecycle fixtures now create appointments through `customer_id_new` / `staff_id_new`, populate `starts_at`, `ends_at`, `ends_at_with_buffer`, timezone and source, and assert the canonical relationships after state transitions. Production appointment status behavior was not changed by this test-only fix.
+
+**Commit:** `07c84e60612c131bfab4535447a1bcadf03dce18`.
+
+**Status:** Test fix is committed. Focused `AppointmentLifecycleScenarioTest` execution is required next; no PASS is claimed yet.
+
 ## Current booking/appointment gate status
 
 ### PASS — locally verified in the current session
