@@ -33,8 +33,16 @@ final class BookingCreationService
             $bufferAfter     = $service->buffer_after_minutes;
             $bufferBefore    = $service->buffer_before_minutes;
 
-            $lockStart = $data->startsAt->copy()->subMinutes($bufferBefore)->subMinutes($serviceDuration + $bufferAfter);
-            $lockEnd   = $data->startsAt->copy()->addMinutes($serviceDuration + $bufferAfter + $bufferBefore);
+            // `starts_at` / `ends_at*` are persisted in UTC. The input and
+            // legacy display fields (`date`, `time_slot`) remain in the
+            // staff/tenant timezone supplied by the booking boundary.
+            $lockStart = $data->startsAt->copy()
+                ->subMinutes($bufferBefore)
+                ->subMinutes($serviceDuration + $bufferAfter)
+                ->utc();
+            $lockEnd = $data->startsAt->copy()
+                ->addMinutes($serviceDuration + $bufferAfter + $bufferBefore)
+                ->utc();
 
             Appointment::query()
                 ->where('staff_id_new', $staff->id)
@@ -61,7 +69,7 @@ final class BookingCreationService
                 if ($maxPerDay > 0) {
                     $dayCount = Appointment::query()
                         ->where('customer_id_new', $data->customerId)
-                        ->whereDate('starts_at', $data->startsAt->toDateString())
+                        ->whereDate('starts_at', $data->startsAt->copy()->utc()->toDateString())
                         ->whereNotIn('status', [Appointment::STATUS_CANCELLED, Appointment::STATUS_NO_SHOW])
                         ->count();
 
@@ -71,8 +79,9 @@ final class BookingCreationService
                 }
             }
 
-            $startsAt         = $data->startsAt->clone()->utc();
-            $endsAt           = $startsAt->copy()->addMinutes($serviceDuration);
+            $localStartsAt = $data->startsAt->copy();
+            $startsAt = $localStartsAt->copy()->utc();
+            $endsAt = $startsAt->copy()->addMinutes($serviceDuration);
             $endsAtWithBuffer = $endsAt->copy()->addMinutes($bufferAfter);
 
             $appointment = Appointment::create([
@@ -91,8 +100,8 @@ final class BookingCreationService
                 'source'              => $data->source,
                 'notes'               => $data->notes,
                 'status'              => Appointment::STATUS_PENDING,
-                'date'                => $startsAt->toDateString(),
-                'time_slot'           => $startsAt->format('H:i'),
+                'date'                => $localStartsAt->toDateString(),
+                'time_slot'           => $localStartsAt->format('H:i'),
                 'service_type'        => $service->name,
             ]);
 
