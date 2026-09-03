@@ -7,6 +7,8 @@ namespace Tests\Feature\QA;
 use App\Application\Booking\Actions\ChangeAppointmentStatus;
 use App\Domain\Booking\Rules\AppointmentStatusTransition;
 use App\Models\Appointment;
+use App\Models\AppointmentStatusHistory;
+use App\Models\Invoice;
 use App\Models\Queue;
 use DomainException;
 use PHPUnit\Framework\Attributes\Group;
@@ -77,24 +79,29 @@ final class AppointmentLifecycleScenarioTest extends TenantTestCase
     }
 
     #[Test]
-    public function completed_appointment_moves_its_queue_entry_to_completed(): void
+    public function completed_appointment_moves_its_queue_entry_to_completed_and_creates_an_invoice(): void
     {
         $appointment = $this->makeAppointment('14:00', Appointment::STATUS_CONFIRMED);
         $this->makeQueue($appointment, 'serving');
+        $invoiceCountBefore = Invoice::where('appointment_id', $appointment->id)->count();
 
         $updated = app(ChangeAppointmentStatus::class)->execute(
             $appointment->id,
             Appointment::STATUS_COMPLETED,
         );
 
-        $this->assertSame(Appointment::STATUS_COMPLETED, $updated->fresh()->status);
-        $this->assertSame('completed', $updated->fresh()->queue?->status);
-        $this->assertSame($this->customerProfile->id, $updated->customer_id_new);
-        $this->assertSame($this->staff->id, $updated->staff_id_new);
+        $fresh = $updated->fresh(['queue']);
+
+        $this->assertSame(Appointment::STATUS_COMPLETED, $fresh->status);
+        $this->assertNotNull($fresh->completed_at);
+        $this->assertSame('completed', $fresh->queue?->status);
+        $this->assertSame($this->customerProfile->id, $fresh->customer_id_new);
+        $this->assertSame($this->staff->id, $fresh->staff_id_new);
+        $this->assertSame($invoiceCountBefore + 1, Invoice::where('appointment_id', $appointment->id)->count());
     }
 
     #[Test]
-    public function cancelled_appointment_moves_its_queue_entry_to_skipped(): void
+    public function cancelled_appointment_moves_its_queue_entry_to_skipped_and_records_cancelled_at(): void
     {
         $appointment = $this->makeAppointment('15:00', Appointment::STATUS_CONFIRMED);
         $this->makeQueue($appointment, 'waiting');
@@ -104,9 +111,52 @@ final class AppointmentLifecycleScenarioTest extends TenantTestCase
             Appointment::STATUS_CANCELLED,
         );
 
-        $this->assertSame(Appointment::STATUS_CANCELLED, $updated->fresh()->status);
-        $this->assertSame('skipped', $updated->fresh()->queue?->status);
-        $this->assertSame($this->customerProfile->id, $updated->customer_id_new);
-        $this->assertSame($this->staff->id, $updated->staff_id_new);
+        $fresh = $updated->fresh(['queue']);
+
+        $this->assertSame(Appointment::STATUS_CANCELLED, $fresh->status);
+        $this->assertNotNull($fresh->cancelled_at);
+        $this->assertSame('skipped', $fresh->queue?->status);
+        $this->assertSame($this->customerProfile->id, $fresh->customer_id_new);
+        $this->assertSame($this->staff->id, $fresh->staff_id_new);
+    }
+
+    #[Test]
+    public function no_show_moves_its_queue_entry_to_skipped_and_records_no_show_at(): void
+    {
+        $appointment = $this->makeAppointment('16:00', Appointment::STATUS_CONFIRMED);
+        $this->makeQueue($appointment, 'serving');
+
+        $updated = app(ChangeAppointmentStatus::class)->execute(
+            $appointment->id,
+            Appointment::STATUS_NO_SHOW,
+        );
+
+        $fresh = $updated->fresh(['queue']);
+
+        $this->assertSame(Appointment::STATUS_NO_SHOW, $fresh->status);
+        $this->assertNotNull($fresh->no_show_at);
+        $this->assertSame('skipped', $fresh->queue?->status);
+    }
+
+    #[Test]
+    public function each_status_change_creates_a_complete_history_record(): void
+    {
+        $appointment = $this->makeAppointment('17:00', Appointment::STATUS_PENDING);
+
+        app(ChangeAppointmentStatus::class)->execute($appointment->id, Appointment::STATUS_CONFIRMED);
+        app(ChangeAppointmentStatus::class)->execute($appointment->id, Appointment::STATUS_CANCELLED);
+
+        $history = AppointmentStatusHistory::query()
+            ->where('appointment_id', $appointment->id)
+            ->orderBy('id')
+            ->get();
+
+        $this->assertCount(2, $history);
+        $this->assertSame('pending', $history[0]->from_status);
+        $this->assertSame('confirmed', $history[0]->to_status);
+        $this->assertSame('confirmed', $history[1]->from_status);
+        $this->assertSame('cancelled', $history[1]->to_status);
+        $this->assertNotNull($history[0]->created_at);
+        $this->assertNotNull($history[1]->created_at);
     }
 }
