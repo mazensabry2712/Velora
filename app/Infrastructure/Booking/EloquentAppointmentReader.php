@@ -18,7 +18,7 @@ final class EloquentAppointmentReader implements AppointmentReader
     {
         return Appointment::query()
             ->where('customer_id_new', $customerId)
-            ->with('staffNew:id,name')
+            ->with('staff:id,name')
             ->orderByDesc('starts_at')
             ->get();
     }
