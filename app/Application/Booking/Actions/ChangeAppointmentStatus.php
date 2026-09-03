@@ -30,11 +30,23 @@ final class ChangeAppointmentStatus
 
             $this->transitions->assertAllowed((string) $appointment->status, $status);
 
-            $this->appointments->update($appointment, ['status' => $status]);
+            $now = now();
+            $lifecycleTimestamps = match ($status) {
+                Appointment::STATUS_CONFIRMED => ['confirmed_at' => $now],
+                Appointment::STATUS_COMPLETED => ['completed_at' => $now],
+                Appointment::STATUS_CANCELLED => ['cancelled_at' => $now],
+                Appointment::STATUS_NO_SHOW => ['no_show_at' => $now],
+                default => [],
+            };
+
+            $this->appointments->update(
+                $appointment,
+                ['status' => $status, ...$lifecycleTimestamps],
+            );
 
             if ($appointment->queue) {
                 $queueStatus = match ($status) {
-                    'cancelled' => 'skipped',
+                    'cancelled', 'no_show' => 'skipped',
                     'completed' => 'completed',
                     'confirmed' => $appointment->queue->status !== 'serving'
                         ? 'waiting'
@@ -47,7 +59,7 @@ final class ChangeAppointmentStatus
                 }
             }
 
-            return $appointment->fresh(['customer', 'staff', 'service', 'queue']);
+            return $appointment->fresh(['customer', 'staff', 'service', 'queue', 'statusHistory']);
         });
     }
 }
