@@ -17,7 +17,7 @@ final class TenantRegistrationResilienceTest extends TestCase
         parent::setUp();
 
         $this->artisan('migrate', [
-            '--database' => config('tenancy.database.central_connection', 'sqlite'),
+            '--database' => config('tenancy.database.central_connection', config('database.default', 'mysql')),
             '--path' => 'database/migrations',
             '--force' => true,
         ]);
