@@ -7,11 +7,10 @@ namespace App\Application\Queue\Actions;
 use App\Application\Shared\Contracts\TransactionManager;
 use App\Models\Appointment;
 use App\Models\BusinessRule;
+use App\Models\Customer;
 use App\Models\Queue;
 use App\Models\Service;
-use App\Models\User;
 use App\Repositories\Contracts\QueueRepositoryInterface;
-use Illuminate\Support\Str;
 use RuntimeException;
 
 final class AddDirectQueueEntry
@@ -25,25 +24,27 @@ final class AddDirectQueueEntry
     public function execute(array $data): Queue
     {
         return $this->transactions->transaction(function () use ($data): Queue {
-            $email = $data['customer_email'] ?? ((string) $data['customer_phone']) . '@temp.local';
+            $customer = null;
 
-            $customer = User::firstOrCreate(
-                ['email' => $email],
-                [
-                    'name' => $data['customer_name'],
-                    'phone' => $data['customer_phone'],
-                    'password' => bcrypt(Str::random(32)),
-                ],
-            );
-
-            if (! $customer->hasRole('Customer')) {
-                $customer->assignRole('Customer');
+            if (! empty($data['customer_email'])) {
+                $customer = Customer::query()->where('email', $data['customer_email'])->first();
             }
 
-            $customer->update([
-                'name' => $data['customer_name'],
-                'phone' => $data['customer_phone'],
-            ]);
+            if (! $customer) {
+                $customer = Customer::query()->where('phone', $data['customer_phone'])->first();
+            }
+
+            if (! $customer) {
+                $name = preg_split('/\s+/', trim((string) $data['customer_name']), 2) ?: [];
+                $customer = Customer::create([
+                    'first_name' => $name[0] ?? $data['customer_name'],
+                    'last_name' => $name[1] ?? '',
+                    'email' => $data['customer_email'] ?? null,
+                    'phone' => $data['customer_phone'],
+                    'is_blocked' => false,
+                    'ltv_tier' => 'new',
+                ]);
+            }
 
             $maxSize = (int) BusinessRule::getValue(BusinessRule::QUEUE_MAX_SIZE, 0);
             if ($maxSize > 0) {
@@ -60,13 +61,15 @@ final class AddDirectQueueEntry
             }
 
             $service = Service::find($data['service_id']);
+            $now = now();
 
             $appointment = Appointment::create([
-                'customer_id' => $customer->id,
-                'staff_id' => $data['staff_id'],
+                'customer_id_new' => $customer->id,
+                'staff_id_new' => $data['staff_id'],
                 'service_id' => $data['service_id'],
-                'date' => now()->toDateString(),
-                'time_slot' => now()->format('H:i'),
+                'date' => $now->toDateString(),
+                'time_slot' => $now->format('H:i'),
+                'starts_at' => $now,
                 'status' => 'pending',
                 'service_type' => $service?->name,
             ]);
