@@ -34,8 +34,8 @@ final class BookingCreationService
             $bufferBefore    = $service->buffer_before_minutes;
 
             // `starts_at` / `ends_at*` are persisted in UTC. The input and
-            // legacy display fields (`date`, `time_slot`) remain in the
-            // staff/tenant timezone supplied by the booking boundary.
+            // compatibility display fields (`date`, `time_slot`) remain in
+            // the staff/tenant timezone supplied by the booking boundary.
             $lockStart = $data->startsAt->copy()
                 ->subMinutes($bufferBefore)
                 ->subMinutes($serviceDuration + $bufferAfter)
@@ -67,9 +67,12 @@ final class BookingCreationService
                 $maxPerDay = (int) BusinessRule::getValue(BusinessRule::MAX_BOOKINGS_PER_CUSTOMER_PER_DAY, 0);
 
                 if ($maxPerDay > 0) {
+                    $localDayStart = $data->startsAt->copy()->startOfDay()->utc();
+                    $localDayEnd   = $data->startsAt->copy()->endOfDay()->utc();
+
                     $dayCount = Appointment::query()
                         ->where('customer_id_new', $data->customerId)
-                        ->whereDate('starts_at', $data->startsAt->copy()->utc()->toDateString())
+                        ->whereBetween('starts_at', [$localDayStart, $localDayEnd])
                         ->whereNotIn('status', [Appointment::STATUS_CANCELLED, Appointment::STATUS_NO_SHOW])
                         ->count();
 
