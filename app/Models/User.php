@@ -39,22 +39,14 @@ class User extends Authenticatable
                 return $image->url;
             }
 
-            return asset('project_img/avatars/'.$this->avatar);
+            return asset('project_img/avatars/' . $this->avatar);
         }
 
         return '';
     }
 
-    public function avatarImage()
-    {
-        return $this->morphOne(Image::class, 'imageable')->where('folder', 'avatars');
-    }
-
-    public function images()
-    {
-        return $this->morphMany(Image::class, 'imageable');
-    }
-
+    public function avatarImage() { return $this->morphOne(Image::class, 'imageable')->where('folder', 'avatars'); }
+    public function images() { return $this->morphMany(Image::class, 'imageable'); }
     public function isAssistant(): bool { return $this->hasRole('Assistant'); }
     public function tenant() { return $this->belongsTo(Tenant::class); }
 
@@ -64,13 +56,8 @@ class User extends Authenticatable
         return $this->hasOne(Customer::class, 'user_id');
     }
 
-    /**
-     * Legacy user-owned appointments kept for historical compatibility.
-     */
-    public function appointments() { return $this->hasMany(Appointment::class, 'customer_id'); }
-
-    /** Canonical customer-owned appointments through the business Customer entity. */
-    public function customerAppointments(): HasManyThrough
+    /** Canonical appointments for this account through its Customer profile. */
+    public function appointments(): HasManyThrough
     {
         return $this->hasManyThrough(
             Appointment::class,
@@ -82,8 +69,23 @@ class User extends Authenticatable
         );
     }
 
-    /** Legacy staff appointments through the users identity. */
-    public function staffAppointments() { return $this->hasMany(Appointment::class, 'staff_id'); }
+    public function customerAppointments(): HasManyThrough
+    {
+        return $this->appointments();
+    }
+
+    /** Canonical appointments for this account through its Staff profile. */
+    public function staffAppointments(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            Appointment::class,
+            Staff::class,
+            'user_id',
+            'staff_id_new',
+            'id',
+            'id'
+        );
+    }
 
     public function notifications() { return $this->hasMany(Notification::class); }
 
@@ -100,8 +102,7 @@ class User extends Authenticatable
         );
     }
 
-    /** Staff profile corresponding to this user account. */
-    public function staffProfile()
+    public function staffProfile(): HasOne
     {
         return $this->hasOne(Staff::class, 'user_id');
     }
