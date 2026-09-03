@@ -3,8 +3,9 @@
 namespace Tests\Feature\Security;
 
 use App\Models\Appointment;
-use App\Models\Role;
+use App\Models\Customer;
 use App\Models\Service;
+use App\Models\Staff;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
@@ -43,7 +44,29 @@ class TenantIsolationTest extends TenantTestCase
                 '--force' => true,
             ]);
 
-            $secondRole = Role::firstOrCreate(['name' => 'Admin Tenant']);
+            $foreignUser = User::create([
+                'name' => 'Foreign Tenant User',
+                'email' => 'foreign-' . Str::lower(Str::random(8)) . '@test.com',
+                'password' => Hash::make('password'),
+            ]);
+
+            $foreignCustomer = Customer::create([
+                'user_id' => $foreignUser->id,
+                'first_name' => 'Foreign',
+                'last_name' => 'Customer',
+                'email' => $foreignUser->email,
+                'phone' => '+201000000099',
+                'is_blocked' => false,
+                'ltv_tier' => 'new',
+            ]);
+
+            $foreignStaff = Staff::create([
+                'user_id' => $foreignUser->id,
+                'first_name' => 'Foreign',
+                'last_name' => 'Staff',
+                'email' => $foreignUser->email,
+            ]);
+
             $secondService = Service::create([
                 'name' => 'Second Tenant Service',
                 'duration' => 30,
@@ -51,19 +74,13 @@ class TenantIsolationTest extends TenantTestCase
                 'is_active' => true,
             ]);
 
-            $foreignUser = User::create([
-                'name' => 'Foreign Tenant User',
-                'email' => 'foreign-' . Str::lower(Str::random(8)) . '@test.com',
-                'password' => Hash::make('password'),
-                'role_id' => $secondRole->id,
-            ]);
-
             $foreignAppointment = Appointment::create([
-                'customer_id' => $foreignUser->id,
-                'staff_id' => $foreignUser->id,
+                'customer_id_new' => $foreignCustomer->id,
+                'staff_id_new' => $foreignStaff->id,
                 'service_id' => $secondService->id,
                 'date' => today()->addDay()->format('Y-m-d'),
                 'time_slot' => '15:00',
+                'starts_at' => today()->addDay()->setTime(15, 0),
                 'status' => 'pending',
             ]);
 
@@ -82,10 +99,6 @@ class TenantIsolationTest extends TenantTestCase
 
             if (file_exists($secondDatabasePath)) {
                 @unlink($secondDatabasePath);
-            }
-
-            if (Tenant::whereKey($secondTenantId)->exists()) {
-                Tenant::whereKey($secondTenantId)->delete();
             }
 
             $firstTenant = Tenant::find($firstTenantId);
