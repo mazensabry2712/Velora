@@ -46,7 +46,13 @@ class SystemSetting extends Model
 
     protected static function booted(): void
     {
-        $flushGatewayCache = static function (): void {
+        $flushGatewayCache = static function (self $model): void {
+            if (($model->group ?? null) !== 'payment_methods' || ! str_ends_with((string) $model->key, '_enabled')) {
+                return;
+            }
+
+            $version = (int) Cache::get('gateway_router:version', 1);
+            Cache::forever('gateway_router:version', $version + 1);
             Cache::forget('gateway_router:enabled');
         };
 
