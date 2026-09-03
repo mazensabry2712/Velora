@@ -8,11 +8,8 @@ use App\Models\Tenant;
 use Illuminate\Foundation\Application;
 use Illuminate\Contracts\Console\Kernel;
 
-require dirname(__DIR__, 2) . '/vendor/autoload.php';
-
-/** @var Application $app */
-$app = require dirname(__DIR__, 2) . '/bootstrap/app.php';
-$app->make(Kernel::class)->bootstrap();
+$base = dirname(__DIR__, 2) . '/storage/framework/testing/concurrency';
+@mkdir($base, 0777, true);
 
 $options = getopt('', [
     'tenant:',
@@ -25,18 +22,29 @@ $options = getopt('', [
 ]);
 
 $token = (string) ($options['token'] ?? '');
-$base = storage_path('framework/testing/concurrency');
-@mkdir($base, 0777, true);
-$ready = $base . '/' . $token . '.ready.' . getmypid();
+$pid = (string) getmypid();
+$ready = $base . '/' . $token . '.ready.' . $pid;
 $go = $base . '/' . $token . '.go';
-$result = $base . '/' . $token . '.result.' . getmypid();
+$result = $base . '/' . $token . '.result.' . $pid;
+$boot = $base . '/' . $token . '.boot.' . $pid;
 
 try {
+    file_put_contents($boot, 'starting');
+
+    /** @var Application $app */
+    $app = require dirname(__DIR__, 2) . '/bootstrap/app.php';
+    $app->make(Kernel::class)->bootstrap();
+
     $tenant = Tenant::on((string) config('tenancy.database.central_connection', config('database.default')))
         ->findOrFail((string) $options['tenant']);
     tenancy()->initialize($tenant);
 
-    file_put_contents($ready, 'ready');
+    file_put_contents($ready, json_encode([
+        'pid' => getmypid(),
+        'tenant' => $tenant->id,
+        'database' => DB::getDatabaseName(),
+    ], JSON_THROW_ON_ERROR));
+
     $deadline = microtime(true) + 15;
     while (! file_exists($go)) {
         if (microtime(true) > $deadline) {
@@ -72,4 +80,5 @@ try {
     exit(1);
 } finally {
     @unlink($ready);
+    @unlink($boot);
 }
