@@ -9,6 +9,14 @@ use App\Models\User;
 class SubscriptionService
 {
     /**
+     * Resolve the canonical central database connection used by subscription data.
+     */
+    private function centralConnection(): string
+    {
+        return (string) config('tenancy.database.central_connection', 'mysql');
+    }
+
+    /**
      * Get current tenant's subscription info
      */
     public function getSubscriptionInfo()
@@ -20,7 +28,7 @@ class SubscriptionService
         }
 
         try {
-            $subscription = DB::connection('mysql')->table('tenant_subscriptions')
+            $subscription = DB::connection($this->centralConnection())->table('tenant_subscriptions')
                 ->join('subscription_plans', 'tenant_subscriptions.subscription_plan_id', '=', 'subscription_plans.id')
                 ->where('tenant_subscriptions.tenant_id', $tenantId)
                 ->whereIn('tenant_subscriptions.status', ['active', 'trial'])
@@ -50,10 +58,8 @@ class SubscriptionService
                 return null;
             }
 
-            // Calculate usage
             $usage = $this->calculateUsage();
 
-            // Calculate days remaining (trial uses trial_ends_at, active uses ends_at)
             $daysRemaining = 0;
             if ($subscription->status === 'trial' && $subscription->trial_ends_at) {
                 $daysRemaining = max(0, now()->diffInDays($subscription->trial_ends_at, false));
@@ -88,7 +94,7 @@ class SubscriptionService
                     'storage' => [
                         'max' => $subscription->storage_limit == -1 ? __('Unlimited') : $subscription->storage_limit . ' GB',
                         'current' => $usage['storage'],
-                        'percentage' => 0 // Implement storage tracking later
+                        'percentage' => 0
                     ]
                 ],
                 'features' => json_decode($subscription->features ?? '[]', true),
@@ -110,13 +116,11 @@ class SubscriptionService
 
         return [
             'users' => User::count(),
-            // Use a date range instead of DATE_FORMAT() so the query works on
-            // both MySQL and SQLite (used by the automated test suite).
             'appointments' => Appointment::where('created_at', '>=', $startOfMonth)
                 ->where('created_at', '<', $startOfNextMonth)
                 ->count(),
             'appointments_total' => Appointment::count(),
-            'storage' => 0 // Implement storage calculation later
+            'storage' => 0
         ];
     }
 
@@ -126,7 +130,7 @@ class SubscriptionService
     private function calculatePercentage($current, $max)
     {
         if ($max == -1) {
-            return 0; // Unlimited
+            return 0;
         }
 
         if ($max == 0) {
@@ -203,7 +207,6 @@ class SubscriptionService
             ];
         }
 
-        // Warning at 90%
         if ($current >= ($max * 0.9)) {
             return [
                 'allowed' => true,
@@ -225,11 +228,10 @@ class SubscriptionService
         $currentInfo = $this->getSubscriptionInfo();
 
         try {
-            $query = DB::connection('mysql')->table('subscription_plans')
+            $query = DB::connection($this->centralConnection())->table('subscription_plans')
                 ->where('is_active', true)
                 ->orderBy('price', 'asc');
 
-            // Exclude current plan only if tenant has an active/trial subscription
             if ($currentInfo && isset($currentInfo['plan_id'])) {
                 $query->where('id', '!=', $currentInfo['plan_id']);
             }
@@ -246,8 +248,6 @@ class SubscriptionService
                     'max_appointments' => $plan->max_appointments,
                     'features' => json_decode($plan->features ?? '[]', true),
                     'is_popular' => $plan->is_popular,
-                    // Presence of a Stripe price enables instant self-service checkout;
-                    // plans without one fall back to the sales-assisted request flow.
                     'stripe_price_id' => $plan->stripe_price_id ?? null,
                 ];
             })->toArray();
@@ -269,7 +269,7 @@ class SubscriptionService
         }
 
         try {
-            return DB::connection('mysql')->table('tenant_subscriptions')
+            return DB::connection($this->centralConnection())->table('tenant_subscriptions')
                 ->join('subscription_plans', 'tenant_subscriptions.subscription_plan_id', '=', 'subscription_plans.id')
                 ->where('tenant_subscriptions.tenant_id', $tenantId)
                 ->select(
@@ -305,7 +305,7 @@ class SubscriptionService
     public function logUsage($type, $details = [])
     {
         try {
-            DB::connection('mysql')->table('usage_logs')->insert([
+            DB::connection($this->centralConnection())->table('usage_logs')->insert([
                 'tenant_id' => tenant('id'),
                 'type' => $type,
                 'details' => json_encode($details),
