@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature\QA;
 
-use App\Models\Role;
 use App\Models\User;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
+use Spatie\Permission\Models\Role;
 use Tests\TenantTestCase;
 
 #[Group('qa')]
@@ -36,7 +36,7 @@ final class AuthorizationMatrixExpandedScenarioTest extends TenantTestCase
     #[Test]
     public function assistant_cannot_change_schedule_configuration(): void
     {
-        $assistantRole = Role::firstOrCreate(['name' => 'Assistant']);
+        $assistantRole = Role::firstOrCreate(['name' => 'Assistant', 'guard_name' => 'web']);
         $assistant = User::create([
             'name' => 'QA Schedule Assistant',
             'email' => 'qa-schedule-assistant-' . uniqid() . '@example.com',
@@ -60,7 +60,7 @@ final class AuthorizationMatrixExpandedScenarioTest extends TenantTestCase
     #[Test]
     public function staff_and_assistant_cannot_mutate_onboarding(): void
     {
-        $assistantRole = Role::firstOrCreate(['name' => 'Assistant']);
+        $assistantRole = Role::firstOrCreate(['name' => 'Assistant', 'guard_name' => 'web']);
         $assistant = User::create([
             'name' => 'QA Onboarding Assistant',
             'email' => 'qa-onboarding-assistant-' . uniqid() . '@example.com',
