@@ -3,7 +3,6 @@
 namespace App\Infrastructure\Queue;
 
 use App\Domain\Queue\Contracts\QueueReader;
-use App\Models\Customer;
 use App\Models\Queue;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
@@ -31,17 +30,11 @@ final class EloquentQueueReader implements QueueReader
 
     public function forCustomer(User $user, string $date): array
     {
-        $customer = Customer::query()->where('email', $user->email)->first();
+        $customer = $user->customerProfile;
 
         $queue = Queue::query()
-            ->whereHas('appointment', function ($query) use ($user, $customer): void {
-                $query->where(function ($q) use ($user, $customer): void {
-                    $q->where('customer_id', $user->id);
-
-                    if ($customer) {
-                        $q->orWhere('customer_id_new', $customer->id);
-                    }
-                });
+            ->whereHas('appointment', function ($query) use ($customer): void {
+                $query->where('customer_id_new', $customer?->id);
             })
             ->where('status', 'waiting')
             ->where(function ($query) use ($date): void {
