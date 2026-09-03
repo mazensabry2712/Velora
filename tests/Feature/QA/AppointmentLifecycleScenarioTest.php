@@ -80,7 +80,7 @@ final class AppointmentLifecycleScenarioTest extends TenantTestCase
     }
 
     #[Test]
-    public function completed_appointment_moves_its_queue_entry_to_completed_and_creates_an_invoice(): void
+    public function completed_appointment_moves_its_queue_entry_to_completed_and_reconciles_its_invoice(): void
     {
         $appointment = $this->makeAppointment('14:00', Appointment::STATUS_CONFIRMED);
         $this->makeQueue($appointment, 'serving');
@@ -92,6 +92,7 @@ final class AppointmentLifecycleScenarioTest extends TenantTestCase
         );
 
         $fresh = $updated->fresh(['queue']);
+        $invoice = Invoice::where('appointment_id', $appointment->id)->latest('id')->first();
 
         $this->assertSame(Appointment::STATUS_COMPLETED, $fresh->status);
         $this->assertNotNull($fresh->completed_at);
@@ -99,6 +100,11 @@ final class AppointmentLifecycleScenarioTest extends TenantTestCase
         $this->assertSame($this->customerProfile->id, $fresh->customer_id_new);
         $this->assertSame($this->staff->id, $fresh->staff_id_new);
         $this->assertSame($invoiceCountBefore + 1, Invoice::where('appointment_id', $appointment->id)->count());
+        $this->assertNotNull($invoice);
+        $this->assertSame($this->customerProfile->id, $invoice?->customer_id);
+        $this->assertSame($appointment->id, $invoice?->appointment_id);
+        $this->assertSame((string) $this->service->price, (string) $invoice?->amount);
+        $this->assertSame('pending', $invoice?->status);
     }
 
     #[Test]
