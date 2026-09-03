@@ -34,20 +34,25 @@ final class AddAppointmentToQueue
                 throw ValidationException::withMessages(['queue' => [__('Cannot add to queue.')] ]);
             }
 
-            if ($appointment->date->lt(today())) {
+            $startsAt = $appointment->starts_at;
+            if (! $startsAt) {
+                throw ValidationException::withMessages(['appointment' => [__('Appointment start time is missing.')] ]);
+            }
+
+            if ($startsAt->lt(today())) {
                 throw ValidationException::withMessages(['queue' => [__('Cannot queue past appointment.')] ]);
             }
 
             $queue = Queue::create([
                 'appointment_id' => $appointment->id,
                 'queue_number' => Queue::generateQueueNumber(),
-                'queue_date' => $queueDate ?? $appointment->date->format('Y-m-d'),
+                'queue_date' => $queueDate ?? $startsAt->toDateString(),
                 'status' => 'waiting',
                 'is_vip' => $appointment->customer->is_vip ?? false,
             ]);
 
-            if ($appointment->status === 'pending') {
-                $this->appointments->update($appointment, ['status' => 'confirmed']);
+            if ($appointment->status === Appointment::STATUS_PENDING) {
+                $this->appointments->update($appointment, ['status' => Appointment::STATUS_CONFIRMED]);
             }
 
             return $queue;
