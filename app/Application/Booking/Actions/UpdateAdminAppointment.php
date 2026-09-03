@@ -71,6 +71,12 @@ final class UpdateAdminAppointment
 
             $this->appointments->update($appointment, $appointmentData);
 
+            if ($scheduleChanged && $appointment->queue) {
+                $appointment->queue->update([
+                    'queue_date' => $newStartsAt->toDateString(),
+                ]);
+            }
+
             return $appointment->fresh(['customer', 'staff', 'service', 'queue']);
         });
     }
