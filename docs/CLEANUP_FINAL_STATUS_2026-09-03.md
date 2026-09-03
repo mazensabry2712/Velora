@@ -9,8 +9,12 @@
 - Appointment runtime ownership moved to `customer_id_new` and `staff_id_new`.
 - Booking creation, recurring generation, Admin booking, direct queue entry and appointment repository no longer write the old appointment User IDs.
 - User appointment/invoice access now traverses Customer/Staff business entities.
+- Queue customer access now resolves exclusively through the canonical Appointment → Customer relationship; tenant queue lookup no longer reads `appointments.customer_id`.
+- Queue VIP state is derived from the canonical Customer `ltv_tier` rather than a User-owned VIP flag.
+- Customer exposes `is_vip` as a read-only compatibility accessor derived from `ltv_tier` for existing UI/API consumers; no duplicate VIP database field was introduced on Customer.
+- Appointment date-oriented scopes/helpers now use canonical `starts_at` instead of the legacy `date` field for runtime calculations.
 - Tenant-isolation and RBAC test fixtures were aligned with the canonical model/package boundaries.
-- Appointment migration `2026_09_03_000006_reconcile_appointment_identity.php` now backfills historical customer/staff references and fails closed on unresolved mappings.
+- Appointment migration `2026_09_03_000006_reconcile_appointment_identity.php` backfills historical customer/staff references and fails closed on unresolved mappings.
 - Application/test role usage now targets `Spatie\Permission\Models\Role` directly; the legacy `App\Models\Role` compatibility wrapper was removed.
 - Analytics aggregation now reads canonical appointment timestamps and `customer_id_new` instead of the legacy appointment identity/date fields.
 
@@ -26,7 +30,7 @@
 
 Current `main` is not certified green by test count alone. Remote GitHub Actions status and, when available, a fresh local run are required before release certification.
 
-The latest push triggered both the MySQL-backed `Velora Tests` workflow and the `Velora Master QA` workflow. At the latest check, both were still `in_progress`; no final pass/fail result was available yet.
+The current cleanup pushes trigger the repository's MySQL-backed tests, quality checks and Master QA workflows. Results are tracked separately from code/doc completion; no unverified test pass is recorded here.
 
 Expected local verification:
 
