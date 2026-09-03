@@ -96,7 +96,7 @@ Current verified passing subtotal from completed passing focused runs is **72 pa
 
 **Regression added:** An active resource not assigned to the selected service is supplied and the booking must fail before an appointment is created.
 
-**Final regression:** **6 tests / 9 assertions / 7.33s PASS** before timezone-test expansion.
+**Final regression:** **6 tests / 9 assertions / 7.33s PASS**.
 
 **Final state:** **BOOK-005 PASS locally.**
 
@@ -130,6 +130,24 @@ Duration: 7.68s
 
 **Final state:** **BOOK-011 PASS locally.** The regression verifies the requested customer instant, UTC persistence, staff-local compatibility fields, and stored appointment timezone.
 
+### QA-BOOK-003 — Booking notification failure isolation
+
+**Scenario:** `BOOK-012` booking notification failure does not corrupt the booking core.
+
+**Production flow reviewed:** Public booking persists the appointment and queue inside the booking transaction; notification delivery is a separate side-effect boundary. Email and WhatsApp jobs track delivery attempts, requeue transient failures, and expose a terminal `failed` state through the queue job failure callback.
+
+**Regression added:** `tests/Feature/QA/BookingNotificationFailureScenarioTest.php` covers both channels and asserts the failure classification:
+
+```text
+COMMITTED CORE + RETRYABLE SIDE EFFECT
+```
+
+For each channel, the persisted appointment remains intact while the notification delivery returns to `queued`, increments attempts, records the provider error, and remains unsent.
+
+**Test commit:** `c0326e6f74ba906dd5d2c6a5afe800b27ab7cf32`.
+
+**Current state:** **Re-run required.** The new regression has not yet been executed locally.
+
 ## Previously verified local evidence
 
 The following focused runs were completed successfully in the current development environment:
@@ -139,7 +157,7 @@ CustomerBookingJourneyTest → 5 passed / 41 assertions
 CustomerPortalJourneyTest → 3 passed / 16 assertions
 AppointmentActionsTest → 13 passed / 37 assertions
 AppointmentQueueIntegrationTest → 9 passed / 14 assertions
-BookingRulesScenarioTest (initial) → 5 passed / 6 assertions / 7.56s
+BookingRulesScenarioTest (initial) → 5 passed / 6 assertions
 BookingRulesScenarioTest (resource regression) → 6 passed / 9 assertions / 7.33s
 BookingRulesScenarioTest (timezone regression, corrected) → 7 passed / 12 assertions / 7.68s
 BookingAvailabilityRulesScenarioTest → 4 passed / 8 assertions / 7.33s
@@ -179,13 +197,13 @@ These are local MySQL-backed runs. They are not release certification without fr
 
 ### OPEN / BLOCKED ON REGRESSION
 
-- `BOOK-012` booking notification failure does not corrupt booking.
+- `BOOK-012` booking notification failure does not corrupt booking — corrected regression committed; re-run required.
 - `AVAIL-001` working-hours matrix beyond current negative-boundary coverage.
 - Final reconciliation coverage not yet represented in focused runs.
 
 ## Next certification work
 
-1. `BOOK-012` booking notification failure isolation.
+1. Re-run `BOOK-012` notification failure isolation.
 2. Broader `AVAIL-001` working-hours boundary matrix.
 3. Queue/concurrency and webhook concurrency where applicable.
 4. Full `tests/Feature/QA` on fresh MySQL 8.4 + PHP 8.4 CI.
