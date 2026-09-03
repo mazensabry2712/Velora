@@ -110,7 +110,7 @@ final class AppointmentReminderDeliveryTest extends TenantTestCase
 
         $appointment = $this->makeAppointment($start, 'VL-RMSENT-TEST01');
         $rule = $this->makeRule(60);
-        $customer = $appointment->newCustomer;
+        $customer = $appointment->customer;
 
         $log = ReminderLog::create([
             'appointment_id' => $appointment->id,
