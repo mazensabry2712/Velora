@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\Customer;
 use App\Models\Queue;
+use App\Models\Staff;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -28,9 +29,9 @@ class DashboardController extends Controller
              SUM(CASE WHEN created_at BETWEEN ? AND ? THEN 1 ELSE 0 END) as this_week,
              SUM(CASE WHEN created_at BETWEEN ? AND ? THEN 1 ELSE 0 END) as last_week,
              SUM(CASE WHEN status = ? AND created_at BETWEEN ? AND ? THEN 1 ELSE 0 END) as cancelled_this_week,
-             SUM(CASE WHEN DATE(date) = ? THEN 1 ELSE 0 END) as total_today,
-             SUM(CASE WHEN DATE(date) = ? AND status = ? THEN 1 ELSE 0 END) as completed_today,
-             SUM(CASE WHEN DATE(date) = ? AND status = ? THEN 1 ELSE 0 END) as confirmed_today,
+             SUM(CASE WHEN DATE(starts_at) = ? THEN 1 ELSE 0 END) as total_today,
+             SUM(CASE WHEN DATE(starts_at) = ? AND status = ? THEN 1 ELSE 0 END) as completed_today,
+             SUM(CASE WHEN DATE(starts_at) = ? AND status = ? THEN 1 ELSE 0 END) as confirmed_today,
              SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as pending_total,
              SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as confirmed_total,
              SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as completed_total,
@@ -76,7 +77,7 @@ class DashboardController extends Controller
 
         $queueCount      = Queue::whereIn('status', ['waiting', 'serving'])->count();
         $totalCustomers  = Customer::count();
-        $totalStaff      = User::role('Staff')->count();
+        $totalStaff      = Staff::count();
         $newCustomersThisWeek = Customer::whereBetween('created_at', [$thisWeekStart, $thisWeekEnd])->count();
 
         $attendanceRate   = $totalToday > 0 ? round(($completedToday / $totalToday) * 100) : 0;
@@ -91,22 +92,22 @@ class DashboardController extends Controller
         }
 
         $stats = [
-            'total_appointments'    => $totalAppointments,
-            'appointments_change'   => $appointmentsChange,
-            'confirmed'             => $confirmedToday,
-            'queue'                 => $queueCount,
-            'customers'             => $totalCustomers,
+            'total_appointments'       => $totalAppointments,
+            'appointments_change'      => $appointmentsChange,
+            'confirmed'                => $confirmedToday,
+            'queue'                   => $queueCount,
+            'customers'               => $totalCustomers,
             'new_customers_this_week' => $newCustomersThisWeek,
-            'attendance_rate'       => $attendanceRate,
-            'cancellation_rate'     => $cancellationRate,
-            'total_staff'           => $totalStaff,
-            'revenue_this_month'    => $thisMonthRevenue,
-            'revenue_change'        => $revenueChange,
+            'attendance_rate'          => $attendanceRate,
+            'cancellation_rate'        => $cancellationRate,
+            'total_staff'              => $totalStaff,
+            'revenue_this_month'       => $thisMonthRevenue,
+            'revenue_change'           => $revenueChange,
         ];
 
         $todayAppointments = Appointment::with(['customer', 'staff', 'service'])
-            ->whereDate('date', today())
-            ->orderBy('time_slot')
+            ->whereDate('starts_at', today())
+            ->orderBy('starts_at')
             ->get();
 
         $currentQueue = Queue::with(['appointment.customer'])
@@ -130,18 +131,18 @@ class DashboardController extends Controller
             ->limit(5)
             ->with('service')
             ->get()
-            ->map(fn($item) => (object) ['name' => $item->service->name ?? 'N/A', 'total' => $item->total]);
+            ->map(fn ($item) => (object) ['name' => $item->service->name ?? 'N/A', 'total' => $item->total]);
 
-        $staffPerformance = User::role('Staff')
-            ->withCount(['staffAppointments as total_appointments' => fn($q) => $q->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])])
-            ->withCount(['staffAppointments as completed_appointments' => fn($q) => $q->where('status', 'completed')->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])])
+        $staffPerformance = Staff::query()
+            ->withCount(['appointments as total_appointments' => fn ($q) => $q->whereBetween('starts_at', [now()->startOfMonth(), now()->endOfMonth()])])
+            ->withCount(['appointments as completed_appointments' => fn ($q) => $q->where('status', 'completed')->whereBetween('starts_at', [now()->startOfMonth(), now()->endOfMonth()])])
             ->orderByDesc('total_appointments')
             ->limit(5)
             ->get()
-            ->map(fn($s) => [
-                'name'      => $s->name,
-                'avatar'    => $s->avatar_url ?? null,
-                'total'     => $s->total_appointments  ?? 0,
+            ->map(fn ($s) => [
+                'name'      => $s->full_name,
+                'avatar'    => $s->avatar ?? null,
+                'total'     => $s->total_appointments ?? 0,
                 'completed' => $s->completed_appointments ?? 0,
                 'rate'      => ($s->total_appointments ?? 0) > 0 ? round(($s->completed_appointments / $s->total_appointments) * 100) : 0,
             ]);
@@ -150,7 +151,7 @@ class DashboardController extends Controller
             ->orderByDesc('created_at')
             ->limit(5)
             ->get()
-            ->map(fn($c) => [
+            ->map(fn ($c) => [
                 'name'               => $c->full_name,
                 'email'              => $c->email,
                 'avatar'             => $c->avatar ?? null,
@@ -162,7 +163,7 @@ class DashboardController extends Controller
             ->orderByDesc('updated_at')
             ->limit(10)
             ->get()
-            ->map(fn($a) => [
+            ->map(fn ($a) => [
                 'type'        => $a->status,
                 'customer'    => $a->customer?->name ?? 'Unknown',
                 'staff'       => $a->staff?->name ?? 'N/A',
@@ -201,7 +202,7 @@ class DashboardController extends Controller
     {
         try {
             $tenant = tenant();
-            if (!$tenant) {
+            if (! $tenant) {
                 return null;
             }
 
@@ -235,11 +236,11 @@ class DashboardController extends Controller
             $daysRemaining = $endsAt ? max(0, (int) now()->diffInDays($endsAt, false)) : 0;
 
             return [
-                'plan_name'     => $subscription->plan_name,
-                'status'        => $subscription->status,
-                'ends_at'       => $endsAt,
+                'plan_name'      => $subscription->plan_name,
+                'status'         => $subscription->status,
+                'ends_at'        => $endsAt,
                 'days_remaining' => $daysRemaining,
-                'limits' => [
+                'limits'         => [
                     'users' => [
                         'max'        => $subscription->max_users == -1 ? 'Unlimited' : $subscription->max_users,
                         'current'    => $currentUsers,
