@@ -98,7 +98,7 @@ Current verified passing subtotal from completed passing focused runs is **65 pa
 
 **Scenario:** `BOOK-005` invalid resource rejected.
 
-**Existing production guard reviewed:** `PublicBookingRequest` requires `resource_id`, when supplied, to reference an active resource; `CreatePublicBooking` additionally verifies that the selected resource is assigned to the requested service before booking creation. fileciteturn254file0 fileciteturn255file0
+**Existing production guard reviewed:** The request layer accepts only active resource IDs, while `CreatePublicBooking` verifies that a supplied resource is active and assigned to the requested service before the booking transaction creates an appointment.
 
 **Regression added:** `BookingRulesScenarioTest::resource_not_assigned_to_the_service_is_rejected_before_a_booking_is_created()` creates an active resource not assigned to the selected service and requires `ValidationException` before an appointment can be created.
 
