@@ -9,6 +9,7 @@ use App\Models\CountryPricing;
 use App\Models\SystemSetting;
 use App\Payments\PaymentGatewayManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -49,7 +50,7 @@ final class PaymentGatewayRouterContractTest extends TestCase
     }
 
     #[Test]
-    public function changing_gateway_settings_invalidates_the_enabled_gateway_cache(): void
+    public function changing_gateway_settings_invalidates_country_gateway_cache_without_manual_flush(): void
     {
         CountryPricing::query()->create([
             'country_code' => 'EG',
@@ -61,16 +62,15 @@ final class PaymentGatewayRouterContractTest extends TestCase
             'is_active' => true,
         ]);
 
+        Cache::forget('gateway_router:version');
         SystemSetting::set('paymob_enabled', true, 'boolean', 'payment_methods');
         SystemSetting::set('stripe_enabled', true, 'boolean', 'payment_methods');
 
         $router = new PaymentGatewayRouter(app(PaymentGatewayManager::class));
-        $router->flushCache('EG');
         $this->assertContains('paymob', $router->forCountry('EG'));
 
         SystemSetting::set('paymob_enabled', false, 'boolean', 'payment_methods');
 
-        $router->flushCache('EG');
         $resolved = $router->forCountry('EG');
 
         $this->assertNotContains('paymob', $resolved);
