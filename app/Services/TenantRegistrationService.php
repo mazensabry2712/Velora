@@ -217,10 +217,9 @@ final class TenantRegistrationService
             ]);
         }
 
-        $tenants = DB::table('tenants');
-        $emailExists = DB::connection()->getDriverName() === 'sqlite'
-            ? $tenants->whereRaw("LOWER(json_extract(data, '$.email')) = LOWER(?)", [$email])->exists()
-            : $tenants->whereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(data, '$.email'))) = LOWER(?)", [$email])->exists();
+        $emailExists = DB::table('tenants')
+            ->whereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(data, '$.email'))) = LOWER(?)", [$email])
+            ->exists();
 
         if ($emailExists) {
             throw ValidationException::withMessages([
