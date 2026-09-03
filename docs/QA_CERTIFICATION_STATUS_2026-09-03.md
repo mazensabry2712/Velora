@@ -28,17 +28,15 @@ The canonical certification environment is MySQL 8.4 + PHP 8.4. The repository's
 | Appointment/queue integration | `AppointmentQueueIntegrationTest` | PASS | 9 | 14 | 2026-09-03 |
 | Booking rules | `BookingRulesScenarioTest` | PASS | 5 | 6 | 2026-09-03 |
 | Booking availability rules | `BookingAvailabilityRulesScenarioTest` | PASS | 4 | 8 | 2026-09-03 |
+| Appointment lifecycle | `AppointmentLifecycleScenarioTest` | PASS | 3 | 11 | 2026-09-03 |
 
-Current verified subtotal: **39 passed tests / 122 assertions**.
+Current verified subtotal: **42 passed tests / 133 assertions**.
 
-The two latest focused commands were:
+The latest focused command was:
 
 ```text
-php -d memory_limit=512M artisan test tests/Feature/QA/BookingRulesScenarioTest.php --stop-on-failure
-→ PASS — 5 passed (6 assertions) — 7.56s
-
-php -d memory_limit=512M artisan test tests/Feature/QA/BookingAvailabilityRulesScenarioTest.php --stop-on-failure
-→ PASS — 4 passed (8 assertions) — 7.33s
+php -d memory_limit=512M artisan test tests/Feature/QA/AppointmentLifecycleScenarioTest.php --stop-on-failure
+→ PASS — 3 passed (11 assertions) — 7.23s
 ```
 
 These results are local MySQL-backed runs from the developer environment. They are not, by themselves, release certification.
@@ -131,7 +129,7 @@ These results are local MySQL-backed runs from the developer environment. They a
 
 **Commit:** `07c84e60612c131bfab4535447a1bcadf03dce18`.
 
-**Status:** Test fix is committed. Focused `AppointmentLifecycleScenarioTest` execution is required next; no PASS is claimed yet.
+**Regression/evidence:** `AppointmentLifecycleScenarioTest` → **3 passed / 11 assertions / 7.23s** on 2026-09-03.
 
 ## Current booking/appointment gate status
 
@@ -147,6 +145,7 @@ These results are local MySQL-backed runs from the developer environment. They a
 - `BOOK-009` maximum advance rule.
 - `BOOK-010` occupied slot rejected.
 - `AVAIL-002` holiday blocking and related availability rules.
+- Appointment lifecycle status-machine validation and queue synchronization currently covered by `AppointmentLifecycleScenarioTest`.
 - Customer history/queue/invoice access.
 - Appointment action and queue synchronization coverage.
 - Appointment/queue integration lifecycle.
@@ -159,18 +158,17 @@ The current focused suites do **not yet prove every catalog item end-to-end**. I
 - `BOOK-011` timezone conversion.
 - `BOOK-012` notification failure must not corrupt booking.
 - `AVAIL-001` working-hours matrix beyond the currently covered negative boundary.
+- `APT-004` reschedule.
+- `APT-006` no-show.
+- `APT-008` persisted status-history completeness.
+- `APT-009` completion/invoice consistency.
 
 These remain open until a dedicated scenario or equivalent existing regression proves the business outcome and downstream invariants.
 
 ## Next lifecycle gates
 
-- `APT-001` full appointment lifecycle.
-- `APT-002` confirm.
-- `APT-003` cancel.
 - `APT-004` reschedule.
-- `APT-005` complete.
 - `APT-006` no-show.
-- `APT-007` invalid transition.
 - `APT-008` status history.
 - `APT-009` completion/invoice consistency.
 
