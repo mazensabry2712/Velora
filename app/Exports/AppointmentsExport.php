@@ -26,40 +26,36 @@ class AppointmentsExport implements FromQuery, WithHeadings, WithMapping, WithSt
     }
 
     /**
-     * Query for appointments
+     * Query for appointments.
      */
     public function query()
     {
         $query = Appointment::query()
             ->with(['customer', 'staff']);
 
-        // Apply date filters
         if ($this->startDate && $this->endDate) {
-            $query->whereBetween('date', [$this->startDate, $this->endDate]);
+            $query->whereBetween('starts_at', [$this->startDate, $this->endDate]);
         } else {
             switch ($this->period) {
                 case 'today':
-                    $query->whereDate('date', now());
+                    $query->whereDate('starts_at', now());
                     break;
                 case 'week':
-                    $query->whereBetween('date', [
+                    $query->whereBetween('starts_at', [
                         now()->startOfWeek(),
-                        now()->endOfWeek()
+                        now()->endOfWeek(),
                     ]);
                     break;
                 case 'month':
-                    $query->whereMonth('date', now()->month)
-                        ->whereYear('date', now()->year);
+                    $query->whereMonth('starts_at', now()->month)
+                        ->whereYear('starts_at', now()->year);
                     break;
             }
         }
 
-        return $query->orderBy('date');
+        return $query->orderBy('starts_at');
     }
 
-    /**
-     * Define column headings
-     */
     public function headings(): array
     {
         return [
@@ -77,19 +73,18 @@ class AppointmentsExport implements FromQuery, WithHeadings, WithMapping, WithSt
         ];
     }
 
-    /**
-     * Map data for each row
-     */
     public function map($appointment): array
     {
+        $startsAt = $appointment->starts_at;
+
         return [
             $appointment->id,
             $appointment->customer->name ?? 'N/A',
             $appointment->customer->email ?? 'N/A',
             $appointment->customer->phone ?? 'N/A',
             $appointment->staff->name ?? 'N/A',
-            $appointment->date ? $appointment->date->format('Y-m-d') : 'N/A',
-            $appointment->time_slot ?? 'N/A',
+            $startsAt?->format('Y-m-d') ?? 'N/A',
+            $startsAt?->format('H:i') ?? 'N/A',
             $appointment->service_type ?? 'N/A',
             $appointment->status ?? 'N/A',
             $appointment->notes ?? '',
@@ -97,13 +92,9 @@ class AppointmentsExport implements FromQuery, WithHeadings, WithMapping, WithSt
         ];
     }
 
-    /**
-     * Apply styles to the worksheet
-     */
     public function styles(Worksheet $sheet)
     {
         return [
-            // Style the first row as bold text
             1 => ['font' => ['bold' => true, 'size' => 12]],
         ];
     }
