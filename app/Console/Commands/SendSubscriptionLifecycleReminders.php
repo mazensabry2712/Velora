@@ -15,13 +15,19 @@ final class SendSubscriptionLifecycleReminders extends Command
     protected $signature = 'subscriptions:send-lifecycle-reminders';
     protected $description = 'Send reminders for trial, read-only and permanent-deletion deadlines';
 
+    private function centralConnection(): string
+    {
+        return (string) config('tenancy.database.central_connection', 'mysql');
+    }
+
     public function handle(): int
     {
         $this->info('Sending subscription lifecycle reminders...');
         $now = now();
         $sent = 0;
+        $connection = DB::connection($this->centralConnection());
 
-        $trialRows = DB::connection('mysql')
+        $trialRows = $connection
             ->table('tenant_subscriptions')
             ->where('status', 'trial')
             ->whereNotNull('trial_ends_at')
@@ -32,7 +38,7 @@ final class SendSubscriptionLifecycleReminders extends Command
             $sent += $this->send($row, '3day_warning', $row->trial_ends_at);
         }
 
-        $readOnlyRows = DB::connection('mysql')
+        $readOnlyRows = $connection
             ->table('tenant_subscriptions')
             ->where('status', 'read_only')
             ->whereNotNull('read_only_ends_at')
@@ -43,7 +49,7 @@ final class SendSubscriptionLifecycleReminders extends Command
             $sent += $this->send($row, 'read_only_warning', $row->read_only_ends_at);
         }
 
-        $lockedRows = DB::connection('mysql')
+        $lockedRows = $connection
             ->table('tenant_subscriptions')
             ->where('status', 'locked')
             ->whereNotNull('deletion_at')
@@ -61,7 +67,7 @@ final class SendSubscriptionLifecycleReminders extends Command
     private function send(object $subscription, string $type, string $deadline): int
     {
         try {
-            $tenantData = DB::connection('mysql')
+            $tenantData = DB::connection($this->centralConnection())
                 ->table('tenants')
                 ->where('id', $subscription->tenant_id)
                 ->value('data');
