@@ -59,7 +59,19 @@ return new class extends Migration
 
         $indexes = collect(Schema::getIndexes('staff_services'))->pluck('name');
 
+        // MySQL requires the foreign-key supporting index to remain available.
+        // Remove the legacy user_id FK before dropping its unique index. The
+        // dedicated cleanup migration runs afterward and remains idempotent.
         if ($indexes->contains('staff_services_user_id_service_id_unique')) {
+            $hasUserForeignKey = collect(Schema::getForeignKeys('staff_services'))
+                ->contains(static fn (array $foreign): bool => in_array('user_id', $foreign['columns'] ?? [], true));
+
+            if ($hasUserForeignKey) {
+                Schema::table('staff_services', function (Blueprint $table): void {
+                    $table->dropForeign(['user_id']);
+                });
+            }
+
             Schema::table('staff_services', function (Blueprint $table): void {
                 $table->dropUnique(['user_id', 'service_id']);
             });
