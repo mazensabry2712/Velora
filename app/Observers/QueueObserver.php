@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Observers;
 
 use App\Domain\Queue\Events\QueueLifecycleNotificationRequested;
-use App\Models\Customer;
 use App\Models\Queue;
 use Illuminate\Support\Str;
 
@@ -134,10 +133,7 @@ final class QueueObserver
         return $this->sortPositions($rows);
     }
 
-    /**
-     * @param \Illuminate\Support\Collection<int, object> $rows
-     * @return array<int, int>
-     */
+    /** @return array<int, int> */
     private function sortPositions($rows): array
     {
         return $rows
@@ -152,10 +148,6 @@ final class QueueObserver
             ->all();
     }
 
-    /**
-     * @param array<int, int> $before
-     * @param array<int, int> $after
-     */
     private function dispatchChangedWaitingEntries(array $before, array $after): void
     {
         $ids = array_values(array_intersect(array_keys($before), array_keys($after)));
@@ -165,7 +157,7 @@ final class QueueObserver
         }
 
         $queues = Queue::query()
-            ->with(['appointment.customer', 'appointment.newCustomer'])
+            ->with(['appointment.customer'])
             ->whereIn('id', $ids)
             ->get()
             ->keyBy('id');
@@ -221,22 +213,16 @@ final class QueueObserver
             return;
         }
 
-        $customer = $appointment->customer ?: $appointment->newCustomer;
+        $customer = $appointment->customer;
         if (! $customer) {
             return;
         }
 
-        $customerType = $customer instanceof Customer ? 'customer' : 'user';
         $customerId = (int) $customer->getKey();
-        $name = $customer instanceof Customer
-            ? $customer->full_name
-            : (string) $customer->name;
+        $name = $customer->full_name;
         $email = filled($customer->email ?? null) ? (string) $customer->email : null;
         $phone = filled($customer->phone ?? null) ? (string) $customer->phone : null;
-
-        $locale = $customer instanceof Customer
-            ? ($customer->language ?: null)
-            : ($customer->locale ?: null);
+        $locale = $customer->language ?: null;
 
         $tenantData = method_exists($tenant, 'getAttribute')
             ? (array) ($tenant->getAttribute('data') ?? [])
@@ -254,7 +240,7 @@ final class QueueObserver
             queueNumber: (string) $queue->queue_number,
             position: $position,
             oldPosition: $oldPosition,
-            customerType: $customerType,
+            customerType: 'customer',
             customerId: $customerId,
             customerName: $name,
             email: $email,
