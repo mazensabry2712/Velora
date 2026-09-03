@@ -15,7 +15,7 @@ Always verify `refs/heads/main` before continuing. Never assume a SHA from an ol
 ## Current canonical checkpoint
 
 ```text
-SHA: 7a1c3841c757ad6f6f0c527356d651a25edf4975
+SHA: 3830c4178650694b1b730f570002f6e0a5efc95d
 ```
 
 The current checkpoint includes:
@@ -35,8 +35,16 @@ The current checkpoint includes:
 - PaymentGatewayRouter contract aligned with PaymentGatewayManager-supported gateways
 - payment gateway cache invalidation regression coverage
 - central-model connection regression coverage
+- Stripe subscription webhook idempotency correction
+- invalid/inactive Moyasar plan rejection
 - normalized Queue/Mail settings across certification workflows
-- regression guard for Billing portal connection selection
+- SQLite fallback removal from certification test infrastructure
+- canonical report ranges using Appointment.starts_at
+- Excel appointment export aligned with the shared report range resolver
+- report period/custom-range input validation
+- report/export canonical range regression coverage
+- tenant-aware image storage through the Laravel filesystem
+- tenant image storage regression coverage
 ```
 
 ## QA method
@@ -151,12 +159,44 @@ SystemSetting
 CountryPricing
 ```
 
+Webhook authority/idempotency contract:
+
+```text
+Stripe and Moyasar browser callbacks do not activate subscriptions.
+Webhook handlers verify provider authenticity before state mutation.
+Webhook events are deduplicated by provider event identity.
+Stripe subscription updates are not rejected merely because the same
+Stripe subscription ID was seen previously.
+```
+
+## Reporting / export contract
+
+```text
+Appointment date/time source of truth = starts_at / ends_at.
+ReportService, dashboard reporting, and Excel appointment export use starts_at.
+Report periods are centralized in ReportService::resolveRange().
+Custom report/export ranges require valid start_date/end_date input.
+```
+
 Regression guards:
 
 ```text
-tests/Unit/BillingCentralConnectionContractTest.php
-tests/Feature/Billing/PaymentGatewayRouterContractTest.php
-tests/Feature/QA/CentralModelsConnectionContractTest.php
+tests/Feature/QA/ReportingCanonicalRangeScenarioTest.php
+tests/Feature/QA/ReportingReconciliationScenarioTest.php
+```
+
+## Storage contract
+
+```text
+New tenant images use Laravel's public filesystem disk.
+Storage paths are handled by the tenancy filesystem bootstrapper.
+Legacy image records retain compatibility fallbacks for historical files.
+```
+
+Regression guard:
+
+```text
+tests/Feature/QA/TenantImageStorageScenarioTest.php
 ```
 
 ## Completed hardening / coverage on the main line
@@ -177,11 +217,12 @@ Tenant transaction connection safety
 Tenant token/resource isolation
 Super Admin tenant/subscription reconciliation
 Reporting customer-source reconciliation
-Tenant deletion safety
+Canonical reporting date-range reconciliation
 Service/Staff/Settings authorization hardening
 Expanded authorization matrix
 Onboarding mutation authorization
 Stripe central-connection hardening
+Stripe subscription event idempotency correction
 Holiday calendar-date comparison
 Dashboard daily appointment date reconciliation
 PHPUnit test environment bootstrap hardening
@@ -190,11 +231,14 @@ Billing/subscription central-connection alignment
 Payment gateway router/manager capability alignment
 Payment gateway settings cache invalidation coverage
 Central model connection contract coverage
+Excel appointment export/report-range alignment
+Report input validation
+Tenant-aware image storage isolation
 ```
 
-## Important historical findings
+## Historical findings
 
-The repository contains dated reports describing earlier SQLite test-infrastructure failures. Those documents are historical evidence, not the current environment contract.
+The repository contains dated reports describing earlier SQLite test-infrastructure failures and schema mismatches. Those documents are historical evidence, not the current environment contract.
 
 Historical items include:
 
@@ -204,17 +248,17 @@ Historical items include:
 - `QA-REPORT-002` SQLite-incompatible reporting query shape
 - `QA-BILLING-003` unsupported `billing_cycle` subscription write
 
-The historical SQLite findings remain useful as diagnosis records, but current PHPUnit/CI certification is MySQL-based.
+The historical findings remain useful as diagnosis records; current PHPUnit/CI certification is MySQL-based.
 
 ## Current CI state
 
 Latest pushed checkpoint:
 
 ```text
-7a1c3841c757ad6f6f0c527356d651a25edf4975
+3830c4178650694b1b730f570002f6e0a5efc95d
 ```
 
-GitHub Actions runs for the latest pushes were observed in `queued` state at the time of this update. Their final results must be fetched before making any pass/fail or certification claim.
+Fresh GitHub Actions runs for this checkpoint were observed in `queued` state at the time of this update. Their final results must be fetched before making any pass/fail or certification claim.
 
 ## Current release gate
 
