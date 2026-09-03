@@ -2,7 +2,6 @@
 
 namespace Tests;
 
-use App\Models\Role;
 use App\Models\Service;
 use App\Models\Staff;
 use App\Models\Tenant;
@@ -11,6 +10,7 @@ use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
