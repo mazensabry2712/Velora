@@ -187,19 +187,49 @@ class Appointment extends Model
     public function statusHistory(): HasMany { return $this->hasMany(AppointmentStatusHistory::class)->orderBy('created_at'); }
     public function reminders(): HasMany { return $this->hasMany(ReminderLog::class); }
 
-    public function scopeToday($query) { return $query->whereDate('date', today()); }
-    public function scopeUpcoming($query) { return $query->where('date', '>=', today())->whereNotIn('status', ['cancelled', 'completed']); }
-    public function scopePending($query) { return $query->where('status', 'pending'); }
-    public function scopeConfirmed($query) { return $query->where('status', 'confirmed'); }
-    public function scopeInQueue($query) { return $query->whereHas('queue', fn ($q) => $q->whereIn('status', ['waiting', 'serving'])); }
-    public function canBeAddedToQueue(): bool { return ! $this->queue && ! in_array($this->status, ['cancelled', 'completed'], true); }
-    public function isOverdue(): bool { return $this->date < today() && $this->status !== 'completed'; }
-    public function isSoon(): bool {
-        $now = now();
-        $appointmentDate = \Carbon\Carbon::parse($this->date);
-        return $appointmentDate->isToday() && $appointmentDate->diffInHours($now) <= 2 && $appointmentDate > $now;
+    public function scopeToday($query)
+    {
+        return $query->whereDate('starts_at', today());
     }
-    public function getServiceNameAttribute() { return $this->service ? (app()->getLocale() === 'ar' && $this->service->name_ar ? $this->service->name_ar : $this->service->name) : $this->service_type; }
+
+    public function scopeUpcoming($query)
+    {
+        return $query
+            ->where('starts_at', '>=', now())
+            ->whereNotIn('status', [self::STATUS_CANCELLED, self::STATUS_COMPLETED]);
+    }
+
+    public function scopePending($query) { return $query->where('status', self::STATUS_PENDING); }
+    public function scopeConfirmed($query) { return $query->where('status', self::STATUS_CONFIRMED); }
+    public function scopeInQueue($query) { return $query->whereHas('queue', fn ($q) => $q->whereIn('status', ['waiting', 'serving'])); }
+    public function canBeAddedToQueue(): bool { return ! $this->queue && ! in_array($this->status, [self::STATUS_CANCELLED, self::STATUS_COMPLETED], true); }
+
+    public function isOverdue(): bool
+    {
+        return $this->starts_at !== null
+            && $this->starts_at->isPast()
+            && ! in_array($this->status, [self::STATUS_COMPLETED, self::STATUS_CANCELLED], true);
+    }
+
+    public function isSoon(): bool
+    {
+        if (! $this->starts_at) {
+            return false;
+        }
+
+        $now = now();
+
+        return $this->starts_at->isToday()
+            && $this->starts_at->between($now, $now->copy()->addHours(2));
+    }
+
+    public function getServiceNameAttribute()
+    {
+        return $this->service
+            ? (app()->getLocale() === 'ar' && $this->service->name_ar ? $this->service->name_ar : $this->service->name)
+            : $this->service_type;
+    }
+
     public function canTransitionTo(string $newStatus): bool { return in_array($newStatus, self::VALID_TRANSITIONS[$this->status] ?? [], true); }
     public function getNetPriceAttribute(): float { return max(0, (float) $this->price - (float) $this->discount_amount); }
     public function scopeOnDate($query, \Carbon\Carbon $date) { return $query->whereDate('starts_at', $date->toDateString()); }
