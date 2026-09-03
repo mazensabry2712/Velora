@@ -6,14 +6,11 @@ namespace App\Console\Commands;
 
 use App\Jobs\SendAppointmentReminderEmail;
 use App\Models\Appointment;
-use App\Models\Customer;
 use App\Models\NotificationDelivery;
 use App\Models\ReminderLog;
 use App\Models\ReminderRule;
 use App\Models\Tenant;
-use App\Models\User;
 use Carbon\Carbon;
-use Illuminate\Console\Command;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Log;
 
@@ -103,10 +100,8 @@ final class ProcessReminders extends Command
 
             $appointments = Appointment::with([
                 'customer',
-                'newCustomer',
                 'service',
                 'staff',
-                'newStaff',
                 'queue',
             ])
                 ->whereNotIn('status', [
@@ -114,20 +109,8 @@ final class ProcessReminders extends Command
                     Appointment::STATUS_COMPLETED,
                     Appointment::STATUS_NO_SHOW,
                 ])
-                ->where(function ($query) use ($windowStart, $windowEnd): void {
-                    $query->whereBetween('starts_at', [$windowStart, $windowEnd])
-                        ->orWhere(function ($legacy) use ($windowStart, $windowEnd): void {
-                            $legacy->whereNull('starts_at')
-                                ->whereDate('date', $windowStart->toDateString())
-                                ->whereRaw(
-                                    "CAST(CONCAT(date, ' ', time_slot) AS DATETIME) BETWEEN ? AND ?",
-                                    [
-                                        $windowStart->toDateTimeString(),
-                                        $windowEnd->toDateTimeString(),
-                                    ]
-                                );
-                        });
-                })
+                ->whereNotNull('starts_at')
+                ->whereBetween('starts_at', [$windowStart, $windowEnd])
                 ->get();
 
             foreach ($appointments as $appointment) {
@@ -154,7 +137,7 @@ final class ProcessReminders extends Command
         ReminderRule $rule,
         Tenant $tenant,
     ): bool {
-        $customer = $appointment->newCustomer ?: $appointment->customer;
+        $customer = $appointment->customer;
 
         if (! $customer || ! $customer->email || ! $appointment->public_reference) {
             return false;
@@ -173,9 +156,8 @@ final class ProcessReminders extends Command
         }
 
         $recipient = (string) $customer->email;
-        $customerType = $customer instanceof User ? 'user' : 'customer';
         $customerId = (int) $customer->getKey();
-        $locale = $customer instanceof Customer && is_string($customer->language) && $customer->language !== ''
+        $locale = is_string($customer->language) && $customer->language !== ''
             ? $customer->language
             : (app()->getLocale() ?: 'en');
         $trackingUrl = $this->trackingUrl($tenant, $appointment->public_reference);
@@ -215,7 +197,7 @@ final class ProcessReminders extends Command
                 data: [
                     'appointment_id' => $appointment->id,
                     'customer_id' => $customerId,
-                    'customer_type' => $customerType,
+                    'customer_type' => 'customer',
                     'reminder_log_id' => $log->id,
                     'recipient' => $recipient,
                     'locale' => $locale,
