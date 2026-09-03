@@ -6,6 +6,7 @@ namespace App\Application\Queue\Actions;
 
 use App\Domain\Queue\Contracts\QueueRepository;
 use App\Models\Queue;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final class TransitionQueueEntry
@@ -22,23 +23,30 @@ final class TransitionQueueEntry
 
     public function execute(Queue $queue, string $targetStatus): Queue
     {
-        $current = (string) $queue->status;
         $targetStatus = strtolower(trim($targetStatus));
 
         if (! array_key_exists($targetStatus, self::ALLOWED)) {
             throw new InvalidArgumentException('Unsupported queue status.');
         }
 
-        if ($current === $targetStatus) {
-            return $queue;
-        }
+        return DB::transaction(function () use ($queue, $targetStatus): Queue {
+            $currentQueue = Queue::query()
+                ->lockForUpdate()
+                ->findOrFail($queue->getKey());
 
-        if (! in_array($targetStatus, self::ALLOWED[$current] ?? [], true)) {
-            throw new InvalidArgumentException("Invalid queue transition: {$current} -> {$targetStatus}.");
-        }
+            $current = (string) $currentQueue->status;
 
-        $this->queues->update($queue, ['status' => $targetStatus]);
+            if ($current === $targetStatus) {
+                return $currentQueue->refresh();
+            }
 
-        return $queue->refresh();
+            if (! in_array($targetStatus, self::ALLOWED[$current] ?? [], true)) {
+                throw new InvalidArgumentException("Invalid queue transition: {$current} -> {$targetStatus}.");
+            }
+
+            $this->queues->update($currentQueue, ['status' => $targetStatus]);
+
+            return $currentQueue->refresh();
+        });
     }
 }
