@@ -27,6 +27,18 @@ class CustomerBookingJourneyTest extends TenantTestCase
 
         $date = now($timezone)->addDay()->startOfDay();
 
+        // The tenant test harness uses a shared fixture database for the class,
+        // while the application performs booking work through tenancy's dynamic
+        // connection lifecycle. Reset only this fixture's controlled slot so a
+        // leaked appointment from a previous test cannot turn an independent
+        // happy-path test into a false 409 conflict.
+        Appointment::query()
+            ->where('staff_id_new', $this->staff->id)
+            ->whereDate('starts_at', $date->toDateString())
+            ->get()
+            ->each
+            ->delete();
+
         StaffWorkingHours::updateOrCreate(
             [
                 'staff_id' => $this->staff->id,
