@@ -10,9 +10,14 @@ use Illuminate\Support\Facades\DB;
 
 final class LegacySystemNotificationReader implements SystemNotificationReader
 {
+    private function centralConnection(): string
+    {
+        return (string) config('tenancy.database.central_connection', config('database.default', 'mysql'));
+    }
+
     public function forTenant(string $tenantId, int $limit = 5): Collection
     {
-        return DB::connection('mysql')
+        return DB::connection($this->centralConnection())
             ->table('system_notifications')
             ->where('is_sent', true)
             ->where(function ($query) use ($tenantId) {
