@@ -6,7 +6,7 @@ namespace App\Application\Staff\Actions;
 
 use App\Application\Shared\Contracts\TransactionManager;
 use App\Domain\Staff\Contracts\StaffWriter;
-use App\Models\User;
+use App\Models\Staff;
 
 final class UpdateStaff
 {
@@ -16,7 +16,7 @@ final class UpdateStaff
     ) {}
 
     /** @param array<string, mixed> $data */
-    public function execute(User $member, array $data): bool
+    public function execute(Staff $member, array $data): bool
     {
         return $this->transactions->transaction(
             fn (): bool => $this->staff->update(
