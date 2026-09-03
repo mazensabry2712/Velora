@@ -51,7 +51,6 @@ class MoyasarService
     ): void {
         $eventKey = 'moyasar_' . $paymentId;
 
-        // Idempotency – skip if already processed
         $subscription = TenantSubscription::query()
             ->where('tenant_id', $tenantId)
             ->latest('created_at')
@@ -61,20 +60,22 @@ class MoyasarService
             throw new \RuntimeException('Tenant subscription not found.');
         }
 
-        if ($subscription->last_webhook_event ?? null) {
-            if ($subscription->last_webhook_event === $eventKey) {
-                Log::info("Moyasar: duplicate callback ignored for payment {$paymentId}");
-                return;
-            }
+        if (($subscription->last_webhook_event ?? null) === $eventKey) {
+            Log::info("Moyasar: duplicate callback ignored for payment {$paymentId}");
+            return;
         }
 
         $plan = SubscriptionPlan::query()->find($planId);
-        $durationDays = ($plan?->billing_cycle === 'yearly') ? 365 : 30;
+        if (! $plan || ! $plan->is_active) {
+            throw new \RuntimeException('Moyasar webhook references an unknown or inactive local plan.');
+        }
+
+        $durationDays = $plan->billing_cycle === 'yearly' ? 365 : 30;
         $now = now();
 
         $subscription->forceFill([
             'status'               => 'active',
-            'subscription_plan_id' => $planId,
+            'subscription_plan_id' => $plan->id,
             'starts_at'            => $now,
             'ends_at'              => $now->copy()->addDays($durationDays),
             'amount_paid'          => round($amountHalalas / 100, 2),
@@ -86,7 +87,7 @@ class MoyasarService
             'updated_at'           => $now,
         ])->save();
 
-        Log::info("Moyasar: tenant {$tenantId} subscription activated. Plan ID={$planId}, Amount=" . round($amountHalalas / 100, 2) . ' SAR');
+        Log::info("Moyasar: tenant {$tenantId} subscription activated. Plan ID={$plan->id}, Amount=" . round($amountHalalas / 100, 2) . ' SAR');
     }
 
     public function getPublishableKey(): string
