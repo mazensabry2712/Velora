@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Mail\AppointmentReminderMail;
+use App\Models\Appointment;
 use App\Models\Customer;
 use App\Models\NotificationDelivery;
 use App\Models\ReminderLog;
 use App\Models\Tenant;
-use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -49,10 +49,8 @@ final class SendAppointmentReminderEmail implements ShouldQueue
             ]);
 
             try {
-                $appointment = \App\Models\Appointment::query()
-                    ->findOrFail((int) $this->data['appointment_id']);
-
-                $customer = $this->resolveCustomer();
+                $appointment = Appointment::query()->findOrFail((int) $this->data['appointment_id']);
+                $customer = Customer::query()->findOrFail((int) $this->data['customer_id']);
 
                 Mail::to((string) $this->data['recipient'])->send(
                     new AppointmentReminderMail(
@@ -115,14 +113,5 @@ final class SendAppointmentReminderEmail implements ShouldQueue
                 ]);
             }
         });
-    }
-
-    private function resolveCustomer(): User|Customer
-    {
-        if (($this->data['customer_type'] ?? 'customer') === 'user') {
-            return User::query()->findOrFail((int) $this->data['customer_id']);
-        }
-
-        return Customer::query()->findOrFail((int) $this->data['customer_id']);
     }
 }
