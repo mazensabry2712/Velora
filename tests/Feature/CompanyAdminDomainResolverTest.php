@@ -16,7 +16,7 @@ final class CompanyAdminDomainResolverTest extends TestCase
         parent::setUp();
 
         Artisan::call('migrate', [
-            '--database' => config('tenancy.database.central_connection', 'sqlite'),
+            '--database' => config('tenancy.database.central_connection', config('database.default', 'mysql')),
             '--path' => 'database/migrations',
             '--force' => true,
         ]);
