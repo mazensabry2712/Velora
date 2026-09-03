@@ -11,6 +11,7 @@ use App\Models\ReminderLog;
 use App\Models\ReminderRule;
 use App\Models\Tenant;
 use Carbon\Carbon;
+use Illuminate\Console\Command;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Log;
 
