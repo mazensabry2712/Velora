@@ -9,6 +9,11 @@ use Illuminate\Support\Facades\DB;
 
 final class LegacySubscriptionAccessReader implements SubscriptionAccessReader
 {
+    private function centralConnection(): string
+    {
+        return (string) config('tenancy.database.central_connection', config('database.default', 'mysql'));
+    }
+
     public function currentState(): ?array
     {
         $tenantId = tenant('id');
@@ -17,7 +22,7 @@ final class LegacySubscriptionAccessReader implements SubscriptionAccessReader
             return null;
         }
 
-        $subscription = DB::connection('mysql')
+        $subscription = DB::connection($this->centralConnection())
             ->table('tenant_subscriptions')
             ->where('tenant_id', $tenantId)
             ->orderByDesc('created_at')
