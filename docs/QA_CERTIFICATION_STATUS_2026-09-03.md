@@ -28,6 +28,7 @@ The canonical certification environment is MySQL 8.4 + PHP 8.4. The repository's
 | Appointment/queue integration | `AppointmentQueueIntegrationTest` | PASS | 9 | 14 | 2026-09-03 |
 | Booking rules (initial) | `BookingRulesScenarioTest` | PASS | 5 | 6 | 2026-09-03 |
 | Booking availability rules (initial) | `BookingAvailabilityRulesScenarioTest` | PASS | 4 | 8 | 2026-09-03 |
+| Booking availability rules (working-hours matrix) | `BookingAvailabilityRulesScenarioTest` | PASS | 5 | 14 | 2026-09-03 |
 | Appointment lifecycle (pre-fix) | `AppointmentLifecycleScenarioTest` | PASS | 3 | 11 | 2026-09-03 |
 | Appointment lifecycle (strengthened, pre-fix) | `AppointmentLifecycleScenarioTest` | FAIL | 3 passed + 1 failed | 15 | 2026-09-03 |
 | Appointment lifecycle (post-fix no-show regression) | `AppointmentLifecycleScenarioTest` | PASS | 5 | 24 | 2026-09-03 |
@@ -40,7 +41,7 @@ The canonical certification environment is MySQL 8.4 + PHP 8.4. The repository's
 | Booking notification failure isolation (first run) | `BookingNotificationFailureScenarioTest` | FAIL | 0 | 0 | 2026-09-03 |
 | Booking notification failure isolation (corrected fixture) | `BookingNotificationFailureScenarioTest` | PASS | 2 | 19 | 2026-09-03 |
 
-Current verified passing subtotal from completed passing focused runs is **74 passed test executions / 253 assertions**. Failed intermediate runs are retained as evidence and are not counted as passes.
+Current verified passing subtotal from completed passing focused runs is **79 passed test executions / 267 assertions**. Failed intermediate runs are retained as evidence and are not counted as passes.
 
 ## Defects discovered and addressed during this pass
 
@@ -118,7 +119,7 @@ Current verified passing subtotal from completed passing focused runs is **74 pa
 - The resource fixture now uses the real `staff_services` pivot schema.
 - The timezone regression now compares the raw persisted `starts_at` value normalized as UTC against the requested customer's UTC instant, while separately checking staff-local `date`, `time_slot`, and stored appointment timezone.
 
-**Test correction commit:** `df16ee7b31ddda748135990421ef5dc57d047640`.
+**Test correction commit:** `df16ee7b31ddda748135990421df5dc57d047640`.
 
 **Final regression execution:** **7 tests / 12 assertions / 7.68s PASS**.
 
@@ -156,6 +157,24 @@ Duration: 7.20s
 
 **Final state:** **BOOK-012 PASS locally.** The regression verifies that both Email and WhatsApp provider failures leave the appointment persisted and pending while the delivery remains retryable, records the attempt/error, and remains unsent.
 
+### QA-AVAIL-001 — Working-hours boundary matrix
+
+**Scenario:** `AVAIL-001` working-hours validity at the exact operating window boundaries.
+
+**Regression added:** `BookingAvailabilityRulesScenarioTest` now explicitly exercises the working-hours matrix for the configured 09:00–17:00 window with a 30-minute service: before opening, exact opening, last slot that fits, and a start time that would overrun the closing boundary.
+
+**Observed result:** User-run local MySQL-backed execution on `main` commit `39d2d0cac8e897fd4451e9ac39e11c817f514a77` passed all existing availability rules plus the new matrix:
+
+```text
+PASS Tests\\Feature\\QA\\BookingAvailabilityRulesScenarioTest
+Tests:    5 passed (14 assertions)
+Duration: 7.48s
+```
+
+**Test commit:** `27d063ef50d6b562fb4e3278acb02846cfd564ec`.
+
+**Final state:** **AVAIL-001 PASS locally for the covered working-hours boundary contract.** This does not replace concurrency or fresh MySQL CI certification.
+
 ## Previously verified local evidence
 
 The following focused runs were completed successfully in the current development environment:
@@ -169,6 +188,7 @@ BookingRulesScenarioTest (initial) → 5 passed / 6 assertions
 BookingRulesScenarioTest (resource regression) → 6 passed / 9 assertions / 7.33s
 BookingRulesScenarioTest (timezone regression, corrected) → 7 passed / 12 assertions / 7.68s
 BookingAvailabilityRulesScenarioTest (initial) → 4 passed / 8 assertions / 7.33s
+BookingAvailabilityRulesScenarioTest (working-hours matrix) → 5 passed / 14 assertions / 7.48s
 AppointmentLifecycleScenarioTest (pre-strengthening) → 3 passed / 11 assertions / 7.23s
 AppointmentLifecycleScenarioTest (post-fix no-show regression) → 5 passed / 24 assertions / 7.58s
 AppointmentLifecycleScenarioTest (corrected reschedule regression) → 6 passed / 29 assertions / 7.50s
@@ -194,6 +214,7 @@ These are local MySQL-backed runs. They are not release certification without fr
 - `BOOK-010` occupied slot rejected.
 - `BOOK-011` customer timezone conversion.
 - `BOOK-012` booking notification failure isolation.
+- `AVAIL-001` working-hours boundary matrix for the covered operating window.
 - `AVAIL-002` holiday blocking and related availability rules.
 - Appointment lifecycle status-machine validation.
 - Confirm/cancel/complete queue synchronization coverage.
@@ -207,19 +228,17 @@ These are local MySQL-backed runs. They are not release certification without fr
 
 ### OPEN / BLOCKED ON REGRESSION
 
-- `AVAIL-001` working-hours matrix beyond current negative-boundary coverage — boundary regression committed; re-run required.
 - Queue/concurrency gates.
 - Fresh Master QA MySQL 8.4 CI success for current `main`.
 - Final cross-surface reconciliation and production certification.
 
 ## Next certification work
 
-1. Re-run `AVAIL-001` working-hours boundary matrix.
-2. Same-slot and duplicate-booking concurrency.
-3. Queue call-next and queue mutation race coverage.
-4. Concurrent webhook delivery where applicable.
-5. Full `tests/Feature/QA` on fresh MySQL 8.4 + PHP 8.4 CI.
-6. Final cross-surface reconciliation and production certification.
+1. Same-slot and duplicate-booking concurrency.
+2. Queue call-next and queue mutation race coverage.
+3. Concurrent webhook delivery where applicable.
+4. Full `tests/Feature/QA` on fresh MySQL 8.4 + PHP 8.4 CI.
+5. Final cross-surface reconciliation and production certification.
 
 ## Concurrency / certification gates still outstanding
 
@@ -228,7 +247,7 @@ These are local MySQL-backed runs. They are not release certification without fr
 - Queue call-next concurrency (`CONC-003`).
 - Queue mutation race cases (`CONC-004`).
 - Concurrent webhook delivery where applicable (`CONC-005`).
-- Fresh Master QA MySQL CI success for the current `main` SHA.
+- Fresh Master QA MySQL 8.4 CI success for the current `main` SHA.
 - Final cross-surface reconciliation and production certification.
 
 ## Evidence interpretation
