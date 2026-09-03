@@ -9,6 +9,14 @@ use Illuminate\Support\Facades\DB;
 class CheckSubscriptionLimits
 {
     /**
+     * Resolve the canonical central connection used by subscription data.
+     */
+    private function centralConnection(): string
+    {
+        return (string) config('tenancy.database.central_connection', 'mysql');
+    }
+
+    /**
      * Handle an incoming request to check subscription limits
      *
      * @param  \Illuminate\Http\Request  $request
@@ -18,20 +26,17 @@ class CheckSubscriptionLimits
      */
     public function handle(Request $request, Closure $next, $limitType = null)
     {
-        // Skip for Super Admin
         if (auth()->check() && auth()->user()->isSuperAdmin()) {
             return $next($request);
         }
 
-        // Get current tenant
         $tenantId = tenant('id');
 
         if (!$tenantId) {
             return $next($request);
         }
 
-        // Get subscription info from central database
-        $subscription = DB::connection('mysql')->table('tenant_subscriptions')
+        $subscription = DB::connection($this->centralConnection())->table('tenant_subscriptions')
             ->join('subscription_plans', 'tenant_subscriptions.subscription_plan_id', '=', 'subscription_plans.id')
             ->where('tenant_subscriptions.tenant_id', $tenantId)
             ->where('tenant_subscriptions.status', 'active')
@@ -44,7 +49,6 @@ class CheckSubscriptionLimits
             )
             ->first();
 
-        // If no subscription, deny access
         if (!$subscription) {
             return response()->json([
                 'success' => false,
@@ -53,7 +57,6 @@ class CheckSubscriptionLimits
             ], 403);
         }
 
-        // Check if subscription is expired
         if ($subscription->ends_at && now()->parse($subscription->ends_at)->isPast()) {
             return response()->json([
                 'success' => false,
@@ -62,7 +65,6 @@ class CheckSubscriptionLimits
             ], 403);
         }
 
-        // Check specific limit type
         if ($limitType) {
             $limitCheck = $this->checkLimit($limitType, $subscription);
 
@@ -84,9 +86,6 @@ class CheckSubscriptionLimits
         return $next($request);
     }
 
-    /**
-     * Check specific limit
-     */
     private function checkLimit($type, $subscription)
     {
         switch ($type) {
@@ -101,15 +100,12 @@ class CheckSubscriptionLimits
         }
     }
 
-    /**
-     * Check users limit
-     */
     private function checkUsersLimit($subscription)
     {
         $currentUsers = \App\Models\User::count();
         $maxUsers = $subscription->max_users;
 
-        if ($maxUsers == -1) { // Unlimited
+        if ($maxUsers == -1) {
             return ['allowed' => true];
         }
 
@@ -126,16 +122,13 @@ class CheckSubscriptionLimits
         return ['allowed' => true];
     }
 
-    /**
-     * Check appointments limit
-     */
     private function checkAppointmentsLimit($subscription)
     {
         $currentMonth = now()->format('Y-m');
         $currentAppointments = \App\Models\Appointment::whereRaw("DATE_FORMAT(created_at, '%Y-%m') = ?", [$currentMonth])->count();
         $maxAppointments = $subscription->max_appointments;
 
-        if ($maxAppointments == -1) { // Unlimited
+        if ($maxAppointments == -1) {
             return ['allowed' => true];
         }
 
@@ -149,7 +142,6 @@ class CheckSubscriptionLimits
             ];
         }
 
-        // Warning at 90%
         if ($currentAppointments >= ($maxAppointments * 0.9)) {
             session()->flash('warning', __('You are approaching your monthly appointments limit (:current/:max).', [
                 'current' => $currentAppointments,
@@ -160,12 +152,8 @@ class CheckSubscriptionLimits
         return ['allowed' => true];
     }
 
-    /**
-     * Check storage limit (for future use)
-     */
     private function checkStorageLimit($subscription)
     {
-        // Storage check - implement when needed
         return ['allowed' => true];
     }
 }
