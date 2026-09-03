@@ -2,13 +2,13 @@
 
 namespace Tests;
 
-use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
+use Spatie\Permission\Models\Role;
 
 /**
  * Base test case for all SuperAdmin-scoped tests.
@@ -26,14 +26,14 @@ abstract class SuperAdminTestCase extends TestCase
 
         Artisan::call('migrate:fresh', [
             '--database' => $centralConn,
-            '--force'    => true,
+            '--force' => true,
         ]);
 
         config(['database.connections.mysql' => config('database.connections.sqlite')]);
         DB::purge('mysql');
 
         $mysqlSchema = Schema::connection('mysql');
-        if (!$mysqlSchema->hasTable('upgrade_requests')) {
+        if (! $mysqlSchema->hasTable('upgrade_requests')) {
             $mysqlSchema->create('upgrade_requests', function (Blueprint $table) {
                 $table->id();
                 $table->string('tenant_id');
@@ -52,7 +52,7 @@ abstract class SuperAdminTestCase extends TestCase
 
         $schema = Schema::connection($centralConn);
 
-        if (!$schema->hasTable('roles')) {
+        if (! $schema->hasTable('roles')) {
             $schema->create('roles', function (Blueprint $table) {
                 $table->id();
                 $table->string('name');
@@ -61,7 +61,7 @@ abstract class SuperAdminTestCase extends TestCase
             });
         }
 
-        if (!$schema->hasTable('users')) {
+        if (! $schema->hasTable('users')) {
             $schema->create('users', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('role_id')->nullable()->constrained()->nullOnDelete();
@@ -75,7 +75,7 @@ abstract class SuperAdminTestCase extends TestCase
             });
         }
 
-        if (!$schema->hasTable('settings')) {
+        if (! $schema->hasTable('settings')) {
             $schema->create('settings', function (Blueprint $table) {
                 $table->id();
                 $table->string('tenant_id')->nullable();
@@ -84,13 +84,13 @@ abstract class SuperAdminTestCase extends TestCase
             });
         }
 
-        $this->superAdminRole = Role::firstOrCreate(['name' => 'Super Admin']);
+        $this->superAdminRole = Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web']);
 
         $this->superAdmin = User::create([
-            'name'     => 'Super Admin User',
-            'email'    => 'superadmin@velora.test',
+            'name' => 'Super Admin User',
+            'email' => 'superadmin@velora.test',
             'password' => Hash::make('password'),
-            'role_id'  => $this->superAdminRole->id,
+            'role_id' => $this->superAdminRole->id,
         ]);
 
         $this->superAdmin->assignRole($this->superAdminRole);
