@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Tests\Feature\QA;
 
 use App\Application\Queue\Actions\CallNextQueueEntry;
@@ -44,10 +42,8 @@ final class QueueLifecycleScenarioTest extends TenantTestCase
         ]);
 
         $reader = app(QueueReader::class);
-
         $queues = $reader->forDate($appointmentDate);
         $this->assertTrue($queues->contains('id', $queue->id));
-
         $status = $reader->status('A001', $appointmentDate);
         $this->assertSame($queue->id, $status['queue']?->id);
     }
@@ -124,7 +120,6 @@ final class QueueLifecycleScenarioTest extends TenantTestCase
 
         $queue->update(['status' => 'serving']);
         $this->assertSame(Appointment::STATUS_CONFIRMED, $appointment->fresh()->status);
-
         $queue->update(['status' => 'completed']);
         $this->assertSame(Appointment::STATUS_COMPLETED, $appointment->fresh()->status);
     }
@@ -171,7 +166,6 @@ final class QueueLifecycleScenarioTest extends TenantTestCase
         ]);
 
         $queues = app(QueueReader::class)->forDate($date, 'waiting');
-
         $this->assertSame($vipQueue->id, $queues->first()?->id);
     }
 
@@ -217,7 +211,6 @@ final class QueueLifecycleScenarioTest extends TenantTestCase
         ]);
 
         $called = app(CallNextQueueEntry::class)->execute();
-
         $this->assertSame($vipQueue->id, $called?->id);
         $this->assertSame('serving', $called?->status);
     }
@@ -244,7 +237,37 @@ final class QueueLifecycleScenarioTest extends TenantTestCase
         ]);
 
         $this->expectException(InvalidArgumentException::class);
-
         app(TransitionQueueEntry::class)->execute($queue, 'waiting');
+    }
+
+    #[Test]
+    public function stale_queue_model_cannot_overwrite_a_newer_terminal_transition(): void
+    {
+        $appointment = Appointment::create([
+            'customer_id' => $this->customer->id,
+            'staff_id' => $this->staffMember->id,
+            'service_id' => $this->service->id,
+            'date' => today()->toDateString(),
+            'time_slot' => '14:00',
+            'status' => Appointment::STATUS_CONFIRMED,
+            'price' => 100,
+        ]);
+
+        $queue = Queue::create([
+            'appointment_id' => $appointment->id,
+            'queue_number' => 'A023',
+            'queue_date' => today()->toDateString(),
+            'status' => 'serving',
+            'is_vip' => false,
+        ]);
+
+        $staleQueue = $queue->newQuery()->findOrFail($queue->id);
+        $queue->update(['status' => 'completed']);
+
+        $this->expectException(InvalidArgumentException::class);
+        app(TransitionQueueEntry::class)->execute($staleQueue, 'waiting');
+
+        $this->assertSame('completed', $queue->fresh()->status);
+        $this->assertSame(Appointment::STATUS_COMPLETED, $appointment->fresh()->status);
     }
 }
