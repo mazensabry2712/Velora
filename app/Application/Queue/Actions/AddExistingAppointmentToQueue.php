@@ -38,7 +38,7 @@ final class AddExistingAppointmentToQueue
                 'appointment_id' => $appointment->id,
                 'queue_number' => Queue::generateQueueNumber(),
                 'status' => 'waiting',
-                'is_vip' => (bool) ($appointment->customer?->is_vip ?? false),
+                'is_vip' => (bool) ($appointment->customer?->ltv_tier === 'vip'),
             ]);
 
             return ['queue' => $queue, 'created' => true];
