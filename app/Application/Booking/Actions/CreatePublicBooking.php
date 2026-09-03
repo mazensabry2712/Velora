@@ -51,14 +51,20 @@ final class CreatePublicBooking
             }
         }
 
-        $timezone = $staff->timezone ?: config('app.timezone');
-        $startsAt = Carbon::createFromFormat(
+        $staffTimezone = $staff->timezone ?: config('app.timezone');
+        $requestedTimezone = $data->requestedTimezone ?: $staffTimezone;
+        $requestedStartsAt = Carbon::createFromFormat(
             'Y-m-d H:i',
             $data->appointmentDate . ' ' . $data->appointmentTime,
-            $timezone,
+            $requestedTimezone,
         );
 
-        return $this->transactions->transaction(function () use ($data, $staff, $timezone, $startsAt): array {
+        // Public booking times may arrive in the customer's requested timezone.
+        // Normalize them to the staff/tenant business timezone before availability
+        // validation and canonical appointment persistence.
+        $startsAt = $requestedStartsAt->copy()->setTimezone($staffTimezone);
+
+        return $this->transactions->transaction(function () use ($data, $staff, $staffTimezone, $startsAt): array {
             [$firstName, $lastName] = $this->splitName($data->customerName);
 
             $customer = Customer::firstOrNew(['email' => $data->customerEmail]);
@@ -79,7 +85,7 @@ final class CreatePublicBooking
                 serviceId: $data->serviceId,
                 staffId: $staff->id,
                 startsAt: $startsAt,
-                timezone: $timezone,
+                timezone: $staffTimezone,
                 customerId: $customer->id,
                 resourceId: $data->resourceId,
                 source: 'online',
