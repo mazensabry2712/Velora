@@ -26,12 +26,13 @@ final class UpdateAdminAppointment
                 throw (new ModelNotFoundException())->setModel(Appointment::class, [$appointmentId]);
             }
 
-            $newDate = $data['appointment_date'] ?? $appointment->date->format('Y-m-d');
-            $newTime = $data['appointment_time'] ?? $appointment->time_slot;
-            $dateChanged = $appointment->date->format('Y-m-d') !== $newDate;
-            $timeChanged = $appointment->time_slot !== $newTime;
+            $currentStartsAt = $appointment->starts_at;
+            $newDate = $data['appointment_date'] ?? $currentStartsAt?->format('Y-m-d');
+            $newTime = $data['appointment_time'] ?? $currentStartsAt?->format('H:i');
+            $newStartsAt = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $newDate . ' ' . $newTime);
+            $scheduleChanged = ! $currentStartsAt || ! $currentStartsAt->equalTo($newStartsAt);
 
-            if (($dateChanged || $timeChanged) && $appointment->queue && \Carbon\Carbon::parse($newDate)->lt(today())) {
+            if ($scheduleChanged && $appointment->queue && $newStartsAt->lt(now())) {
                 $appointment->queue->delete();
             }
 
@@ -55,14 +56,14 @@ final class UpdateAdminAppointment
             $appointmentData = [
                 'staff_id_new' => $data['staff_id'] ?? $appointment->staff_id_new,
                 'service_id' => $data['service_id'] ?? $appointment->service_id,
-                'date' => $newDate,
-                'time_slot' => $newTime,
-                'starts_at' => $newDate . ' ' . $newTime,
+                'starts_at' => $newStartsAt,
+                'date' => $newStartsAt->toDateString(),
+                'time_slot' => $newStartsAt->format('H:i'),
                 'service_type' => $data['service_type'] ?? $appointment->service_type,
                 'notes' => $data['notes'] ?? $appointment->notes,
             ];
 
-            if ($serviceChanged || $staffChanged || $dateChanged || $timeChanged) {
+            if ($serviceChanged || $staffChanged || $scheduleChanged) {
                 $appointmentData['status'] = array_key_exists('status', $data)
                     ? $appointment->status
                     : Appointment::STATUS_PENDING;
