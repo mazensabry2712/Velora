@@ -34,13 +34,17 @@ final class BookingAvailabilityRulesScenarioTest extends TenantTestCase
             'buffer_after_minutes' => 0,
         ])->save();
 
-        StaffWorkingHours::create([
-            'staff_id' => $this->staff->id,
-            'day_of_week' => $localDate->dayOfWeek,
-            'start_time' => '09:00',
-            'end_time' => '17:00',
-            'is_working' => true,
-        ]);
+        StaffWorkingHours::updateOrCreate(
+            [
+                'staff_id' => $this->staff->id,
+                'day_of_week' => $localDate->dayOfWeek,
+            ],
+            [
+                'start_time' => '09:00',
+                'end_time' => '17:00',
+                'is_working' => true,
+            ],
+        );
 
         return $timezone;
     }
@@ -83,8 +87,6 @@ final class BookingAvailabilityRulesScenarioTest extends TenantTestCase
             'applies_to_all' => true,
         ]);
 
-        // Prove the fixture was written to the current tenant database before
-        // attributing any subsequent failure to the booking engine.
         $this->assertTrue(
             Holiday::query()
                 ->whereDate('date', $date->toDateString())
@@ -93,8 +95,6 @@ final class BookingAvailabilityRulesScenarioTest extends TenantTestCase
             'The QA holiday fixture was not persisted in the current tenant database.'
         );
 
-        // Prove the domain availability engine itself returns the canonical
-        // holiday reason before exercising the higher-level booking use case.
         $result = app(SlotEngine::class)->validateSlot(
             $this->service,
             $this->staff,
