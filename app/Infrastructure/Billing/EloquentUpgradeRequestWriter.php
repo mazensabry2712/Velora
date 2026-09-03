@@ -9,9 +9,14 @@ use Illuminate\Support\Facades\DB;
 
 final class EloquentUpgradeRequestWriter implements UpgradeRequestWriter
 {
+    private function centralConnection(): string
+    {
+        return (string) config('tenancy.database.central_connection', config('database.default', 'mysql'));
+    }
+
     public function findActivePlan(int $planId): ?object
     {
-        return DB::connection('mysql')->table('subscription_plans')
+        return DB::connection($this->centralConnection())->table('subscription_plans')
             ->where('id', $planId)
             ->where('is_active', true)
             ->first();
@@ -19,6 +24,6 @@ final class EloquentUpgradeRequestWriter implements UpgradeRequestWriter
 
     public function create(array $data): void
     {
-        DB::connection('mysql')->table('upgrade_requests')->insert($data);
+        DB::connection($this->centralConnection())->table('upgrade_requests')->insert($data);
     }
 }
