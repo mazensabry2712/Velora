@@ -8,12 +8,12 @@ Billing must be deterministic, auditable and safe against duplicate callbacks, b
 
 Payment state must be controlled by verified payment-provider events, not by a browser redirect alone.
 
-- [ ] Stripe webhook signature verification.
-- [ ] Moyasar callback/webhook authenticity verification.
-- [ ] Browser success pages never directly mark money as paid.
-- [ ] Provider event IDs are stored for deduplication.
-- [ ] Duplicate webhook delivery is harmless.
-- [ ] Out-of-order events are handled safely.
+- [x] Stripe webhook signature verification is delegated to the Stripe webhook event construction/verification path.
+- [x] Moyasar webhook authenticity verification uses an HMAC signature check before event processing.
+- [x] Browser success/callback pages no longer directly mark money as paid or activate subscriptions.
+- [x] Provider event IDs are stored in `webhook_events` for deduplication.
+- [x] Duplicate webhook delivery is handled idempotently by the webhook event ledger.
+- [ ] Out-of-order events are handled safely for every provider/state transition.
 
 ## Subscription State Machine
 
@@ -36,8 +36,8 @@ Document and test these states:
 ### Active
 
 - [ ] Renewal extends the correct period.
-- [ ] Successful payment activates the correct tenant subscription.
-- [ ] Existing tenant remains attached to the correct plan.
+- [x] Successful provider events activate the tenant subscription through provider-specific handlers rather than browser success pages.
+- [ ] Existing tenant remains attached to the correct plan under all provider retry/order scenarios.
 
 ### Grace
 
