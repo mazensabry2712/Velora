@@ -25,8 +25,10 @@ final class PaymentGatewayRouter implements PaymentGatewayResolver
     public function forCountry(string $countryCode): array
     {
         $countryCode = strtoupper(trim($countryCode));
+        $version = (int) Cache::get('gateway_router:version', 1);
+        $cacheKey = "gateway_router:v{$version}:{$countryCode}";
 
-        return Cache::remember("gateway_router:{$countryCode}", 1800, function () use ($countryCode): array {
+        return Cache::remember($cacheKey, 1800, function () use ($countryCode): array {
             $preferred = $this->getCountryPreferred($countryCode);
             $enabled = $this->getGloballyEnabled();
 
@@ -58,7 +60,8 @@ final class PaymentGatewayRouter implements PaymentGatewayResolver
 
     public function flushCache(string $countryCode): void
     {
-        Cache::forget('gateway_router:' . strtoupper($countryCode));
+        $version = (int) Cache::get('gateway_router:version', 1);
+        Cache::forget("gateway_router:v{$version}:" . strtoupper($countryCode));
         Cache::forget('gateway_router:enabled');
     }
 
