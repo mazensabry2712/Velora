@@ -5,10 +5,11 @@ namespace App\Models;
 use App\Observers\QueueObserver;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class Queue extends Model
 {
-
     protected $fillable = [
         'appointment_id',
         'queue_number',
@@ -65,7 +66,7 @@ class Queue extends Model
             ->orderByRaw("CAST(SUBSTRING(queue_number, 2) AS UNSIGNED) DESC")
             ->first();
 
-        if ($lastQueue && preg_match('/^[A-Z](\d+)$/', $lastQueue->queue_number, $matches)) {
+        if ($lastQueue && preg_match('/^[A-Z](\\d+)$/', $lastQueue->queue_number, $matches)) {
             $nextNumber = ((int) $matches[1]) + 1;
         } else {
             $nextNumber = 1;
@@ -74,20 +75,21 @@ class Queue extends Model
         return 'A' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
     }
 
-    public function appointment()
+    public function appointment(): BelongsTo
     {
         return $this->belongsTo(Appointment::class);
     }
 
-    public function customer()
+    /** Canonical business customer resolved through the appointment. */
+    public function customer(): HasOneThrough
     {
         return $this->hasOneThrough(
-            User::class,
+            Customer::class,
             Appointment::class,
             'id',
             'id',
             'appointment_id',
-            'customer_id'
+            'customer_id_new'
         );
     }
 }
