@@ -27,6 +27,7 @@ Velora is a multi-tenant appointment-booking SaaS for businesses needing online 
 - `Staff` is the business staff entity.
 - `User` is the authentication/system identity and may optionally link to Customer or Staff.
 - `customers.user_id` is an account link, not the source of appointment ownership.
+- Customer VIP state is derived from `ltv_tier`; a read-only `is_vip` accessor is retained for UI/API compatibility without duplicating storage.
 
 ### Staff and services
 
@@ -40,6 +41,9 @@ Velora is a multi-tenant appointment-booking SaaS for businesses needing online 
 - Runtime appointment ownership is canonical on `customer_id_new -> customers` and `staff_id_new -> staff` during the migration window.
 - `Appointment::customer()` and `Appointment::staff()` use those canonical relationships.
 - Booking creation, recurring creation, Admin booking, direct queue entry and appointment repository filters no longer write the old User-owned appointment IDs.
+- Queue lookup and queue creation no longer read `appointments.customer_id` for customer ownership.
+- Queue actions derive VIP state from the canonical Customer entity.
+- `Appointment` runtime date scopes/helpers now use canonical `starts_at`; legacy `date`/`time_slot` remain only as migration-era compatibility fields.
 - `User::appointments()` and `User::staffAppointments()` traverse Customer/Staff instead of directly owning appointments.
 - Migration `2026_09_03_000006_reconcile_appointment_identity.php` backfills historical appointment identities and fails closed when a legacy customer/staff mapping cannot be resolved.
 
@@ -47,6 +51,11 @@ Velora is a multi-tenant appointment-booking SaaS for businesses needing online 
 
 - `invoices.customer_id` is canonical on `customers` after reconciliation.
 - `PaymentTransaction::customer()` is based on the Customer entity.
+
+### Analytics
+
+- Daily analytics now read canonical appointment timestamps and `customer_id_new` rather than the legacy appointment date/customer fields.
+- Booking heatmap aggregation uses `starts_at` for day/hour grouping.
 
 ### Canonical infrastructure
 
@@ -72,7 +81,7 @@ Architecture and cleanup decisions are documented in:
 
 The historical baseline confirmed before Queue Lifecycle implementation was **570 tests / 5624 assertions / 0 failures / 0 errors**. That baseline is not certification for the later identity/schema refactors.
 
-Fresh local testing is not claimed from the remote repository. The current remote `main` has no completed workflow result available yet for certification; a fresh GitHub Actions run and, when available, a fresh local run are required before calling the branch green.
+The current cleanup pushes trigger the repository's MySQL-backed tests, quality checks and Master QA workflows. Completion is not certified until a current run has a terminal success result; no unverified test count is presented as a pass.
 
 ## Remaining release-risk work
 
