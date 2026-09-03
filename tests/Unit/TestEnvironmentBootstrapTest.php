@@ -22,13 +22,17 @@ final class TestEnvironmentBootstrapTest extends TestCase
         $this->assertMatchesRegularExpression('/^APP_KEY=base64:[A-Za-z0-9+\/=]+$/m', $contents);
     }
 
-    public function test_phpunit_bootstrap_uses_a_process_isolated_sqlite_database(): void
+    public function test_phpunit_bootstrap_uses_the_mysql_application_database(): void
     {
-        $database = getenv('DB_DATABASE') ?: ($_ENV['DB_DATABASE'] ?? '');
+        $root = dirname(__DIR__, 2);
+        $envPath = $root . DIRECTORY_SEPARATOR . '.env';
+        $contents = file_get_contents($envPath);
 
-        $this->assertStringStartsWith('database' . DIRECTORY_SEPARATOR . 'testing_', $database);
-        $this->assertStringEndsWith('.sqlite', $database);
-        $this->assertFileExists(dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . $database);
+        $this->assertIsString($contents);
+        $this->assertStringContainsString('DB_CONNECTION=mysql', $contents);
+        $this->assertStringNotContainsString('DB_CONNECTION=sqlite', $contents);
+        $this->assertStringNotContainsString('database/testing_', $contents);
+        $this->assertStringNotContainsString('.sqlite', $contents);
     }
 
     public function test_repository_does_not_track_the_local_environment_or_test_database_files(): void
@@ -39,6 +43,6 @@ final class TestEnvironmentBootstrapTest extends TestCase
         $this->assertIsString($gitignore);
         $this->assertStringContainsString('.env', $gitignore);
         $this->assertStringContainsString('!.env.example', $gitignore);
-        $this->assertStringContainsString('database/testing_*.sqlite', $gitignore);
+        $this->assertStringNotContainsString('database/testing_*.sqlite', $gitignore);
     }
 }
