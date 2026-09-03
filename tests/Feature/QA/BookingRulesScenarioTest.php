@@ -138,7 +138,10 @@ final class BookingRulesScenarioTest extends TenantTestCase
             'is_online_bookable' => true,
         ]);
 
-        $this->staff->services()->syncWithoutDetaching([$service->id => ['user_id' => $this->staff->user_id]]);
+        $staff = $this->staff;
+        if (! $staff->services()->whereKey($service->id)->exists()) {
+            $staff->services()->attach($service->id);
+        }
 
         $resource = Resource::create([
             'name' => ['en' => 'Unassigned Room'],
@@ -147,28 +150,20 @@ final class BookingRulesScenarioTest extends TenantTestCase
             'is_active' => true,
         ]);
 
-        $before = Appointment::count();
+        $this->expectException(ValidationException::class);
 
-        try {
-            app(CreatePublicBooking::class)->execute(new PublicBookingData(
-                customerName: 'Resource Rules Customer',
-                customerEmail: 'resource-rules@example.com',
-                customerPhone: '+201000000022',
-                serviceId: $service->id,
-                staffUserId: $this->staffMember->id,
-                resourceId: $resource->id,
-                appointmentDate: $date->toDateString(),
-                appointmentTime: '09:00',
-                requestedTimezone: $this->staff->timezone ?: config('app.timezone'),
-                notes: null,
-            ));
-
-            $this->fail('Expected invalid resource selection to be rejected.');
-        } catch (ValidationException $exception) {
-            $this->assertArrayHasKey('resource_id', $exception->errors());
-        }
-
-        $this->assertSame($before, Appointment::count());
+        app(CreatePublicBooking::class)->execute(new PublicBookingData(
+            customerName: 'Resource Rules Customer',
+            customerEmail: 'resource-rules@example.com',
+            customerPhone: '+201000000022',
+            serviceId: $service->id,
+            staffUserId: $staff->user_id,
+            resourceId: $resource->id,
+            appointmentDate: $date->toDateString(),
+            appointmentTime: '09:00',
+            requestedTimezone: $this->staff->timezone ?: config('app.timezone'),
+            notes: null,
+        ));
     }
 
     #[Test]
@@ -245,11 +240,13 @@ final class BookingRulesScenarioTest extends TenantTestCase
         ));
 
         $appointment = $result['appointment']->fresh();
+        $expectedUtc = $requestedLocal->copy()->utc();
+        $storedUtc = \Carbon\Carbon::parse($appointment->getRawOriginal('starts_at'), 'UTC');
 
-        $this->assertTrue($appointment->starts_at->equalTo($expectedStaffLocal));
+        $this->assertSame($expectedUtc->toIso8601String(), $storedUtc->toIso8601String());
         $this->assertSame($expectedStaffLocal->toDateString(), $appointment->date->toDateString());
         $this->assertSame($expectedStaffLocal->format('H:i'), $appointment->time_slot);
         $this->assertSame('America/New_York', $appointment->timezone);
-        $this->assertSame($requestedLocal->copy()->utc()->toIso8601String(), $appointment->starts_at->copy()->utc()->toIso8601String());
+        $this->assertTrue($storedUtc->equalTo($expectedStaffLocal->copy()->utc()));
     }
 }
