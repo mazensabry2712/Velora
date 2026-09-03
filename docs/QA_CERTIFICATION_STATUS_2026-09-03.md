@@ -34,7 +34,7 @@ The canonical certification environment is MySQL 8.4 + PHP 8.4. The repository's
 
 Verified passing subtotal for the listed focused runs: **47 passed tests / 157 assertions**.
 
-## Defect discovered and closed during this pass
+## Defects discovered and addressed during this pass
 
 ### QA-APT-001 — Queue skip observer downgraded no-show appointments to cancelled
 
@@ -48,17 +48,23 @@ Verified passing subtotal for the listed focused runs: **47 passed tests / 157 a
 
 **Production commit:** `eabda6d8111fcc4c408294d55310431dcfc528bf`.
 
-**Regression result:** After pulling `origin/main` at `66bce51aaa9595b000ec10dc2f03a56d93941a9d`, clearing caches, and running:
+**Regression result:** After pulling `origin/main` at `66bce51aaa9595b000ec10dc2f03a56d93941a9d`, clearing caches, and running the strengthened lifecycle suite, **5 tests / 24 assertions passed** in 7.58s.
 
-```text
-php -d memory_limit=512M artisan test tests/Feature/QA/AppointmentLifecycleScenarioTest.php --stop-on-failure
+### QA-APT-002 — Reschedule left the linked Queue projection on the old date
 
-PASS Tests\\Feature\\QA\\AppointmentLifecycleScenarioTest
-Tests:    5 passed (24 assertions)
-Duration: 7.58s
-```
+**Scenario:** `APT-004` reschedule.
 
-The regression now verifies the full lifecycle scenario set currently present in this focused suite, including no-show queue synchronization and no-show timestamp behavior.
+**Observed gap:** The existing reschedule path in `UpdateAdminAppointment` recalculated the canonical `starts_at`, `date`, and `time_slot`, but did not move an existing linked Queue row's `queue_date` to the new appointment date. That could leave the appointment and queue projections representing different business dates.
+
+**Root cause:** Queue reconciliation existed only for the past-date cleanup branch; there was no update of `queue_date` when a future appointment with an existing Queue entry was moved to another date.
+
+**Regression added:** `AppointmentLifecycleScenarioTest::rescheduling_updates_the_canonical_schedule_and_reconciles_the_queue_date()` asserts the canonical timestamp/date/time fields, preserves the confirmed status for an explicit reschedule request, and requires the linked Queue `queue_date` to equal the new appointment date.
+
+**Production fix implemented:** `UpdateAdminAppointment` now updates the existing Queue `queue_date` whenever the appointment schedule changes and the appointment remains queued.
+
+**Production commit:** `c3525e19398fdd7313a8db9254c31c8aa27748b0`.
+
+**Current state:** **Re-run required.** The new regression and production fix are on `main`; no local result has been claimed yet.
 
 ## Previously verified local evidence
 
@@ -72,7 +78,7 @@ AppointmentQueueIntegrationTest → 9 passed / 14 assertions
 BookingRulesScenarioTest → 5 passed / 6 assertions / 7.56s
 BookingAvailabilityRulesScenarioTest → 4 passed / 8 assertions / 7.33s
 AppointmentLifecycleScenarioTest (pre-strengthening) → 3 passed / 11 assertions / 7.23s
-AppointmentLifecycleScenarioTest (post-fix strengthened regression) → 5 passed / 24 assertions / 7.58s
+AppointmentLifecycleScenarioTest (post-fix strengthened no-show regression) → 5 passed / 24 assertions / 7.58s
 ```
 
 These are local MySQL-backed runs. They are not release certification without fresh MySQL CI evidence.
@@ -95,13 +101,14 @@ These are local MySQL-backed runs. They are not release certification without fr
 - Confirm/cancel/complete queue synchronization coverage.
 - `APT-006` no-show lifecycle, including `no_show` persistence, `no_show_at`, and queue `skipped` synchronization.
 - Appointment status-history completeness for the strengthened lifecycle scenario.
+- Appointment completion/invoice creation coverage in the strengthened lifecycle scenario.
 - Appointment/queue integration lifecycle.
 - Customer history/queue/invoice access.
 - Appointment action and queue synchronization coverage.
 
 ### OPEN / BLOCKED ON REGRESSION
 
-- `APT-004` reschedule.
+- `APT-004` reschedule — **production fix applied; re-run required**.
 - `BOOK-005` invalid resource rejected.
 - `BOOK-011` timezone conversion.
 - `BOOK-012` booking notification failure does not corrupt booking.
@@ -114,7 +121,7 @@ The next appointment gates are the remaining lifecycle/commercial invariants not
 
 Priority sequence:
 
-1. `APT-004` reschedule behavior and all dependent projections.
+1. Re-run `APT-004` reschedule regression against the new Queue reconciliation fix.
 2. `APT-009` completion/invoice consistency with explicit persisted-data assertions.
 3. `BOOK-005`, `BOOK-011`, and `BOOK-012`.
 4. Broader `AVAIL-001` working-hours boundary matrix.
