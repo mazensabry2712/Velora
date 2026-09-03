@@ -73,6 +73,12 @@ class Customer extends Model
         return $query->where('ltv_tier', 'vip');
     }
 
+    /** Compatibility accessor for UI/API consumers; VIP is derived from the canonical LTV tier. */
+    public function getIsVipAttribute(): bool
+    {
+        return $this->ltv_tier === 'vip';
+    }
+
     public function getFullNameAttribute(): string
     {
         return trim("{$this->first_name} {$this->last_name}");
