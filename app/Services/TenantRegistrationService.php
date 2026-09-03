@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Domain\Tenant\Contracts\TenantRegistrar;
 use App\Events\TenantProvisioningRequested;
 use App\Mail\VerifyTenantEmailMail;
 use App\Models\SubscriptionPlan;
@@ -18,7 +19,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
-final class TenantRegistrationService
+final class TenantRegistrationService implements TenantRegistrar
 {
     private const EMAIL_VERIFICATION_TTL_HOURS = 24;
 
