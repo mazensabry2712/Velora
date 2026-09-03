@@ -8,10 +8,10 @@ use App\Models\Appointment;
 use App\Models\Customer;
 use App\Models\StaffWorkingHours;
 use Illuminate\Support\Facades\DB;
-use Symfony\Component\Process\Process;
-use Tests\TenantTestCase;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
+use Symfony\Component\Process\Process;
+use Tests\TenantTestCase;
 
 #[Group('qa')]
 #[Group('master-scenario')]
@@ -23,6 +23,7 @@ final class BookingConcurrencyScenarioTest extends TenantTestCase
         $timezone = $this->staff->timezone ?: config('app.timezone');
         $date = now($timezone)->addDays(5)->startOfDay();
         $time = '10:00';
+        $slotStartsAt = $date->copy()->setTimeFromTimeString($time);
 
         $this->service->forceFill([
             'is_active' => true,
@@ -49,8 +50,10 @@ final class BookingConcurrencyScenarioTest extends TenantTestCase
         $processes = [];
         $results = [];
 
-        // The worker processes need to see the same committed tenant and fixtures.
-        DB::connection()->commit();
+        // The worker processes must see the same committed tenant and fixtures.
+        if (DB::connection()->transactionLevel() > 0) {
+            DB::connection()->commit();
+        }
         $central = DB::connection((string) config('tenancy.database.central_connection', config('database.default')));
         if ($central->transactionLevel() > 0) {
             $central->commit();
@@ -90,6 +93,7 @@ final class BookingConcurrencyScenarioTest extends TenantTestCase
                 $errors = trim($process->getErrorOutput());
                 $resultFiles = glob($base . '/' . $token . '.result.*');
                 $decoded = null;
+
                 foreach ($resultFiles as $resultFile) {
                     $candidate = json_decode((string) file_get_contents($resultFile), true);
                     if (is_array($candidate) && !isset($candidate['_claimed'])) {
@@ -103,6 +107,7 @@ final class BookingConcurrencyScenarioTest extends TenantTestCase
                 $results[] = [
                     'exit_code' => $process->getExitCode(),
                     'status' => $decoded['status'] ?? null,
+                    'class' => $decoded['class'] ?? null,
                     'message' => $decoded['message'] ?? $errors ?: $output,
                     'appointment_id' => $decoded['appointment_id'] ?? null,
                 ];
@@ -111,17 +116,25 @@ final class BookingConcurrencyScenarioTest extends TenantTestCase
             $successes = array_values(array_filter($results, fn (array $result): bool => $result['status'] === 'success'));
             $failures = array_values(array_filter($results, fn (array $result): bool => $result['status'] === 'failure'));
 
-            $this->assertCount(1, $successes, 'Expected exactly one concurrent booking worker to succeed. Results: ' . json_encode($results));
-            $this->assertCount(1, $failures, 'Expected exactly one concurrent booking worker to be rejected. Results: ' . json_encode($results));
-            $this->assertStringContainsString(
-                'SlotUnavailableException',
-                (string) $failures[0]['class'] ?? 'SlotUnavailableException',
+            $this->assertCount(
+                1,
+                $successes,
+                'Expected exactly one concurrent booking worker to succeed. Results: ' . json_encode($results),
+            );
+            $this->assertCount(
+                1,
+                $failures,
+                'Expected exactly one concurrent booking worker to be rejected. Results: ' . json_encode($results),
+            );
+            $this->assertSame(
+                \App\Domain\Booking\Exceptions\SlotUnavailableException::class,
+                $failures[0]['class'] ?? null,
                 'The losing booking must fail through the domain slot-unavailable path. Results: ' . json_encode($results),
             );
 
             $count = Appointment::query()
                 ->where('staff_id_new', $this->staff->id)
-                ->where('starts_at', $date->copy()->setTimeFromTimeString($time)->utc())
+                ->where('starts_at', $slotStartsAt->copy()->utc())
                 ->whereNotIn('status', [Appointment::STATUS_CANCELLED, Appointment::STATUS_NO_SHOW])
                 ->count();
 
@@ -138,7 +151,7 @@ final class BookingConcurrencyScenarioTest extends TenantTestCase
 
             $appointmentIds = Appointment::query()
                 ->where('staff_id_new', $this->staff->id)
-                ->whereDate('starts_at', $date->toDateString())
+                ->where('starts_at', $slotStartsAt->copy()->utc())
                 ->pluck('id');
 
             if ($appointmentIds->isNotEmpty()) {
