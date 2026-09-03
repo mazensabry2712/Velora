@@ -36,8 +36,9 @@ The canonical certification environment is MySQL 8.4 + PHP 8.4. The repository's
 | Appointment lifecycle (invoice reconciliation, strengthened) | `AppointmentLifecycleScenarioTest` | PASS | 6 | 34 | 2026-09-03 |
 | Booking rules (resource regression) | `BookingRulesScenarioTest` | PASS | 6 | 9 | 2026-09-03 |
 | Booking rules (timezone regression, first run) | `BookingRulesScenarioTest` | FAIL | 5 passed + 2 failed | 7 | 2026-09-03 |
+| Booking rules (timezone regression, corrected) | `BookingRulesScenarioTest` | PASS | 7 | 12 | 2026-09-03 |
 
-Current verified passing subtotal from completed passing focused runs is **65 passed test executions / 229 assertions**. Failed intermediate runs are retained as evidence and are not counted as passes.
+Current verified passing subtotal from completed passing focused runs is **72 passed test executions / 234 assertions**. Failed intermediate runs are retained as evidence and are not counted as passes.
 
 ## Defects discovered and addressed during this pass
 
@@ -95,29 +96,39 @@ Current verified passing subtotal from completed passing focused runs is **65 pa
 
 **Regression added:** An active resource not assigned to the selected service is supplied and the booking must fail before an appointment is created.
 
-**First final regression:** **6 tests / 9 assertions / 7.33s PASS** before the later timezone-test expansion.
+**Final regression:** **6 tests / 9 assertions / 7.33s PASS** before timezone-test expansion.
 
-**Final state:** The resource business rule remains **locally verified PASS**; its later rerun was interrupted by a test fixture/schema defect unrelated to the production resource guard.
+**Final state:** **BOOK-005 PASS locally.**
 
 ### QA-BOOK-002 — Timezone regression test contract + fixture defects
 
 **Scenario:** `BOOK-011` customer-requested timezone conversion.
 
-**Observed first-run failures:**
+**First-run failures:**
 
-1. The resource regression fixture attempted to insert `user_id` into `staff_services`, but the tenant schema does not contain that column.
-2. The timezone regression compared a DB-reloaded `starts_at` Carbon object directly with a Carbon instance using a different timezone context, making `equalTo()` unsuitable for proving the raw UTC persistence contract.
+1. The resource fixture attempted to insert `user_id` into `staff_services`, but the tenant schema does not contain that column.
+2. The timezone regression compared a DB-reloaded `starts_at` Carbon object directly with a Carbon instance in a different timezone context, which was not a valid proof of the raw UTC persistence contract.
 
-**Classification:** Both failures in this run were **test/fixture contract defects**. No production timezone defect was established by the failure output alone.
+**Classification:** Both were **test/fixture contract defects**. The run did not establish a production timezone defect.
 
 **Correction:**
 
-- The resource fixture now attaches the staff/service relationship using the actual pivot schema without `user_id`.
-- The timezone regression now compares the raw persisted `starts_at` value normalized as UTC against the requested customer's UTC instant, while separately asserting staff-local `date`, `time_slot`, and stored appointment timezone.
+- The resource fixture now uses the real `staff_services` pivot schema.
+- The timezone regression now compares the raw persisted `starts_at` value normalized as UTC against the requested customer's UTC instant, while separately checking staff-local `date`, `time_slot`, and stored appointment timezone.
 
 **Test correction commit:** `df16ee7b31ddda748135990421df5dc57d047640`.
 
-**Current state:** **BOOK-011 re-run required.** No production fix is claimed from this failed run.
+**Final regression execution:** After pulling `origin/main` at `6f39436dfc46326ffbc40a3c4bdf77e701f5b3b6`, clearing caches, and running:
+
+```text
+php -d memory_limit=512M artisan test tests/Feature/QA/BookingRulesScenarioTest.php --stop-on-failure
+
+PASS Tests\\Feature\\QA\\BookingRulesScenarioTest
+Tests:    7 passed (12 assertions)
+Duration: 7.68s
+```
+
+**Final state:** **BOOK-011 PASS locally.** The regression verifies the requested customer instant, UTC persistence, staff-local compatibility fields, and stored appointment timezone.
 
 ## Previously verified local evidence
 
@@ -130,6 +141,7 @@ AppointmentActionsTest → 13 passed / 37 assertions
 AppointmentQueueIntegrationTest → 9 passed / 14 assertions
 BookingRulesScenarioTest (initial) → 5 passed / 6 assertions / 7.56s
 BookingRulesScenarioTest (resource regression) → 6 passed / 9 assertions / 7.33s
+BookingRulesScenarioTest (timezone regression, corrected) → 7 passed / 12 assertions / 7.68s
 BookingAvailabilityRulesScenarioTest → 4 passed / 8 assertions / 7.33s
 AppointmentLifecycleScenarioTest (pre-strengthening) → 3 passed / 11 assertions / 7.23s
 AppointmentLifecycleScenarioTest (post-fix no-show regression) → 5 passed / 24 assertions / 7.58s
@@ -153,6 +165,7 @@ These are local MySQL-backed runs. They are not release certification without fr
 - `BOOK-008` minimum advance rule.
 - `BOOK-009` maximum advance rule.
 - `BOOK-010` occupied slot rejected.
+- `BOOK-011` customer timezone conversion.
 - `AVAIL-002` holiday blocking and related availability rules.
 - Appointment lifecycle status-machine validation.
 - Confirm/cancel/complete queue synchronization coverage.
@@ -166,19 +179,17 @@ These are local MySQL-backed runs. They are not release certification without fr
 
 ### OPEN / BLOCKED ON REGRESSION
 
-- `BOOK-011` timezone conversion — corrected regression committed; re-run required.
 - `BOOK-012` booking notification failure does not corrupt booking.
 - `AVAIL-001` working-hours matrix beyond current negative-boundary coverage.
 - Final reconciliation coverage not yet represented in focused runs.
 
 ## Next certification work
 
-1. Re-run corrected `BOOK-011` timezone regression.
-2. `BOOK-012` booking notification failure isolation.
-3. Broader `AVAIL-001` working-hours boundary matrix.
-4. Queue/concurrency and webhook concurrency where applicable.
-5. Full `tests/Feature/QA` on fresh MySQL 8.4 + PHP 8.4 CI.
-6. Final cross-surface reconciliation and production certification.
+1. `BOOK-012` booking notification failure isolation.
+2. Broader `AVAIL-001` working-hours boundary matrix.
+3. Queue/concurrency and webhook concurrency where applicable.
+4. Full `tests/Feature/QA` on fresh MySQL 8.4 + PHP 8.4 CI.
+5. Final cross-surface reconciliation and production certification.
 
 ## Concurrency / certification gates still outstanding
 
