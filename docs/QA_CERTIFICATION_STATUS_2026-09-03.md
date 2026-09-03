@@ -37,6 +37,7 @@ The canonical certification environment is MySQL 8.4 + PHP 8.4. The repository's
 | Booking rules (resource regression) | `BookingRulesScenarioTest` | PASS | 6 | 9 | 2026-09-03 |
 | Booking rules (timezone regression, first run) | `BookingRulesScenarioTest` | FAIL | 5 passed + 2 failed | 7 | 2026-09-03 |
 | Booking rules (timezone regression, corrected) | `BookingRulesScenarioTest` | PASS | 7 | 12 | 2026-09-03 |
+| Booking notification failure isolation (first run) | `BookingNotificationFailureScenarioTest` | FAIL | 0 | 0 | 2026-09-03 |
 
 Current verified passing subtotal from completed passing focused runs is **72 passed test executions / 234 assertions**. Failed intermediate runs are retained as evidence and are not counted as passes.
 
@@ -118,17 +119,9 @@ Current verified passing subtotal from completed passing focused runs is **72 pa
 
 **Test correction commit:** `df16ee7b31ddda748135990421df5dc57d047640`.
 
-**Final regression execution:** After pulling `origin/main` at `6f39436dfc46326ffbc40a3c4bdf77e701f5b3b6`, clearing caches, and running:
+**Final regression execution:** **7 tests / 12 assertions / 7.68s PASS**.
 
-```text
-php -d memory_limit=512M artisan test tests/Feature/QA/BookingRulesScenarioTest.php --stop-on-failure
-
-PASS Tests\\Feature\\QA\\BookingRulesScenarioTest
-Tests:    7 passed (12 assertions)
-Duration: 7.68s
-```
-
-**Final state:** **BOOK-011 PASS locally.** The regression verifies the requested customer instant, UTC persistence, staff-local compatibility fields, and stored appointment timezone.
+**Final state:** **BOOK-011 PASS locally.**
 
 ### QA-BOOK-003 — Booking notification failure isolation
 
@@ -142,11 +135,22 @@ Duration: 7.68s
 COMMITTED CORE + RETRYABLE SIDE EFFECT
 ```
 
-For each channel, the persisted appointment remains intact while the notification delivery returns to `queued`, increments attempts, records the provider error, and remains unsent.
+**First regression execution:** After pulling `origin/main` at `48459ccbe877eb4d1b3a34d86b4b04725f690341`, the suite did not reach the notification job assertions. Both tests failed during fixture creation with:
 
-**Test commit:** `c0326e6f74ba906dd5d2c6a5afe800b27ab7cf32`.
+```text
+SQLSTATE[22001]: String data, right truncated: 1406
+Data too long for column 'source'
+```
 
-**Current state:** **Re-run required.** The new regression has not yet been executed locally.
+The fixture used `source = qa-booking-notification-failure`, while the `appointments.source` schema is `string(20)`.
+
+**Classification:** **Test-data/schema contract defect.** No production notification failure has been established by this run because the notification jobs were never entered.
+
+**Correction:** The fixture source value was shortened to `qa-notify-fail`, preserving the semantic test intent while respecting the production schema contract.
+
+**Fixture correction commit:** `8ec36b91b73bc6b7422a0f0f9b7740ebfb1884e6`.
+
+**Current state:** **BOOK-012 re-run required.**
 
 ## Previously verified local evidence
 
@@ -197,7 +201,7 @@ These are local MySQL-backed runs. They are not release certification without fr
 
 ### OPEN / BLOCKED ON REGRESSION
 
-- `BOOK-012` booking notification failure does not corrupt booking — corrected regression committed; re-run required.
+- `BOOK-012` booking notification failure does not corrupt booking — fixture correction committed; re-run required.
 - `AVAIL-001` working-hours matrix beyond current negative-boundary coverage.
 - Final reconciliation coverage not yet represented in focused runs.
 
