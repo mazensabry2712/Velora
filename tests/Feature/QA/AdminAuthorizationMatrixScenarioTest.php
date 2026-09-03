@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature\QA;
 
-use App\Models\Role;
 use App\Models\User;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
+use Spatie\Permission\Models\Role;
 use Tests\TenantTestCase;
 
 #[Group('qa')]
@@ -35,7 +35,7 @@ final class AdminAuthorizationMatrixScenarioTest extends TenantTestCase
     #[Test]
     public function assistant_cannot_mutate_settings_or_services(): void
     {
-        $assistantRole = Role::firstOrCreate(['name' => 'Assistant']);
+        $assistantRole = Role::firstOrCreate(['name' => 'Assistant', 'guard_name' => 'web']);
         $assistant = User::create([
             'name' => 'QA Assistant',
             'email' => 'qa-assistant-' . uniqid() . '@example.com',
