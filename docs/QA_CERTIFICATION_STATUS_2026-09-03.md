@@ -16,18 +16,30 @@ A feature family is not considered certified from test count alone. Required evi
 6. MySQL CI evidence for release certification.
 7. Concurrency/security gates where applicable.
 
-The canonical certification environment is MySQL 8.4 + PHP 8.4. The repository's Master QA workflow runs the `tests/Feature/QA` suite against MySQL 8.4. fileciteturn179file0
+The canonical certification environment is MySQL 8.4 + PHP 8.4. The repository's Master QA workflow runs the `tests/Feature/QA` suite against MySQL 8.4.
 
 ## Verified local evidence — current session
 
-| Area | Test suite | Result | Assertions | Evidence date |
-|---|---|---:|---:|---|
-| Public booking journey | `CustomerBookingJourneyTest` | PASS | 41 | 2026-09-03 |
-| Customer portal | `CustomerPortalJourneyTest` | PASS | 16 | 2026-09-03 |
-| Appointment actions | `AppointmentActionsTest` | PASS | 37 | 2026-09-03 |
-| Appointment/queue integration | `AppointmentQueueIntegrationTest` | PASS | 14 | 2026-09-03 |
+| Area | Test suite | Result | Tests | Assertions | Evidence date |
+|---|---|---:|---:|---:|---|
+| Public booking journey | `CustomerBookingJourneyTest` | PASS | 5 | 41 | 2026-09-03 |
+| Customer portal | `CustomerPortalJourneyTest` | PASS | 3 | 16 | 2026-09-03 |
+| Appointment actions | `AppointmentActionsTest` | PASS | 13 | 37 | 2026-09-03 |
+| Appointment/queue integration | `AppointmentQueueIntegrationTest` | PASS | 9 | 14 | 2026-09-03 |
+| Booking rules | `BookingRulesScenarioTest` | PASS | 5 | 6 | 2026-09-03 |
+| Booking availability rules | `BookingAvailabilityRulesScenarioTest` | PASS | 4 | 8 | 2026-09-03 |
 
-Current verified subtotal: **30 passed tests / 108 assertions**.
+Current verified subtotal: **39 passed tests / 122 assertions**.
+
+The two latest focused commands were:
+
+```text
+php -d memory_limit=512M artisan test tests/Feature/QA/BookingRulesScenarioTest.php --stop-on-failure
+→ PASS — 5 passed (6 assertions) — 7.56s
+
+php -d memory_limit=512M artisan test tests/Feature/QA/BookingAvailabilityRulesScenarioTest.php --stop-on-failure
+→ PASS — 4 passed (8 assertions) — 7.33s
+```
 
 These results are local MySQL-backed runs from the developer environment. They are not, by themselves, release certification.
 
@@ -97,32 +109,46 @@ These results are local MySQL-backed runs from the developer environment. They a
 
 **Regression/evidence:** `AppointmentActionsTest` passed 13 tests / 37 assertions.
 
+### QA-TEST-BOOKRULES-001 — Booking rules QA fixtures were not idempotent
+
+**Observed:** Re-running the focused booking-rules scenario classes against the shared tenant fixture could collide with the unique `staff_working_hours` constraint for the same staff/day.
+
+**Root cause:** The scenarios created the same controlled staff/day working-hours row on every method without first reconciling an existing fixture.
+
+**Fix:** The focused booking rules/availability fixture setup was made idempotent for repeated class execution while preserving the production working-hours contract.
+
+**Regression/evidence:**
+- `BookingRulesScenarioTest` → **5 passed / 6 assertions / 7.56s**
+- `BookingAvailabilityRulesScenarioTest` → **4 passed / 8 assertions / 7.33s**
+
 ## Current booking/appointment gate status
 
-### PASS — already locally verified
+### PASS — locally verified in the current session
 
-- `BOOK-001` real public booking journey: covered by `CustomerBookingJourneyTest`.
-- `BOOK-002` duplicate booking protection: covered by `CustomerBookingJourneyTest`.
-- Customer history/queue/invoice access: covered by `CustomerPortalJourneyTest`.
-- Appointment action and queue synchronization coverage: covered by `AppointmentActionsTest`.
-- Appointment/queue integration lifecycle: covered by `AppointmentQueueIntegrationTest`.
-
-### NEXT — focused Master QA gates
-
+- `BOOK-001` real public booking journey.
+- `BOOK-002` duplicate booking protection.
 - `BOOK-003` inactive service cannot book.
 - `BOOK-004` staff/service mismatch rejected.
-- `BOOK-005` invalid resource rejected.
-- `BOOK-006` past slot rejected.
+- `BOOK-006` past/out-of-window booking rule coverage where currently implemented.
 - `BOOK-007` same-day booking policy.
 - `BOOK-008` minimum advance rule.
 - `BOOK-009` maximum advance rule.
 - `BOOK-010` occupied slot rejected.
+- `AVAIL-002` holiday blocking and related availability rules.
+- Customer history/queue/invoice access.
+- Appointment action and queue synchronization coverage.
+- Appointment/queue integration lifecycle.
+
+### PARTIAL / STILL REQUIRED
+
+The current focused suites do **not yet prove every catalog item end-to-end**. In particular:
+
+- `BOOK-005` invalid resource rejected.
 - `BOOK-011` timezone conversion.
 - `BOOK-012` notification failure must not corrupt booking.
-- `AVAIL-001` working hours.
-- `AVAIL-002` break/time-off/holiday blocking.
+- `AVAIL-001` working-hours matrix beyond the currently covered negative boundary.
 
-The repository already contains `BookingRulesScenarioTest` and `BookingAvailabilityRulesScenarioTest` covering a substantial portion of these scenarios. Their fixtures have now been made idempotent where repeated class execution can otherwise collide with the unique staff/day schedule constraint.
+These remain open until a dedicated scenario or equivalent existing regression proves the business outcome and downstream invariants.
 
 ## Next lifecycle gates
 
@@ -147,7 +173,7 @@ The repository already contains `BookingRulesScenarioTest` and `BookingAvailabil
 
 ## Important evidence interpretation
 
-The local results above prove the exact commands executed in the current development environment. They do not prove that the current `main` SHA has a successful GitHub Actions run unless such a run is explicitly observed and recorded. The Master QA workflow is configured for MySQL 8.4 + PHP 8.4 and runs the complete `tests/Feature/QA` suite. fileciteturn179file0
+The local results above prove the exact commands executed in the current development environment. They do not prove that the current `main` SHA has a successful GitHub Actions run unless such a run is explicitly observed and recorded. The Master QA workflow is configured for MySQL 8.4 + PHP 8.4 and runs the complete `tests/Feature/QA` suite.
 
 ## Working contract
 
@@ -162,4 +188,4 @@ Every new defect discovered in this pass must leave an audit trail containing:
 - observed local result,
 - CI status once available.
 
-The Master QA runbook requires root-cause fixes rather than assertion weakening, and requires documentation after meaningful QA changes. 
+The Master QA runbook requires root-cause fixes rather than assertion weakening, and requires documentation after meaningful QA changes.
