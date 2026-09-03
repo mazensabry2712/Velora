@@ -101,6 +101,10 @@ class TenantIsolationTest extends TenantTestCase
                 @unlink($secondDatabasePath);
             }
 
+            if (Tenant::whereKey($secondTenantId)->exists()) {
+                Tenant::whereKey($secondTenantId)->delete();
+            }
+
             $firstTenant = Tenant::find($firstTenantId);
             if ($firstTenant) {
                 tenancy()->initialize($firstTenant);
