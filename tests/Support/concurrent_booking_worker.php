@@ -5,10 +5,11 @@ declare(strict_types=1);
 use App\Application\Booking\Actions\CreatePublicBooking;
 use App\Application\Booking\DTOs\PublicBookingData;
 use App\Models\Tenant;
-use Illuminate\Foundation\Application;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Foundation\Application;
 
-$base = dirname(__DIR__, 2) . '/storage/framework/testing/concurrency';
+$root = dirname(__DIR__, 2);
+$base = $root . '/storage/framework/testing/concurrency';
 @mkdir($base, 0777, true);
 
 $options = getopt('', [
@@ -26,24 +27,40 @@ $pid = (string) getmypid();
 $ready = $base . '/' . $token . '.ready.' . $pid;
 $go = $base . '/' . $token . '.go';
 $result = $base . '/' . $token . '.result.' . $pid;
-$boot = $base . '/' . $token . '.boot.' . $pid;
+$state = $base . '/' . $token . '.state.' . $pid;
 
 try {
-    file_put_contents($boot, 'starting');
+    file_put_contents($state, json_encode(['phase' => 'starting', 'pid' => getmypid()], JSON_THROW_ON_ERROR));
+
+    // Use the same test bootstrap as PHPUnit so the spawned process receives the
+    // same temporary .env/test environment and Laravel bootstrap contract.
+    require $root . '/tests/bootstrap.php';
+
+    file_put_contents($state, json_encode(['phase' => 'framework_bootstrap'], JSON_THROW_ON_ERROR));
 
     /** @var Application $app */
-    $app = require dirname(__DIR__, 2) . '/bootstrap/app.php';
+    $app = require $root . '/bootstrap/app.php';
     $app->make(Kernel::class)->bootstrap();
+
+    file_put_contents($state, json_encode(['phase' => 'framework_ready'], JSON_THROW_ON_ERROR));
 
     $tenant = Tenant::on((string) config('tenancy.database.central_connection', config('database.default')))
         ->findOrFail((string) $options['tenant']);
     tenancy()->initialize($tenant);
+
+    file_put_contents($state, json_encode([
+        'phase' => 'tenant_ready',
+        'tenant' => $tenant->id,
+        'database' => DB::getDatabaseName(),
+    ], JSON_THROW_ON_ERROR));
 
     file_put_contents($ready, json_encode([
         'pid' => getmypid(),
         'tenant' => $tenant->id,
         'database' => DB::getDatabaseName(),
     ], JSON_THROW_ON_ERROR));
+
+    file_put_contents($state, json_encode(['phase' => 'waiting_for_go'], JSON_THROW_ON_ERROR));
 
     $deadline = microtime(true) + 15;
     while (! file_exists($go)) {
@@ -52,6 +69,8 @@ try {
         }
         usleep(10_000);
     }
+
+    file_put_contents($state, json_encode(['phase' => 'booking'], JSON_THROW_ON_ERROR));
 
     $booking = app(CreatePublicBooking::class)->execute(new PublicBookingData(
         customerName: 'Concurrent Booking ' . getmypid(),
@@ -66,19 +85,25 @@ try {
         notes: null,
     ));
 
+    file_put_contents($state, json_encode(['phase' => 'success'], JSON_THROW_ON_ERROR));
     file_put_contents($result, json_encode([
         'status' => 'success',
         'appointment_id' => $booking['appointment']->id,
     ], JSON_THROW_ON_ERROR));
     exit(0);
 } catch (Throwable $e) {
-    file_put_contents($result, json_encode([
+    @file_put_contents($state, json_encode([
+        'phase' => 'failure',
+        'class' => $e::class,
+        'message' => $e->getMessage(),
+    ], JSON_THROW_ON_ERROR));
+    @file_put_contents($result, json_encode([
         'status' => 'failure',
         'class' => $e::class,
         'message' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
     ], JSON_THROW_ON_ERROR));
     exit(1);
 } finally {
     @unlink($ready);
-    @unlink($boot);
 }
