@@ -27,13 +27,17 @@ class CustomerBookingJourneyTest extends TenantTestCase
 
         $date = now($timezone)->addDay()->startOfDay();
 
-        StaffWorkingHours::create([
-            'staff_id' => $this->staff->id,
-            'day_of_week' => $date->dayOfWeek,
-            'start_time' => '09:00',
-            'end_time' => '10:00',
-            'is_working' => true,
-        ]);
+        StaffWorkingHours::updateOrCreate(
+            [
+                'staff_id' => $this->staff->id,
+                'day_of_week' => $date->dayOfWeek,
+            ],
+            [
+                'start_time' => '09:00',
+                'end_time' => '10:00',
+                'is_working' => true,
+            ],
+        );
 
         RateLimiter::clear('public-booking:' . $this->tenant->getTenantKey() . ':' . $this->app->make('request')->ip());
 
