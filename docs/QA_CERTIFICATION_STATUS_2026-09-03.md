@@ -40,8 +40,9 @@ The canonical certification environment is MySQL 8.4 + PHP 8.4. The repository's
 | Booking rules (timezone regression, corrected) | `BookingRulesScenarioTest` | PASS | 7 | 12 | 2026-09-03 |
 | Booking notification failure isolation (first run) | `BookingNotificationFailureScenarioTest` | FAIL | 0 | 0 | 2026-09-03 |
 | Booking notification failure isolation (corrected fixture) | `BookingNotificationFailureScenarioTest` | PASS | 2 | 19 | 2026-09-03 |
+| Queue stale-transition regression | `QueueLifecycleScenarioTest` | PENDING | — | — | 2026-09-03 |
 
-Current verified passing subtotal from completed passing focused runs is **79 passed test executions / 267 assertions**. Failed intermediate runs are retained as evidence and are not counted as passes. `CONC-001`/`CONC-002`/`CONC-003` are CI-gated on Windows and therefore are not counted in this local subtotal.
+Current verified passing subtotal from completed passing focused runs remains **79 passed test executions / 267 assertions**. Failed intermediate runs are retained as evidence and are not counted as passes. `CONC-001`/`CONC-002`/`CONC-003` are CI-gated on Windows and are not counted in this local subtotal.
 
 ## Defects discovered and addressed during this pass
 
@@ -149,11 +150,9 @@ Current verified passing subtotal from completed passing focused runs is **79 pa
 
 **Scenario:** `CONC-003` two staff requests call `CallNextQueueEntry` concurrently against one waiting row.
 
-**Implementation under test:** `QueueRepository::callNext()` uses a DB transaction and `lockForUpdate()` before changing the selected waiting entry to `serving`. fileciteturn386file0
+**Implementation under test:** `QueueRepository::callNext()` uses a DB transaction and `lockForUpdate()` before changing the selected waiting entry to `serving`.
 
-**Regression added:** `QueueConcurrencyScenarioTest.php` + `concurrent_queue_call_next_worker.php`. The correct invariant is exactly one worker receives the queue ID and the other receives `null`; the row ends in `serving`.
-
-**Test correction:** Initial expectation that both workers could receive the same row was incorrect and was fixed before requesting execution.
+**Regression:** `QueueConcurrencyScenarioTest.php` + `concurrent_queue_call_next_worker.php`. The invariant is exactly one worker receives the queue ID and the other receives `null`; the row ends in `serving`.
 
 **Test commit:** `5ed636507e549e0a043f5340d43413ffaba5b98e`.
 
@@ -161,7 +160,23 @@ Current verified passing subtotal from completed passing focused runs is **79 pa
 
 **Current state:** **PENDING CI EXECUTION. No local PASS claimed.**
 
-## Current booking/appointment gate status
+### QA-QUEUE-001 — Stale queue transition race
+
+**Scenario:** `CONC-004`/queue mutation race. Two actors can hold different in-memory versions of one queue row and attempt incompatible transitions.
+
+**Observed risk:** `TransitionQueueEntry` previously validated the transition against the caller's in-memory status and updated without a DB transaction or row lock. A stale actor could therefore overwrite a newer persisted state.
+
+**Minimal production fix:** The action now starts a DB transaction, reloads the queue row with `lockForUpdate()`, validates against the locked persisted status, and only then updates the row.
+
+**Production fix commit:** `60e6497ef7218a59283123abcf153c52e41f0261`.
+
+**Regression:** `QueueLifecycleScenarioTest::stale_queue_model_cannot_overwrite_a_newer_terminal_transition()`.
+
+**Regression commit:** `dbf711bd4166a2e4ccd700d2a2f7bf5fc4bd9ede`.
+
+**Current state:** **PENDING focused local regression + MySQL CI.**
+
+## Current booking/appointment/queue gate status
 
 ### PASS — locally verified
 
@@ -176,28 +191,18 @@ Current verified passing subtotal from completed passing focused runs is **79 pa
 - `CONC-001` same-slot concurrent booking.
 - `CONC-002` duplicate concurrent booking submission.
 - `CONC-003` queue call-next concurrency.
-- `CONC-004` queue mutation race cases.
+- `CONC-004` queue mutation race / stale transition regression.
 - `CONC-005` concurrent webhook delivery where applicable.
-- Fresh Master QA MySQL 8.4 CI success for current `main`.
+- Fresh Master QA MySQL 8.4 CI success for the final current `main`.
 - Final cross-surface reconciliation and production certification.
 
 ## Next certification work
 
-1. Execute `CONC-001`, `CONC-002`, and `CONC-003` in the Master QA Ubuntu/MySQL 8.4 environment.
-2. Add/run `CONC-004` queue mutation race coverage.
-3. Add/run `CONC-005` webhook concurrency where applicable.
-4. Run full `tests/Feature/QA` on fresh MySQL 8.4 + PHP 8.4 CI.
+1. Run the focused `QueueLifecycleScenarioTest` regression locally.
+2. Confirm `CONC-001`, `CONC-002`, and `CONC-003` in Ubuntu/MySQL 8.4 CI.
+3. Add/run concurrent webhook delivery where applicable.
+4. Run the full `tests/Feature/QA` suite on a fresh MySQL 8.4 + PHP 8.4 CI run after all current changes settle.
 5. Perform final cross-surface reconciliation and production certification.
-
-## Concurrency / certification gates still outstanding
-
-- Same protected booking slot under concurrent requests (`CONC-001`).
-- Duplicate concurrent booking submission (`CONC-002`).
-- Queue call-next concurrency (`CONC-003`).
-- Queue mutation race cases (`CONC-004`).
-- Concurrent webhook delivery where applicable (`CONC-005`).
-- Fresh Master QA MySQL 8.4 CI success for current `main`.
-- Final cross-surface reconciliation and production certification.
 
 ## Evidence interpretation
 
