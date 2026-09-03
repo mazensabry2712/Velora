@@ -21,6 +21,9 @@
 - Application/test role usage now targets `Spatie\\Permission\\Models\\Role` directly; the legacy `App\\Models\\Role` compatibility wrapper was removed.
 - Analytics aggregation now reads canonical appointment timestamps and `customer_id_new` instead of the legacy appointment identity/date fields.
 - `EloquentAppointmentReader` was corrected to eager-load the canonical `Appointment::staff` relation; the stale `staffNew` relation reference was removed.
+- Staff repository, contract and application actions now operate on the canonical `Staff` entity instead of using `User` as the repository return type.
+- Staff HTTP responses now use `Staff` + `user` + `services` + `workingHours` relations; compatibility accessors preserve existing display fields without duplicating storage.
+- A dedicated `StaffCanonicalRepositoryTest` regression suite now guards the repository boundary and canonical relations.
 
 ## Intentionally deferred
 
@@ -34,9 +37,12 @@
 
 Current `main` is not certified green by test count alone. Remote GitHub Actions status and, when available, a fresh local run are required before release certification.
 
-The latest cleanup pushes triggered or are expected to trigger the repository's MySQL-backed tests, quality checks and Master QA workflows. At the latest API check for the corrective reader commit, no combined status checks were yet reported. This status remains deliberately conservative and does not treat missing checks as a pass.
+The latest cleanup pushes trigger the repository's MySQL-backed tests, quality checks and Master QA workflows. A terminal successful result must be observed before release certification; queued or missing checks are not treated as a pass.
 
-A concrete runtime defect found during the current review was fixed in commit `cfea0723c263784ed071cf68620323c44f5948ae`: `EloquentAppointmentReader::forCustomer()` now loads `staff` instead of the removed `staffNew` relation.
+Concrete runtime defects found during the current review and fixed on `main` include:
+
+- `EloquentAppointmentReader::forCustomer()` now loads `staff` instead of the removed `staffNew` relation.
+- Staff repository/application boundaries were aligned so the canonical `Staff` entity is returned and updated directly, while `User` remains the optional authentication linkage.
 
 Expected local verification:
 
