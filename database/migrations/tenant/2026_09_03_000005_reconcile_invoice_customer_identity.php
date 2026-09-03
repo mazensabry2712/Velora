@@ -74,7 +74,7 @@ return new class extends Migration
         Schema::table('invoices', function (Blueprint $table): void {
             $table->foreignId('customer_id')
                 ->nullable()
-                ->after('tenant_id')
+                ->after('id')
                 ->constrained('customers')
                 ->nullOnDelete();
         });
@@ -114,7 +114,7 @@ return new class extends Migration
         }
 
         Schema::table('invoices', function (Blueprint $table): void {
-            $table->unsignedBigInteger('customer_id_legacy')->nullable()->after('tenant_id');
+            $table->unsignedBigInteger('customer_id_legacy')->nullable()->after('id');
         });
 
         DB::table('invoices')
@@ -139,7 +139,7 @@ return new class extends Migration
         Schema::table('invoices', function (Blueprint $table): void {
             $table->foreignId('customer_id')
                 ->nullable()
-                ->after('tenant_id')
+                ->after('id')
                 ->constrained('users')
                 ->nullOnDelete();
         });
