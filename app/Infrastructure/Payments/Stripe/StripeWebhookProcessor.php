@@ -85,7 +85,7 @@ final class StripeWebhookProcessor implements \App\Domain\Billing\Contracts\Stri
     {
         $subscription = $event->data->object;
         if (in_array($subscription->status, ['active', 'trialing'], true)) {
-            $this->stripeService->handleSubscriptionActive($subscription);
+            $this->stripeService->handleSubscriptionActive($subscription, $event->id);
         } elseif ($subscription->status === 'canceled') {
             $this->stripeService->handleSubscriptionCancelled($subscription);
         }
@@ -100,7 +100,7 @@ final class StripeWebhookProcessor implements \App\Domain\Billing\Contracts\Stri
             return;
         }
 
-        $centralConn = config('tenancy.database.central_connection', 'mysql');
+        $centralConn = (string) config('tenancy.database.central_connection', config('database.default', 'mysql'));
         $tenantRow = DB::connection($centralConn)->table('tenants')->where('id', $tenantId)->first();
         $tenantData = json_decode($tenantRow?->data ?? '{}', true);
         $ownerEmail = $tenantData['email'] ?? null;
@@ -137,7 +137,7 @@ final class StripeWebhookProcessor implements \App\Domain\Billing\Contracts\Stri
             return;
         }
 
-        $centralConn = config('tenancy.database.central_connection', 'mysql');
+        $centralConn = (string) config('tenancy.database.central_connection', config('database.default', 'mysql'));
         DB::connection($centralConn)->table('tenant_subscriptions')
             ->where('tenant_id', $tenantId)
             ->whereNull('converted_at')
