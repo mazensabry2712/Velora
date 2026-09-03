@@ -108,7 +108,7 @@ abstract class TenantTestCase extends TestCase
 
     private function centralConnectionName(): string
     {
-        return (string) config('tenancy.database.central_connection', config('database.default', 'sqlite'));
+        return (string) config('tenancy.database.central_connection', config('database.default', 'mysql'));
     }
 
     private function bootstrapTenantOnce(): void
