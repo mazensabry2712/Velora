@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 use Throwable;
 
 class SystemSetting extends Model
@@ -41,6 +42,16 @@ class SystemSetting extends Model
                 'group' => $group,
             ]
         );
+    }
+
+    protected static function booted(): void
+    {
+        $flushGatewayCache = static function (): void {
+            Cache::forget('gateway_router:enabled');
+        };
+
+        static::saved($flushGatewayCache);
+        static::deleted($flushGatewayCache);
     }
 
     protected static function castValue($value, $type)
