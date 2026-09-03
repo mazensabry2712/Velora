@@ -7,9 +7,8 @@ namespace App\Application\Booking\Actions;
 use App\Application\Booking\DTOs\CreateAdminAppointmentData;
 use App\Application\Shared\Contracts\TransactionManager;
 use App\Models\Appointment;
+use App\Models\Customer;
 use App\Models\Queue;
-use App\Models\Service;
-use App\Models\User;
 use App\Models\UsageLog;
 use App\Repositories\Contracts\AppointmentRepositoryInterface;
 
@@ -20,21 +19,23 @@ final class CreateAdminAppointment
         private readonly TransactionManager $transactions,
     ) {}
 
-    /** @return array{appointment: Appointment, customer: User, queue: ?Queue} */
+    /** @return array{appointment: Appointment, customer: Customer, queue: ?Queue} */
     public function execute(CreateAdminAppointmentData $data): array
     {
         return $this->transactions->transaction(function () use ($data): array {
             $customer = $this->findOrCreateCustomer($data);
 
             $appointment = $this->appointments->create([
-                'customer_id' => $customer->id,
-                'staff_id' => $data->staffId,
+                'customer_id_new' => $customer->id,
+                'staff_id_new' => $data->staffId,
                 'service_id' => $data->serviceId,
                 'date' => $data->appointmentDate,
                 'time_slot' => $data->appointmentTime,
+                'starts_at' => $data->appointmentDate . ' ' . $data->appointmentTime,
                 'status' => $data->addToQueue ? 'confirmed' : 'pending',
                 'service_type' => $data->serviceType,
                 'notes' => $data->notes,
+                'source' => 'admin',
             ]);
 
             try {
@@ -55,7 +56,7 @@ final class CreateAdminAppointment
                     'queue_number' => Queue::generateQueueNumber(),
                     'queue_date' => $data->queueDate ?? $data->appointmentDate,
                     'status' => 'waiting',
-                    'is_vip' => $customer->is_vip ?? false,
+                    'is_vip' => $customer->ltv_tier === 'vip',
                 ]);
             }
 
@@ -67,28 +68,38 @@ final class CreateAdminAppointment
         });
     }
 
-    private function findOrCreateCustomer(CreateAdminAppointmentData $data): User
+    private function findOrCreateCustomer(CreateAdminAppointmentData $data): Customer
     {
-        $email = $data->customerEmail ?: $data->customerPhone . '@temp.local';
+        $customer = null;
 
-        $customer = User::firstOrCreate(
-            ['email' => $email],
-            [
-                'name' => $data->customerName,
-                'phone' => $data->customerPhone,
-                'password' => bcrypt(bin2hex(random_bytes(16))),
-            ],
-        );
-
-        if (! $customer->hasRole('Customer')) {
-            $customer->assignRole('Customer');
+        if ($data->customerEmail) {
+            $customer = Customer::query()->where('email', $data->customerEmail)->first();
         }
 
-        $customer->update([
-            'name' => $data->customerName,
-            'phone' => $data->customerPhone,
-            'email' => $data->customerEmail ?: $customer->email,
-        ]);
+        if (! $customer) {
+            $customer = Customer::query()->where('phone', $data->customerPhone)->first();
+        }
+
+        if (! $customer) {
+            $name = preg_split('/\s+/', trim($data->customerName), 2) ?: [];
+
+            $customer = Customer::create([
+                'first_name' => $name[0] ?? $data->customerName,
+                'last_name' => $name[1] ?? '',
+                'email' => $data->customerEmail,
+                'phone' => $data->customerPhone,
+                'is_blocked' => false,
+                'ltv_tier' => 'new',
+            ]);
+        } else {
+            $name = preg_split('/\s+/', trim($data->customerName), 2) ?: [];
+            $customer->update([
+                'first_name' => $name[0] ?? $customer->first_name,
+                'last_name' => $name[1] ?? $customer->last_name,
+                'email' => $data->customerEmail ?? $customer->email,
+                'phone' => $data->customerPhone,
+            ]);
+        }
 
         return $customer;
     }
