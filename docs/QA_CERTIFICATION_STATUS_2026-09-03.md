@@ -31,8 +31,9 @@ The canonical certification environment is MySQL 8.4 + PHP 8.4. The repository's
 | Appointment lifecycle (pre-fix) | `AppointmentLifecycleScenarioTest` | PASS | 3 | 11 | 2026-09-03 |
 | Appointment lifecycle (strengthened, pre-fix) | `AppointmentLifecycleScenarioTest` | FAIL | 3 passed + 1 failed | 15 | 2026-09-03 |
 | Appointment lifecycle (post-fix regression) | `AppointmentLifecycleScenarioTest` | PASS | 5 | 24 | 2026-09-03 |
+| Appointment lifecycle (reschedule regression, first run) | `AppointmentLifecycleScenarioTest` | FAIL | 4 passed + 1 failed | 19 | 2026-09-03 |
 
-Verified passing subtotal for the listed focused runs: **47 passed tests / 157 assertions**.
+Verified passing subtotal remains **47 passed tests / 157 assertions** from completed passing focused runs. The reschedule regression has not yet produced a passing result.
 
 ## Defects discovered and addressed during this pass
 
@@ -58,13 +59,25 @@ Verified passing subtotal for the listed focused runs: **47 passed tests / 157 a
 
 **Root cause:** Queue reconciliation existed only for the past-date cleanup branch; there was no update of `queue_date` when a future appointment with an existing Queue entry was moved to another date.
 
-**Regression added:** `AppointmentLifecycleScenarioTest::rescheduling_updates_the_canonical_schedule_and_reconciles_the_queue_date()` asserts the canonical timestamp/date/time fields, preserves the confirmed status for an explicit reschedule request, and requires the linked Queue `queue_date` to equal the new appointment date.
-
 **Production fix implemented:** `UpdateAdminAppointment` now updates the existing Queue `queue_date` whenever the appointment schedule changes and the appointment remains queued.
 
 **Production commit:** `c3525e19398fdd7313a8db9254c31c8aa27748b0`.
 
-**Current state:** **Re-run required.** The new regression and production fix are on `main`; no local result has been claimed yet.
+**First regression execution:** Pulled `origin/main` at `7367dbf48a517ee7b41edcfecd1de93d2afadae4` and ran the strengthened lifecycle suite. Four tests passed, then the new reschedule scenario failed at the assertion comparing `newStartsAt->toDateString()` with `fresh->date`.
+
+**Observed failure:**
+
+```text
+Failed asserting that Illuminate\\Support\\Carbon Object ... is identical to '2026-09-06'
+```
+
+**Root cause classification:** This was a **test-contract defect**, not evidence of a production schedule mismatch. `Appointment::$casts` intentionally casts the legacy `date` column to a Carbon date object. The regression used `assertSame()` against a string instead of comparing normalized date values.
+
+**Regression correction:** The assertion was changed to `assertSame($newStartsAt->toDateString(), $fresh->date->toDateString())`, preserving the semantic requirement while respecting the model's canonical cast behavior.
+
+**Test commit:** `e9ab0e2a217be34d56e6530338419516d9e72430`.
+
+**Current state:** **Re-run required.** A passing result has not yet been observed for the corrected regression.
 
 ## Previously verified local evidence
 
@@ -108,7 +121,7 @@ These are local MySQL-backed runs. They are not release certification without fr
 
 ### OPEN / BLOCKED ON REGRESSION
 
-- `APT-004` reschedule — **production fix applied; re-run required**.
+- `APT-004` reschedule — **production fix applied; corrected regression re-run required**.
 - `BOOK-005` invalid resource rejected.
 - `BOOK-011` timezone conversion.
 - `BOOK-012` booking notification failure does not corrupt booking.
@@ -117,11 +130,7 @@ These are local MySQL-backed runs. They are not release certification without fr
 
 ## Next certification work
 
-The next appointment gates are the remaining lifecycle/commercial invariants not fully closed by the current focused run, followed by booking edge/failure scenarios, reconciliation, and concurrency.
-
-Priority sequence:
-
-1. Re-run `APT-004` reschedule regression against the new Queue reconciliation fix.
+1. Re-run corrected `APT-004` reschedule regression against the Queue reconciliation fix.
 2. `APT-009` completion/invoice consistency with explicit persisted-data assertions.
 3. `BOOK-005`, `BOOK-011`, and `BOOK-012`.
 4. Broader `AVAIL-001` working-hours boundary matrix.
