@@ -32,13 +32,17 @@ final class BookingRulesScenarioTest extends TenantTestCase
             'buffer_after_minutes' => 0,
         ])->save();
 
-        \App\Models\StaffWorkingHours::create([
-            'staff_id' => $this->staff->id,
-            'day_of_week' => $date->dayOfWeek,
-            'start_time' => '09:00',
-            'end_time' => '12:00',
-            'is_working' => true,
-        ]);
+        \App\Models\StaffWorkingHours::updateOrCreate(
+            [
+                'staff_id' => $this->staff->id,
+                'day_of_week' => $date->dayOfWeek,
+            ],
+            [
+                'start_time' => '09:00',
+                'end_time' => '12:00',
+                'is_working' => true,
+            ],
+        );
 
         return [$date, $timezone];
     }
