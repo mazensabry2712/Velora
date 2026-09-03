@@ -12,12 +12,12 @@ class AppointmentActionsTest extends TenantTestCase
     private function makeAppointment(array $overrides = []): Appointment
     {
         return Appointment::create(array_merge([
-            'customer_id' => $this->customer->id,
-            'staff_id'    => $this->staffMember->id,
-            'service_id'  => $this->service->id,
-            'date'        => now()->format('Y-m-d'),
-            'time_slot'   => '10:00',
-            'status'      => 'pending',
+            'customer_id_new' => $this->customerProfile->id,
+            'staff_id_new'    => $this->staff->id,
+            'service_id'     => $this->service->id,
+            'date'           => now()->format('Y-m-d'),
+            'time_slot'      => '10:00',
+            'status'         => 'pending',
         ], $overrides));
     }
 
@@ -54,7 +54,7 @@ class AppointmentActionsTest extends TenantTestCase
             'appointment_date' => now()->addDays(1)->format('Y-m-d'),
             'appointment_time' => '10:00',
             'service_id'       => $this->service->id,
-            'staff_id'         => $this->staffMember->id,
+            'staff_id'         => $this->staff->id,
             'notes'            => 'Test appointment',
             'add_to_queue'     => true,
             'queue_date'       => now()->addDays(1)->format('Y-m-d'),
@@ -63,7 +63,7 @@ class AppointmentActionsTest extends TenantTestCase
         $response->assertStatus(201)->assertJson(['success' => true]);
         $this->assertDatabaseHas('appointments', [
             'service_id' => $this->service->id,
-            'staff_id'   => $this->staffMember->id,
+            'staff_id_new' => $this->staff->id,
         ]);
     }
 
@@ -125,7 +125,6 @@ class AppointmentActionsTest extends TenantTestCase
         $this->actingAs($this->admin);
         $appointment = $this->makeAppointment(['status' => 'confirmed']);
         $queue = $this->makeQueue($appointment);
-        // Route is POST, not DELETE
         $response = $this->postJson(route('admin.api.appointments.removeFromQueue', $appointment->id));
         $response->assertStatus(200)->assertJson(['success' => true]);
         $this->assertDatabaseMissing('queues', ['id' => $queue->id]);
@@ -135,8 +134,6 @@ class AppointmentActionsTest extends TenantTestCase
     public function it_correctly_sets_vip_status_when_adding_to_queue(): void
     {
         $this->actingAs($this->admin);
-        // is_vip is on the queue and the User model, not a separate column in an old migration
-        // Ensure user has is_vip = true so then addToQueue picks it up
         $this->customer->forceFill(['is_vip' => true])->save();
         $appointment = $this->makeAppointment(['status' => 'confirmed']);
         $response = $this->postJson(route('admin.api.appointments.addToQueue', $appointment->id));
@@ -163,7 +160,6 @@ class AppointmentActionsTest extends TenantTestCase
         $appointment = $this->makeAppointment(['status' => 'confirmed']);
         $queue = $this->makeQueue($appointment);
         $this->deleteJson(route('admin.api.appointments.destroy', $appointment->id))->assertStatus(200);
-        // Appointment uses SoftDeletes, so use assertSoftDeleted
         $this->assertSoftDeleted('appointments', ['id' => $appointment->id]);
         $this->assertDatabaseMissing('queues', ['id' => $queue->id]);
     }
