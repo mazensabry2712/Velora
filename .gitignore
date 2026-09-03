@@ -48,7 +48,6 @@ Thumbs.db
 /bootstrap/cache/*
 !/bootstrap/cache/.gitignore
 
-# PHPUnit / Tenancy temporary SQLite databases
+# PHPUnit / Tenancy temporary artifacts
 database/tenant*
-database/testing_*.sqlite
 storage/tenanttest-tenant-*/
