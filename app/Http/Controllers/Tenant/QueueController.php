@@ -58,7 +58,7 @@ class QueueController extends Controller
         }
 
         $customer = $appointment->customer;
-        $isVip = $customer?->ltv_tier === 'vip';
+        $isVip = (bool) ($customer?->is_vip ?? false);
 
         $queue = Queue::create([
             'appointment_id' => $appointment->id,
