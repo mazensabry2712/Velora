@@ -10,8 +10,11 @@
 - Booking creation, recurring generation, Admin booking, direct queue entry and appointment repository no longer write the old appointment User IDs.
 - User appointment/invoice access now traverses Customer/Staff business entities.
 - Queue customer access now resolves exclusively through the canonical Appointment → Customer relationship; tenant queue lookup no longer reads `appointments.customer_id`.
-- Queue VIP state is derived from the canonical Customer `ltv_tier` rather than a User-owned VIP flag.
-- Customer exposes `is_vip` as a read-only compatibility accessor derived from `ltv_tier` for existing UI/API consumers; no duplicate VIP database field was introduced on Customer.
+- Queue VIP state is derived from the canonical Customer business state; the `Customer::is_vip` accessor preserves legacy linked-User reads without adding a duplicate Customer column.
+- Queue lifecycle notification observer no longer references duplicate `newCustomer` relationships or User-owned customer identity.
+- Public queue status now loads only canonical Appointment → Customer/Staff relations.
+- Appointment reminder discovery, mail and job delivery are Customer-only and use canonical `starts_at`, `customer` and `staff` relationships; the obsolete User/newCustomer/newStaff compatibility path was removed.
+- Tenant test infrastructure now creates a canonical Customer fixture linked to the existing authentication User while retaining the User fixture for authentication-oriented tests.
 - Appointment date-oriented scopes/helpers now use canonical `starts_at` instead of the legacy `date` field for runtime calculations.
 - Tenant-isolation and RBAC test fixtures were aligned with the canonical model/package boundaries.
 - Appointment migration `2026_09_03_000006_reconcile_appointment_identity.php` backfills historical customer/staff references and fails closed on unresolved mappings.
@@ -30,7 +33,7 @@
 
 Current `main` is not certified green by test count alone. Remote GitHub Actions status and, when available, a fresh local run are required before release certification.
 
-The current cleanup pushes trigger the repository's MySQL-backed tests, quality checks and Master QA workflows. Results are tracked separately from code/doc completion; no unverified test pass is recorded here.
+The latest pushes triggered the repository's MySQL-backed tests, quality checks and Master QA workflows. At the latest check they were queued; no terminal pass/fail result is recorded. This status is deliberately conservative and prevents undocumented assumptions from being treated as release certification.
 
 Expected local verification:
 
