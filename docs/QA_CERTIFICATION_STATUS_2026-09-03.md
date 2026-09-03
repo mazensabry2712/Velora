@@ -29,32 +29,18 @@ The canonical certification environment is MySQL 8.4 + PHP 8.4. The repository's
 | Booking rules | `BookingRulesScenarioTest` | PASS | 5 | 6 | 2026-09-03 |
 | Booking availability rules | `BookingAvailabilityRulesScenarioTest` | PASS | 4 | 8 | 2026-09-03 |
 | Appointment lifecycle (pre-fix) | `AppointmentLifecycleScenarioTest` | PASS | 3 | 11 | 2026-09-03 |
-| Appointment lifecycle (strengthened) | `AppointmentLifecycleScenarioTest` | FAIL | 3 passed + 1 failed | 15 | 2026-09-03 |
+| Appointment lifecycle (strengthened, pre-fix) | `AppointmentLifecycleScenarioTest` | FAIL | 3 passed + 1 failed | 15 | 2026-09-03 |
+| Appointment lifecycle (post-fix regression) | `AppointmentLifecycleScenarioTest` | PASS | 5 | 24 | 2026-09-03 |
 
-Current verified passing subtotal before the latest defect: **42 passed tests / 133 assertions**.
+Verified passing subtotal for the listed focused runs: **47 passed tests / 157 assertions**.
 
-Latest strengthened lifecycle execution exposed a real production defect:
-
-```text
-FAIL Tests\\Feature\\QA\\AppointmentLifecycleScenarioTest
-✓ appointment status machine allows ...
-✓ completed appointment moves its queue ...
-✓ cancelled appointment moves its queue ...
-⨯ no show moves its queue entry to skipped ...
-
-Expected: no_show
-Actual: cancelled
-```
-
-The failure occurred after `ChangeAppointmentStatus` correctly requested `no_show`; the subsequent queue update to `skipped` triggered the Queue model observer, which downgraded the appointment to `cancelled`.
-
-## Findings added during this pass
+## Defect discovered and closed during this pass
 
 ### QA-APT-001 — Queue skip observer downgraded no-show appointments to cancelled
 
 **Scenario:** `APT-006` no-show lifecycle.
 
-**Observed:** The strengthened `AppointmentLifecycleScenarioTest` expected `appointment.status = no_show` after `ChangeAppointmentStatus::execute(..., no_show)`, but the persisted appointment became `cancelled`.
+**Initial observed failure:** The strengthened `AppointmentLifecycleScenarioTest` expected `appointment.status = no_show` after `ChangeAppointmentStatus::execute(..., no_show)`, but the persisted appointment became `cancelled`.
 
 **Root cause:** `app/Models/Queue.php` treated every transition to `cancelled` or `skipped` as an instruction to set the linked appointment status to `cancelled`. `ChangeAppointmentStatus` first set the appointment to `no_show`, then set its queue row to `skipped`; the Queue observer then overwrote the terminal appointment state.
 
@@ -62,7 +48,17 @@ The failure occurred after `ChangeAppointmentStatus` correctly requested `no_sho
 
 **Production commit:** `eabda6d8111fcc4c408294d55310431dcfc528bf`.
 
-**Regression:** The strengthened `AppointmentLifecycleScenarioTest::no_show_moves_its_queue_entry_to_skipped_and_records_no_show_at()` remains the regression guard and must be re-run after pulling the fix.
+**Regression result:** After pulling `origin/main` at `66bce51aaa9595b000ec10dc2f03a56d93941a9d`, clearing caches, and running:
+
+```text
+php -d memory_limit=512M artisan test tests/Feature/QA/AppointmentLifecycleScenarioTest.php --stop-on-failure
+
+PASS Tests\\Feature\\QA\\AppointmentLifecycleScenarioTest
+Tests:    5 passed (24 assertions)
+Duration: 7.58s
+```
+
+The regression now verifies the full lifecycle scenario set currently present in this focused suite, including no-show queue synchronization and no-show timestamp behavior.
 
 ## Previously verified local evidence
 
@@ -75,7 +71,8 @@ AppointmentActionsTest → 13 passed / 37 assertions
 AppointmentQueueIntegrationTest → 9 passed / 14 assertions
 BookingRulesScenarioTest → 5 passed / 6 assertions / 7.56s
 BookingAvailabilityRulesScenarioTest → 4 passed / 8 assertions / 7.33s
-AppointmentLifecycleScenarioTest (before strengthened no-show regression) → 3 passed / 11 assertions / 7.23s
+AppointmentLifecycleScenarioTest (pre-strengthening) → 3 passed / 11 assertions / 7.23s
+AppointmentLifecycleScenarioTest (post-fix strengthened regression) → 5 passed / 24 assertions / 7.58s
 ```
 
 These are local MySQL-backed runs. They are not release certification without fresh MySQL CI evidence.
@@ -96,27 +93,42 @@ These are local MySQL-backed runs. They are not release certification without fr
 - `AVAIL-002` holiday blocking and related availability rules.
 - Appointment lifecycle status-machine validation.
 - Confirm/cancel/complete queue synchronization coverage.
+- `APT-006` no-show lifecycle, including `no_show` persistence, `no_show_at`, and queue `skipped` synchronization.
+- Appointment status-history completeness for the strengthened lifecycle scenario.
+- Appointment/queue integration lifecycle.
 - Customer history/queue/invoice access.
 - Appointment action and queue synchronization coverage.
-- Appointment/queue integration lifecycle.
 
 ### OPEN / BLOCKED ON REGRESSION
 
-- `APT-006` no-show — **production fix applied; re-run required**.
-- `APT-008` persisted status-history completeness.
-- `APT-009` completion/invoice consistency.
 - `APT-004` reschedule.
 - `BOOK-005` invalid resource rejected.
 - `BOOK-011` timezone conversion.
-- `BOOK-012` notification failure must not corrupt booking.
+- `BOOK-012` booking notification failure does not corrupt booking.
 - `AVAIL-001` working-hours matrix beyond current negative-boundary coverage.
+- Any final reconciliation coverage not yet represented in the focused runs above.
+
+## Next certification work
+
+The next appointment gates are the remaining lifecycle/commercial invariants not fully closed by the current focused run, followed by booking edge/failure scenarios, reconciliation, and concurrency.
+
+Priority sequence:
+
+1. `APT-004` reschedule behavior and all dependent projections.
+2. `APT-009` completion/invoice consistency with explicit persisted-data assertions.
+3. `BOOK-005`, `BOOK-011`, and `BOOK-012`.
+4. Broader `AVAIL-001` working-hours boundary matrix.
+5. Queue/concurrency and webhook concurrency where applicable.
+6. Full `tests/Feature/QA` on fresh MySQL 8.4 + PHP 8.4 CI.
+7. Final cross-surface reconciliation and production certification.
 
 ## Concurrency / certification gates still outstanding
 
-- Same protected booking slot under concurrent requests.
-- Queue call-next concurrency.
-- Queue mutation race cases.
-- Webhook concurrency where applicable.
+- Same protected booking slot under concurrent requests (`CONC-001`).
+- Duplicate concurrent booking submission (`CONC-002`).
+- Queue call-next concurrency (`CONC-003`).
+- Queue mutation race cases (`CONC-004`).
+- Concurrent webhook delivery where applicable (`CONC-005`).
 - Fresh Master QA MySQL CI success for the current `main` SHA.
 - Final cross-surface reconciliation and production certification.
 
