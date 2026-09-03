@@ -15,6 +15,7 @@ use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\ApplicationBuilder;
+use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
@@ -32,6 +33,10 @@ return (new ApplicationBuilder($app))
     ->withEvents()
     ->withCommands()
     ->withProviders()
+    ->withExceptions(function (Exceptions $exceptions): void {
+        // Laravel 12 application exception handling is registered here.
+        // Keep the framework defaults unless a domain-specific renderer is required.
+    })
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
