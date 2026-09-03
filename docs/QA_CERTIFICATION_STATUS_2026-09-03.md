@@ -35,8 +35,9 @@ The canonical certification environment is MySQL 8.4 + PHP 8.4. The repository's
 | Appointment lifecycle (reschedule regression, corrected) | `AppointmentLifecycleScenarioTest` | PASS | 6 | 29 | 2026-09-03 |
 | Appointment lifecycle (invoice reconciliation, strengthened) | `AppointmentLifecycleScenarioTest` | PASS | 6 | 34 | 2026-09-03 |
 | Booking rules (resource regression) | `BookingRulesScenarioTest` | PASS | 6 | 9 | 2026-09-03 |
+| Booking rules (timezone regression, first run) | `BookingRulesScenarioTest` | FAIL | 5 passed + 2 failed | 7 | 2026-09-03 |
 
-Current verified passing subtotal from completed passing focused runs is **65 passed test executions / 229 assertions**. This counts passing executions as evidence records; repeated runs are retained as separate evidence and do not constitute release certification by count alone.
+Current verified passing subtotal from completed passing focused runs is **65 passed test executions / 229 assertions**. Failed intermediate runs are retained as evidence and are not counted as passes.
 
 ## Defects discovered and addressed during this pass
 
@@ -52,29 +53,23 @@ Current verified passing subtotal from completed passing focused runs is **65 pa
 
 **Production commit:** `eabda6d8111fcc4c408294d55310431dcfc528bf`.
 
-**Regression result:** After pulling `origin/main` at `66bce51aaa9595b000ec10dc2f03a56d93941a9d`, clearing caches, and running the strengthened lifecycle suite, **5 tests / 24 assertions passed** in 7.58s.
+**Regression result:** **5 tests / 24 assertions / 7.58s PASS**.
 
 ### QA-APT-002 — Reschedule left the linked Queue projection on the old date
 
 **Scenario:** `APT-004` reschedule.
 
-**Observed gap:** The existing reschedule path in `UpdateAdminAppointment` recalculated the canonical `starts_at`, `date`, and `time_slot`, but did not move an existing linked Queue row's `queue_date` to the new appointment date. That could leave the appointment and queue projections representing different business dates.
+**Observed gap:** The existing reschedule path recalculated the canonical schedule but did not move an existing linked Queue row's `queue_date`.
 
-**Root cause:** Queue reconciliation existed only for the past-date cleanup branch; there was no update of `queue_date` when a future appointment with an existing Queue entry was moved to another date.
+**Root cause:** Queue reconciliation existed only for the past-date cleanup branch.
 
-**Production fix implemented:** `UpdateAdminAppointment` now updates the existing Queue `queue_date` whenever the appointment schedule changes and the appointment remains queued.
+**Production fix:** `UpdateAdminAppointment` now updates an existing queued appointment's `queue_date` whenever the appointment schedule changes.
 
 **Production commit:** `c3525e19398fdd7313a8db9254c31c8aa27748b0`.
 
-**First regression execution:** The strengthened scenario initially failed because the test compared a cast Carbon `date` attribute to a raw string with `assertSame()`.
+**Test correction:** An initial regression assertion compared a cast Carbon `date` value to a string; it was corrected to compare normalized date strings. Test correction commit: `e9ab0e2a217be34d56e6530338419516d9e72430`.
 
-**Root cause classification:** **Test-contract defect**, not evidence of a production schedule mismatch. `Appointment::$casts` intentionally casts `date` to a Carbon date object.
-
-**Regression correction:** The assertion was changed to compare normalized date strings.
-
-**Test correction commit:** `e9ab0e2a217be34d56e6530338419516d9e72430`.
-
-**Final regression execution:** The corrected suite subsequently passed with **6 tests / 29 assertions / 7.50s**.
+**Final regression:** **6 tests / 29 assertions / 7.50s PASS**.
 
 **Final state:** **APT-004 PASS locally.**
 
@@ -82,15 +77,15 @@ Current verified passing subtotal from completed passing focused runs is **65 pa
 
 **Scenario:** `APT-009` completion/invoice consistency.
 
-**Reason for strengthening:** The prior lifecycle test only verified that the invoice count increased by one. That did not prove the persisted invoice was linked to the correct customer and appointment, carried the expected service amount, and had the expected initial billing status.
+**Reason for strengthening:** Count-only coverage did not prove invoice linkage, amount, or billing state.
 
-**Regression added:** The completed-appointment scenario now verifies exactly one additional invoice, customer/appointment linkage, service-price amount, and initial `pending` status.
+**Regression added:** Persisted invoice identity, customer/appointment linkage, service-price amount, and initial `pending` status are now checked.
 
 **Production assessment:** No production defect was established by this strengthening pass.
 
 **Test commit:** `02befff2f299172f9b2677893bf3077b962a3c26`.
 
-**Final regression execution:** **6 tests / 34 assertions / 7.54s PASS** after pulling `origin/main` at `394368a72990cadfd86a8c2bc748e0651db4fcb9`.
+**Final regression:** **6 tests / 34 assertions / 7.54s PASS**.
 
 **Final state:** **APT-009 PASS locally.**
 
@@ -98,21 +93,31 @@ Current verified passing subtotal from completed passing focused runs is **65 pa
 
 **Scenario:** `BOOK-005` invalid resource rejected.
 
-**Existing production guard reviewed:** The request layer accepts only active resource IDs, while `CreatePublicBooking` verifies that a supplied resource is active and assigned to the requested service before the booking transaction creates an appointment.
+**Regression added:** An active resource not assigned to the selected service is supplied and the booking must fail before an appointment is created.
 
-**Regression added:** `BookingRulesScenarioTest::resource_not_assigned_to_the_service_is_rejected_before_a_booking_is_created()` creates an active resource not assigned to the selected service and requires `ValidationException` before an appointment can be created.
+**First final regression:** **6 tests / 9 assertions / 7.33s PASS** before the later timezone-test expansion.
 
-**Regression execution:** After pulling `origin/main` at `bff9d1eb5d71bdbb3f4be6889c5162067dd9ddc0`, clearing caches, and running:
+**Final state:** The resource business rule remains **locally verified PASS**; its later rerun was interrupted by a test fixture/schema defect unrelated to the production resource guard.
 
-```text
-php -d memory_limit=512M artisan test tests/Feature/QA/BookingRulesScenarioTest.php --stop-on-failure
+### QA-BOOK-002 — Timezone regression test contract + fixture defects
 
-PASS Tests\\Feature\\QA\\BookingRulesScenarioTest
-Tests:    6 passed (9 assertions)
-Duration: 7.33s
-```
+**Scenario:** `BOOK-011` customer-requested timezone conversion.
 
-**Final state:** **BOOK-005 PASS locally.**
+**Observed first-run failures:**
+
+1. The resource regression fixture attempted to insert `user_id` into `staff_services`, but the tenant schema does not contain that column.
+2. The timezone regression compared a DB-reloaded `starts_at` Carbon object directly with a Carbon instance using a different timezone context, making `equalTo()` unsuitable for proving the raw UTC persistence contract.
+
+**Classification:** Both failures in this run were **test/fixture contract defects**. No production timezone defect was established by the failure output alone.
+
+**Correction:**
+
+- The resource fixture now attaches the staff/service relationship using the actual pivot schema without `user_id`.
+- The timezone regression now compares the raw persisted `starts_at` value normalized as UTC against the requested customer's UTC instant, while separately asserting staff-local `date`, `time_slot`, and stored appointment timezone.
+
+**Test correction commit:** `df16ee7b31ddda748135990421df5dc57d047640`.
+
+**Current state:** **BOOK-011 re-run required.** No production fix is claimed from this failed run.
 
 ## Previously verified local evidence
 
@@ -151,24 +156,24 @@ These are local MySQL-backed runs. They are not release certification without fr
 - `AVAIL-002` holiday blocking and related availability rules.
 - Appointment lifecycle status-machine validation.
 - Confirm/cancel/complete queue synchronization coverage.
-- `APT-006` no-show lifecycle, including `no_show` persistence, `no_show_at`, and queue `skipped` synchronization.
-- `APT-004` reschedule, including canonical schedule and queue-date reconciliation.
-- `APT-008` persisted status-history completeness in the strengthened lifecycle scenario.
-- `APT-009` completion/invoice consistency, including persisted invoice linkage and amount/status invariants.
+- `APT-006` no-show lifecycle.
+- `APT-004` reschedule with queue-date reconciliation.
+- `APT-008` persisted status-history completeness.
+- `APT-009` completion/invoice consistency.
 - Appointment/queue integration lifecycle.
 - Customer history/queue/invoice access.
 - Appointment action and queue synchronization coverage.
 
 ### OPEN / BLOCKED ON REGRESSION
 
-- `BOOK-011` timezone conversion.
+- `BOOK-011` timezone conversion — corrected regression committed; re-run required.
 - `BOOK-012` booking notification failure does not corrupt booking.
 - `AVAIL-001` working-hours matrix beyond current negative-boundary coverage.
-- Any final reconciliation coverage not yet represented in the focused runs above.
+- Final reconciliation coverage not yet represented in focused runs.
 
 ## Next certification work
 
-1. `BOOK-011` timezone conversion.
+1. Re-run corrected `BOOK-011` timezone regression.
 2. `BOOK-012` booking notification failure isolation.
 3. Broader `AVAIL-001` working-hours boundary matrix.
 4. Queue/concurrency and webhook concurrency where applicable.
@@ -187,7 +192,7 @@ These are local MySQL-backed runs. They are not release certification without fr
 
 ## Evidence interpretation
 
-A test failure is recorded as a defect until root cause is addressed. A test passing on one run does not retroactively certify a strengthened scenario after a new assertion reveals a previously untested production behavior.
+A test failure is recorded as a defect until root cause is addressed. A test passing on one run does not retroactively certify a strengthened scenario after a new assertion reveals a previously untested behavior.
 
 The Master QA workflow is configured for MySQL 8.4 + PHP 8.4 and runs the complete `tests/Feature/QA` suite.
 
