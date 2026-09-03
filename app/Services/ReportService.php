@@ -71,7 +71,7 @@ class ReportService implements ReportReader
     protected function scopeToRange($query, ?Carbon $start, ?Carbon $end)
     {
         if ($start && $end) {
-            $query->whereBetween('date', [$start, $end]);
+            $query->whereBetween('starts_at', [$start, $end]);
         }
 
         return $query;
