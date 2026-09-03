@@ -6,7 +6,7 @@ namespace App\Application\Staff\Actions;
 
 use App\Application\Shared\Contracts\TransactionManager;
 use App\Domain\Staff\Contracts\StaffWriter;
-use App\Models\User;
+use App\Models\Staff;
 
 final class CreateStaff
 {
@@ -16,10 +16,10 @@ final class CreateStaff
     ) {}
 
     /** @param array<string, mixed> $data */
-    public function execute(array $data): User
+    public function execute(array $data): Staff
     {
         return $this->transactions->transaction(
-            fn (): User => $this->staff->create(
+            fn (): Staff => $this->staff->create(
                 $data,
                 $data['services'] ?? [],
                 $data['schedule'] ?? [],
