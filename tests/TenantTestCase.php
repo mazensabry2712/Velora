@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use App\Models\Customer;
 use App\Models\Service;
 use App\Models\Staff;
 use App\Models\Tenant;
@@ -21,6 +22,7 @@ abstract class TenantTestCase extends TestCase
     protected User $staffMember;
     protected Staff $staff;
     protected User $customer;
+    protected Customer $customerProfile;
     protected Service $service;
     protected Role $adminRole;
     protected Role $staffRole;
@@ -76,6 +78,7 @@ abstract class TenantTestCase extends TestCase
         $this->staffMember = User::findOrFail($ids['staffMember']);
         $this->staff = Staff::findOrFail($ids['staff']);
         $this->customer = User::findOrFail($ids['customer']);
+        $this->customerProfile = Customer::findOrFail($ids['customerProfile']);
         $this->service = Service::findOrFail($ids['service']);
 
         $this->tenantDatabaseConnection ??= DB::connection(DB::getDefaultConnection());
@@ -140,6 +143,16 @@ abstract class TenantTestCase extends TestCase
         ]);
         $this->customer = User::create(['name' => 'Test Customer', 'email' => 'customer@test.com', 'phone' => '0501234567', 'password' => Hash::make('password')]);
         $this->customer->assignRole($this->customerRole);
+        $this->customerProfile = Customer::create([
+            'user_id' => $this->customer->id,
+            'first_name' => 'Test',
+            'last_name' => 'Customer',
+            'email' => $this->customer->email,
+            'phone' => $this->customer->phone,
+            'language' => 'en',
+            'timezone' => config('app.timezone'),
+            'is_blocked' => false,
+        ]);
         $this->service = Service::create(['name' => 'Consultation', 'name_ar' => 'استشارة', 'duration' => 30, 'price' => 100.00, 'is_active' => true]);
         $this->staff->services()->syncWithoutDetaching([$this->service->id]);
 
@@ -151,6 +164,7 @@ abstract class TenantTestCase extends TestCase
             'staffMember' => $this->staffMember->id,
             'staff' => $this->staff->id,
             'customer' => $this->customer->id,
+            'customerProfile' => $this->customerProfile->id,
             'service' => $this->service->id,
         ];
         self::$migrationsDone[$class] = true;
