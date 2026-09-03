@@ -78,7 +78,6 @@ final class BillingController extends Controller
                 'cancel_url' => $baseUrl . '/billing/expired',
                 'amount' => $baseAmount,
                 'currency' => $currency,
-                'country_code' => $countryCode,
                 'stripe_price_id' => $stripePriceId,
                 'metadata' => [
                     'plan_name' => $plan->name,
@@ -206,7 +205,8 @@ final class BillingController extends Controller
     public function portal(Request $request)
     {
         $tenantId = tenant('id');
-        $subscription = DB::connection('mysql')
+        $centralConn = config('tenancy.database.central_connection', 'mysql');
+        $subscription = DB::connection($centralConn)
             ->table('tenant_subscriptions')
             ->where('tenant_id', $tenantId)
             ->whereNotNull('stripe_customer_id')
