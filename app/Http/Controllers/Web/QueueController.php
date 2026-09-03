@@ -58,8 +58,7 @@ final class QueueController extends Controller
             $query = Queue::query()->with([
                 'appointment.service',
                 'appointment.staff',
-                'appointment.newStaff',
-                'appointment.newCustomer',
+                'appointment.customer',
             ]);
 
             if ($isReference) {
@@ -69,12 +68,12 @@ final class QueueController extends Controller
             }
 
             $queue = $query->first();
-            if (!$queue) {
+            if (! $queue) {
                 return response()->json(['success' => false, 'message' => __('Appointment reference not found')], 404);
             }
 
             $appointment = $queue->appointment;
-            $staffName = $appointment?->newStaff?->full_name ?: $appointment?->staff?->name ?: __('Not assigned');
+            $staffName = $appointment?->staff?->full_name ?: __('Not assigned');
             $serviceDuration = (int) ($appointment?->service?->duration_minutes ?? 0);
             $peopleAhead = null;
 
@@ -110,8 +109,8 @@ final class QueueController extends Controller
             ];
 
             if ($isReference) {
-                $customer = $appointment?->newCustomer;
-                $data['customer_name'] = $customer ? trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? '')) : null;
+                $customer = $appointment?->customer;
+                $data['customer_name'] = $customer?->full_name;
                 $data['tracking_url'] = route('customer.queue.status', ['ref' => $appointment?->public_reference]);
             }
 
