@@ -15,7 +15,7 @@ Always verify `refs/heads/main` before continuing. Never assume a SHA from an ol
 ## Current canonical checkpoint
 
 ```text
-SHA: e251c963304fdf027a4cbc3f25fc8e219df99a40
+SHA: 7a1c3841c757ad6f6f0c527356d651a25edf4975
 ```
 
 The current checkpoint includes:
@@ -29,6 +29,12 @@ The current checkpoint includes:
 - subscription lifecycle command central-connection hardening
 - subscription reminder command central-connection hardening
 - billing reader central-connection hardening
+- upgrade-request and legacy subscription-access central-connection hardening
+- system-notification central-connection hardening
+- global SystemSetting and CountryPricing models pinned to the canonical central DB
+- PaymentGatewayRouter contract aligned with PaymentGatewayManager-supported gateways
+- payment gateway cache invalidation regression coverage
+- central-model connection regression coverage
 - normalized Queue/Mail settings across certification workflows
 - regression guard for Billing portal connection selection
 ```
@@ -129,24 +135,35 @@ CheckSubscriptionStatus
 SendSubscriptionLifecycleReminders
 EloquentBillingReader
 LegacyBillingReader
+EloquentSubscriptionReader
+EloquentSubscriptionAccessReader
+LegacySubscriptionAccessReader
+EloquentUpgradeRequestWriter
+EloquentTrialExtender
+SubscriptionPlan
+TenantSubscription
 ```
 
-Regression guard:
+Global billing/pricing configuration is also explicitly central:
+
+```text
+SystemSetting
+CountryPricing
+```
+
+Regression guards:
 
 ```text
 tests/Unit/BillingCentralConnectionContractTest.php
-```
-
-Finding record:
-
-```text
-docs/QA_FINDING_BILLING_PORTAL_CONNECTION.md
+tests/Feature/Billing/PaymentGatewayRouterContractTest.php
+tests/Feature/QA/CentralModelsConnectionContractTest.php
 ```
 
 ## Completed hardening / coverage on the main line
 
 ```text
 Public booking golden flow
+Public booking per-tenant/IP rate limiting
 Booking rules and schema regressions
 Appointment lifecycle
 Queue lifecycle and business-date correctness
@@ -170,6 +187,9 @@ Dashboard daily appointment date reconciliation
 PHPUnit test environment bootstrap hardening
 CI environment alignment with the canonical MySQL contract
 Billing/subscription central-connection alignment
+Payment gateway router/manager capability alignment
+Payment gateway settings cache invalidation coverage
+Central model connection contract coverage
 ```
 
 ## Important historical findings
@@ -191,10 +211,10 @@ The historical SQLite findings remain useful as diagnosis records, but current P
 Latest pushed checkpoint:
 
 ```text
-e251c963304fdf027a4cbc3f25fc8e219df99a40
+7a1c3841c757ad6f6f0c527356d651a25edf4975
 ```
 
-Fresh GitHub Actions runs are triggered by the recent `main` updates. Their final results must be fetched before making any pass/fail or certification claim.
+GitHub Actions runs for the latest pushes were observed in `queued` state at the time of this update. Their final results must be fetched before making any pass/fail or certification claim.
 
 ## Current release gate
 
@@ -222,7 +242,7 @@ docs/QA_CURRENT_HANDOFF.md           ← current state
   ↓
 docs/QA_FINDINGS_LOG.md              ← permanent finding history
   ↓
-docs/QA_FINDING_BILLING_PORTAL_CONNECTION.md ← latest billing finding
+docs/QA_FINDING_BILLING_PORTAL_CONNECTION.md ← billing finding
   ↓
 docs/QA_RUN_120_POSTMORTEM.md        ← historical checkpoint
   ↓
