@@ -16,6 +16,14 @@ class SystemSetting extends Model
         'description',
     ];
 
+    /**
+     * Global application settings live on the central database, not tenant DBs.
+     */
+    public function getConnectionName(): string
+    {
+        return (string) config('tenancy.database.central_connection', parent::getConnectionName() ?? 'mysql');
+    }
+
     public static function get($key, $default = null)
     {
         try {
