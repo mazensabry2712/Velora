@@ -6,7 +6,6 @@ namespace Tests\Feature\QA;
 
 use App\Models\Appointment;
 use App\Models\Queue;
-use App\Models\Customer;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Component\Process\Process;
@@ -107,15 +106,16 @@ final class QueueConcurrencyScenarioTest extends TenantTestCase
 
             $this->assertCount(2, $results);
             $servedIds = array_values(array_filter(array_map(static fn (array $result) => $result['queue_id'] ?? null, $results)));
-            $this->assertCount(2, $servedIds);
-            $this->assertSame([$queue->id, $queue->id], $servedIds);
+            $nullResults = count(array_filter($results, static fn (array $result): bool => ($result['queue_id'] ?? null) === null));
+            $this->assertCount(1, $servedIds, 'Exactly one concurrent caller may acquire the waiting entry. Results: ' . json_encode($results));
+            $this->assertSame(1, $nullResults, 'The second concurrent caller must observe no remaining waiting entry. Results: ' . json_encode($results));
+            $this->assertSame($queue->id, $servedIds[0]);
             $this->assertSame('serving', $queue->fresh()->status);
         } finally {
             @unlink($go);
             foreach (glob($base . '/' . $token . '.*') as $file) {
                 @unlink($file);
             }
-            Customer::query()->whereKey($this->customerProfile->id)->update(['email' => $this->customerProfile->email]);
             DB::table('queues')->where('id', $queue->id)->delete();
             DB::table('appointment_status_histories')->where('appointment_id', $appointment->id)->delete();
             Appointment::whereKey($appointment->id)->delete();
