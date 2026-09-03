@@ -11,6 +11,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreStaffRequest;
 use App\Http\Requests\Admin\UpdateStaffRequest;
 use App\Models\Service;
+use App\Models\Staff;
 use App\Repositories\Contracts\StaffRepositoryInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -33,15 +34,21 @@ final class StaffController extends Controller
     {
         $staffMembers = $this->staff->all();
         $services = Service::orderBy('name')->get();
+
         return view('admin.staff.index', compact('staffMembers', 'services'));
     }
 
     public function show(int $id): JsonResponse
     {
         try {
-            $member = $this->staff->findWithRelations($id, ['staffProfile.services', 'schedules']);
+            $member = $this->staff->findWithRelations($id, ['user', 'services', 'workingHours']);
+
+            if (! $member) {
+                return response()->json(['success' => false, 'message' => __('Not found')], 404);
+            }
+
             return response()->json(['success' => true, 'data' => $member]);
-        } catch (\Exception $e) {
+        } catch (\Throwable) {
             return response()->json(['success' => false, 'message' => __('Not found')], 404);
         }
     }
@@ -49,18 +56,21 @@ final class StaffController extends Controller
     public function store(StoreStaffRequest $request): JsonResponse
     {
         $this->ensureTenantAdmin();
+
         try {
             $data = $request->validated();
             $member = $this->createStaff->execute($data);
             $password = explode('@', $data['email'])[0] . '123';
+
             return response()->json([
                 'success' => true,
                 'message' => __('Staff member created. Default password: ') . $password,
                 'data' => $member,
                 'default_password' => $password,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('storeStaff: ' . $e->getMessage());
+
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
@@ -68,17 +78,24 @@ final class StaffController extends Controller
     public function update(UpdateStaffRequest $request, int $id): JsonResponse
     {
         $this->ensureTenantAdmin();
+
         try {
             $member = $this->staff->findById($id);
-            $data = $request->validated();
-            $this->updateStaff->execute($member, $data);
+
+            if (! $member) {
+                return response()->json(['success' => false, 'message' => __('Not found')], 404);
+            }
+
+            $this->updateStaff->execute($member, $request->validated());
+
             return response()->json([
                 'success' => true,
                 'message' => __('Staff member updated.'),
-                'data' => $member->fresh(['staffProfile.services', 'schedules']),
+                'data' => $member->fresh(['user', 'services', 'workingHours']),
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('updateStaff: ' . $e->getMessage());
+
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
@@ -86,43 +103,65 @@ final class StaffController extends Controller
     public function destroy(int $id): JsonResponse
     {
         $this->ensureTenantAdmin();
+
         try {
             $member = $this->staff->findById($id);
+
+            if (! $member) {
+                return response()->json(['success' => false, 'message' => __('Not found')], 404);
+            }
+
             $this->deleteStaff->execute($member);
+
             return response()->json(['success' => true, 'message' => __('Staff member deleted.')]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('destroyStaff: ' . $e->getMessage());
+
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
     public function bySpecialization(string $specialization): JsonResponse
     {
-        return response()->json(['success' => true, 'data' => $this->staff->getBySpecialization($specialization)]);
+        return response()->json([
+            'success' => true,
+            'data' => $this->staff->getBySpecialization($specialization),
+        ]);
     }
 
     public function services(int $id): JsonResponse
     {
         try {
-            $member = $this->staff->findWithRelations($id, ['staffProfile.services']);
+            $member = $this->staff->findWithRelations($id, ['services']);
+
+            if (! $member) {
+                return response()->json(['success' => false, 'message' => __('Not found')], 404);
+            }
+
             return response()->json([
                 'success' => true,
-                'data' => $member->staffProfile?->services?->map(
-                    fn ($service) => $service->only(['id', 'name', 'name_ar', 'duration', 'price'])
-                )->values() ?? collect(),
+                'data' => $member->services
+                    ->map(fn ($service) => $service->only(['id', 'name', 'name_ar', 'duration', 'price']))
+                    ->values(),
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable) {
             return response()->json(['success' => false, 'message' => __('Not found')], 404);
         }
     }
 
     public function byService(int $serviceId): JsonResponse
     {
-        return response()->json(['success' => true, 'data' => $this->staff->getByService($serviceId)]);
+        return response()->json([
+            'success' => true,
+            'data' => $this->staff->getByService($serviceId),
+        ]);
     }
 
     public function schedule(int $staffId): JsonResponse
     {
-        return response()->json(['success' => true, 'data' => $this->staff->getSchedule($staffId)]);
+        return response()->json([
+            'success' => true,
+            'data' => $this->staff->getSchedule($staffId),
+        ]);
     }
 }
