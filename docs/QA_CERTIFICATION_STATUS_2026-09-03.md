@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document is the living execution record for the current Velora Master QA pass. It records verified local evidence, fixes applied during the current run, and remaining gates. It does not replace `docs/QA_FINDINGS_LOG.md` or the Master QA runbook.
+This document is the living execution record for the current Velora Master QA pass. It records verified local evidence, the fixes applied during the current run, and the remaining gates. It does not replace `docs/QA_FINDINGS_LOG.md` or the Master QA runbook.
 
 ## Certification rule
 
@@ -16,7 +16,7 @@ A feature family is not considered certified from test count alone. Required evi
 6. MySQL CI evidence for release certification.
 7. Concurrency/security gates where applicable.
 
-The canonical certification environment is MySQL 8.4 + PHP 8.4. The repository Master QA workflow runs `tests/Feature/QA` against MySQL 8.4.
+The canonical certification environment is MySQL 8.4 + PHP 8.4. The repository's Master QA workflow runs the `tests/Feature/QA` suite against MySQL 8.4.
 
 ## Verified local evidence — current session
 
@@ -28,49 +28,61 @@ The canonical certification environment is MySQL 8.4 + PHP 8.4. The repository M
 | Appointment/queue integration | `AppointmentQueueIntegrationTest` | PASS | 9 | 14 | 2026-09-03 |
 | Booking rules | `BookingRulesScenarioTest` | PASS | 5 | 6 | 2026-09-03 |
 | Booking availability rules | `BookingAvailabilityRulesScenarioTest` | PASS | 4 | 8 | 2026-09-03 |
-| Appointment lifecycle baseline | `AppointmentLifecycleScenarioTest` | PASS | 3 | 11 | 2026-09-03 |
+| Appointment lifecycle (pre-fix) | `AppointmentLifecycleScenarioTest` | PASS | 3 | 11 | 2026-09-03 |
+| Appointment lifecycle (strengthened) | `AppointmentLifecycleScenarioTest` | FAIL | 3 passed + 1 failed | 15 | 2026-09-03 |
 
-Current verified subtotal: **42 passed tests / 133 assertions**.
+Current verified passing subtotal before the latest defect: **42 passed tests / 133 assertions**.
 
-The latest observed local lifecycle command was:
+Latest strengthened lifecycle execution exposed a real production defect:
 
 ```text
-php -d memory_limit=512M artisan test tests/Feature/QA/AppointmentLifecycleScenarioTest.php --stop-on-failure
-→ PASS — 3 passed (11 assertions) — 7.23s
+FAIL Tests\\Feature\\QA\\AppointmentLifecycleScenarioTest
+✓ appointment status machine allows ...
+✓ completed appointment moves its queue ...
+✓ cancelled appointment moves its queue ...
+⨯ no show moves its queue entry to skipped ...
+
+Expected: no_show
+Actual: cancelled
 ```
 
-These results are local MySQL-backed runs from the developer environment. They are not, by themselves, release certification.
+The failure occurred after `ChangeAppointmentStatus` correctly requested `no_show`; the subsequent queue update to `skipped` triggered the Queue model observer, which downgraded the appointment to `cancelled`.
 
-## Current branch state
+## Findings added during this pass
 
-After the baseline lifecycle run, the lifecycle coverage was strengthened on `main`.
+### QA-APT-001 — Queue skip observer downgraded no-show appointments to cancelled
 
-### Production fix committed
+**Scenario:** `APT-006` no-show lifecycle.
 
-`47fbcf9ce72d7c4e10d3b73d3e7edd47eec74edd`
+**Observed:** The strengthened `AppointmentLifecycleScenarioTest` expected `appointment.status = no_show` after `ChangeAppointmentStatus::execute(..., no_show)`, but the persisted appointment became `cancelled`.
 
-`ChangeAppointmentStatus` now:
+**Root cause:** `app/Models/Queue.php` treated every transition to `cancelled` or `skipped` as an instruction to set the linked appointment status to `cancelled`. `ChangeAppointmentStatus` first set the appointment to `no_show`, then set its queue row to `skipped`; the Queue observer then overwrote the terminal appointment state.
 
-- persists `confirmed_at`, `completed_at`, `cancelled_at`, or `no_show_at` with the status transition;
-- treats `no_show` as a terminal queue state and moves its queue entry to `skipped`;
-- returns the appointment with status history loaded.
+**Fix implemented:** The Queue observer now preserves `Appointment::STATUS_NO_SHOW` when the linked appointment is already `no_show`. Queue cleanup still produces `skipped`, while the appointment lifecycle remains `no_show`.
 
-### Regression coverage committed
+**Production commit:** `eabda6d8111fcc4c408294d55310431dcfc528bf`.
 
-`dce556b0f9b6b04ca4a6ce3a19fa6861818e1621`
+**Regression:** The strengthened `AppointmentLifecycleScenarioTest::no_show_moves_its_queue_entry_to_skipped_and_records_no_show_at()` remains the regression guard and must be re-run after pulling the fix.
 
-`AppointmentLifecycleScenarioTest` now also verifies:
+## Previously verified local evidence
 
-- completion creates the expected appointment invoice and completes its queue entry;
-- cancellation records `cancelled_at` and skips the queue entry;
-- no-show records `no_show_at` and skips the queue entry;
-- each status transition produces a persisted status-history row.
+The following focused runs were completed successfully in the current development environment:
 
-**Execution status:** The strengthened lifecycle suite is **PENDING LOCAL EXECUTION**. The previous 3-test PASS was against the earlier baseline and does not certify the newly added cases.
+```text
+CustomerBookingJourneyTest → 5 passed / 41 assertions
+CustomerPortalJourneyTest → 3 passed / 16 assertions
+AppointmentActionsTest → 13 passed / 37 assertions
+AppointmentQueueIntegrationTest → 9 passed / 14 assertions
+BookingRulesScenarioTest → 5 passed / 6 assertions / 7.56s
+BookingAvailabilityRulesScenarioTest → 4 passed / 8 assertions / 7.33s
+AppointmentLifecycleScenarioTest (before strengthened no-show regression) → 3 passed / 11 assertions / 7.23s
+```
 
-## Booking/appointment gate status
+These are local MySQL-backed runs. They are not release certification without fresh MySQL CI evidence.
 
-### PASS — locally verified in the current session
+## Current booking/appointment gate status
+
+### PASS — locally verified
 
 - `BOOK-001` real public booking journey.
 - `BOOK-002` duplicate booking protection.
@@ -82,44 +94,22 @@ After the baseline lifecycle run, the lifecycle coverage was strengthened on `ma
 - `BOOK-009` maximum advance rule.
 - `BOOK-010` occupied slot rejected.
 - `AVAIL-002` holiday blocking and related availability rules.
-- Appointment state-machine and queue synchronization baseline.
+- Appointment lifecycle status-machine validation.
+- Confirm/cancel/complete queue synchronization coverage.
 - Customer history/queue/invoice access.
+- Appointment action and queue synchronization coverage.
 - Appointment/queue integration lifecycle.
 
-### PARTIAL / STILL REQUIRED
+### OPEN / BLOCKED ON REGRESSION
 
-The focused suites still need dedicated proof for:
-
+- `APT-006` no-show — **production fix applied; re-run required**.
+- `APT-008` persisted status-history completeness.
+- `APT-009` completion/invoice consistency.
+- `APT-004` reschedule.
 - `BOOK-005` invalid resource rejected.
 - `BOOK-011` timezone conversion.
 - `BOOK-012` notification failure must not corrupt booking.
-- `AVAIL-001` complete working-hours matrix, not only the negative boundary.
-- `APT-004` reschedule.
-- strengthened `APT-006` no-show behavior after the latest production fix.
-- strengthened `APT-008` persisted status-history completeness.
-- strengthened `APT-009` completion/invoice consistency.
-
-### Reschedule note
-
-The current appointment domain status machine has no `rescheduled` status and the current application search did not reveal a dedicated reschedule application action. Documentation mentions rescheduling, but the runtime contract currently models only pending/confirmed/checked_in/in_service/completed/cancelled/no_show. Therefore `APT-004` is not being falsely marked PASS; it remains an explicit product/runtime gap until a real reschedule workflow is identified or implemented and tested.
-
-## Findings created during the current pass
-
-### QA-BOOK-002 — Holiday date comparison
-
-Already fixed and regression-covered by `BookingAvailabilityRulesScenarioTest`.
-
-### QA-TEST-BOOKRULES-001 — Booking rules fixture idempotency
-
-Focused booking rules/availability fixtures were made safe for repeated execution.
-
-### QA-BOOK-003 / related appointment identity regressions
-
-Canonical `Customer`/`Staff` appointment identity is now used by the tested appointment flows.
-
-### Current lifecycle finding
-
-`QA-BOOK-003`-style lifecycle side-effect gap was identified and fixed as described above. The required next step is actual execution of the strengthened regression; no new PASS is claimed until the new suite is observed.
+- `AVAIL-001` working-hours matrix beyond current negative-boundary coverage.
 
 ## Concurrency / certification gates still outstanding
 
@@ -130,8 +120,21 @@ Canonical `Customer`/`Staff` appointment identity is now used by the tested appo
 - Fresh Master QA MySQL CI success for the current `main` SHA.
 - Final cross-surface reconciliation and production certification.
 
+## Evidence interpretation
+
+A test failure is recorded as a defect until root cause is addressed. A test passing on one run does not retroactively certify a strengthened scenario after a new assertion reveals a previously untested production behavior.
+
+The Master QA workflow is configured for MySQL 8.4 + PHP 8.4 and runs the complete `tests/Feature/QA` suite.
+
 ## Working contract
 
-Every meaningful defect/change in this pass must leave an audit trail containing scenario ID/area, observed failure, root cause, smallest correct fix, regression coverage, exact commit, observed local result, and CI status when available.
+Every new defect discovered in this pass must leave an audit trail containing:
 
-The Master QA runbook requires root-cause fixes rather than assertion weakening and requires documentation after meaningful QA changes.
+- scenario ID / area,
+- observed failure,
+- root cause,
+- smallest correct fix,
+- regression coverage,
+- exact commit,
+- observed local result,
+- CI status once available.
