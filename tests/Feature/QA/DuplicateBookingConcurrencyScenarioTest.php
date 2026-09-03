@@ -51,25 +51,7 @@ final class DuplicateBookingConcurrencyScenarioTest extends TenantTestCase
         $worker = base_path('tests/Support/concurrent_booking_worker.php');
         $processes = [];
 
-        foreach ([$email, $email] as $ignored) {
-            $process = new Process([
-                PHP_BINARY,
-                '-d',
-                'memory_limit=512M',
-                $worker,
-                '--tenant=' . $this->tenant->id,
-                '--staff-user=' . $this->staffMember->id,
-                '--service=' . $this->service->id,
-                '--date=' . $date->toDateString(),
-                '--time=' . $time,
-                '--email=' . $email,
-                '--token=' . $token,
-            ], base_path(), null, null, 45);
-            $process->setTimeout(45);
-            $process->start();
-            $processes[] = $process;
-        }
-
+        // Child processes use independent DB connections, so every fixture must be committed first.
         if (DB::connection()->transactionLevel() > 0) {
             DB::connection()->commit();
         }
@@ -79,6 +61,25 @@ final class DuplicateBookingConcurrencyScenarioTest extends TenantTestCase
         }
 
         try {
+            foreach ([1, 2] as $_) {
+                $process = new Process([
+                    PHP_BINARY,
+                    '-d',
+                    'memory_limit=512M',
+                    $worker,
+                    '--tenant=' . $this->tenant->id,
+                    '--staff-user=' . $this->staffMember->id,
+                    '--service=' . $this->service->id,
+                    '--date=' . $date->toDateString(),
+                    '--time=' . $time,
+                    '--email=' . $email,
+                    '--token=' . $token,
+                ], base_path(), null, null, 45);
+                $process->setTimeout(45);
+                $process->start();
+                $processes[] = $process;
+            }
+
             $deadline = microtime(true) + 30;
             while (count(glob($base . '/' . $token . '.ready.*')) < 2) {
                 if (microtime(true) > $deadline) {
@@ -92,10 +93,8 @@ final class DuplicateBookingConcurrencyScenarioTest extends TenantTestCase
 
             foreach ($processes as $process) {
                 $process->wait();
-                $resultFiles = glob($base . '/' . $token . '.result.*');
                 $decoded = null;
-
-                foreach ($resultFiles as $resultFile) {
+                foreach (glob($base . '/' . $token . '.result.*') as $resultFile) {
                     $candidate = json_decode((string) file_get_contents($resultFile), true);
                     if (is_array($candidate) && !isset($candidate['_claimed'])) {
                         $candidate['_claimed'] = true;
@@ -104,7 +103,6 @@ final class DuplicateBookingConcurrencyScenarioTest extends TenantTestCase
                         break;
                     }
                 }
-
                 $results[] = [
                     'exit_code' => $process->getExitCode(),
                     'status' => $decoded['status'] ?? null,
