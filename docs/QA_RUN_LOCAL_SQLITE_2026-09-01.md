@@ -1,6 +1,10 @@
-# Velora QA — Local SQLite Run Diagnostic (2026-09-01)
+# Velora QA — Historical Local SQLite Run Diagnostic (2026-09-01)
 
-## Trigger
+> **Historical document — superseded by the current MySQL test contract.**
+>
+> This report preserves the original 2026-09-01 SQLite investigation and its findings. It is not the current PHPUnit or CI environment. The active certification contract is **MySQL 8.4 + PHP 8.4**.
+
+## Historical trigger
 
 Developer ran:
 
@@ -22,159 +26,61 @@ SQLSTATE[HY000]: General error: 1 no such table: tenants
 SQLSTATE[HY000]: General error: 1 no such table: subscription_plans
 ```
 
-The failures were concentrated around tenant bootstrap and central billing fixtures, indicating a shared test-environment issue rather than dozens of independent product defects.
+The failures were concentrated around tenant bootstrap and central billing fixtures, indicating a shared historical test-environment issue rather than dozens of independent product defects.
 
-## Root Cause A — SQLite `:memory:` is incompatible with the current test bootstrap lifecycle
+## Historical root causes
 
-`phpunit.xml` previously configured:
+### Root Cause A — SQLite `:memory:` was incompatible with the then-current test bootstrap lifecycle
 
-```text
-DB_CONNECTION=sqlite
-DB_DATABASE=:memory:
-TENANCY_CENTRAL_CONNECTION=sqlite
-```
+The historical `phpunit.xml` configured SQLite as `:memory:` and the old test lifecycle cached migration state across fresh application/connection boots. A new in-memory connection could therefore start empty while the cached migration flag remained true.
 
-`TenantTestCase` cached the fact that migrations had completed for a test class in static state. Laravel application/connection lifecycle can create a fresh SQLite in-memory database while that static flag remains true. The next test then reused the flag and attempted to insert into `tenants` on an empty database.
+### Root Cause B — Central QA tests did not guarantee a central schema before use
 
-This explains the repeated:
+Several QA tests extended the generic test case and queried central models/tables without guaranteeing a fresh central schema.
 
-```text
-no such table: tenants
-```
+### Root Cause C — Billing activation wrote a column not present in the canonical subscription schema
 
-and the same mechanism explains missing central tables such as `subscription_plans`.
+`MoyasarService::activateSubscription()` attempted to write `billing_cycle` to `tenant_subscriptions`. The canonical source of truth is `SubscriptionPlan::billing_cycle`.
 
-## Root Cause B — Central QA tests did not guarantee a central schema before use
+### Root Cause D — Staff reporting relied on a SQLite-incompatible query shape
 
-Several QA tests extend the generic `Tests\TestCase` and directly query central models/tables. The base test case previously did not ensure the central migration schema existed for a fresh test application.
+`ReportService::getStaffPerformance()` used a `HAVING` clause against a `withCount()` alias. The business meaning was preserved while the existence filter was moved to `whereHas(...)`.
 
-That made tests such as Super Admin reconciliation and deletion depend on test order or a prior migration side effect.
+## Remediation that resulted from the historical investigation
 
-## Root Cause C — Billing activation wrote a column not present in the canonical subscription schema
+The investigation led to these durable fixes:
 
-`MoyasarService::activateSubscription()` attempted to write:
+- Central schema bootstrap was made explicit for fresh test applications.
+- `MoyasarService::activateSubscription()` stopped persisting the unsupported duplicate `billing_cycle` column.
+- Staff reporting was rewritten to avoid the SQLite-specific `HAVING` failure mode.
+- Tenant transaction rollback records the actual tenant connection explicitly.
+- Tenant isolation coverage uses persisted Sanctum token records.
+- Subsequent QA fixes also normalized holiday and dashboard calendar-date comparisons.
 
-```text
-billing_cycle
-```
+## Current environment superseding this report
 
-to `tenant_subscriptions`.
-
-The canonical `tenant_subscriptions` creation migration does not define that column. `billing_cycle` belongs to `subscription_plans`, and the service already reads it from the plan to determine the duration.
-
-Fix: stop persisting the unsupported duplicate `billing_cycle` field on the subscription record. The source of truth remains `SubscriptionPlan::billing_cycle`.
-
-## Root Cause D — SQLite portability issue in staff reporting
-
-`ReportService::getStaffPerformance()` used a `HAVING` clause against the `withCount()` alias:
+The active repository contract is now:
 
 ```text
-having staff_appointments_count > 0
+Application DB: MySQL
+Central tenancy DB: MySQL
+CI: MySQL 8.4
+PHP: 8.4
+PHPUnit: MySQL-driven via the CI/local environment
+Queue during tests: sync
+Mail during tests: array
+Cache during tests: array
+Session during tests: array
 ```
 
-SQLite rejected this shape with:
+Current `config/database.php` defaults to MySQL and only defines the MySQL application connection. Current `phpunit.xml` no longer hard-codes `DB_CONNECTION=sqlite` or a SQLite database path.
 
-```text
-HAVING clause on a non-aggregate query
-```
+The current `tests/bootstrap.php` no longer creates a SQLite test database. It creates a temporary `.env` only when needed, injects a throwaway `APP_KEY`, and leaves database selection to the active environment contract.
 
-The fix keeps the same business meaning but moves the existence filter to `whereHas('staffAppointments', ...)` while retaining `withCount()` for the displayed count.
+## Certification rule
 
-## Remediation Implemented
+This historical local SQLite run was never final certification evidence. Final certification requires fresh MySQL evidence, including Master QA, broader regression, authorization/tenant isolation, billing/webhook verification, concurrency-sensitive behavior, and reconciliation checks.
 
-### Test database isolation
+## Historical value
 
-`tests/bootstrap.php` now:
-
-1. Keeps the real `.env` out of Git.
-2. Generates a temporary testing `.env` only when a local `.env` is absent.
-3. Injects a throwaway testing `APP_KEY`.
-4. Creates a SQLite file named from `TEST_TOKEN`, `PARALLEL_PROCESS`, or the current process ID.
-5. Removes the generated SQLite file at process shutdown.
-
-Therefore:
-
-```text
-sequential process → database/testing_<process>.sqlite
-parallel process A → database/testing_<tokenA>.sqlite
-parallel process B → database/testing_<tokenB>.sqlite
-```
-
-This preserves database state across Laravel application boots inside one process and isolates parallel workers from one another.
-
-### Central schema bootstrap
-
-`tests/TestCase.php` now checks the configured central connection for the migrations table and runs the application migrations when the central schema is not yet initialized.
-
-This removes test-order dependence for central-only tests.
-
-### QA fixtures
-
-Super Admin billing/reconciliation and tenant deletion tests now create a minimal disposable subscription plan when the central database has no plan rows.
-
-This makes those scenarios self-contained and independent of seed order.
-
-### Reporting portability
-
-`ReportService::getStaffPerformance()` no longer relies on SQLite-incompatible `HAVING` semantics for the `withCount()` alias.
-
-### Billing schema contract
-
-`MoyasarService::activateSubscription()` no longer writes `billing_cycle` to `tenant_subscriptions`.
-
-## Regression Coverage
-
-`tests/Unit/TestEnvironmentBootstrapTest.php` now verifies:
-
-```text
-.env exists for tests
-APP_ENV=testing
-APP_KEY is generated
-DB_DATABASE points to a process-isolated SQLite file
-SQLite file exists
-.env remains ignored
-.env.example remains allowed
-SQLite test database files remain ignored
-```
-
-## Important Classification
-
-The repeated `no such table` errors are classified primarily as **test infrastructure defects**, not as 40+ independent product failures.
-
-The following are separate production/schema compatibility findings exposed by the run:
-
-- unsupported `tenant_subscriptions.billing_cycle` write
-- SQLite-incompatible reporting query shape
-
-Both received minimal fixes and regression coverage.
-
-## Evidence Standard
-
-The local SQLite run is useful for fast feedback, but it is not the final certification environment.
-
-Certification still requires:
-
-```text
-MySQL 8.4
-PHP 8.4
-Master QA suite
-Security / tenant isolation
-Authorization
-Billing / webhook verification
-Concurrency
-Reconciliation
-Final regression
-```
-
-## Next Commands
-
-After pulling the current `main`:
-
-```text
-php artisan test tests/Unit/TestEnvironmentBootstrapTest.php
-php artisan test tests/Feature/QA --compact
-php artisan test --parallel --processes=12
-php artisan test
-```
-
-Interpret the parallel run only after confirming that the process-isolated SQLite bootstrap is active. The final release decision still comes from the MySQL certification workflow.
+Keep this report for auditability and root-cause history. Do not copy its old SQLite bootstrap instructions into current runbooks or use them as the definition of the current test environment.
