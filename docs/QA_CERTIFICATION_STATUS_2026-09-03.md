@@ -33,8 +33,9 @@ The canonical certification environment is MySQL 8.4 + PHP 8.4. The repository's
 | Appointment lifecycle (post-fix no-show regression) | `AppointmentLifecycleScenarioTest` | PASS | 5 | 24 | 2026-09-03 |
 | Appointment lifecycle (reschedule regression, first run) | `AppointmentLifecycleScenarioTest` | FAIL | 4 passed + 1 failed | 19 | 2026-09-03 |
 | Appointment lifecycle (reschedule regression, corrected) | `AppointmentLifecycleScenarioTest` | PASS | 6 | 29 | 2026-09-03 |
+| Appointment lifecycle (invoice reconciliation, strengthened) | `AppointmentLifecycleScenarioTest` | PASS | 6 | 34 | 2026-09-03 |
 
-Current verified passing subtotal remains **53 passed tests / 186 assertions** from completed passing focused runs. The newer invoice-reconciliation assertions have been added but their local execution result is not yet observed.
+Current verified passing subtotal from completed passing focused runs is **59 passed test executions / 220 assertions**. This counts passing executions as evidence records; repeated runs are retained as separate evidence and do not constitute release certification by count alone.
 
 ## Defects discovered and addressed during this pass
 
@@ -104,11 +105,21 @@ Duration: 7.50s
 - invoice amount matches the configured service price,
 - invoice status starts as `pending`.
 
-**Production assessment:** No production defect has been established by this strengthening pass. The existing production path creates the invoice from the appointment's customer and service price when the appointment reaches `completed`.
+**Production assessment:** No production defect was established by this strengthening pass. The existing production path creates the invoice from the appointment's customer and service price when the appointment reaches `completed`.
 
 **Test commit:** `02befff2f299172f9b2677893bf3077b962a3c26`.
 
-**Current state:** **Re-run required.** No local result has yet been observed for the strengthened assertions.
+**Final regression execution:** Pulled `origin/main` at `394368a72990cadfd86a8c2bc748e0651db4fcb9`, cleared caches, and ran:
+
+```text
+php -d memory_limit=512M artisan test tests/Feature/QA/AppointmentLifecycleScenarioTest.php --stop-on-failure
+
+PASS Tests\\Feature\\QA\\AppointmentLifecycleScenarioTest
+Tests:    6 passed (34 assertions)
+Duration: 7.54s
+```
+
+**Final state:** **APT-009 PASS locally.** The lifecycle regression now verifies persisted invoice identity, customer/appointment linkage, service amount consistency, and initial pending status in addition to queue/lifecycle behavior.
 
 ## Previously verified local evidence
 
@@ -124,6 +135,7 @@ BookingAvailabilityRulesScenarioTest → 4 passed / 8 assertions / 7.33s
 AppointmentLifecycleScenarioTest (pre-strengthening) → 3 passed / 11 assertions / 7.23s
 AppointmentLifecycleScenarioTest (post-fix no-show regression) → 5 passed / 24 assertions / 7.58s
 AppointmentLifecycleScenarioTest (corrected reschedule regression) → 6 passed / 29 assertions / 7.50s
+AppointmentLifecycleScenarioTest (strengthened invoice reconciliation) → 6 passed / 34 assertions / 7.54s
 ```
 
 These are local MySQL-backed runs. They are not release certification without fresh MySQL CI evidence.
@@ -146,15 +158,14 @@ These are local MySQL-backed runs. They are not release certification without fr
 - Confirm/cancel/complete queue synchronization coverage.
 - `APT-006` no-show lifecycle, including `no_show` persistence, `no_show_at`, and queue `skipped` synchronization.
 - `APT-004` reschedule, including canonical schedule and queue-date reconciliation.
-- Appointment status-history completeness for the strengthened lifecycle scenario.
-- Appointment completion/invoice creation coverage at the lifecycle level.
+- `APT-008` persisted status-history completeness in the strengthened lifecycle scenario.
+- `APT-009` completion/invoice consistency, including persisted invoice linkage and amount/status invariants.
 - Appointment/queue integration lifecycle.
 - Customer history/queue/invoice access.
 - Appointment action and queue synchronization coverage.
 
 ### OPEN / BLOCKED ON REGRESSION
 
-- `APT-009` completion/invoice consistency — strengthened persisted-data reconciliation re-run required.
 - `BOOK-005` invalid resource rejected.
 - `BOOK-011` timezone conversion.
 - `BOOK-012` booking notification failure does not corrupt booking.
@@ -163,12 +174,13 @@ These are local MySQL-backed runs. They are not release certification without fr
 
 ## Next certification work
 
-1. Re-run the strengthened `APT-009` completion/invoice reconciliation.
-2. `BOOK-005`, `BOOK-011`, and `BOOK-012`.
-3. Broader `AVAIL-001` working-hours boundary matrix.
-4. Queue/concurrency and webhook concurrency where applicable.
-5. Full `tests/Feature/QA` on fresh MySQL 8.4 + PHP 8.4 CI.
-6. Final cross-surface reconciliation and production certification.
+1. `BOOK-005` invalid resource rejection.
+2. `BOOK-011` timezone conversion.
+3. `BOOK-012` booking notification failure isolation.
+4. Broader `AVAIL-001` working-hours boundary matrix.
+5. Queue/concurrency and webhook concurrency where applicable.
+6. Full `tests/Feature/QA` on fresh MySQL 8.4 + PHP 8.4 CI.
+7. Final cross-surface reconciliation and production certification.
 
 ## Concurrency / certification gates still outstanding
 
