@@ -15,6 +15,9 @@ declare(strict_types=1);
  * fresh database per connection and breaks tenant/central test isolation.
  * Each PHPUnit process gets its own file, which also keeps parallel processes
  * isolated from one another.
+ *
+ * CI may intentionally provide a non-SQLite driver (for example MySQL). In that
+ * case the bootstrap must never overwrite DB_DATABASE with a SQLite path.
  */
 
 $root = dirname(__DIR__);
@@ -48,26 +51,31 @@ if (! is_file($envPath)) {
     $createdEnv = true;
 }
 
-$testToken = getenv('TEST_TOKEN') ?: getenv('PARALLEL_PROCESS') ?: (string) getmypid();
-$testToken = preg_replace('/[^A-Za-z0-9_-]/', '_', $testToken) ?: (string) getmypid();
-$testDatabaseRelativePath = 'database' . DIRECTORY_SEPARATOR . 'testing_' . $testToken . '.sqlite';
-$testDatabasePath = $root . DIRECTORY_SEPARATOR . $testDatabaseRelativePath;
+$databaseConnection = strtolower(trim((string) (getenv('DB_CONNECTION') ?: 'sqlite')));
+$testDatabasePath = null;
 
-if (! is_dir(dirname($testDatabasePath))) {
-    mkdir(dirname($testDatabasePath), 0775, true);
+if ($databaseConnection === 'sqlite') {
+    $testToken = getenv('TEST_TOKEN') ?: getenv('PARALLEL_PROCESS') ?: (string) getmypid();
+    $testToken = preg_replace('/[^A-Za-z0-9_-]/', '_', $testToken) ?: (string) getmypid();
+    $testDatabaseRelativePath = 'database' . DIRECTORY_SEPARATOR . 'testing_' . $testToken . '.sqlite';
+    $testDatabasePath = $root . DIRECTORY_SEPARATOR . $testDatabaseRelativePath;
+
+    if (! is_dir(dirname($testDatabasePath))) {
+        mkdir(dirname($testDatabasePath), 0775, true);
+    }
+
+    if (is_file($testDatabasePath)) {
+        @unlink($testDatabasePath);
+    }
+
+    if (file_put_contents($testDatabasePath, '') === false) {
+        throw new RuntimeException('Cannot bootstrap tests: failed to create the SQLite test database.');
+    }
+
+    putenv('DB_DATABASE=' . $testDatabaseRelativePath);
+    $_ENV['DB_DATABASE'] = $testDatabaseRelativePath;
+    $_SERVER['DB_DATABASE'] = $testDatabaseRelativePath;
 }
-
-if (is_file($testDatabasePath)) {
-    @unlink($testDatabasePath);
-}
-
-if (file_put_contents($testDatabasePath, '') === false) {
-    throw new RuntimeException('Cannot bootstrap tests: failed to create the SQLite test database.');
-}
-
-putenv('DB_DATABASE=' . $testDatabaseRelativePath);
-$_ENV['DB_DATABASE'] = $testDatabaseRelativePath;
-$_SERVER['DB_DATABASE'] = $testDatabaseRelativePath;
 
 require $root . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php';
 
@@ -76,7 +84,7 @@ register_shutdown_function(static function () use ($envPath, $createdEnv, $testD
         @unlink($envPath);
     }
 
-    if (is_file($testDatabasePath)) {
+    if ($testDatabasePath !== null && is_file($testDatabasePath)) {
         @unlink($testDatabasePath);
     }
 });
