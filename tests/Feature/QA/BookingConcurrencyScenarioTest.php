@@ -50,7 +50,6 @@ final class BookingConcurrencyScenarioTest extends TenantTestCase
         $processes = [];
         $results = [];
 
-        // The worker processes must see the same committed tenant and fixtures.
         if (DB::connection()->transactionLevel() > 0) {
             DB::connection()->commit();
         }
@@ -80,7 +79,23 @@ final class BookingConcurrencyScenarioTest extends TenantTestCase
             $readyDeadline = microtime(true) + 15;
             while (count(glob($base . '/' . $token . '.ready.*')) < 2) {
                 if (microtime(true) > $readyDeadline) {
-                    $this->fail('Concurrent booking workers did not both reach the synchronized start barrier.');
+                    $diagnostics = [];
+                    foreach ($processes as $index => $process) {
+                        if ($process->isRunning()) {
+                            $process->stop(1);
+                        }
+                        $diagnostics[] = [
+                            'worker' => $index + 1,
+                            'exit_code' => $process->getExitCode(),
+                            'stdout' => trim($process->getOutput()),
+                            'stderr' => trim($process->getErrorOutput()),
+                        ];
+                    }
+
+                    $this->fail(
+                        'Concurrent booking workers did not both reach the synchronized start barrier. Diagnostics: ' .
+                        json_encode($diagnostics, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
+                    );
                 }
                 usleep(10_000);
             }
@@ -116,16 +131,8 @@ final class BookingConcurrencyScenarioTest extends TenantTestCase
             $successes = array_values(array_filter($results, fn (array $result): bool => $result['status'] === 'success'));
             $failures = array_values(array_filter($results, fn (array $result): bool => $result['status'] === 'failure'));
 
-            $this->assertCount(
-                1,
-                $successes,
-                'Expected exactly one concurrent booking worker to succeed. Results: ' . json_encode($results),
-            );
-            $this->assertCount(
-                1,
-                $failures,
-                'Expected exactly one concurrent booking worker to be rejected. Results: ' . json_encode($results),
-            );
+            $this->assertCount(1, $successes, 'Expected exactly one concurrent booking worker to succeed. Results: ' . json_encode($results));
+            $this->assertCount(1, $failures, 'Expected exactly one concurrent booking worker to be rejected. Results: ' . json_encode($results));
             $this->assertSame(
                 \App\Domain\Booking\Exceptions\SlotUnavailableException::class,
                 $failures[0]['class'] ?? null,
